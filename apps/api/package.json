@@ -13,6 +13,7 @@
     "test:agent-harness": "AGENT_WEB_FETCH_FIXTURE=true tsx scripts/agent-harness.check.ts",
     "test:agent-run": "AGENT_WEB_FETCH_FIXTURE=true tsx --env-file-if-exists=../../.env scripts/agent-run.check.ts",
     "test:agent-e2e": "AGENT_WEB_FETCH_FIXTURE=true MOCK_PROVIDER_ENABLED=true QWEN_ENABLED=false GLM_ENABLED=false DEEPSEEK_ENABLED=false KIMI_ENABLED=false WANXIANG_ENABLED=false COGVIEW_ENABLED=false tsx scripts/agent-e2e.check.ts",
+    "test:opensandbox-poc": "tsx scripts/opensandbox-poc.check.ts",
     "test:smoke:deepseek": "tsx --env-file-if-exists=../../.env scripts/deepseek-chat.smoke.ts",
     "test:smoke:glm": "tsx --env-file-if-exists=../../.env scripts/glm-chat.smoke.ts",
     "test:smoke:kimi": "tsx --env-file-if-exists=../../.env scripts/kimi-chat.smoke.ts",
@@ -24,6 +25,7 @@
   },
   "dependencies": {
     "@aigateway/sdk": "workspace:*",
+    "@alibaba-group/opensandbox": "0.1.10",
     "@earendil-works/pi-agent-core": "0.80.10",
     "@earendil-works/pi-ai": "0.80.10",
     "@nestjs/common": "^11.1.28",

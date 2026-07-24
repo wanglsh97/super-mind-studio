@@ -41,6 +41,9 @@ importers:
       '@aigateway/sdk':
         specifier: workspace:*
         version: link:../../packages/sdk
+      '@alibaba-group/opensandbox':
+        specifier: 0.1.10
+        version: 0.1.10
       '@earendil-works/pi-agent-core':
         specifier: 0.80.10
         version: 0.80.10(ws@8.21.1)(zod@4.4.3)
@@ -231,6 +234,10 @@ importers:
         version: 5.9.3
 
 packages:
+
+  '@alibaba-group/opensandbox@0.1.10':
+    resolution: {integrity: sha512-/hH54IZ5xC+gfM0t7+7JGX1gKRe5o/KZrTEK3CbJNlbhI0GntT2DsEVtdcpT0sf9j+/mVm9H5DKtgLMuegd7XQ==}
+    engines: {node: '>=20'}
 
   '@alloc/quick-lru@5.2.0':
     resolution: {integrity: sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw==}
@@ -4620,6 +4627,12 @@ packages:
       zod:
         optional: true
 
+  openapi-fetch@0.14.1:
+    resolution: {integrity: sha512-l7RarRHxlEZYjMLd/PR0slfMVse2/vvIAGm75/F7J6MlQ8/b9uUQmUF2kCPrQhJqMXSxmYWObVgeYXbFYzZR+A==}
+
+  openapi-typescript-helpers@0.0.15:
+    resolution: {integrity: sha512-opyTPaunsklCBpTK8JGef6mfPhLSnyy5a0IN9vKtx3+4aExf+KxEqYwIy3hqkedXIB97u357uLMJsOnm3GVjsw==}
+
   optionator@0.9.4:
     resolution: {integrity: sha512-6IpQ7mKUxRcZNLIObR0hz7lxsapSSIYNZJwXPGeF0mTVqGKFIXj1DQcMoT22S3ROcLyY/rz0PWaWZ9ayWmad9g==}
     engines: {node: '>= 0.8.0'}
@@ -5702,6 +5715,11 @@ packages:
     resolution: {integrity: sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A==}
 
 snapshots:
+
+  '@alibaba-group/opensandbox@0.1.10':
+    dependencies:
+      openapi-fetch: 0.14.1
+      undici: 7.28.0
 
   '@alloc/quick-lru@5.2.0': {}
 
@@ -10759,6 +10777,12 @@ snapshots:
     optionalDependencies:
       ws: 8.21.1
       zod: 4.4.3
+
+  openapi-fetch@0.14.1:
+    dependencies:
+      openapi-typescript-helpers: 0.0.15
+
+  openapi-typescript-helpers@0.0.15: {}
 
   optionator@0.9.4:
     dependencies:

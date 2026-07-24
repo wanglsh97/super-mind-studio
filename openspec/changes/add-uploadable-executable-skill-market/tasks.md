@@ -37,7 +37,7 @@
 ## 4. OpenSandbox PoC 与生产 Adapter
 
 - [ ] 4.1 锁定候选 OpenSandbox、Docker 和 gVisor 版本，在独立测试节点记录安装、启动、升级和卸载步骤
-- [ ] 4.2 编写可重复 PoC 验收，覆盖创建、ready、Shell、工作目录、文件上传/下载、退出码、stdout/stderr、取消和销毁
+- [x] 4.2 编写可重复 PoC 验收，覆盖创建、ready、Shell、工作目录、文件上传/下载、退出码、stdout/stderr、取消和销毁
 - [ ] 4.3 验证 OpenSandbox 一 vCPU、1 GiB 内存、2 GiB 磁盘、64 进程、120 秒 TTL 和 60 秒命令超时的实际强制行为
 - [ ] 4.4 验证任意公网访问可用，同时 loopback、VPC 私网、云元数据、业务服务和 OpenSandbox 控制面不可达
 - [ ] 4.5 测量冷启动、包下载、首条命令、销毁和并发延迟，记录目标 ECS 规格、最大安全并发与月成本估算
