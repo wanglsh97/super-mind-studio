@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "tsx watch src/main.ts",
+    "dev": "NODE_USE_ENV_PROXY=1 NO_PROXY=\"localhost,127.0.0.1,::1${NO_PROXY:+,$NO_PROXY}\" tsx watch src/main.ts",
     "prebuild": "corepack pnpm --workspace-root db:generate",
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/main.js",
