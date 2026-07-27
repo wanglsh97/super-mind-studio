@@ -65,7 +65,7 @@ Client-side folder preparation and server-side package inspection enforce the ac
 
 ### Decision 5: Added Skills are candidates; activation is a runtime transition
 
-The initial model context receives a bounded catalog of at most 50 added published Skill names and descriptions plus the `activate_skill` tool. A manually selected Skill activates before the first main model invocation. Model activation validates user add state and current publication, downloads the current object, observes its SHA-256, mounts the package and adds the complete escaped `SKILL.md` to subsequent context.
+The initial model context receives a bounded catalog of at most 50 added published Skill names and descriptions plus the `activate_skill` tool. Manual selection is integrated into the Agent Composer: typing `/` opens a searchable list of added published Skills, and the selected Skills remain visible as removable tags inside the Composer. A manually selected Skill activates before the first main model invocation. Model activation validates user add state and current publication, downloads the current object, observes its SHA-256, mounts the package and adds the complete escaped `SKILL.md` to subsequent context.
 
 A Skill activates at most once per Run. There is no separate active-Skill count; context and Run budgets are authoritative. The manifest records the observed package hash because no retained revision is available after overwrite.
 

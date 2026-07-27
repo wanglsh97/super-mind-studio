@@ -57,6 +57,8 @@
 - [ ] 5.7 实现单次 1 MiB、Run 总计 5 MiB 工具输出截断及 100 MiB 出口流量终止，并将 limit reason 返回模型与 UI
 - [ ] 5.8 持久化 Skill 激活、sandbox 生命周期、命令、退出状态、耗时、截断和错误审计，敏感签名 URL 不进入 Pino
 - [ ] 5.9 完善 `/agent` 自动/手动 Skill UX、当前激活 Skill、Shell 日志与 Run 限制展示，确认调用不会弹出审批
+  - [x] 5.9.1 将手动 Skill 选择整合为 Composer `/` 搜索列表，并在 Composer 内展示可移除的已选项
+  - [ ] 5.9.2 展示模型自动激活的当前 Skill、完整 Shell 日志与 Run 限制状态
 - [ ] 5.10 添加 Mock 与 OpenSandbox Agent E2E，覆盖模型选择、多 Skill、上下文超限、命令失败、取消、断线重连和下架竞态
 
 ## 6. 永久用户文件与 Skill 结果导出

@@ -95,13 +95,15 @@ export function AgentComposerDock({ children }: Readonly<{ children: ReactNode }
 
 export function AgentComposerRoot({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <ComposerPrimitive.Root
-      className={cn(
-        'liquid-glass mx-auto w-full max-w-[58rem] rounded-[1.4rem] p-2.5 pb-3 transition-[border-color,box-shadow,transform] focus-within:border-brand/35 focus-within:shadow-[0_18px_48px_rgb(39_100_255/0.16)]',
-      )}
-    >
-      {children}
-    </ComposerPrimitive.Root>
+    <ComposerPrimitive.Unstable_TriggerPopoverRoot>
+      <ComposerPrimitive.Root
+        className={cn(
+          'liquid-glass relative mx-auto w-full max-w-[58rem] rounded-[1.4rem] p-2.5 pb-3 transition-[border-color,box-shadow,transform] focus-within:border-brand/35 focus-within:shadow-[0_18px_48px_rgb(39_100_255/0.16)]',
+        )}
+      >
+        {children}
+      </ComposerPrimitive.Root>
+    </ComposerPrimitive.Unstable_TriggerPopoverRoot>
   )
 }
 

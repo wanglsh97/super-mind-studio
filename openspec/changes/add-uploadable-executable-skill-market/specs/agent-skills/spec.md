@@ -12,13 +12,19 @@ The Skill registry SHALL resolve only `published` database records and their cur
 
 ### Requirement: Added Skills can be selected manually or by the model
 
-At Run creation, a user MAY explicitly select any published Skill they have added, causing it to activate before the first model invocation. Otherwise the model SHALL receive the names and descriptions of the user's added published Skills and MAY call `activate_skill`. Activation SHALL load the complete `SKILL.md`, mount the current package into the Run sandbox and make Shell/file tools available for subsequent turns.
+At Run creation, a user MAY explicitly select any published Skill they have added, causing it to activate before the first model invocation. The Agent Composer SHALL open a searchable Skill list when the user types `/`, and SHALL show each selected Skill as a removable selection inside the Composer instead of using a separate Run Skills panel. Otherwise the model SHALL receive the names and descriptions of the user's added published Skills and MAY call `activate_skill`. Activation SHALL load the complete `SKILL.md`, mount the current package into the Run sandbox and make Shell/file tools available for subsequent turns.
 
 #### Scenario: A user manually selects a Skill
 
 - **GIVEN** the user has added a published Skill
-- **WHEN** a Run is created with that Skill selected
+- **WHEN** the user types `/` in the Agent Composer, selects that Skill and creates a Run
 - **THEN** the Run activates it without first requiring an `activate_skill` model call
+
+#### Scenario: A user filters and removes a manual Skill selection
+
+- **GIVEN** the user has more than one added published Skill
+- **WHEN** the user types `/` plus part of a Skill name or description
+- **THEN** the Composer shows only matching Skills and lets the user select or remove them without leaving the Composer
 
 #### Scenario: The model chooses a Skill
 
@@ -77,4 +83,3 @@ The `/skills` experience SHALL use `@supermind/sdk` for public discovery, authen
 **Reason**: Added Skills are candidates, not automatically injected instructions; full instructions load only after manual selection or `activate_skill`.
 
 **Migration**: Convert existing installed rows to added rows, ignore the prior enabled flag, and use candidate-directory activation on subsequent Runs.
-

@@ -23,6 +23,7 @@ import {
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 
 import { useAgentActiveThreadId, useAgentWorkspace } from '../components/agent-workspace-provider'
+import { AgentSkillSlashPicker } from '../components/agent-skill-slash-picker'
 import {
   AgentActiveRunHint,
   AgentComposerAction,
@@ -323,25 +324,25 @@ function AgentConsole() {
             <AgentScrollToBottom />
             <AgentComposerDock>
               <AgentMcpStatusPanel statuses={mcpServers} loadState={mcpLoadState} />
-              <AgentSkillSelector
-                candidates={skillCandidates}
-                selectedNames={selectedSkillNames}
-                loadState={skillLoadState}
-                disabled={userActiveRun !== null}
-                onToggle={(name) =>
-                  setSelectedSkillNames((current) =>
-                    current.includes(name)
-                      ? current.filter((item) => item !== name)
-                      : [...current, name],
-                  )
-                }
-                onRetry={() => void loadSkillCandidates()}
-              />
               <AgentContextBudgetBadge budget={contextBudget} summary={contextSummary} />
               {userActiveRun && userActiveRun.threadId !== activeThreadId ? (
                 <AgentActiveRunHint message="另一会话正在运行，请等待结束后再提交" />
               ) : null}
               <AgentComposerRoot>
+                <AgentSkillSlashPicker
+                  candidates={skillCandidates}
+                  selectedNames={selectedSkillNames}
+                  loadState={skillLoadState}
+                  disabled={userActiveRun !== null}
+                  onToggle={(name) =>
+                    setSelectedSkillNames((current) =>
+                      current.includes(name)
+                        ? current.filter((item) => item !== name)
+                        : [...current, name],
+                    )
+                  }
+                  onRetry={() => void loadSkillCandidates()}
+                />
                 <AgentComposerInput
                   placeholder={
                     submitBlocked && !modelDisabled
@@ -716,82 +717,6 @@ const WriteFileToolUI = makeAssistantToolUI<{ path?: string }, SandboxToolResult
     />
   ),
 })
-
-function AgentSkillSelector({
-  candidates,
-  selectedNames,
-  loadState,
-  disabled,
-  onToggle,
-  onRetry,
-}: {
-  candidates: AgentSkillCandidate[]
-  selectedNames: string[]
-  loadState: 'loading' | 'ready' | 'failed'
-  disabled: boolean
-  onToggle: (name: string) => void
-  onRetry: () => void
-}) {
-  return (
-    <div className="mx-1 rounded-xl border border-line/80 bg-surface-inset/60 px-3 py-2">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <p className="text-[0.68rem] font-bold uppercase tracking-[0.14em] text-ink-subtle">
-            Run Skills
-          </p>
-          <p className="mt-0.5 text-xs text-ink-muted">选择后会在本次运行开始前激活</p>
-        </div>
-        {selectedNames.length > 0 ? (
-          <span className="rounded-full bg-brand-muted/16 px-2 py-1 text-[0.68rem] font-semibold text-brand">
-            {selectedNames.length} 个已选
-          </span>
-        ) : null}
-      </div>
-      {loadState === 'loading' ? (
-        <div className="mt-2 flex gap-2" aria-label="Skill 加载中">
-          <span className="h-7 w-28 animate-pulse rounded-full bg-ink-subtle/10" />
-          <span className="h-7 w-20 animate-pulse rounded-full bg-ink-subtle/10" />
-        </div>
-      ) : loadState === 'failed' ? (
-        <button
-          type="button"
-          className="mt-2 text-xs font-semibold text-[#a63d3d] underline underline-offset-2"
-          onClick={onRetry}
-        >
-          Skill 加载失败，重新加载
-        </button>
-      ) : candidates.length === 0 ? (
-        <p className="mt-2 text-xs text-ink-subtle">
-          暂无已添加的可执行 Skill，可继续让模型使用普通工具。
-        </p>
-      ) : (
-        <div className="mt-2 flex flex-wrap gap-2" aria-label="选择本次运行的 Skill">
-          {candidates.map((skill) => {
-            const selected = selectedNames.includes(skill.name)
-            return (
-              <button
-                key={skill.id}
-                type="button"
-                disabled={disabled}
-                aria-pressed={selected}
-                title={skill.description}
-                onClick={() => onToggle(skill.name)}
-                className={cn(
-                  'rounded-full border px-2.5 py-1 text-xs font-semibold transition-colors focus-visible:outline-3 focus-visible:outline-brand-focus disabled:cursor-not-allowed disabled:opacity-45',
-                  selected
-                    ? 'border-brand bg-brand text-white'
-                    : 'border-line bg-surface text-ink-muted hover:border-brand/50 hover:text-ink',
-                )}
-              >
-                {skill.title}
-              </button>
-            )
-          })}
-        </div>
-      )}
-    </div>
-  )
-}
 
 function SandboxToolActivityCard({
   toolName,
