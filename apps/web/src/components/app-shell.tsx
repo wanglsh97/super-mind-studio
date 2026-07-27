@@ -513,7 +513,16 @@ function Brand({ compact = false }: Readonly<{ compact?: boolean }>) {
 }
 
 function LogoMark({ className }: Readonly<{ className?: string }>) {
-  return <BrandMark className={cn('size-10 shrink-0 object-contain', className)} />
+  return (
+    <span
+      className={cn(
+        'liquid-glass-soft grid size-11 shrink-0 place-items-center rounded-[0.95rem] border-brand/20 bg-brand/10 shadow-[inset_0_1px_0_rgb(255_255_255/0.82),0_8px_22px_rgb(39_100_255/0.16)] dark:border-brand/25 dark:bg-brand/14',
+        className,
+      )}
+    >
+      <BrandMark className="size-10 object-contain" />
+    </span>
+  )
 }
 
 function UserAvatar({

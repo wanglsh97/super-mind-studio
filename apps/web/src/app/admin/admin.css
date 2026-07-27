@@ -65,8 +65,13 @@
 .aigateway-admin-brand-mark {
   width: 32px;
   height: 32px;
+  padding: 2px;
   object-fit: contain;
   flex-shrink: 0;
+  border: 1px solid rgba(39, 100, 255, 0.16);
+  border-radius: 9px;
+  background: rgba(39, 100, 255, 0.08);
+  box-shadow: 0 4px 12px rgba(39, 100, 255, 0.12);
 }
 
 .aigateway-admin-brand-text {

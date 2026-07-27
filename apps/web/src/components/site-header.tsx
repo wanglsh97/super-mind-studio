@@ -44,7 +44,9 @@ export function SiteHeader() {
           className="inline-flex items-center gap-2.5 rounded-md font-semibold tracking-tight text-[#211b32] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#7057e8] dark:text-white"
           aria-label="Super Mind Studio Agent 工作台"
         >
-          <BrandMark className="size-8 shrink-0 object-contain" />
+          <span className="grid size-9 shrink-0 place-items-center rounded-xl border border-[#2764ff]/15 bg-[#2764ff]/8 shadow-[inset_0_1px_0_rgb(255_255_255/0.85),0_6px_18px_rgb(39_100_255/0.14)] dark:border-[#9a86ff]/25 dark:bg-[#9a86ff]/12">
+            <BrandMark className="size-8 object-contain" />
+          </span>
           <span>Super Mind Studio</span>
         </Link>
 

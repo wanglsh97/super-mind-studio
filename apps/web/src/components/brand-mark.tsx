@@ -10,8 +10,8 @@ export function BrandMark({ alt = '', className }: BrandMarkProps) {
     <Image
       src="/brand/super-mind-studio-mark.png"
       alt={alt}
-      width={380}
-      height={380}
+      width={340}
+      height={340}
       className={className}
       draggable={false}
     />
