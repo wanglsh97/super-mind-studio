@@ -25,7 +25,6 @@ const shellIconButtonClass =
 const navigation = [
   { href: '/', label: '智能体', description: '对话与多步任务', icon: AgentIcon },
   { href: '/skills', label: '技能', description: '查看已安装能力', icon: SparkIcon },
-  { href: '/api', label: 'API', description: '接入网关能力', icon: ApiIcon },
 ]
 
 export function AppShell({ children }: Readonly<{ children: ReactNode }>) {
@@ -657,13 +656,6 @@ function SparkIcon() {
     <Icon>
       <path d="m12 3 1.2 3.8L17 8l-3.8 1.2L12 13l-1.2-3.8L7 8l3.8-1.2L12 3Z" />
       <path d="m18 14 .8 2.2L21 17l-2.2.8L18 20l-.8-2.2L15 17l2.2-.8L18 14ZM5 13l.7 1.8 1.8.7-1.8.7L5 18l-.7-1.8-1.8-.7 1.8-.7L5 13Z" />
-    </Icon>
-  )
-}
-function ApiIcon() {
-  return (
-    <Icon>
-      <path d="m8 9-3 3 3 3M16 9l3 3-3 3M14 5l-4 14" />
     </Icon>
   )
 }

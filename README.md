@@ -49,6 +49,8 @@ pnpm dev
 
 C 端不再提供 `/image` 与 `/prompt` 页面，访问这两个地址直接返回 404，不做兼容跳转。Image/Prompt 的 API、SDK、数据库记录和管理端日志仍保留，供 Agent 工具化或后续内部场景复用。
 
+C 端 `/api` 展示页也已移除并直接返回 404。该页面删除不影响同源 `/api/v1/*` 网关、API 服务上的 Swagger/OpenAPI、`@supermind/sdk` 或仓库内开发文档。
+
 ## Agent Skill 市场
 
 登录后访问 `/skills` 可以安装、启用、停用或卸载平台维护的 Skill。Skill 内容来自 API 仓库内经过审核的清单，服务启动时会校验 ID、版本、字段长度和工具引用；系统不会扫描本地目录、下载远程包、执行 Skill 代码或把 Skill 当成新的工具权限。

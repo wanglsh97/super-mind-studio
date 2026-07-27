@@ -30,4 +30,4 @@
 ## 6. API 展示页退役
 
 - [x] 6.1 更新 proposal、design 和 user-workspace-routing，明确删除 `/api` C 端页面但保留 `/api/v1/*`、Swagger 与 SDK，并通过 strict validation
-- [ ] 6.2 删除 `/api` 页面、侧栏入口和专属图标，运行 Web test、typecheck、lint、build、dev 404 冒烟和 OpenSpec strict validation
+- [x] 6.2 删除 `/api` 页面、侧栏入口和专属图标，运行 Web test、typecheck、lint、build、dev 404 冒烟和 OpenSpec strict validation

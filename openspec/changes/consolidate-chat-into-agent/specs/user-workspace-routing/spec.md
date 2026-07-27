@@ -30,7 +30,7 @@ The existing `/chat/compare` route SHALL remain available to authenticated users
 
 ### Requirement: The C-end workspace is dedicated to Agent
 
-The user-facing workspace SHALL NOT expose standalone marketing, Agent alias, Image, Prompt optimization, or API showcase pages or primary navigation items. The root route SHALL render the authenticated Agent workspace directly. `/agent`, `/image`, `/prompt`, and the C-end `/api` page SHALL have no Next.js page implementation and SHALL return not found rather than redirecting. The underlying `/api/v1/*` Gateway, Swagger, and SDK capabilities SHALL remain available for Agent integration, developer documentation, and administrative observability.
+The user-facing workspace SHALL NOT expose standalone marketing, Agent alias, Image, Prompt optimization, or API showcase pages or primary navigation items. The root route SHALL render the authenticated Agent workspace directly. `/agent`, `/image`, `/prompt`, and the C-end `/api` page SHALL have no Next.js page implementation and SHALL return not found rather than redirecting. `/api` MAY return the API proxy's JSON not-found envelope because the proxy owns that prefix. The underlying `/api/v1/*` Gateway, Swagger, and SDK capabilities SHALL remain available for Agent integration, developer documentation, and administrative observability.
 
 #### Scenario: User opens the root route
 
@@ -43,7 +43,7 @@ The user-facing workspace SHALL NOT expose standalone marketing, Agent alias, Im
 
 - **GIVEN** the Agent workspace has moved to `/`
 - **WHEN** a user requests `/agent`
-- **THEN** Next.js returns its not-found response
+- **THEN** the request returns a not-found response without rendering a C-end page
 - **AND** it does not redirect
 
 #### Scenario: User opens a retired Image URL
@@ -64,7 +64,7 @@ The user-facing workspace SHALL NOT expose standalone marketing, Agent alias, Im
 
 - **GIVEN** the C-end API showcase page has been removed
 - **WHEN** a user requests `/api`
-- **THEN** Next.js returns its not-found response
+- **THEN** the request returns a not-found response without rendering a C-end page
 - **AND** requests under `/api/v1/*` remain governed by the existing Gateway proxy and API authentication
 
 #### Scenario: User signs in without an allowed return target
