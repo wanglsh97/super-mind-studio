@@ -3,6 +3,7 @@ import type { AgentMemoryProvider } from '../memory/agent-memory.provider'
 import type { AgentSkillRegistry } from '../skills/agent-skill.registry'
 import type { AgentToolDefinition } from '../tools/agent-tool'
 import { AgentToolRegistry } from '../tools/agent-tool.registry'
+import { createWebSearchTool } from '../tools/web-search.tool'
 import {
   AGENT_PROMPT_PROFILE_VERSION,
   AgentPromptComposer,
@@ -89,6 +90,37 @@ describe('AgentPromptComposer', () => {
     expect(result.systemPrompt).not.toContain('<candidate_skills>')
     expect(result.systemPrompt).not.toContain('<memory_context>')
     expect(result.systemPrompt).not.toContain('<mcp_context>')
+  })
+
+  it('exposes only the provider-neutral web_search capability to the model', async () => {
+    const composer = new AgentPromptComposer(
+      new AgentToolRegistry([
+        createWebSearchTool({
+          providerMode: 'auto',
+          timeoutMs: 25_000,
+          maxResponseBytes: 2_097_152,
+          maxOutputChars: 30_000,
+        }),
+      ]),
+      { listCandidates: async () => [] },
+      { listServers: () => [] },
+      { recall: async () => [] },
+    )
+    const result = await composer.compose({
+      userId: 'u1',
+      threadId: 't1',
+      modelId: 'mock',
+      provider: 'mock',
+      contextWindowTokens: 100_000,
+      now: new Date('2026-07-26T00:00:00.000Z'),
+    })
+
+    expect(result.manifest.toolNames).toEqual(['web_search'])
+    expect(result.systemPrompt).toContain(
+      '- web_search [risk=external_send, approval=none]:',
+    )
+    expect(result.systemPrompt).not.toContain('web_search_exa')
+    expect(result.systemPrompt).not.toContain('Parallel Web Search')
   })
 
   it('matches the reviewed V4 English golden prompt hash', async () => {
