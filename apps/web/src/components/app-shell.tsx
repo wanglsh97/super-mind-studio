@@ -23,7 +23,7 @@ const shellIconButtonClass =
   'liquid-glass-soft grid size-9 shrink-0 place-items-center rounded-xl text-ink-muted transition-[background,color,transform] hover:-translate-y-0.5 hover:text-brand-hover dark:hover:text-ink [&_svg]:size-4'
 
 const navigation = [
-  { href: '/agent', label: '智能体', description: '对话与多步任务', icon: AgentIcon },
+  { href: '/', label: '智能体', description: '对话与多步任务', icon: AgentIcon },
   { href: '/skills', label: '技能', description: '查看已安装能力', icon: SparkIcon },
   { href: '/api', label: 'API', description: '接入网关能力', icon: ApiIcon },
 ]
@@ -126,9 +126,9 @@ function UserWorkspace({ children }: Readonly<{ children: ReactNode }>) {
             const active =
               pathname === item.href ||
               pathname.startsWith(`${item.href}/`) ||
-              (item.href === '/agent' && pathname === '/chat/compare')
+              (item.href === '/' && pathname === '/chat/compare')
             const Icon = item.icon
-            if (item.href === '/agent') {
+            if (item.href === '/') {
               return (
                 <AgentNavGroup
                   key={item.href}
@@ -342,7 +342,7 @@ function AgentNavGroup({
   return (
     <div className={active ? 'is-active' : undefined}>
       <SidebarNavLink
-        href="/agent"
+        href="/"
         active={active}
         collapsed={collapsed}
         label={label}
@@ -407,7 +407,7 @@ function AgentThreadLinks() {
       aria-label="Agent 会话"
     >
       <Link
-        href="/agent"
+        href="/"
         className="block w-full rounded-lg border border-dashed border-line px-2.5 py-2 text-left text-[0.78rem] font-semibold text-ink-secondary transition-colors hover:border-brand hover:bg-brand/6 hover:text-ink-secondary dark:border-line-soft dark:text-ink-dark-muted dark:hover:text-ink"
       >
         + 新建会话
@@ -424,7 +424,7 @@ function AgentThreadLinks() {
       ) : null}
       <ul className="m-0 flex list-none flex-col gap-0.5 p-0">
         {threads.map((thread) => {
-          const href = `/agent?thread=${encodeURIComponent(thread.id)}`
+          const href = `/?thread=${encodeURIComponent(thread.id)}`
           const isActive = thread.id === activeThreadId
           const isRenaming = renamingId === thread.id
           return (
@@ -570,7 +570,7 @@ function Brand({ compact = false }: Readonly<{ compact?: boolean }>) {
   return (
     <Link
       href="/"
-      aria-label="Super Mind Studio 首页"
+      aria-label="Super Mind Studio Agent 工作台"
       className={cn('inline-flex min-w-0 items-center gap-3 rounded-xl', focusRing)}
     >
       <LogoMark />

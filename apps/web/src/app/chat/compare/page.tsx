@@ -116,7 +116,7 @@ function ChatCompareContent() {
             </p>
           </div>
           <Link
-            href="/agent"
+            href="/"
             className="rounded-full border border-slate-200 px-4 py-2 text-sm dark:border-white/10"
           >
             返回智能体

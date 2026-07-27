@@ -56,7 +56,7 @@ export class UserAuthController {
   @ApiQuery({
     name: 'returnTo',
     required: false,
-    enum: ['/chat', '/chat/compare', '/image', '/prompt'],
+    enum: ['/', '/chat/compare'],
   })
   @ApiFoundResponse({ description: '跳转到 GitHub authorize URL，并写入一次性 state Cookie' })
   @ApiServiceUnavailableResponse({ description: 'GitHub OAuth 尚未配置' })
@@ -165,7 +165,7 @@ export class UserAuthController {
     }
   }
 
-  private loginErrorUrl(error: string, returnTo = '/chat'): string {
+  private loginErrorUrl(error: string, returnTo = '/'): string {
     const url = new URL('/login', this.webOrigin)
     url.searchParams.set('error', error)
     url.searchParams.set('returnTo', returnTo)

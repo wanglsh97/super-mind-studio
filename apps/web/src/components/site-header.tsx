@@ -8,7 +8,7 @@ import { logoutUser, sanitizeUserReturnTo } from '../lib/user-auth-client'
 import { ThemeToggle } from './theme-toggle'
 import { useUserSession } from './user-session-provider'
 
-const navigation = [{ href: '/agent', label: 'Agent' }]
+const navigation = [{ href: '/', label: 'Agent' }]
 
 export function SiteHeader() {
   const router = useRouter()
@@ -41,7 +41,7 @@ export function SiteHeader() {
         <Link
           href="/"
           className="inline-flex items-center gap-2.5 rounded-md font-semibold tracking-tight text-[#211b32] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#7057e8] dark:text-white"
-          aria-label="Super Mind Studio 首页"
+          aria-label="Super Mind Studio Agent 工作台"
         >
           <span className="grid h-8 w-8 rotate-45 place-items-center rounded-[0.55rem] bg-[#7057e8] text-xs font-bold text-white shadow-sm">
             <span className="-rotate-45">SM</span>

@@ -44,7 +44,7 @@ export function AgentWorkspaceProvider({ children }: Readonly<{ children: ReactN
   const session = useUserSession()
   const router = useRouter()
   const pathname = usePathname()
-  const onAgentRoute = pathname === '/agent' || pathname.startsWith('/agent/')
+  const onAgentRoute = pathname === '/'
 
   const [threads, setThreads] = useState<AgentThreadSummary[]>([])
   const [models, setModels] = useState<ModelSummary[]>([])
@@ -92,14 +92,14 @@ export function AgentWorkspaceProvider({ children }: Readonly<{ children: ReactN
   }, [onAgentRoute, session.status])
 
   const startNewThread = useCallback(() => {
-    router.push('/agent')
+    router.push('/')
   }, [router])
 
   const openThread = useCallback(
     (threadId: string) => {
       const thread = threads.find((item) => item.id === threadId)
       if (thread) setSelectedModel(thread.model)
-      router.push(`/agent?thread=${encodeURIComponent(threadId)}`)
+      router.push(`/?thread=${encodeURIComponent(threadId)}`)
     },
     [router, threads],
   )
@@ -125,7 +125,7 @@ export function AgentWorkspaceProvider({ children }: Readonly<{ children: ReactN
       setThreads((current) => current.filter((item) => item.id !== threadId))
       const params = new URLSearchParams(window.location.search)
       if (params.get('thread') === threadId) {
-        router.push('/agent')
+        router.push('/')
       }
     },
     [router],
@@ -179,6 +179,6 @@ export function useAgentWorkspace(): AgentWorkspaceValue {
 export function useAgentActiveThreadId(): string | null {
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  if (pathname !== '/agent' && !pathname.startsWith('/agent/')) return null
+  if (pathname !== '/') return null
   return searchParams.get('thread')
 }

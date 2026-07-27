@@ -56,7 +56,7 @@ describe('UserAuthController', () => {
     const { controller } = setup()
     const response = responseDouble()
 
-    controller.beginGitHubLogin('/image', response)
+    controller.beginGitHubLogin('/', response)
 
     expect(response.cookie).toHaveBeenCalledWith(
       OAUTH_STATE_COOKIE,
@@ -73,7 +73,7 @@ describe('UserAuthController', () => {
   it('consumes state, creates a database session, and redirects on successful callback', async () => {
     const { authenticate, controller, create } = setup()
     const beginResponse = responseDouble()
-    controller.beginGitHubLogin('/prompt', beginResponse)
+    controller.beginGitHubLogin('/', beginResponse)
     const stateCookie = (beginResponse.cookie as jest.Mock).mock.calls[0]?.[1] as string
     const authorizeUrl = new URL((beginResponse.redirect as jest.Mock).mock.calls[0]?.[1] as string)
     const response = responseDouble()
@@ -97,7 +97,7 @@ describe('UserAuthController', () => {
       'session-token',
       expect.objectContaining({ httpOnly: true, path: '/api/v1', maxAge: 2_592_000_000 }),
     )
-    expect(response.redirect).toHaveBeenCalledWith(302, 'http://localhost:3000/prompt')
+    expect(response.redirect).toHaveBeenCalledWith(302, 'http://localhost:3000/')
   })
 
   it('does not call GitHub when state is invalid or replayed', async () => {
@@ -115,7 +115,7 @@ describe('UserAuthController', () => {
     expect(authenticate).not.toHaveBeenCalled()
     expect(response.redirect).toHaveBeenCalledWith(
       302,
-      'http://localhost:3000/login?error=oauth_failed&returnTo=%2Fchat',
+      'http://localhost:3000/login?error=oauth_failed&returnTo=%2F',
     )
   })
 

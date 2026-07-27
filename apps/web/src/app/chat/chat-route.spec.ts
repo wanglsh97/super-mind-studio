@@ -6,8 +6,8 @@ import { CHAT_ROUTE_DESTINATION } from './chat-route'
 
 describe('retired Chat route policy', () => {
   it('uses Agent as the canonical ordinary conversation destination', () => {
-    assert.equal(CHAT_ROUTE_DESTINATION, '/agent')
-    assert.equal(sanitizeUserReturnTo('/chat'), '/agent')
+    assert.equal(CHAT_ROUTE_DESTINATION, '/')
+    assert.equal(sanitizeUserReturnTo('/chat'), '/')
     assert.equal(sanitizeUserReturnTo(null), CHAT_ROUTE_DESTINATION)
   })
 

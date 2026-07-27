@@ -1,7 +1,7 @@
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto'
 
 const OAUTH_STATE_TTL_MS = 10 * 60 * 1_000
-const SAFE_RETURN_PATHS = new Set(['/chat', '/chat/compare', '/image', '/prompt'])
+const SAFE_RETURN_PATHS = new Set(['/', '/chat/compare'])
 
 interface OAuthStatePayload {
   nonce: string
@@ -64,8 +64,8 @@ export class OAuthStateService {
 }
 
 export function sanitizeReturnTo(value: string | undefined): string {
-  if (!value) return '/chat'
-  return SAFE_RETURN_PATHS.has(value) ? value : '/chat'
+  if (!value) return '/'
+  return SAFE_RETURN_PATHS.has(value) ? value : '/'
 }
 
 function parsePayload(value: string): OAuthStatePayload {

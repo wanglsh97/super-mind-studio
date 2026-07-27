@@ -1,1 +1,1 @@
-export const CHAT_ROUTE_DESTINATION = '/agent' as const
+export const CHAT_ROUTE_DESTINATION = '/' as const
