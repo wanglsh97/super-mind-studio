@@ -1,12 +1,12 @@
 import type { AgentSkillMarketItem } from '@aigateway/sdk'
 import { Inject, Injectable, NotFoundException } from '@nestjs/common'
 
-import type { AgentSkillDescriptor, AgentSkillRegistry } from './agent-skill.registry'
+import type { AgentSkillDescriptor } from './agent-skill.registry'
 import { AgentSkillRepository } from './agent-skill.repository'
 import { PlatformAgentSkillCatalog } from './platform-agent-skill.catalog'
 
 @Injectable()
-export class AgentSkillService implements AgentSkillRegistry {
+export class AgentSkillService {
   constructor(
     @Inject(PlatformAgentSkillCatalog) private readonly catalog: PlatformAgentSkillCatalog,
     @Inject(AgentSkillRepository) private readonly repository: AgentSkillRepository,

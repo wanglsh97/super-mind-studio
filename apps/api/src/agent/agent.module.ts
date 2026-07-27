@@ -107,7 +107,7 @@ export function createSandboxRuntime(
     PlatformAgentSkillCatalog,
     AgentSkillRepository,
     AgentSkillService,
-    { provide: AGENT_SKILL_REGISTRY, useExisting: AgentSkillService },
+    { provide: AGENT_SKILL_REGISTRY, useExisting: ExecutableSkillService },
     ExecutableSkillRepository,
     ExecutableSkillService,
     ExecutableSkillBootstrap,

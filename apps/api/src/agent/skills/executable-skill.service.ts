@@ -5,6 +5,7 @@ import {
   SKILL_OBJECT_STORE_PORT,
   type SkillObjectStorePort,
 } from './storage/skill-object-store.port'
+import type { AgentSkillRegistry } from './agent-skill.registry'
 import type {
   ExecutableSkillRecord,
   ExecutableSkillRepositoryPort,
@@ -27,7 +28,7 @@ export interface ActivatedSkill {
 }
 
 @Injectable()
-export class ExecutableSkillService {
+export class ExecutableSkillService implements AgentSkillRegistry {
   constructor(
     @Inject(ExecutableSkillRepository)
     private readonly repository: ExecutableSkillRepositoryPort,
