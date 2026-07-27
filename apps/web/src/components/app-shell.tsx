@@ -369,7 +369,11 @@ function AgentThreadLinks() {
           return (
             <li
               key={thread.id}
-              className="group relative grid grid-cols-[minmax(0,1fr)_auto] items-center gap-0.5"
+              className={cn(
+                'group relative grid grid-cols-[minmax(0,1fr)_auto] items-center gap-0.5 rounded-lg border border-transparent pr-1 transition-colors hover:bg-brand/6 dark:hover:bg-brand/12',
+                isActive &&
+                  'border-brand-muted/55 bg-brand-muted/16 dark:border-[#5b4d88] dark:bg-brand/18',
+              )}
             >
               {isRenaming ? (
                 <form
@@ -408,9 +412,8 @@ function AgentThreadLinks() {
                     title={thread.title}
                     aria-current={isActive ? 'page' : undefined}
                     className={cn(
-                      'block min-w-0 truncate rounded-lg px-2.5 py-2 text-left text-[0.78rem] text-ink-secondary transition-colors hover:bg-brand/6 dark:text-ink-dark-muted dark:hover:bg-brand/12 dark:hover:text-ink',
-                      isActive &&
-                        'border border-brand-muted/55 bg-brand-muted/16 font-semibold text-ink-secondary dark:border-[#5b4d88] dark:bg-brand/18 dark:text-ink',
+                      'block min-w-0 truncate rounded-lg px-2.5 py-2 text-left text-[0.78rem] text-ink-secondary transition-colors dark:text-ink-dark-muted dark:hover:text-ink',
+                      isActive && 'font-semibold text-ink-secondary dark:text-ink',
                     )}
                   >
                     {thread.title}
@@ -420,6 +423,7 @@ function AgentThreadLinks() {
                       type="button"
                       className={cn(
                         'grid size-7 place-items-center rounded-lg text-ink-faint opacity-0 transition-[background,color,opacity] hover:bg-surface-inset hover:text-ink-secondary group-hover:opacity-100 group-focus-within:opacity-100 dark:hover:bg-brand/12 dark:hover:text-ink',
+                        isActive && 'opacity-100',
                         actionsOpen && 'bg-surface-inset text-ink-secondary opacity-100',
                         focusRing,
                       )}
