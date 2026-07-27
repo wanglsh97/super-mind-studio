@@ -61,7 +61,7 @@ export class FakeSandboxRuntime implements SandboxRuntimePort {
   private sandboxSequence = 0
 
   constructor(options: FakeSandboxRuntimeOptions = {}) {
-    this.now = options.now ?? (() => new Date('2000-01-01T00:00:00.000Z'))
+    this.now = options.now ?? (() => new Date())
     this.commands = new Map((options.commands ?? []).map((fixture) => [fixture.command, fixture]))
   }
 
@@ -74,7 +74,7 @@ export class FakeSandboxRuntime implements SandboxRuntimePort {
     const limits = { ...DEFAULT_SANDBOX_LIMITS, ...input.limits }
     validateLimits(limits)
     const createdAt = this.now()
-    const sandboxId = `fake-${input.runId}-${++this.sandboxSequence}`
+    const sandboxId = `fake-${input.threadId ?? input.runId}-${++this.sandboxSequence}`
     const state: SandboxState = {
       descriptor: {
         sandboxId,
@@ -270,6 +270,25 @@ export class FakeSandboxRuntime implements SandboxRuntimePort {
   async getUsage(sandboxId: string, signal?: AbortSignal): Promise<SandboxUsage> {
     throwIfAborted(signal)
     return { ...this.requireSandbox(sandboxId).usage }
+  }
+
+  async resetRunState(sandboxId: string, signal?: AbortSignal): Promise<void> {
+    throwIfAborted(signal)
+    const state = this.requireSandbox(sandboxId)
+    this.assertUsable(state)
+    const diskBytes = [...state.files.values()].reduce(
+      (total, bytes) => total + bytes.byteLength,
+      0,
+    )
+    state.usage = {
+      shellCalls: 0,
+      returnedOutputBytes: 0,
+      outboundBytes: 0,
+      diskBytes,
+      peakMemoryBytes: 0,
+      peakProcesses: 0,
+    }
+    state.descriptor.status = 'ready'
   }
 
   async cancelSandbox(sandboxId: string, signal?: AbortSignal): Promise<void> {

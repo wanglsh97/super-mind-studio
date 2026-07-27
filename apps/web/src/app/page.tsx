@@ -8,6 +8,7 @@ import type {
   AgentSandboxStatus,
   AgentSkillCandidate,
   AgentStreamEvent,
+  AgentThreadSandbox,
   TextModelAlias,
   TextModelId,
 } from '@supermind/sdk'
@@ -170,7 +171,15 @@ function AgentConsole() {
     })
   }
   contextRef.current.onRunFinished = () => {
-    setSandboxTelemetry((current) => (current.status === 'failed' ? current : { status: 'idle' }))
+    setSandboxTelemetry((current) =>
+      current.status === 'failed'
+        ? current
+        : current.status === 'ready'
+          ? current.sandboxId
+            ? { status: 'standby', sandboxId: current.sandboxId }
+            : { status: 'idle' }
+          : { status: 'idle' },
+    )
     setUserActiveRun(null)
     void refreshThreads().catch(() => undefined)
   }
@@ -274,7 +283,7 @@ function AgentConsole() {
             ...(sandboxId === undefined ? {} : { sandboxId }),
           })
         }
-        onSandboxIdle={() => setSandboxTelemetry({ status: 'idle' })}
+        onSandboxSnapshot={(sandbox) => setSandboxTelemetry(toSandboxTelemetry(sandbox))}
       />
       <WebFetchToolUI />
       <ShellToolUI />
@@ -405,7 +414,10 @@ function AgentConsole() {
   )
 }
 
-type SandboxTelemetry = { status: 'idle' } | { status: AgentSandboxStatus; sandboxId?: string }
+type SandboxTelemetry =
+  | { status: 'idle' }
+  | { status: 'standby'; sandboxId: string }
+  | { status: AgentSandboxStatus; sandboxId?: string }
 
 const SANDBOX_STATUS_COPY: Record<
   SandboxTelemetry['status'],
@@ -416,6 +428,12 @@ const SANDBOX_STATUS_COPY: Record<
     note: '随任务创建',
     tone: 'text-ink-muted',
     dot: 'bg-ink-subtle/45',
+  },
+  standby: {
+    label: '空闲可用',
+    note: '等待下一轮任务',
+    tone: 'text-success',
+    dot: 'bg-success',
   },
   creating: {
     label: '启动中',
@@ -481,6 +499,14 @@ function SandboxStatusModule({ telemetry }: { telemetry: SandboxTelemetry }) {
   )
 }
 
+function toSandboxTelemetry(sandbox: AgentThreadSandbox | null): SandboxTelemetry {
+  if (!sandbox) return { status: 'idle' }
+  if (sandbox.status === 'idle' || sandbox.status === 'ready') {
+    return { status: 'standby', sandboxId: sandbox.id }
+  }
+  return { status: sandbox.status, sandboxId: sandbox.id }
+}
+
 function ThreadHydrator({
   skipHydrationRef,
   onContextBudget,
@@ -488,7 +514,7 @@ function ThreadHydrator({
   onCompressionEvent,
   onResetCompressionEvents,
   onSandboxStatus,
-  onSandboxIdle,
+  onSandboxSnapshot,
 }: {
   skipHydrationRef: { current: boolean }
   onContextBudget: (budget: AgentContextBudgetState | null) => void
@@ -496,7 +522,7 @@ function ThreadHydrator({
   onCompressionEvent: (event: Extract<AgentStreamEvent, { type: 'context-compressed' }>) => void
   onResetCompressionEvents: () => void
   onSandboxStatus: (status: AgentSandboxStatus, sandboxId?: string) => void
-  onSandboxIdle: () => void
+  onSandboxSnapshot: (sandbox: AgentThreadSandbox | null) => void
 }) {
   const api = useAui()
   const activeThreadId = useAgentActiveThreadId()
@@ -524,7 +550,7 @@ function ThreadHydrator({
           onContextBudget(null)
           onContextSummary(null)
           onResetCompressionEvents()
-          onSandboxIdle()
+          onSandboxSnapshot(null)
           return
         }
         const thread = await client.agent.threads.get(activeThreadId)
@@ -544,6 +570,7 @@ function ThreadHydrator({
           let view = initialAgentRunViewState()
           let afterSequence = -1
           let sandboxFailed = false
+          let sandboxId: string | undefined
           for await (const event of client.agent.runs.subscribe(thread.activeRun.id, {
             after: -1,
             signal: resumeAbort.signal,
@@ -554,6 +581,7 @@ function ThreadHydrator({
             if (event.type === 'context-compressed') onCompressionEvent(event)
             if (event.type === 'sandbox-status') {
               sandboxFailed = event.status === 'failed'
+              if (event.sandboxId) sandboxId = event.sandboxId
               onSandboxStatus(event.status, event.sandboxId)
             }
             afterSequence = event.sequence
@@ -565,7 +593,15 @@ function ThreadHydrator({
                 ),
               )
             if (event.type === 'run-terminal') {
-              if (!sandboxFailed) onSandboxIdle()
+              if (!sandboxFailed && sandboxId) {
+                onSandboxSnapshot({
+                  id: sandboxId,
+                  status: 'idle',
+                  createdAt: new Date().toISOString(),
+                  lastUsedAt: new Date().toISOString(),
+                  expiresAt: new Date().toISOString(),
+                })
+              }
               setResumeNotice(null)
               setUserActiveRun(null)
               void refreshThreads().catch(() => undefined)
@@ -582,7 +618,7 @@ function ThreadHydrator({
         )
         if (thread.activeRun) setUserActiveRun(thread.activeRun)
         else setUserActiveRun(null)
-        onSandboxIdle()
+        onSandboxSnapshot(thread.sandbox)
         api.thread().reset(
           agentMessagesToThreadMessages(thread.messages, {
             lastRunStatus: thread.lastRun?.status ?? null,

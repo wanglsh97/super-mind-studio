@@ -5,6 +5,7 @@ import type {
   AgentRunLimitReason,
   AgentRunStatus,
   AgentRunSummary,
+  AgentThreadSandbox,
   AgentThreadSummary,
   AgentContextSummary as AgentContextSummaryDto,
 } from '@supermind/sdk'
@@ -78,6 +79,25 @@ export function toRunSummary(run: AgentRun): AgentRunSummary {
     createdAt: run.createdAt.toISOString(),
     startedAt: run.startedAt ? run.startedAt.toISOString() : null,
     completedAt: run.completedAt ? run.completedAt.toISOString() : null,
+  }
+}
+
+export function toThreadSandbox(row: AgentThreadSummaryRow): AgentThreadSandbox | null {
+  if (
+    !row.sandboxId ||
+    !row.sandboxCreatedAt ||
+    !row.sandboxLastUsedAt ||
+    !row.sandboxExpiresAt ||
+    !['creating', 'ready', 'idle', 'failed'].includes(row.sandboxStatus ?? '')
+  ) {
+    return null
+  }
+  return {
+    id: row.sandboxId,
+    status: row.sandboxStatus as AgentThreadSandbox['status'],
+    createdAt: row.sandboxCreatedAt.toISOString(),
+    lastUsedAt: row.sandboxLastUsedAt.toISOString(),
+    expiresAt: row.sandboxExpiresAt.toISOString(),
   }
 }
 

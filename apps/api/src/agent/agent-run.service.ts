@@ -131,6 +131,7 @@ export class AgentRunService {
       try {
         const sandboxId = await this.executionSessions.startRun(
           input.runId,
+          input.threadId,
           input.userId,
           controller.signal,
         )
@@ -419,8 +420,8 @@ export class AgentRunService {
         this.logger.error({ error: finalizeError, runId: input.runId }, 'Agent finalize failed')
       })
     } finally {
-      await this.executionSessions.destroyRun(input.runId).catch((error) => {
-        this.logger.error({ error, runId: input.runId }, 'Agent sandbox cleanup failed')
+      await this.executionSessions.finishRun(input.runId).catch((error) => {
+        this.logger.error({ error, runId: input.runId }, 'Agent Thread sandbox release failed')
       })
       this.activeRuns.delete(input.runId)
       this.bus.close(input.runId)

@@ -101,6 +101,7 @@ export type {
   AgentTextPart,
   AgentThread,
   AgentThreadListPage,
+  AgentThreadSandbox,
   AgentThreadSummary,
   AgentToolCallPart,
   AgentToolCallStatus,

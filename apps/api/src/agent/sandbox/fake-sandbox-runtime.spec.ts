@@ -2,8 +2,46 @@ import { DEFAULT_SANDBOX_LIMITS } from './sandbox-runtime.port'
 import { FakeSandboxRuntime } from './fake-sandbox-runtime'
 
 describe('FakeSandboxRuntime', () => {
+  it('resets per-Run counters while preserving the Thread workspace', async () => {
+    const runtime = new FakeSandboxRuntime({
+      commands: [{ command: 'echo run', stdout: 'ok\n', outboundBytes: 12 }],
+    })
+    const sandbox = await runtime.createSandbox({
+      runId: 'run-1',
+      threadId: 'thread-1',
+      limits: { sandboxTimeoutMs: 1_800_000 },
+    })
+    await runtime.waitUntilReady(sandbox.sandboxId)
+    await runtime.writeFile({
+      sandboxId: sandbox.sandboxId,
+      path: '/workspace/work/retained.txt',
+      bytes: new TextEncoder().encode('retained'),
+    })
+    await runtime.runCommand({
+      sandboxId: sandbox.sandboxId,
+      command: 'echo run',
+      workingDirectory: '/workspace/work',
+    })
+    expect(await runtime.getUsage(sandbox.sandboxId)).toMatchObject({
+      shellCalls: 1,
+      outboundBytes: 12,
+    })
+
+    await runtime.resetRunState(sandbox.sandboxId)
+
+    expect(await runtime.getUsage(sandbox.sandboxId)).toMatchObject({
+      shellCalls: 0,
+      outboundBytes: 0,
+      returnedOutputBytes: 0,
+    })
+    await expect(
+      runtime.readFile(sandbox.sandboxId, '/workspace/work/retained.txt'),
+    ).resolves.toMatchObject({ sizeBytes: 8 })
+  })
+
   it('creates one deterministic sandbox and supports command, file, usage and idempotent destroy', async () => {
     const runtime = new FakeSandboxRuntime({
+      now: () => new Date('2000-01-01T00:00:00.000Z'),
       commands: [{ command: 'node clean.mjs', stdout: 'done\n', durationMs: 25 }],
     })
     const created = await runtime.createSandbox({ runId: 'run-1' })

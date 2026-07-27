@@ -14,14 +14,14 @@ The user explicitly approved breaking the V1 single-ECS deployment rule. Busines
 - Deliver upload, first review, discovery, add/remove, manual activation, automatic activation, Shell, Run files and persistent result downloads as one auditable vertical capability.
 - Keep PostgreSQL as metadata truth, private OSS as binary truth and OpenSandbox as replaceable execution infrastructure.
 - Preserve the existing server-side Pi Agent loop, cursor event replay, user ownership and cancellation semantics.
-- Enforce deterministic Run-level compute, time, file, traffic and output budgets outside model instructions.
+- Enforce deterministic Thread-sandbox compute/lifetime budgets and independently reset Run-level traffic, Shell and output budgets outside model instructions.
 
 **Non-Goals:**
 
 - No Skill rating, comments, favorites, reports, recommendation ranking or paid marketplace.
 - No version history, rollback, post-publication review, update approval or immutable package revision.
 - No per-call Shell approval, Skill-specific network allowlist or Secret Vault.
-- No persistent sandbox across Runs, user-global Linux workspace, Kubernetes deployment or background job queue.
+- No user-global Linux workspace, sandbox persistence beyond one Thread, Kubernetes deployment or background job queue.
 - No public ZIP download or public script-source viewer.
 - No replacement of the existing fixed administrator authentication in this change.
 
@@ -65,13 +65,13 @@ Client-side folder preparation and server-side package inspection enforce the ac
 
 ### Decision 5: Added Skills are candidates; activation is a runtime transition
 
-The initial model context receives a bounded catalog of at most 50 added published Skill names and descriptions plus the `activate_skill` tool. Manual selection is integrated into the Agent Composer: typing `/` opens a searchable list of added published Skills, and the selected Skills remain visible as removable tags inside the Composer. A manually selected Skill activates before the first main model invocation. Activation validates user add state and current publication, creates a short-lived read-only URL for the exact private OSS object, downloads it into the Run sandbox, verifies size and SHA-256, installs the package under `/workspace/skills/<name>` and adds the complete escaped `SKILL.md` read from that package to subsequent context. The URL is never persisted or logged.
+The initial model context receives a bounded catalog of at most 50 added published Skill names and descriptions plus the `activate_skill` tool. Manual selection is integrated into the Agent Composer: typing `/` opens a searchable list of added published Skills, and the selected Skills remain visible as removable tags inside the Composer. A manually selected Skill activates before the first main model invocation. Activation validates user add state and current publication, creates a short-lived read-only URL for the exact private OSS object, downloads it into the Thread sandbox, verifies size and SHA-256, installs the package under `/workspace/skills/<name>` and adds the complete escaped `SKILL.md` read from that package to subsequent context. The URL is never persisted or logged. Package files may remain in the Thread workspace between Runs, but every Run re-authorizes activation and rebuilds its own active-Skill manifest; retained bytes never imply retained permission.
 
 A Skill activates at most once per Run. There is no separate active-Skill count; context and Run budgets are authoritative. The manifest records the observed package hash because no retained revision is available after overwrite.
 
 ### Decision 6: OpenSandbox implements a vendor-neutral execution port
 
-`SandboxRuntimePort` owns create, wait-ready, scoped package download/install, command, file, cancel, metrics and destroy contracts. The first adapter uses the OpenSandbox TypeScript SDK. NestJS and SDK public types do not expose OpenSandbox-specific response objects. Package bytes flow from private OSS to the Run sandbox and remain ephemeral; NestJS may inspect bytes in deterministic adapters or verification paths but does not persist them in PostgreSQL.
+`SandboxRuntimePort` owns create, wait-ready, scoped package download/install, command, file, cancel, per-Run budget reset, metrics and destroy contracts. The first adapter uses the OpenSandbox TypeScript SDK. NestJS and SDK public types do not expose OpenSandbox-specific response objects. Package bytes flow from private OSS to the Thread sandbox and remain ephemeral; NestJS may inspect bytes in deterministic adapters or verification paths but does not persist them in PostgreSQL.
 
 Deployment uses a dedicated Alibaba Cloud ECS execution node:
 
@@ -85,15 +85,17 @@ PostgreSQL/Redis                    Docker + gVisor
 
 OpenSandbox is selected over E2B and Daytona after research: it is Apache-2.0, self-hostable with Docker, exposes command/file APIs and secure runtimes, and fits Alibaba Cloud deployment without a supported-cloud restriction or proprietary control plane.
 
-### Decision 7: Sandbox lifetime is one Agent Run
+### Decision 7: Sandbox lifetime is one Agent Thread
 
-Every Agent Run creates and waits for exactly one sandbox immediately after the Run starts, including Runs with no selected Skill. Before the first model invocation, all manually selected active Skills are downloaded from private OSS into that sandbox. Later model-selected Skills install into the same sandbox. All active Skills use `/workspace/skills/<name>`, input files use `/workspace/input`, writable work uses `/workspace/work`, and explicit exports use `/workspace/output`. The sandbox is destroyed on every terminal Run path; cleanup is idempotent and a reconciliation check removes leaked expired sandboxes without introducing BullMQ.
+The first Agent Run in a Thread creates and waits for exactly one sandbox, including Runs with no selected Skill. Later Runs in the same Thread reuse that sandbox until its hard lifetime or idle cleanup deadline. Before the first model invocation of every Run, all manually selected active Skills are re-authorized and installed from the current private OSS object; later model-selected Skills use the same flow. Retained package files and work files remain available to later Runs in that Thread, while Run activation state and Shell/output counters reset at each Run boundary. All active Skills use `/workspace/skills/<name>`, input files use `/workspace/input`, writable work uses `/workspace/work`, and explicit exports use `/workspace/output`.
 
-The existing Agent Run resource and cursor SSE remain authoritative. Browser disconnect does not cancel execution because NestJS talks directly to OpenSandbox. API restart still interrupts in-process Runs under existing semantics and cleanup later removes their sandboxes.
+`AgentThread` persists sandbox ID, status, creation, last-use and expiry timestamps. `AgentRun.sandboxId` is no longer unique because multiple Runs may audit the same sandbox. Run terminal paths release the Run binding and mark the Thread sandbox idle instead of destroying it. Deleting the Thread destroys the sandbox before removing Thread metadata. A process-local deadline schedules idempotent cleanup; API startup restores future deadlines and reconciles already-expired Thread sandboxes without BullMQ. OpenSandbox's hard TTL remains the final safety boundary.
+
+The existing Agent Run resource and cursor SSE remain authoritative. Browser disconnect does not cancel execution because NestJS talks directly to OpenSandbox. API restart still interrupts in-process Runs under existing semantics, but a non-expired Thread sandbox remains reusable after the service reconnects it.
 
 ### Decision 8: Hard budgets apply uniformly
 
-The accepted defaults are one vCPU, 1 GiB memory, 2 GiB disk, 64 processes, 120-second sandbox TTL, 60 seconds per command, 20 Shell calls, 100 MiB outbound traffic, 1 MiB per returned output and 5 MiB total returned output. One user still has at most one active Agent Run.
+The accepted defaults are one vCPU, 1 GiB memory, 2 GiB disk, 64 processes, a configurable 1,800-second Thread sandbox TTL (`SANDBOX_TIMEOUT_SECONDS`), 60 seconds per command, 20 Shell calls per Run, 100 MiB outbound traffic per Run, 1 MiB per returned output and 5 MiB total returned output per Run. The same timeout also bounds idle retention, and cleanup uses the earlier of the OpenSandbox hard expiry and the idle deadline. One user still has at most one active Agent Run.
 
 Shell and file calls are autonomous with `approvalPolicy=none`. The UI shows ordered tool cards and audit results after calls start; it does not pause for confirmation.
 
@@ -122,7 +124,8 @@ The existing fixed administrator session protects review and delist operations. 
 | OSS package missing/hash mismatch | activation tool fails; no prior/local fallback |
 | OpenSandbox unavailable | Run fails or reaches an explicit sandbox-unavailable terminal reason |
 | Sandbox command timeout | command is cancelled best effort and returns a bounded limit result |
-| Run cancellation | stop current work, export no new files, destroy sandbox idempotently |
+| Run cancellation | stop current work, export no new files, release the Run binding and retain the Thread sandbox if healthy |
+| Thread deletion or idle/hard expiry | destroy the Thread sandbox idempotently and persist destroyed state before metadata removal when possible |
 | Output export fails | preserve Run/tool error and do not advertise a downloadable file |
 | OSS file deletion fails | hide file, retain cleanup state and count bytes against quota |
 | Skill delisted during an active Run | current execution may finish; later activation is denied |
@@ -134,7 +137,7 @@ The existing fixed administrator session protects review and delist operations. 
 - [Autonomous Shell plus public internet can exfiltrate Run files] → No secrets enter the sandbox, private infrastructure remains blocked and fixed resource budgets limit exposure; per-call approval is explicitly out of scope.
 - [Fixed administrator credentials protect executable publication] → Keep the current production warning and do not represent the feature as safe for uncontrolled public release.
 - [OpenSandbox or gVisor compatibility differs from ordinary Linux] → Pin tested versions and run a package compatibility/limit PoC before production rollout.
-- [A dedicated execution node adds cost and operations] → Lazy Run sandboxes, strict TTL, metrics and leak reconciliation bound usage; publish measured concurrency and monthly ECS cost after PoC.
+- [A dedicated execution node adds cost and operations] → Lazy Thread sandboxes, strict 30-minute TTL, idle cleanup, metrics and leak reconciliation bound usage; publish measured concurrency and monthly ECS cost after PoC.
 - [Direct OSS finalization and database state can diverge] → Use explicit upload sessions, idempotent finalization and compensating cleanup rather than a distributed transaction.
 - [Permanent user files accumulate cost] → Enforce 1 GiB per user, private object accounting and explicit deletion; no automatic retention is promised.
 
@@ -148,7 +151,7 @@ The existing fixed administrator session protects review and delist operations. 
 6. Add `activate_skill`, autonomous Shell/file tools, user inputs/exports, hard budgets, audit events and full Mock/OpenSandbox E2E.
 7. Enable public upload only after deployment smoke verifies isolation, OSS ownership, sandbox cleanup and fixed administrator release warning.
 
-Rollback disables upload and sandbox feature flags, refuses new activations, waits up to the accepted 120-second Run limit, destroys remaining sandboxes and restores seeded prompt-only Skills through the compatibility path. Database rows and private OSS objects remain for later recovery; migrations are not destructively rolled back after user content exists.
+Rollback disables upload and sandbox feature flags, refuses new activations, destroys remaining Thread sandboxes within the configured 1,800-second maximum lifetime and restores seeded prompt-only Skills through the compatibility path. Database rows and private OSS objects remain for later recovery; migrations are not destructively rolled back after user content exists.
 
 ## Open Questions
 

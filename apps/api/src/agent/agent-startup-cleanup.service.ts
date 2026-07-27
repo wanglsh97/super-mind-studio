@@ -4,6 +4,7 @@ import type { OnModuleInit } from '@nestjs/common'
 import { RedisService } from '../redis/redis.service'
 import { AgentRunRepository } from './agent-run.repository'
 import { agentActiveRunLockKey } from './agent.constants'
+import { AgentExecutionSessionService } from './sandbox/agent-execution-session.service'
 import { SANDBOX_RUNTIME_PORT, type SandboxRuntimePort } from './sandbox/sandbox-runtime.port'
 
 /**
@@ -18,10 +19,16 @@ export class AgentStartupCleanupService implements OnModuleInit {
     @Inject(AgentRunRepository) private readonly runs: AgentRunRepository,
     @Inject(RedisService) private readonly redis: RedisService,
     @Inject(SANDBOX_RUNTIME_PORT) private readonly sandboxes: SandboxRuntimePort,
+    @Inject(AgentExecutionSessionService)
+    private readonly executionSessions: AgentExecutionSessionService,
   ) {}
 
   async onModuleInit(): Promise<void> {
-    await Promise.all([this.cleanupRunState(), this.reconcileExpiredSandboxes()])
+    await this.cleanupRunState()
+    await this.reconcileExpiredSandboxes()
+    await this.executionSessions.restoreThreadSessions().catch((error) => {
+      this.logger.error({ error }, 'Thread sandbox deadline restoration failed')
+    })
   }
 
   private async cleanupRunState(): Promise<void> {

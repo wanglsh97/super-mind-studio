@@ -29,7 +29,14 @@ import { AgentRunRepository } from './agent-run.repository'
 import { AgentRunService } from './agent-run.service'
 import { deriveAgentThreadTitle } from './agent-title'
 import { AgentThreadRepository } from './agent-thread.repository'
-import { toContextSummary, toMessage, toRunSummary, toThreadSummary } from './agent.mappers'
+import {
+  toContextSummary,
+  toMessage,
+  toRunSummary,
+  toThreadSandbox,
+  toThreadSummary,
+} from './agent.mappers'
+import { AgentExecutionSessionService } from './sandbox/agent-execution-session.service'
 
 @Injectable()
 export class AgentService {
@@ -44,6 +51,8 @@ export class AgentService {
     @Inject(AgentActiveRunLock) private readonly activeRunLock: AgentActiveRunLock,
     @Inject(AgentContextSummaryRepository)
     private readonly contextSummaries: AgentContextSummaryRepository,
+    @Inject(AgentExecutionSessionService)
+    private readonly executionSessions: AgentExecutionSessionService,
   ) {}
 
   async createThread(
@@ -106,6 +115,7 @@ export class AgentService {
       activeRun: activeRun ? toRunSummary(activeRun) : null,
       lastRun: lastRun ? toRunSummary(lastRun) : null,
       contextSummary: contextSummary ? toContextSummary(contextSummary) : null,
+      sandbox: toThreadSandbox(summary),
     }
   }
 
@@ -131,6 +141,7 @@ export class AgentService {
     const activeRun = await this.runs.findActiveForThread(threadId)
     if (activeRun) throw new ConflictException('该会话存在进行中的运行，无法删除')
 
+    await this.executionSessions.destroyThread(threadId)
     // Prisma 级联删除 messages/runs/events/toolCalls；RequestLog.agentRunId 为 SetNull，账单保留。
     const deleted = await this.threads.deleteForOwner(threadId, user.id)
     if (!deleted) throw new NotFoundException('Agent 会话不存在')

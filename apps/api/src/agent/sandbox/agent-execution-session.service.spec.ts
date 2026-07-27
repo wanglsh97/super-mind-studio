@@ -1,3 +1,6 @@
+import type { ConfigService } from '@nestjs/config'
+
+import type { AgentThreadRepository, AgentThreadSandboxRow } from '../agent-thread.repository'
 import type { ExecutableSkillService } from '../skills/executable-skill.service'
 import {
   MOCK_EXECUTABLE_SKILL_DOWNLOAD,
@@ -7,37 +10,114 @@ import { AgentExecutionSessionService } from './agent-execution-session.service'
 import { FakeSandboxRuntime } from './fake-sandbox-runtime'
 import type { SandboxRuntimePort } from './sandbox-runtime.port'
 
-describe('AgentExecutionSessionService sandbox cleanup', () => {
-  it('creates one ready sandbox when a Run starts and reuses it for Skill installation', async () => {
-    const skills = {
-      prepareActivation: jest.fn().mockResolvedValue([
+function setup(
+  options: {
+    sandboxes?: SandboxRuntimePort
+    prepareActivation?: ExecutableSkillService['prepareActivation']
+  } = {},
+) {
+  const records = new Map<string, AgentThreadSandboxRow>()
+  const threads = {
+    findSandboxForOwner: jest.fn(async (threadId: string, userId: string) => {
+      const row = records.get(threadId)
+      return row?.userId === userId ? row : null
+    }),
+    markSandboxReady: jest.fn(
+      async (
+        threadId: string,
+        userId: string,
+        input: { sandboxId: string; createdAt: Date; expiresAt: Date; lastUsedAt?: Date },
+      ) => {
+        records.set(threadId, {
+          id: threadId,
+          userId,
+          sandboxId: input.sandboxId,
+          sandboxStatus: 'ready',
+          sandboxCreatedAt: input.createdAt,
+          sandboxLastUsedAt: input.lastUsedAt ?? new Date(),
+          sandboxExpiresAt: input.expiresAt,
+        })
+      },
+    ),
+    markSandboxIdle: jest.fn(async (threadId: string) => {
+      const row = records.get(threadId)
+      if (row) row.sandboxStatus = 'idle'
+    }),
+    clearSandbox: jest.fn(async (threadId: string) => {
+      records.delete(threadId)
+    }),
+    listOwnedSandboxes: jest.fn(async () => [...records.values()]),
+  } as unknown as AgentThreadRepository
+  const skills = {
+    prepareActivation:
+      options.prepareActivation ??
+      jest.fn(async (_userId: string, selected: readonly string[]) => [
         {
           manifest: {
-            skillId: 'id-test-skill',
-            name: 'test-skill',
+            skillId: `id-${selected[0]}`,
+            name: selected[0],
             packageSha256: MOCK_EXECUTABLE_SKILL_SHA256,
           },
           download: MOCK_EXECUTABLE_SKILL_DOWNLOAD,
         },
       ]),
-    } as unknown as ExecutableSkillService
-    const sandboxes = new FakeSandboxRuntime()
-    const createSandbox = jest.spyOn(sandboxes, 'createSandbox')
-    const service = new AgentExecutionSessionService(skills, sandboxes)
+  } as unknown as ExecutableSkillService
+  const sandboxes = options.sandboxes ?? new FakeSandboxRuntime()
+  const config = {
+    get: jest.fn((_key: string, fallback: number) => fallback),
+  } as unknown as ConfigService
+  const service = new AgentExecutionSessionService(skills, sandboxes, threads, config)
+  return { records, sandboxes, service, skills, threads }
+}
 
-    const sandboxId = await service.startRun('run-eager', 'user-1')
-    await expect(service.startRun('run-eager', 'user-1')).resolves.toBe(sandboxId)
-    await expect(service.activateSkill('run-eager', 'user-1', 'test-skill')).resolves.toMatchObject(
-      { sandboxId, alreadyActive: false },
+describe('AgentExecutionSessionService Thread sandbox lifecycle', () => {
+  it('reuses one Thread sandbox across Runs while resetting activation authorization', async () => {
+    const { service, sandboxes, skills } = setup()
+    const createSandbox = jest.spyOn(sandboxes, 'createSandbox')
+
+    const firstSandbox = await service.startRun('run-1', 'thread-1', 'user-1')
+    await service.activateSkill('run-1', 'user-1', 'test-skill')
+    await service.writeFile(
+      'run-1',
+      'user-1',
+      '/workspace/work/shared.txt',
+      new TextEncoder().encode('thread-workspace'),
     )
+    await service.finishRun('run-1')
+
+    const secondSandbox = await service.startRun('run-2', 'thread-1', 'user-1')
+    expect(secondSandbox).toBe(firstSandbox)
+    await expect(service.readFile('run-2', 'user-1', '/workspace/work/shared.txt')).rejects.toThrow(
+      '只能在 Skill 激活后使用',
+    )
+    await service.activateSkill('run-2', 'user-1', 'test-skill')
     await expect(
-      service.readFile('run-eager', 'user-1', '/workspace/skills/test-skill/scripts/clean.mjs'),
-    ).resolves.toMatchObject({
-      path: '/workspace/skills/test-skill/scripts/clean.mjs',
-      sizeBytes: 21,
-    })
+      service.readFile('run-2', 'user-1', '/workspace/work/shared.txt'),
+    ).resolves.toMatchObject({ path: '/workspace/work/shared.txt' })
     expect(createSandbox).toHaveBeenCalledTimes(1)
-    await service.destroyRun('run-eager')
+    expect(createSandbox).toHaveBeenCalledWith(
+      expect.objectContaining({
+        threadId: 'thread-1',
+        limits: expect.objectContaining({ sandboxTimeoutMs: 1_800_000 }),
+      }),
+    )
+    expect(skills.prepareActivation).toHaveBeenCalledTimes(2)
+
+    await service.finishRun('run-2')
+    await service.destroyThread('thread-1')
+  })
+
+  it('isolates different Thread workspaces and rejects cross-user reuse', async () => {
+    const { service } = setup()
+    const first = await service.startRun('run-1', 'thread-1', 'user-1')
+    const second = await service.startRun('run-2', 'thread-2', 'user-1')
+    expect(first).not.toBe(second)
+
+    await expect(service.startRun('run-3', 'thread-1', 'user-2')).rejects.toThrow('owner mismatch')
+    await service.finishRun('run-1')
+    await service.finishRun('run-2')
+    await service.destroyThread('thread-1')
+    await service.destroyThread('thread-2')
   })
 
   it('destroys a partially created sandbox when readiness fails', async () => {
@@ -48,88 +128,21 @@ describe('AgentExecutionSessionService sandbox cleanup', () => {
       waitUntilReady: jest.fn().mockRejectedValue(readyError),
       destroySandbox,
     } as unknown as SandboxRuntimePort
-    const skills = {
-      prepareActivation: jest.fn().mockResolvedValue([
-        {
-          manifest: {
-            skillId: 'id-test-skill',
-            name: 'test-skill',
-            packageSha256: MOCK_EXECUTABLE_SKILL_SHA256,
-          },
-          download: MOCK_EXECUTABLE_SKILL_DOWNLOAD,
-        },
-      ]),
-    } as unknown as ExecutableSkillService
-    const service = new AgentExecutionSessionService(skills, sandboxes)
+    const { service } = setup({ sandboxes })
 
-    await expect(service.activateSkill('run-1', 'user-1', 'test-skill')).rejects.toBe(readyError)
+    await expect(service.startRun('run-1', 'thread-1', 'user-1')).rejects.toBe(readyError)
     expect(destroySandbox).toHaveBeenCalledWith('sandbox-partial')
   })
 
-  it('shares one sandbox across all added Skills without a separate active-Skill limit', async () => {
-    const names = Array.from({ length: 50 }, (_, index) => `skill-${index}`)
-    const skills = {
-      prepareActivation: jest.fn(async (_userId: string, selected: readonly string[]) => [
-        {
-          manifest: {
-            skillId: `id-${selected[0]}`,
-            name: selected[0],
-            packageSha256: MOCK_EXECUTABLE_SKILL_SHA256,
-          },
-          download: MOCK_EXECUTABLE_SKILL_DOWNLOAD,
-        },
-      ]),
-    } as unknown as ExecutableSkillService
-    const sandboxes = new FakeSandboxRuntime()
-    const createSandbox = jest.spyOn(sandboxes, 'createSandbox')
-    const service = new AgentExecutionSessionService(skills, sandboxes)
+  it('destroys the retained sandbox when its Thread is deleted', async () => {
+    const { service, sandboxes, records } = setup()
+    const destroySandbox = jest.spyOn(sandboxes, 'destroySandbox')
+    await service.startRun('run-1', 'thread-1', 'user-1')
+    await service.finishRun('run-1')
 
-    for (const name of names) {
-      await expect(service.activateSkill('run-many', 'user-1', name)).resolves.toMatchObject({
-        skill: { manifest: { name } },
-        alreadyActive: false,
-      })
-    }
-    await expect(service.activateSkill('run-many', 'user-1', names[0]!)).resolves.toMatchObject({
-      alreadyActive: true,
-    })
-    expect(createSandbox).toHaveBeenCalledTimes(1)
-    expect(skills.prepareActivation).toHaveBeenCalledTimes(50)
-    await service.destroyRun('run-many')
-  })
+    await service.destroyThread('thread-1')
 
-  it('isolates workspaces between Runs and rejects cross-user reuse', async () => {
-    const skills = {
-      prepareActivation: jest.fn(async (_userId: string, selected: readonly string[]) => [
-        {
-          manifest: {
-            skillId: `id-${selected[0]}`,
-            name: selected[0],
-            packageSha256: MOCK_EXECUTABLE_SKILL_SHA256,
-          },
-          download: MOCK_EXECUTABLE_SKILL_DOWNLOAD,
-        },
-      ]),
-    } as unknown as ExecutableSkillService
-    const sandboxes = new FakeSandboxRuntime()
-    const service = new AgentExecutionSessionService(skills, sandboxes)
-    const first = await service.activateSkill('run-1', 'user-1', 'isolated-skill')
-    const second = await service.activateSkill('run-2', 'user-1', 'isolated-skill')
-
-    expect(first.sandboxId).not.toBe(second.sandboxId)
-    await service.writeFile(
-      'run-1',
-      'user-1',
-      '/workspace/work/private.txt',
-      new TextEncoder().encode('run-1-only'),
-    )
-    await expect(
-      service.readFile('run-2', 'user-1', '/workspace/work/private.txt'),
-    ).resolves.toBeNull()
-    await expect(
-      service.readFile('run-1', 'user-2', '/workspace/work/private.txt'),
-    ).rejects.toThrow('owner mismatch')
-    await service.destroyRun('run-1')
-    await service.destroyRun('run-2')
+    expect(destroySandbox).toHaveBeenCalledTimes(1)
+    expect(records.has('thread-1')).toBe(false)
   })
 })

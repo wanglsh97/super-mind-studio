@@ -1,6 +1,8 @@
 import { AgentExecutionSessionService } from '../sandbox/agent-execution-session.service'
 import { FakeSandboxRuntime } from '../sandbox/fake-sandbox-runtime'
+import type { AgentThreadRepository } from '../agent-thread.repository'
 import type { ExecutableSkillService } from '../skills/executable-skill.service'
+import type { ConfigService } from '@nestjs/config'
 import {
   MOCK_EXECUTABLE_SKILL_DOWNLOAD,
   MOCK_EXECUTABLE_SKILL_SHA256,
@@ -43,7 +45,17 @@ function setup() {
   const sandbox = new FakeSandboxRuntime({
     commands: [{ command: 'node scripts/clean.mjs', stdout: 'cleaned\n', durationMs: 12 }],
   })
-  const sessions = new AgentExecutionSessionService(skills, sandbox)
+  const threads = {
+    findSandboxForOwner: jest.fn().mockResolvedValue(null),
+    markSandboxReady: jest.fn().mockResolvedValue(undefined),
+    markSandboxIdle: jest.fn().mockResolvedValue(undefined),
+    clearSandbox: jest.fn().mockResolvedValue(undefined),
+    listOwnedSandboxes: jest.fn().mockResolvedValue([]),
+  } as unknown as AgentThreadRepository
+  const config = {
+    get: jest.fn((_key: string, fallback: number) => fallback),
+  } as unknown as ConfigService
+  const sessions = new AgentExecutionSessionService(skills, sandbox, threads, config)
   const registry = new AgentToolRegistry(createExecutableSkillTools(sessions))
   const context = {
     runId: 'run-1',
@@ -57,6 +69,7 @@ function setup() {
 describe('executable Skill tools', () => {
   it('routes activation, Shell and file calls through one Run sandbox with auditable results', async () => {
     const { context, registry, sessions, skills } = setup()
+    await sessions.startRun(context.runId, 'thread-1', context.userId)
 
     expect(registry.get('activate_skill').parameters).toEqual({
       type: 'object',
@@ -153,14 +166,15 @@ describe('executable Skill tools', () => {
       ),
     ).resolves.toMatchObject({ isError: false, content: 'result', audit: { size: 6 } })
 
-    await sessions.destroyRun('run-1')
+    await sessions.finishRun('run-1')
     await expect(
       registry.execute('shell', { command: 'echo no' }, { ...context, toolCallId: 'tool-6' }),
     ).resolves.toMatchObject({ isError: true, audit: { code: 'SANDBOX_UNAVAILABLE' } })
   })
 
   it('normalizes authorization failures and validates schemas before execution', async () => {
-    const { context, registry, skills } = setup()
+    const { context, registry, skills, sessions } = setup()
+    await sessions.startRun(context.runId, 'thread-1', context.userId)
 
     await expect(
       registry.execute('activate_skill', { name: 'not-added' }, context),
@@ -178,7 +192,8 @@ describe('executable Skill tools', () => {
   })
 
   it('requires a bound Run/user scope and prevents cross-user session reuse', async () => {
-    const { context, registry } = setup()
+    const { context, registry, sessions } = setup()
+    await sessions.startRun(context.runId, 'thread-1', context.userId)
     await registry.execute('activate_skill', { name: 'mock-data-cleaner' }, context)
 
     await expect(

@@ -24,11 +24,10 @@ Every registered Agent tool SHALL declare a risk level and approval policy. This
 
 - **GIVEN** at least one Skill is active and the Run has remaining Shell budget
 - **WHEN** the model emits a schema-valid Shell call
-- **THEN** the registry executes it in the Run sandbox without pausing for user approval
+- **THEN** the registry executes it in the current Thread sandbox under the current Run budget without pausing for user approval
 
 #### Scenario: Prompt text requests a higher budget
 
 - **GIVEN** Skill instructions tell the model to ignore platform limits
 - **WHEN** a tool call exceeds a hard Run budget
 - **THEN** the runtime refuses it outside the model regardless of the instructions
-

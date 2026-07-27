@@ -2,6 +2,7 @@ import { AgentStartupCleanupService } from './agent-startup-cleanup.service'
 import type { AgentRunRepository } from './agent-run.repository'
 import type { RedisService } from '../redis/redis.service'
 import type { SandboxRuntimePort } from './sandbox/sandbox-runtime.port'
+import type { AgentExecutionSessionService } from './sandbox/agent-execution-session.service'
 
 describe('AgentStartupCleanupService', () => {
   it('interrupts abandoned runs and clears active-run Redis locks without replaying work', async () => {
@@ -14,6 +15,7 @@ describe('AgentStartupCleanupService', () => {
       { interruptAbandonedRuns } as unknown as AgentRunRepository,
       { deleteKeysByPrefix } as unknown as RedisService,
       sandboxRuntime(),
+      executionSessions(),
     )
 
     await service.onModuleInit()
@@ -29,6 +31,7 @@ describe('AgentStartupCleanupService', () => {
       } as unknown as AgentRunRepository,
       { deleteKeysByPrefix: jest.fn() } as unknown as RedisService,
       sandboxRuntime(),
+      executionSessions(),
     )
 
     await expect(service.onModuleInit()).resolves.toBeUndefined()
@@ -51,6 +54,7 @@ describe('AgentStartupCleanupService', () => {
       } as unknown as AgentRunRepository,
       { deleteKeysByPrefix: jest.fn().mockResolvedValue(0) } as unknown as RedisService,
       sandboxes,
+      executionSessions(),
     )
 
     await expect(service.onModuleInit()).resolves.toBeUndefined()
@@ -68,6 +72,7 @@ describe('AgentStartupCleanupService', () => {
       } as unknown as AgentRunRepository,
       { deleteKeysByPrefix: jest.fn() } as unknown as RedisService,
       sandboxRuntime({ listLeakedSandboxes }),
+      executionSessions(),
     )
 
     await expect(service.onModuleInit()).resolves.toBeUndefined()
@@ -81,4 +86,10 @@ function sandboxRuntime(overrides: Partial<SandboxRuntimePort> = {}): SandboxRun
     destroySandbox: jest.fn().mockResolvedValue(undefined),
     ...overrides,
   } as unknown as SandboxRuntimePort
+}
+
+function executionSessions(): AgentExecutionSessionService {
+  return {
+    restoreThreadSessions: jest.fn().mockResolvedValue(undefined),
+  } as unknown as AgentExecutionSessionService
 }

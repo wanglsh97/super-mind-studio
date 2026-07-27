@@ -8,33 +8,45 @@ NestJS SHALL execute Skill Shell and file operations only through a `SandboxRunt
 
 - **GIVEN** an activated Skill causes the model to call the Shell tool
 - **WHEN** the Agent runtime accepts the tool call
-- **THEN** NestJS delegates it to the current Run's OpenSandbox instance and returns the bounded result to the Agent loop
+- **THEN** NestJS delegates it to the current Thread's OpenSandbox instance under the current Run budget and returns the bounded result to the Agent loop
 
-### Requirement: One ephemeral Linux sandbox is shared within an Agent Run
+### Requirement: One ephemeral Linux sandbox is shared within an Agent Thread
 
-Each Agent Run SHALL create and wait for exactly one sandbox when execution starts. All Skills, input files, commands and generated files in that Run SHALL share its temporary workspace. The sandbox SHALL be destroyed after the Run succeeds, fails, is cancelled, reaches a limit or is interrupted, and background processes SHALL be terminated during cleanup.
+The first Agent Run in a Thread SHALL create and wait for exactly one sandbox. Later Runs in that Thread SHALL reuse the same temporary workspace while it remains healthy and unexpired. A Run terminal state SHALL release its Run binding without destroying the sandbox. The sandbox SHALL be destroyed when the Thread is deleted, when its configured idle/hard deadline expires, or when the sandbox becomes unusable; cleanup SHALL be idempotent and terminate background processes.
 
 #### Scenario: A Run starts without a selected Skill
 
 - **GIVEN** a valid Agent Run has no manually selected Skill
 - **WHEN** execution starts
-- **THEN** the platform creates one ready Run-owned sandbox before the first model invocation
+- **THEN** the platform creates one ready Thread-owned sandbox before the first model invocation
 
 #### Scenario: Two Skills run in one Agent Run
 
 - **GIVEN** a Run activates two added Skills
 - **WHEN** both use files or Shell
-- **THEN** they use the same Run-owned sandbox and the platform creates no second sandbox for that Run
+- **THEN** they use the same Thread-owned sandbox and the platform creates no second sandbox for that Run
+
+#### Scenario: A later Run reuses the Thread workspace
+
+- **GIVEN** a Thread has a healthy unexpired sandbox from an earlier completed Run
+- **WHEN** the user starts another Run in that Thread
+- **THEN** the platform reuses the same sandbox ID, resets Run-level counters and re-authorizes every active Skill
 
 #### Scenario: A Run is cancelled
 
 - **GIVEN** a Shell command is active
 - **WHEN** the Run owner cancels the Run
-- **THEN** cancellation propagates best effort to the command, no later command starts, and sandbox destruction is attempted idempotently
+- **THEN** cancellation propagates best effort to the command, no later command starts, and the healthy Thread sandbox remains available for a later Run
 
-### Requirement: Active Skill packages download from private OSS into the Run sandbox
+#### Scenario: A Thread is deleted
 
-Before the first model invocation, the platform SHALL install every manually selected active Skill into the Run sandbox. Later model activations SHALL use the same installation flow. NestJS SHALL issue only a short-lived read-only URL scoped to the current private OSS object; the sandbox SHALL download the package, verify expected byte size and SHA-256, and extract it under `/workspace/skills/<name>`. Package files SHALL remain ephemeral and MUST NOT be persisted to PostgreSQL. Signed URLs MUST NOT enter Agent events, database records or application logs.
+- **GIVEN** a Thread has no active Run and owns a sandbox
+- **WHEN** its owner deletes the Thread
+- **THEN** sandbox destruction is attempted idempotently before the Thread metadata is removed
+
+### Requirement: Active Skill packages download from private OSS into the Thread sandbox
+
+Before the first model invocation of every Run, the platform SHALL authorize and install every manually selected active Skill into the Thread sandbox. Later model activations SHALL use the same installation flow. Retained package files from an earlier Run MUST NOT imply current activation or authorization. NestJS SHALL issue only a short-lived read-only URL scoped to the current private OSS object; the sandbox SHALL download the package, verify expected byte size and SHA-256, and extract it under `/workspace/skills/<name>`. Package files SHALL remain ephemeral and MUST NOT be persisted to PostgreSQL. Signed URLs MUST NOT enter Agent events, database records or application logs.
 
 #### Scenario: A selected package is installed before inference
 
@@ -50,7 +62,7 @@ Before the first model invocation, the platform SHALL install every manually sel
 
 ### Requirement: Sandbox resource budgets are enforced outside the model
 
-The platform SHALL enforce per-sandbox limits of one vCPU, 1 GiB memory, 2 GiB temporary disk, 64 processes and 120 seconds total lifetime. Each Shell command SHALL be limited to 60 seconds; each Run SHALL permit at most 20 Shell calls, 100 MiB outbound traffic, 1 MiB returned by one call and 5 MiB total returned tool output. Skill instructions MUST NOT raise these limits.
+The platform SHALL enforce per-sandbox limits of one vCPU, 1 GiB memory, 2 GiB temporary disk, 64 processes and a configurable total lifetime defaulting to 1,800 seconds through `SANDBOX_TIMEOUT_SECONDS`. The same value SHALL bound idle retention. Each Shell command SHALL be limited to 60 seconds; each Run SHALL independently permit at most 20 Shell calls, 100 MiB outbound traffic, 1 MiB returned by one call and 5 MiB total returned tool output. Skill instructions MUST NOT raise these limits.
 
 #### Scenario: Shell call budget is exhausted
 
@@ -60,9 +72,9 @@ The platform SHALL enforce per-sandbox limits of one vCPU, 1 GiB memory, 2 GiB t
 
 #### Scenario: Sandbox TTL expires
 
-- **GIVEN** a Run sandbox reaches 120 seconds of lifetime
+- **GIVEN** a Thread sandbox reaches its configured 1,800-second lifetime
 - **WHEN** work is still active
-- **THEN** OpenSandbox terminates it and the Agent Run ends with an explicit sandbox limit reason
+- **THEN** OpenSandbox terminates it and any active Agent Run ends with an explicit sandbox limit reason
 
 ### Requirement: Sandboxes may reach arbitrary public internet without receiving secrets
 

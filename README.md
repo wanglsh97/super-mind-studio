@@ -64,6 +64,12 @@ C 端 `/api` 展示页也已移除并直接返回 404。该页面删除不影响
 - `PATCH /api/v1/agent/skills/:skillId`
 - `DELETE /api/v1/agent/skills/:skillId/install`
 
+## Agent 沙箱生命周期
+
+Agent Thread 在第一次 Run 时按需创建一个隔离沙箱，同一 Thread 的后续 Run 复用该工作区；每轮仍会重新校验并激活 Skill，同时重置 Shell、流量和输出预算。Run 成功、失败或取消后沙箱转为空闲，不立即销毁；删除 Thread、沙箱失效或达到空闲/硬生命周期上限时执行幂等销毁。
+
+`SANDBOX_TIMEOUT_SECONDS` 同时控制沙箱最大生命周期和空闲保留上限，默认值为 `1800`（30 分钟）。OpenSandbox 的创建请求会接收同样的硬 TTL，API 重启后会从 PostgreSQL 恢复未过期 Thread 沙箱的清理期限。
+
 `/api/v1/admin/*` 使用另一枚 `aigateway_admin_session` Cookie，与 GitHub 用户 Session 完全隔离。Swagger 只描述 Cookie 认证边界，不展示或接收 OAuth code、GitHub access token、Client Secret 或原始 Session token。
 
 ## Agent 网页搜索

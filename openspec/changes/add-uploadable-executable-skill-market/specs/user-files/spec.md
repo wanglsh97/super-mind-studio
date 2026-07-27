@@ -1,6 +1,6 @@
 ## ADDED Requirements
 
-### Requirement: Agent input files are stored in private OSS and copied into the Run sandbox
+### Requirement: Agent input files are stored in private OSS and copied into the Thread sandbox
 
 An authenticated user SHALL upload Agent input files through short-lived, user-scoped OSS credentials. NestJS SHALL persist only ownership and file metadata in PostgreSQL. When a Run starts, only files selected by its owner SHALL be made available in that Run's sandbox.
 
@@ -51,4 +51,3 @@ Input and output files SHALL remain in private OSS until their owner explicitly 
 - **GIVEN** an owner requests file deletion
 - **WHEN** the OSS delete call fails transiently
 - **THEN** the file becomes unavailable to the user, cleanup remains retryable, and quota accounting does not permit an unsafe double allocation
-

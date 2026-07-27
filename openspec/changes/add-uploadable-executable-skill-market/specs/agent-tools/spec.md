@@ -2,19 +2,19 @@
 
 ### Requirement: Agent tools are registered through a server allowlist
 
-The Agent runtime SHALL resolve every model tool call through a server-owned Tool registry. `activate_skill`, Shell and Skill file tools SHALL define stable names, English descriptions, JSON Schema parameters, abort handling and serializable results. The registry SHALL authorize `activate_skill` against the current user's added published Skills and SHALL route Shell/file execution through `SandboxRuntimePort`. Model-supplied names or parameters MUST NOT select an unregistered tool, another user's Skill, an arbitrary OSS object or execution outside the Run sandbox.
+The Agent runtime SHALL resolve every model tool call through a server-owned Tool registry. `activate_skill`, Shell and Skill file tools SHALL define stable names, English descriptions, JSON Schema parameters, abort handling and serializable results. The registry SHALL authorize `activate_skill` against the current user's added published Skills and SHALL route Shell/file execution through `SandboxRuntimePort`. Model-supplied names or parameters MUST NOT select an unregistered tool, another user's Skill, an arbitrary OSS object or execution outside the current Thread sandbox.
 
 #### Scenario: A valid Shell call is routed to the sandbox
 
 - **GIVEN** a published added Skill is active and Shell arguments pass schema validation
 - **WHEN** the Pi harness prepares the tool call
-- **THEN** the registry delegates it to the current Run sandbox and persists its lifecycle and bounded result
+- **THEN** the registry delegates it to the current Thread sandbox under the current Run budget and persists its lifecycle and bounded result
 
 #### Scenario: An unknown Skill is requested
 
 - **GIVEN** the model calls `activate_skill` for a name the user has not added
 - **WHEN** the registry authorizes the call
-- **THEN** no package is downloaded, the existing Run sandbox remains unchanged, and a normalized failed tool result is returned
+- **THEN** no package is downloaded, the existing Thread sandbox remains unchanged, and a normalized failed tool result is returned
 
 ### Requirement: Tool execution is visible and auditable
 

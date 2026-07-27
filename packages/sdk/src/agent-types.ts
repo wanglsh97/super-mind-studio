@@ -211,12 +211,22 @@ export interface AgentThreadListPage {
   activeRun: AgentRunSummary | null
 }
 
+export interface AgentThreadSandbox {
+  id: string
+  status: 'creating' | 'ready' | 'idle' | 'failed'
+  createdAt: string
+  lastUsedAt: string
+  expiresAt: string
+}
+
 export interface AgentThread extends AgentThreadSummary {
   messages: AgentMessage[]
   activeRun: AgentRunSummary | null
   /** 该会话最近一次 run（含已终结）；用于展示 interrupted 等终态。 */
   lastRun: AgentRunSummary | null
   contextSummary: AgentContextSummary | null
+  /** 当前 Thread 可复用的临时 Sandbox；已销毁或尚未创建时为 null。 */
+  sandbox: AgentThreadSandbox | null
 }
 
 export type AgentContextCompressionLevel = 'none' | 'light' | 'moderate' | 'forced'

@@ -56,6 +56,15 @@ export function sandboxRuntimeContract(
         returnedOutputBytes: 9,
         diskBytes: bytes.byteLength,
       })
+      await expect(harness.runtime.resetRunState(created.sandboxId)).resolves.toBeUndefined()
+      await expect(harness.runtime.getUsage(created.sandboxId)).resolves.toMatchObject({
+        shellCalls: 0,
+        returnedOutputBytes: 0,
+        diskBytes: bytes.byteLength,
+      })
+      await expect(
+        harness.runtime.readFile(created.sandboxId, '/workspace/input/value.txt'),
+      ).resolves.toMatchObject({ bytes })
 
       await expect(harness.runtime.destroySandbox(created.sandboxId)).resolves.toBeUndefined()
       await expect(harness.runtime.destroySandbox(created.sandboxId)).resolves.toBeUndefined()

@@ -15,8 +15,23 @@ export interface AgentThreadSummaryRow {
   title: string
   modelId: string
   provider: string
+  sandboxId: string | null
+  sandboxStatus: string | null
+  sandboxCreatedAt: Date | null
+  sandboxLastUsedAt: Date | null
+  sandboxExpiresAt: Date | null
   createdAt: Date
   updatedAt: Date
+}
+
+export interface AgentThreadSandboxRow {
+  id: string
+  userId: string
+  sandboxId: string
+  sandboxStatus: string
+  sandboxCreatedAt: Date
+  sandboxLastUsedAt: Date
+  sandboxExpiresAt: Date
 }
 
 const SUMMARY_SELECT = {
@@ -24,6 +39,11 @@ const SUMMARY_SELECT = {
   title: true,
   modelId: true,
   provider: true,
+  sandboxId: true,
+  sandboxStatus: true,
+  sandboxCreatedAt: true,
+  sandboxLastUsedAt: true,
+  sandboxExpiresAt: true,
   createdAt: true,
   updatedAt: true,
 } as const satisfies Prisma.AgentThreadSelect
@@ -98,5 +118,94 @@ export class AgentThreadRepository {
       where: { id: threadId },
       data: { updatedAt: new Date() },
     })
+  }
+
+  async findSandboxForOwner(
+    threadId: string,
+    userId: string,
+  ): Promise<AgentThreadSandboxRow | null> {
+    const row = await this.prisma.agentThread.findFirst({
+      where: {
+        id: threadId,
+        userId,
+        sandboxId: { not: null },
+        sandboxStatus: { in: ['creating', 'ready', 'idle'] },
+        sandboxCreatedAt: { not: null },
+        sandboxLastUsedAt: { not: null },
+        sandboxExpiresAt: { not: null },
+      },
+      select: {
+        id: true,
+        userId: true,
+        sandboxId: true,
+        sandboxStatus: true,
+        sandboxCreatedAt: true,
+        sandboxLastUsedAt: true,
+        sandboxExpiresAt: true,
+      },
+    })
+    return row as AgentThreadSandboxRow | null
+  }
+
+  async markSandboxReady(
+    threadId: string,
+    userId: string,
+    input: { sandboxId: string; createdAt: Date; expiresAt: Date; lastUsedAt?: Date },
+  ): Promise<void> {
+    const lastUsedAt = input.lastUsedAt ?? new Date()
+    await this.prisma.agentThread.updateMany({
+      where: { id: threadId, userId },
+      data: {
+        sandboxId: input.sandboxId,
+        sandboxStatus: 'ready',
+        sandboxCreatedAt: input.createdAt,
+        sandboxLastUsedAt: lastUsedAt,
+        sandboxExpiresAt: input.expiresAt,
+        sandboxDestroyedAt: null,
+      },
+    })
+  }
+
+  async markSandboxIdle(threadId: string, userId: string, sandboxId: string): Promise<void> {
+    await this.prisma.agentThread.updateMany({
+      where: { id: threadId, userId, sandboxId },
+      data: { sandboxStatus: 'idle', sandboxLastUsedAt: new Date() },
+    })
+  }
+
+  async clearSandbox(threadId: string, sandboxId: string, destroyedAt = new Date()): Promise<void> {
+    await this.prisma.agentThread.updateMany({
+      where: { id: threadId, sandboxId },
+      data: {
+        sandboxId: null,
+        sandboxStatus: null,
+        sandboxCreatedAt: null,
+        sandboxLastUsedAt: null,
+        sandboxExpiresAt: null,
+        sandboxDestroyedAt: destroyedAt,
+      },
+    })
+  }
+
+  async listOwnedSandboxes(): Promise<AgentThreadSandboxRow[]> {
+    const rows = await this.prisma.agentThread.findMany({
+      where: {
+        sandboxId: { not: null },
+        sandboxStatus: { in: ['creating', 'ready', 'idle'] },
+        sandboxCreatedAt: { not: null },
+        sandboxLastUsedAt: { not: null },
+        sandboxExpiresAt: { not: null },
+      },
+      select: {
+        id: true,
+        userId: true,
+        sandboxId: true,
+        sandboxStatus: true,
+        sandboxCreatedAt: true,
+        sandboxLastUsedAt: true,
+        sandboxExpiresAt: true,
+      },
+    })
+    return rows as AgentThreadSandboxRow[]
   }
 }

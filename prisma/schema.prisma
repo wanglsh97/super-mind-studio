@@ -368,20 +368,27 @@ model AdminAuditLog {
 }
 
 model AgentThread {
-  id             String               @id @default(uuid()) @db.Uuid
-  userId         String               @db.Uuid
-  title          String               @db.VarChar(200)
-  modelId        String               @db.VarChar(128)
-  provider       String               @db.VarChar(64)
-  createdAt      DateTime             @default(now()) @db.Timestamptz(3)
-  updatedAt      DateTime             @updatedAt @db.Timestamptz(3)
-  user           User                 @relation(fields: [userId], references: [id], onDelete: Restrict)
-  messages       AgentMessage[]
-  runs           AgentRun[]
-  contextSummary AgentContextSummary?
+  id                 String               @id @default(uuid()) @db.Uuid
+  userId             String               @db.Uuid
+  title              String               @db.VarChar(200)
+  modelId            String               @db.VarChar(128)
+  provider           String               @db.VarChar(64)
+  sandboxId          String?              @unique @db.VarChar(191)
+  sandboxStatus      String?              @db.VarChar(32)
+  sandboxCreatedAt   DateTime?            @db.Timestamptz(3)
+  sandboxLastUsedAt  DateTime?            @db.Timestamptz(3)
+  sandboxExpiresAt   DateTime?            @db.Timestamptz(3)
+  sandboxDestroyedAt DateTime?            @db.Timestamptz(3)
+  createdAt          DateTime             @default(now()) @db.Timestamptz(3)
+  updatedAt          DateTime             @updatedAt @db.Timestamptz(3)
+  user               User                 @relation(fields: [userId], references: [id], onDelete: Restrict)
+  messages           AgentMessage[]
+  runs               AgentRun[]
+  contextSummary     AgentContextSummary?
 
   @@index([userId, updatedAt])
   @@index([userId, createdAt])
+  @@index([sandboxExpiresAt])
 }
 
 model AgentContextSummary {
@@ -435,7 +442,7 @@ model AgentRun {
   toolCallCount        Int                  @default(0)
   webFetchCount        Int                  @default(0)
   shellCallCount       Int                  @default(0)
-  sandboxId            String?              @unique @db.VarChar(191)
+  sandboxId            String?              @db.VarChar(191)
   activeSkillManifest  Json?
   fileManifest         Json?
   sandboxUsage         Json?
@@ -461,6 +468,7 @@ model AgentRun {
 
   @@index([threadId, createdAt])
   @@index([userId, status])
+  @@index([sandboxId])
 }
 
 model AgentEvent {

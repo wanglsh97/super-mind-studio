@@ -139,6 +139,7 @@ async function main(): Promise<void> {
     const roles = detail.messages.map((message) => message.role)
     assert.deepEqual(roles, ['user', 'assistant', 'tool', 'assistant'], '刷新后应恢复完整消息快照')
     assert.equal(detail.activeRun, null, 'run 已终结')
+    assert.equal(detail.sandbox?.status, 'idle', 'Run 终结后 Thread Sandbox 应保持空闲可用')
 
     // PostgreSQL：Run、工具、模型调用与账单均形成可审计记录。
     const persistedRun = await prisma.agentRun.findUniqueOrThrow({ where: { id: run.id } })
@@ -172,6 +173,26 @@ async function main(): Promise<void> {
       return log.billing.id
     })
 
+    // 同一 Thread 的下一轮 Run 复用 Sandbox，但重新激活 Skill 并重置 Run 预算。
+    const secondRun = await client.agent.runs.create(thread.id, {
+      input: 'SCENARIO:shell 再次使用 Skill 清洗数据',
+      skills: [{ name: 'mock-data-cleaner' }],
+    })
+    const secondEvents: AgentStreamEvent[] = []
+    for await (const event of client.agent.runs.subscribe(secondRun.id)) {
+      secondEvents.push(event)
+    }
+    assert.equal(secondEvents.at(-1)?.type, 'run-terminal')
+    const persistedSecondRun = await prisma.agentRun.findUniqueOrThrow({
+      where: { id: secondRun.id },
+    })
+    assert.equal(persistedSecondRun.status, 'SUCCEEDED')
+    assert.equal(persistedSecondRun.sandboxId, persistedRun.sandboxId)
+    assert.ok(persistedSecondRun.sandboxId, '两轮 Run 应记录同一个 Thread Sandbox ID')
+    const detailAfterSecondRun = await client.agent.threads.get(thread.id)
+    assert.equal(detailAfterSecondRun.sandbox?.id, persistedRun.sandboxId)
+    assert.equal(detailAfterSecondRun.sandbox?.status, 'idle')
+
     // 2.2：重命名与永久删除；Agent 子记录级联清除，RequestLog/BillingRecord 保留
     const renamed = await client.agent.threads.rename(thread.id, { title: 'e2e 重命名会话' })
     assert.equal(renamed.title, 'e2e 重命名会话')
@@ -187,6 +208,7 @@ async function main(): Promise<void> {
     assert.equal(await prisma.agentThread.count({ where: { id: thread.id } }), 0)
     assert.equal(await prisma.agentMessage.count({ where: { threadId: thread.id } }), 0)
     assert.equal(await prisma.agentRun.count({ where: { id: run.id } }), 0)
+    assert.equal(await prisma.agentRun.count({ where: { id: secondRun.id } }), 0)
     assert.equal(await prisma.agentEvent.count({ where: { runId: run.id } }), 0)
     assert.equal(await prisma.agentToolCall.count({ where: { runId: run.id } }), 0)
 

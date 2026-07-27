@@ -13,6 +13,7 @@ import type { AgentMessageRepository } from './agent-message.repository'
 import type { AgentRunRepository } from './agent-run.repository'
 import type { AgentRunService } from './agent-run.service'
 import type { AgentThreadRepository } from './agent-thread.repository'
+import type { AgentExecutionSessionService } from './sandbox/agent-execution-session.service'
 import { AgentService } from './agent.service'
 
 const user: AuthenticatedUser = {
@@ -68,6 +69,9 @@ function setup() {
   const contextSummaries = {
     findForThread: jest.fn().mockResolvedValue(null),
   } as unknown as jest.Mocked<AgentContextSummaryRepository>
+  const executionSessions = {
+    destroyThread: jest.fn().mockResolvedValue(undefined),
+  } as unknown as jest.Mocked<AgentExecutionSessionService>
   const service = new AgentService(
     threads,
     runs,
@@ -76,8 +80,18 @@ function setup() {
     runService,
     activeRunLock,
     contextSummaries,
+    executionSessions,
   )
-  return { threads, runs, messages, models, runService, activeRunLock, service }
+  return {
+    threads,
+    runs,
+    messages,
+    models,
+    runService,
+    activeRunLock,
+    executionSessions,
+    service,
+  }
 }
 
 function threadRow(
@@ -89,6 +103,11 @@ function threadRow(
     modelId: 'qwen3.7-plus',
     provider: 'qwen',
     contextWindowTokens: 1_000_000,
+    sandboxId: null,
+    sandboxStatus: null,
+    sandboxCreatedAt: null,
+    sandboxLastUsedAt: null,
+    sandboxExpiresAt: null,
     createdAt: new Date('2026-07-20T00:00:00.000Z'),
     updatedAt: new Date('2026-07-20T00:00:00.000Z'),
     ...overrides,
@@ -421,11 +440,12 @@ describe('AgentService', () => {
   })
 
   it('deletes an owned thread when no run is active', async () => {
-    const { service, threads, runs } = setup()
+    const { service, threads, runs, executionSessions } = setup()
     ;(threads.findSummaryForOwner as jest.Mock).mockResolvedValue(threadRow())
     ;(runs.findActiveForThread as jest.Mock).mockResolvedValue(null)
     ;(threads.deleteForOwner as jest.Mock).mockResolvedValue(true)
     await expect(service.deleteThread(user, 'thread-1')).resolves.toBeUndefined()
+    expect(executionSessions.destroyThread).toHaveBeenCalledWith('thread-1')
     expect(threads.deleteForOwner).toHaveBeenCalledWith('thread-1', 'user-a')
   })
 

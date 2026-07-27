@@ -90,4 +90,46 @@ describe('AgentThreadRepository', () => {
     await expect(repository.renameForOwner('thread-1', 'user-a', 'x')).resolves.toBe(true)
     await expect(repository.deleteForOwner('thread-1', 'user-a')).resolves.toBe(true)
   })
+
+  it('persists and clears a Thread-owned Sandbox with owner-scoped updates', async () => {
+    const { findFirst, updateMany, repository } = setup()
+    findFirst.mockResolvedValue(null)
+    updateMany.mockResolvedValue({ count: 1 })
+    const createdAt = new Date('2026-07-27T00:00:00.000Z')
+    const expiresAt = new Date('2026-07-27T00:30:00.000Z')
+
+    await repository.findSandboxForOwner('thread-1', 'user-a')
+    expect(findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ id: 'thread-1', userId: 'user-a' }),
+      }),
+    )
+
+    await repository.markSandboxReady('thread-1', 'user-a', {
+      sandboxId: 'sandbox-1',
+      createdAt,
+      expiresAt,
+      lastUsedAt: createdAt,
+    })
+    expect(updateMany).toHaveBeenCalledWith({
+      where: { id: 'thread-1', userId: 'user-a' },
+      data: expect.objectContaining({
+        sandboxId: 'sandbox-1',
+        sandboxStatus: 'ready',
+        sandboxCreatedAt: createdAt,
+        sandboxLastUsedAt: createdAt,
+        sandboxExpiresAt: expiresAt,
+      }),
+    })
+
+    await repository.clearSandbox('thread-1', 'sandbox-1', expiresAt)
+    expect(updateMany).toHaveBeenLastCalledWith({
+      where: { id: 'thread-1', sandboxId: 'sandbox-1' },
+      data: expect.objectContaining({
+        sandboxId: null,
+        sandboxStatus: null,
+        sandboxDestroyedAt: expiresAt,
+      }),
+    })
+  })
 })

@@ -167,6 +167,7 @@ export class OpenSandboxRuntime implements SandboxRuntimePort, OnModuleDestroy {
         metadata: {
           'aigateway.owner': RUNTIME_OWNER,
           'aigateway.run-id': input.runId,
+          ...(input.threadId === undefined ? {} : { 'aigateway.thread-id': input.threadId }),
         },
       })
       throwIfAborted(input.signal)
@@ -410,6 +411,18 @@ export class OpenSandboxRuntime implements SandboxRuntimePort, OnModuleDestroy {
       // 指标不可用不能掩盖命令或清理结果；健康检查会单独暴露依赖状态。
     }
     return { ...state.usage }
+  }
+
+  async resetRunState(sandboxId: string, signal?: AbortSignal): Promise<void> {
+    throwIfAborted(signal)
+    const state = await this.requireReadyState(sandboxId)
+    await Promise.allSettled(
+      [...state.activeCommandIds].map((commandId) => state.instance.interrupt(commandId)),
+    )
+    state.activeCommandIds.clear()
+    const diskBytes = state.usage.diskBytes
+    state.usage = { ...emptyUsage(), diskBytes }
+    state.descriptor.status = 'ready'
   }
 
   async cancelSandbox(sandboxId: string, signal?: AbortSignal): Promise<void> {

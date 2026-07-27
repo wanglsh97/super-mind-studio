@@ -57,6 +57,7 @@ export interface SandboxUsage {
 
 export interface CreateSandboxInput {
   runId: string
+  threadId?: string
   limits?: Partial<SandboxLimits>
   signal?: AbortSignal
 }
@@ -118,6 +119,8 @@ export interface SandboxRuntimePort {
   writeFile(input: WriteSandboxFileInput): Promise<SandboxFileResult>
   readFile(sandboxId: string, path: string, signal?: AbortSignal): Promise<SandboxFileResult | null>
   getUsage(sandboxId: string, signal?: AbortSignal): Promise<SandboxUsage>
+  /** 中断遗留命令并重置下一 Run 的计数，保留 Thread workspace 文件。 */
+  resetRunState(sandboxId: string, signal?: AbortSignal): Promise<void>
   cancelSandbox(sandboxId: string, signal?: AbortSignal): Promise<void>
   destroySandbox(sandboxId: string, signal?: AbortSignal): Promise<void>
   listLeakedSandboxes(referenceTime: Date, signal?: AbortSignal): Promise<SandboxDescriptor[]>
