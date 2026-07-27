@@ -27,10 +27,6 @@ const focusRing =
 const shellIconButtonClass =
   'liquid-glass-soft grid size-9 shrink-0 place-items-center rounded-xl text-ink-muted transition-[background,color,transform] hover:-translate-y-0.5 hover:text-brand-hover dark:hover:text-ink [&_svg]:size-4'
 
-const navigation = [
-  { href: '/skills', label: '技能', description: '查看已安装能力', icon: SparkIcon },
-]
-
 export function AppShell({ children }: Readonly<{ children: ReactNode }>) {
   const pathname = usePathname()
   if (pathname.startsWith('/admin')) return children
@@ -132,20 +128,6 @@ function UserWorkspace({ children }: Readonly<{ children: ReactNode }>) {
               <AgentThreadLinks />
             </Suspense>
           ) : null}
-
-          <div className={cn('mt-5 border-t border-line-soft pt-4', collapsed && 'mt-2 pt-3')}>
-            {navigation.map((item) => (
-              <SidebarNavLink
-                key={item.href}
-                href={item.href}
-                active={pathname === item.href || pathname.startsWith(`${item.href}/`)}
-                collapsed={collapsed}
-                label={item.label}
-                description={item.description}
-                Icon={item.icon}
-              />
-            ))}
-          </div>
         </nav>
 
         <div
@@ -166,6 +148,15 @@ function UserWorkspace({ children }: Readonly<{ children: ReactNode }>) {
                     collapsed && '-left-1.5',
                   )}
                 >
+                  <Link
+                    href="/skills"
+                    role="menuitem"
+                    onClick={() => setUserMenuOpen(false)}
+                    className={menuItemClass}
+                  >
+                    <SparkIcon />
+                    <span>技能</span>
+                  </Link>
                   <ThemeToggle variant="menu" />
                   <Link
                     href="/admin"
@@ -268,77 +259,18 @@ function NewConversationButton({ collapsed }: Readonly<{ collapsed: boolean }>) 
       aria-label="新建会话"
       title={collapsed ? '新建会话' : undefined}
       className={cn(
-        'group relative mt-5 flex min-h-12 w-full items-center gap-3 overflow-hidden rounded-2xl border border-white/35 bg-[linear-gradient(135deg,#2764ff_0%,#7057e8_100%)] px-3.5 text-sm font-bold text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.28),0_14px_30px_rgb(39_100_255/0.22)] transition-[transform,box-shadow,filter] hover:-translate-y-0.5 hover:brightness-105 hover:shadow-[inset_0_1px_0_rgb(255_255_255/0.32),0_17px_34px_rgb(39_100_255/0.28)]',
-        collapsed && 'mx-auto size-11 min-h-11 w-11 justify-center rounded-xl px-0',
+        'group relative mt-5 flex min-h-11 w-full items-center gap-2.5 rounded-xl border border-line bg-white/38 px-3 text-[0.78rem] font-semibold text-ink-secondary shadow-[inset_0_1px_0_rgb(255_255_255/0.72)] transition-[background,border-color,color] hover:border-brand/35 hover:bg-brand/6 hover:text-brand-hover dark:border-line-soft dark:bg-white/[0.035] dark:text-ink-dark-muted dark:shadow-[inset_0_1px_0_rgb(255_255_255/0.04)] dark:hover:border-brand/35 dark:hover:bg-brand/12 dark:hover:text-brand-light',
+        collapsed && 'mx-auto size-10 min-h-10 w-10 justify-center px-0',
         focusRing,
       )}
     >
       <span
-        className="grid size-7 shrink-0 place-items-center rounded-lg bg-white/16 text-xl font-light leading-none ring-1 ring-white/20 transition-transform group-hover:rotate-90"
+        className="grid size-6 shrink-0 place-items-center rounded-lg bg-brand/8 text-base font-medium leading-none text-brand-hover ring-1 ring-brand/10 dark:bg-brand/14 dark:text-brand-light"
         aria-hidden="true"
       >
         +
       </span>
       {!collapsed && <span>新建会话</span>}
-    </Link>
-  )
-}
-
-function SidebarNavLink({
-  href,
-  active,
-  collapsed,
-  label,
-  description,
-  Icon,
-}: Readonly<{
-  href: string
-  active: boolean
-  collapsed: boolean
-  label: string
-  description: string
-  Icon: () => ReactNode
-}>) {
-  return (
-    <Link
-      href={href}
-      aria-current={active ? 'page' : undefined}
-      title={collapsed ? label : undefined}
-      className={cn(
-        'relative flex min-h-[3.65rem] items-center gap-3 rounded-2xl px-3 py-2 text-ink-muted transition-[background,color,transform,box-shadow] hover:bg-white/55 hover:text-ink-secondary hover:translate-x-0.5 dark:hover:bg-surface-inset dark:hover:text-ink',
-        active &&
-          'border border-white/80 bg-white/68 text-brand-hover shadow-[0_10px_28px_rgb(39_100_255/0.1)] dark:border-white/8 dark:bg-brand-muted dark:text-brand-light',
-        collapsed &&
-          'justify-center px-2 hover:translate-x-0 hover:bg-transparent dark:hover:bg-transparent',
-        collapsed &&
-          !active &&
-          'hover:[&_.nav-icon]:bg-brand-subtle hover:[&_.nav-icon]:text-brand-hover hover:[&_.nav-icon]:-translate-y-0.5 hover:[&_.nav-icon]:shadow-[0_7px_16px_rgb(77_56_184/0.15)] dark:hover:[&_.nav-icon]:bg-brand-muted dark:hover:[&_.nav-icon]:text-brand-light',
-        focusRing,
-      )}
-    >
-      {active && !collapsed && (
-        <span
-          className="absolute -left-1.5 h-[1.65rem] w-0.5 rounded-full bg-brand"
-          aria-hidden="true"
-        />
-      )}
-      <span
-        className={cn(
-          'nav-icon grid size-9 shrink-0 place-items-center rounded-xl bg-white/52 shadow-[inset_0_1px_0_rgb(255_255_255/0.9),0_6px_18px_rgb(44_74_120/0.06)] transition-[background,color,box-shadow,transform] dark:bg-white/[0.045] dark:shadow-[inset_0_0_0_1px_rgb(255_255_255/0.05)] [&_svg]:size-[1.15rem]',
-        )}
-      >
-        <Icon />
-      </span>
-      {!collapsed && (
-        <span className="min-w-0">
-          <strong className="block text-[0.84rem] font-bold text-ink-secondary dark:text-[#eee9f8]">
-            {label}
-          </strong>
-          <small className="mt-0.5 block text-[0.65rem] text-ink-faint dark:text-[#91889f]">
-            {description}
-          </small>
-        </span>
-      )}
     </Link>
   )
 }
