@@ -28,6 +28,7 @@ import { UserSessionGuard } from '../user-auth/user-session.guard'
 import { AgentRunEventBus } from './agent-run-event-bus'
 import { AgentRunRepository } from './agent-run.repository'
 import { AgentService } from './agent.service'
+import { AGENT_MCP_REGISTRY, type AgentMcpRegistry } from './mcp/agent-mcp.registry'
 import { CreateAgentRunDto } from './dto/create-agent-run.dto'
 import { CreateSkillUploadSessionDto } from './dto/skill-upload.dto'
 import {
@@ -54,7 +55,13 @@ export class AgentController {
     @Inject(AgentSkillService) private readonly skills: AgentSkillService,
     @Inject(ExecutableSkillService) private readonly executableSkills: ExecutableSkillService,
     @Inject(SkillUploadSessionService) private readonly skillUploads: SkillUploadSessionService,
+    @Inject(AGENT_MCP_REGISTRY) private readonly mcp: AgentMcpRegistry,
   ) {}
+
+  @Get('mcp/servers')
+  async listMcpServers() {
+    return this.mcp.listStatuses()
+  }
 
   @Get('skills')
   async listSkills(@CurrentUser() user: AuthenticatedUser) {

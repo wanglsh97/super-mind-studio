@@ -77,6 +77,8 @@ export type {
   AgentExecutionErrorCode,
   AgentFileOperation,
   AgentMessage,
+  AgentMcpServerConnectionStatus,
+  AgentMcpServerStatus,
   AgentMessagePart,
   AgentContextBudgetState,
   AgentContextCompressionLevel,

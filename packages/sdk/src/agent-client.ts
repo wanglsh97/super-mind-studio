@@ -5,6 +5,7 @@ import type {
   UpdateAgentSkillRequest,
 } from './agent-skill-types.js'
 import type {
+  AgentMcpServerStatus,
   AgentRunSummary,
   AgentStreamEvent,
   AgentThread,
@@ -41,6 +42,9 @@ export interface AgentThreadListOptions extends RequestOptions {
 }
 
 export interface AgentClient {
+  mcp: {
+    servers(options?: RequestOptions): Promise<AgentMcpServerStatus[]>
+  }
   skills: {
     list(options?: RequestOptions): Promise<AgentSkillMarketItem[]>
     candidates(options?: RequestOptions): Promise<AgentSkillCandidate[]>
@@ -85,6 +89,21 @@ export function createAgentClient(
 ): AgentClient {
   const directUpload = options.skillUploadTransport ?? createBrowserSkillUploadTransport()
   return {
+    mcp: {
+      servers: async (options) => {
+        const value = await requestJson<unknown>(
+          fetchImplementation,
+          'GET',
+          `${baseUrl}/api/v1/agent/mcp/servers`,
+          undefined,
+          options,
+        )
+        if (!Array.isArray(value)) {
+          throw new AIGatewayProtocolError('unknown', 'Agent MCP server status is not an array')
+        }
+        return value.map(decodeMcpServerStatus)
+      },
+    },
     skills: {
       list: async (options) => {
         const value = await requestJson<unknown>(
@@ -222,6 +241,35 @@ export function createAgentClient(
       subscribe: (runId, options) =>
         subscribeRunEvents(fetchImplementation, baseUrl, runId, options),
     },
+  }
+}
+
+function decodeMcpServerStatus(value: unknown): AgentMcpServerStatus {
+  const record = asRecord(value)
+  if (
+    !record ||
+    !stringValue(record.id) ||
+    !stringValue(record.name) ||
+    typeof record.version !== 'string' ||
+    typeof record.description !== 'string' ||
+    !['configured', 'ready', 'error'].includes(String(record.status)) ||
+    numberValue(record.allowedToolCount) === undefined ||
+    numberValue(record.discoveredToolCount) === undefined ||
+    numberValue(record.registeredToolCount) === undefined ||
+    !(record.errorCode === null || typeof record.errorCode === 'string')
+  ) {
+    throw new AIGatewayProtocolError('unknown', 'Agent MCP server status is malformed')
+  }
+  return {
+    id: record.id as string,
+    name: record.name as string,
+    version: record.version as string,
+    description: record.description as string,
+    status: record.status as AgentMcpServerStatus['status'],
+    allowedToolCount: record.allowedToolCount as number,
+    discoveredToolCount: record.discoveredToolCount as number,
+    registeredToolCount: record.registeredToolCount as number,
+    errorCode: record.errorCode as string | null,
   }
 }
 

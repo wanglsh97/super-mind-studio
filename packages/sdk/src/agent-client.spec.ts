@@ -9,6 +9,58 @@ import type { AgentStreamEvent } from './agent-types.js'
 const runId = '00000000-0000-4000-8000-0000000000f0'
 const threadId = '00000000-0000-4000-8000-0000000000f1'
 
+describe('AgentClient MCP status', () => {
+  it('lists a credential-free MCP Server status projection', async () => {
+    const urls: string[] = []
+    const client = createAIGatewayClient({
+      baseUrl: 'http://localhost:3001',
+      fetch: async (input) => {
+        urls.push(String(input))
+        return Response.json([
+          {
+            id: 'docs',
+            name: 'Docs',
+            version: '1.0.0',
+            description: 'Approved docs',
+            status: 'ready',
+            allowedToolCount: 2,
+            discoveredToolCount: 3,
+            registeredToolCount: 2,
+            errorCode: null,
+          },
+        ])
+      },
+    })
+
+    const statuses = await client.agent.mcp.servers()
+
+    assert.equal(urls[0], 'http://localhost:3001/api/v1/agent/mcp/servers')
+    assert.deepEqual(statuses, [
+      {
+        id: 'docs',
+        name: 'Docs',
+        version: '1.0.0',
+        description: 'Approved docs',
+        status: 'ready',
+        allowedToolCount: 2,
+        discoveredToolCount: 3,
+        registeredToolCount: 2,
+        errorCode: null,
+      },
+    ])
+    assert.doesNotMatch(JSON.stringify(statuses), /url|token|auth/i)
+  })
+
+  it('rejects malformed MCP Server status projections', async () => {
+    const client = createAIGatewayClient({
+      fetch: async () =>
+        Response.json([{ id: 'docs', status: 'ready', url: 'https://secret.example' }]),
+    })
+
+    await assert.rejects(() => client.agent.mcp.servers(), AIGatewayProtocolError)
+  })
+})
+
 describe('AgentClient skills', () => {
   it('lists, installs, updates and uninstalls Skills with credentials and encoded ids', async () => {
     const calls: Array<{
