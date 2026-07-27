@@ -25,6 +25,12 @@
       "skillPath": "assistant-ui/skills/markdown/SKILL.md",
       "computedHash": "1ec28d7895066a4b60f56ec8d101f16d4272f31c92f13421c71cfadcab35b91f"
     },
+    "muapi-logo-creator": {
+      "source": "samuraigpt/generative-media-skills",
+      "sourceType": "github",
+      "skillPath": ".opencode/skills/muapi-logo-creator/SKILL.md",
+      "computedHash": "068cf1467c1c31a81c9344520a51b4b28931c1fa7d3e0f32ade8b0b4b66f4806"
+    },
     "observability": {
       "source": "assistant-ui/skills",
       "sourceType": "github",
