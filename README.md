@@ -56,6 +56,20 @@ pnpm dev
 
 `/api/v1/admin/*` 使用另一枚 `aigateway_admin_session` Cookie，与 GitHub 用户 Session 完全隔离。Swagger 只描述 Cookie 认证边界，不展示或接收 OAuth code、GitHub access token、Client Secret 或原始 Session token。
 
+## Agent 网页搜索
+
+Agent 提供统一的 `web_search` 工具，服务端参考 OpenCode 通过远程 MCP 对接 Exa 与 Parallel，模型和浏览器不会看到两家的内部工具名或凭证。默认 `AGENT_WEB_SEARCH_PROVIDER=auto` 会按 Agent run ID 稳定选择一家；排障时可固定为 `exa` 或 `parallel`，设置 `AGENT_WEB_SEARCH_ENABLED=false` 可从工具清单中关闭搜索。
+
+当前开发流程直接使用两家无需 Key 的匿名免费入口，不需要申请 API，也不要在 `.env` 中填写凭证。匿名额度可能被限流或调整，不是生产 SLA；若以后需要正式额度，只能在服务端配置可选的 `EXA_API_KEY` 或 `PARALLEL_API_KEY`，不能发送到浏览器、写入日志或提交仓库。
+
+搜索词会发送给被选中的第三方 provider。返回内容受 2 MiB 响应上限和 30,000 字符模型输入上限约束，并作为不可信外部数据交给 Agent；结果中的指令不能扩展工具权限或要求泄露凭证。需要精读特定 URL 时由 Agent 继续调用具备 SSRF 防护的 `web_fetch`。
+
+默认测试完全使用本地 fixture，不访问公网。仅在需要检查当前匿名入口时显式运行以下命令；它会向 Exa 和 Parallel 各发送一次固定的小查询，不读取 API Key：
+
+```bash
+pnpm test:smoke:web-search
+```
+
 ## 阿里云 ECS 生产部署
 
 项目提供 Web/API 多阶段镜像、单机生产 Compose、Nginx SSE 代理、日志轮转、PostgreSQL 备份恢复和人工发布脚本。部署前请完整阅读 [ECS 单机部署与回滚手册](docs/deployment/ecs.md)。
