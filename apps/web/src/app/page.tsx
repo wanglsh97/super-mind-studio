@@ -5,11 +5,11 @@ import { cn } from '../lib/cn'
 
 const capabilities = [
   {
-    name: 'Chat',
-    label: '与模型对话',
-    description: '在一个画布里流式交流、切换模型，也可以并排比较答案。',
-    href: '/chat',
-    icon: ChatIcon,
+    name: 'Agent',
+    label: '对话与多步任务',
+    description: '在持久会话中直接提问，也可以调用工具完成多步任务或比较模型答案。',
+    href: '/agent',
+    icon: AgentIcon,
     accent: 'from-[#2764ff] to-[#8b7cff]',
   },
   {
@@ -141,13 +141,13 @@ export default function HomePage() {
 
           <div className="mt-10 flex flex-col gap-3 sm:flex-row">
             <Link
-              href="/chat"
+              href="/agent"
               className={cn(
                 'liquid-button inline-flex min-h-14 items-center justify-center gap-6 rounded-2xl px-6 text-sm font-bold transition-[transform,box-shadow] hover:-translate-y-0.5',
                 focusRing,
               )}
             >
-              开始对话
+              打开智能体
               <span className="text-lg" aria-hidden="true">
                 ↗
               </span>
@@ -247,7 +247,7 @@ export default function HomePage() {
             先说你想完成什么。
           </h2>
           <Link
-            href="/chat"
+            href="/agent"
             className={cn(
               'liquid-button mt-10 inline-flex min-h-14 items-center gap-6 rounded-2xl px-7 text-sm font-bold',
               focusRing,
@@ -266,7 +266,7 @@ export default function HomePage() {
   )
 }
 
-function ChatIcon() {
+function AgentIcon() {
   return (
     <svg
       viewBox="0 0 24 24"

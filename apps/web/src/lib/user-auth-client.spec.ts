@@ -17,10 +17,13 @@ describe('user auth login helpers', () => {
       'https://attacker.example',
       '//attacker.example',
       '/admin',
+      '/chat',
       '/chat?next=x',
     ]) {
-      assert.equal(sanitizeUserReturnTo(unsafe), '/chat')
+      assert.equal(sanitizeUserReturnTo(unsafe), '/agent')
     }
+    assert.equal(sanitizeUserReturnTo(null), '/agent')
+    assert.equal(sanitizeUserReturnTo('/chat/compare'), '/chat/compare')
     assert.equal(githubLoginUrl('/prompt'), '/api/v1/auth/github?returnTo=%2Fprompt')
   })
 

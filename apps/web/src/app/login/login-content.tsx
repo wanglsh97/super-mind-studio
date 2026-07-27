@@ -13,7 +13,7 @@ import {
 } from '../../lib/user-auth-client'
 
 const destinations = [
-  { name: 'Chat', detail: 'STREAM', dotClass: 'bg-brand' },
+  { name: 'Agent', detail: 'PERSIST', dotClass: 'bg-brand' },
   { name: 'Image', detail: 'CREATE', dotClass: 'bg-coral' },
   { name: 'Prompt', detail: 'REFINE', dotClass: 'bg-mint' },
 ]

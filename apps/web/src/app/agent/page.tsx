@@ -28,6 +28,7 @@ import {
 } from '../../components/agent-workspace-provider'
 import {
   AgentActiveRunHint,
+  AgentComposerAction,
   AgentComposerActions,
   AgentComposerDock,
   AgentComposerFooter,
@@ -362,6 +363,7 @@ function AgentConsole() {
                 <AgentComposerFooter>
                   <AgentComposerActions>
                     <NewThreadButton onNewThread={startNewThread} />
+                    <AgentComposerAction href="/chat/compare">模型对比</AgentComposerAction>
                   </AgentComposerActions>
                   <AgentComposerSubmitGroup>
                     <ModelSelect

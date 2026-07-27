@@ -9,7 +9,7 @@ import { ThemeToggle } from './theme-toggle'
 import { useUserSession } from './user-session-provider'
 
 const navigation = [
-  { href: '/chat', label: 'Chat' },
+  { href: '/agent', label: 'Agent' },
   { href: '/image', label: '文生图' },
   { href: '/prompt', label: 'Prompt 优化' },
 ]

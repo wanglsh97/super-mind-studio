@@ -23,8 +23,7 @@ const shellIconButtonClass =
   'liquid-glass-soft grid size-9 shrink-0 place-items-center rounded-xl text-ink-muted transition-[background,color,transform] hover:-translate-y-0.5 hover:text-brand-hover dark:hover:text-ink [&_svg]:size-4'
 
 const navigation = [
-  { href: '/chat', label: '聊天', description: '与模型实时对话', icon: ChatIcon },
-  { href: '/agent', label: '智能体', description: '多步 Agent 任务', icon: AgentIcon },
+  { href: '/agent', label: '智能体', description: '对话与多步任务', icon: AgentIcon },
   { href: '/image', label: '图片', description: '从文字生成图像', icon: ImageIcon },
   { href: '/skills', label: '技能', description: '查看已安装能力', icon: SparkIcon },
   { href: '/api', label: 'API', description: '接入网关能力', icon: ApiIcon },
@@ -125,7 +124,10 @@ function UserWorkspace({ children }: Readonly<{ children: ReactNode }>) {
             </p>
           )}
           {navigation.map((item) => {
-            const active = pathname === item.href || pathname.startsWith(`${item.href}/`)
+            const active =
+              pathname === item.href ||
+              pathname.startsWith(`${item.href}/`) ||
+              (item.href === '/agent' && pathname === '/chat/compare')
             const Icon = item.icon
             if (item.href === '/agent') {
               return (
@@ -638,14 +640,6 @@ function Icon({ children, className }: SvgProps) {
     >
       {children}
     </svg>
-  )
-}
-function ChatIcon() {
-  return (
-    <Icon>
-      <path d="M7 8h10M7 12h7" />
-      <path d="M20 15a3 3 0 0 1-3 3H9l-5 3v-6a3 3 0 0 1-1-2V6a3 3 0 0 1 3-3h11a3 3 0 0 1 3 3Z" />
-    </Icon>
   )
 }
 function AgentIcon() {
