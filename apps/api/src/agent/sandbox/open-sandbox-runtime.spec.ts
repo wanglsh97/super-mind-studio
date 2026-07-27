@@ -82,6 +82,8 @@ class StubOpenSandboxInstance implements OpenSandboxInstance {
     }
   }
 
+  async ensureDirectory(): Promise<void> {}
+
   async writeFile(path: string, bytes: Uint8Array): Promise<void> {
     this.files.set(path, Uint8Array.from(bytes))
   }
@@ -207,6 +209,27 @@ describe('OpenSandboxRuntime adapter mapping', () => {
         'aigateway.run-id': 'run-resource',
       },
     })
+    await runtime.onModuleDestroy()
+  })
+
+  it('treats an SDK structured 404 as a missing file before first write', async () => {
+    const client = new StubOpenSandboxClient()
+    const runtime = createRuntime(client)
+    const sandbox = await runtime.createSandbox({ runId: 'run-first-write' })
+    await runtime.waitUntilReady(sandbox.sandboxId)
+    const instance = (await client.connect(sandbox.sandboxId)) as StubOpenSandboxInstance
+    jest.spyOn(instance, 'readFile').mockRejectedValueOnce({
+      statusCode: 404,
+      rawBody: '{"code":"FILE_NOT_FOUND"}',
+    })
+
+    await expect(
+      runtime.writeFile({
+        sandboxId: sandbox.sandboxId,
+        path: '/workspace/input/new.txt',
+        bytes: new TextEncoder().encode('new'),
+      }),
+    ).resolves.toMatchObject({ path: '/workspace/input/new.txt' })
     await runtime.onModuleDestroy()
   })
 

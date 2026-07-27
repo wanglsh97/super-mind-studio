@@ -86,3 +86,34 @@ SDK 的 `mode` 字段按文档传 `755`/`644` 这类十进制数字表示的权�
 - `kill()` 后 sandbox 从管理列表消失。
 
 结论：OpenSandbox 0.2.2 + JavaScript SDK 0.1.10 的基础生命周期、命令和文件能力满足生产 Adapter 的接口前置条件。生产实现应预拉取固定镜像，且不得让冷镜像拉取共用普通 30–120 秒业务请求超时。
+
+## 生产 Adapter 本地接入预检
+
+2026-07-26 使用项目内 `OpenSandboxRuntime` 和阿里云镜像仓库中的
+`sandbox-registry.cn-zhangjiakou.cr.aliyuncs.com/opensandbox/code-interpreter:v1.1.0`
+完成本地真实 Server 预检：
+
+```bash
+OPEN_SANDBOX_DOMAIN=127.0.0.1:8080 \
+OPEN_SANDBOX_USE_SERVER_PROXY=false \
+OPEN_SANDBOX_REQUEST_TIMEOUT_SECONDS=180 \
+pnpm --filter @aigateway/api test:opensandbox-adapter
+```
+
+本地 Docker 将 execd 端口发布到宿主机，因此关闭 Server Proxy；业务 ECS 无法直连
+sandbox 动态端口时保持 `OPEN_SANDBOX_USE_SERVER_PROXY=true`。本机 Server 继承
+`ALL_PROXY` 时，Server Proxy 对 execd 的内部请求会返回 500，这属于本地代理拓扑，
+不应通过关闭生产 Server Proxy 规避。
+
+预检结果：
+
+- 创建并 ready：2237 ms。
+- 首条命令：1030 ms。
+- 总耗时（含文件往返、指标和幂等销毁）：4850 ms。
+- Adapter 实际传入一 vCPU、1 GiB 内存和 120 秒 TTL。
+- Shell、嵌套目录首次写入、文件读回、metrics、重复销毁和无泄漏断言通过。
+- 普通 `python:3.12` 镜像在本机 execd ready 检查失败；固定 Code Interpreter
+  `v1.1.0` 镜像通过，因此生产不得回退到任意基础镜像。
+
+此结果只作为任务 4.9 的本地 Adapter 前置验证，不替代独立 ECS 上的版本、节点规格、
+gVisor 和每 Run 强制资源实测。

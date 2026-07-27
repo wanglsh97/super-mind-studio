@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto'
+import { posix } from 'node:path'
 
 import {
   ConnectionConfig,
@@ -69,6 +70,7 @@ export interface OpenSandboxInstance {
   getInfo(): Promise<OpenSandboxInstanceInfo>
   waitUntilReady(readyTimeoutSeconds: number): Promise<void>
   runCommand(input: RunOpenSandboxCommandInput): Promise<OpenSandboxCommandExecution>
+  ensureDirectory(path: string): Promise<void>
   writeFile(path: string, bytes: Uint8Array): Promise<void>
   readFile(path: string): Promise<Uint8Array | null>
   getMetrics(): Promise<OpenSandboxMetrics>
@@ -280,7 +282,13 @@ export class OpenSandboxRuntime implements SandboxRuntimePort, OnModuleDestroy {
     throwIfAborted(input.signal)
     const state = await this.requireReadyState(input.sandboxId)
     assertWorkspacePath(input.path)
-    const previous = await state.instance.readFile(input.path)
+    let previous: Uint8Array | null
+    try {
+      previous = await state.instance.readFile(input.path)
+    } catch (error) {
+      if (!isNotFoundError(error)) throw error
+      previous = null
+    }
     const nextDiskBytes =
       state.usage.diskBytes - (previous?.byteLength ?? 0) + input.bytes.byteLength
     if (nextDiskBytes > state.limits.diskBytes) {
@@ -289,6 +297,7 @@ export class OpenSandboxRuntime implements SandboxRuntimePort, OnModuleDestroy {
       })
     }
     const bytes = Uint8Array.from(input.bytes)
+    await state.instance.ensureDirectory(posix.dirname(input.path))
     await state.instance.writeFile(input.path, bytes)
     state.usage.diskBytes = nextDiskBytes
     return fileResult(input.path, bytes)
@@ -536,6 +545,10 @@ class SdkOpenSandboxInstance implements OpenSandboxInstance {
     await this.sandbox.files.writeFiles([{ path, data: bytes }])
   }
 
+  async ensureDirectory(path: string): Promise<void> {
+    await this.sandbox.files.createDirectories([{ path, mode: 755 }])
+  }
+
   async readFile(path: string): Promise<Uint8Array | null> {
     try {
       return await this.sandbox.files.readBytes(path)
@@ -721,7 +734,21 @@ function isTimeoutError(error: unknown): boolean {
 }
 
 function isNotFoundError(error: unknown): boolean {
-  return error instanceof Error && /404|not found|no such/i.test(error.message)
+  if (error instanceof Error && /404|not found|no such/i.test(error.message)) return true
+  if (typeof error !== 'object' || error === null) return false
+  const candidate = error as {
+    statusCode?: unknown
+    rawBody?: unknown
+    error?: { code?: unknown; message?: unknown }
+  }
+  return (
+    candidate.statusCode === 404 ||
+    candidate.error?.code === 'FILE_NOT_FOUND' ||
+    (typeof candidate.rawBody === 'string' &&
+      /FILE_NOT_FOUND|not found|no such/i.test(candidate.rawBody)) ||
+    (typeof candidate.error?.message === 'string' &&
+      /not found|no such/i.test(candidate.error.message))
+  )
 }
 
 function validateLimits(limits: SandboxLimits): void {
