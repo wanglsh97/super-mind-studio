@@ -1,7 +1,7 @@
 ## 1. 规格与路由收敛
 
 - [x] 1.1 新增 proposal、design、web-agent/user-workspace-routing delta specs，并通过 OpenSpec strict validation
-- [ ] 1.2 将 `/chat` 替换为到 `/agent` 的服务端兼容跳转，删除旧页面专属 adapter 与测试
+- [x] 1.2 将 `/chat` 替换为到 `/agent` 的服务端兼容跳转，删除旧页面专属 adapter 与测试
 
 ## 2. 用户入口与文档
 
