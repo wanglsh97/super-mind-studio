@@ -27,3 +27,27 @@ The existing `/chat/compare` route SHALL remain available to authenticated users
 - **WHEN** the comparison page renders
 - **THEN** its independent per-model request behavior remains unchanged
 - **AND** the page provides a return action to `/agent`
+
+### Requirement: The C-end workspace is dedicated to Agent
+
+The user-facing workspace SHALL NOT expose standalone Image or Prompt optimization pages or primary navigation items. `/image` and `/prompt` SHALL have no Next.js page implementation and SHALL return not found rather than redirecting. The underlying Gateway API and SDK capabilities MAY remain available for Agent integration, API demonstration, and administrative observability.
+
+#### Scenario: User opens a retired Image URL
+
+- **GIVEN** the standalone Image page has been removed
+- **WHEN** a user requests `/image`
+- **THEN** Next.js returns its not-found response
+- **AND** no Image form or local history code is loaded
+
+#### Scenario: User opens a retired Prompt URL
+
+- **GIVEN** the standalone Prompt optimization page has been removed
+- **WHEN** a user requests `/prompt`
+- **THEN** Next.js returns its not-found response
+- **AND** no Prompt optimization form is rendered
+
+#### Scenario: User signs in without an allowed return target
+
+- **GIVEN** a login return target is `/image`, `/prompt`, or another retired or unapproved route
+- **WHEN** the Web application sanitizes it
+- **THEN** the user is returned to `/agent`
