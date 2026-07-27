@@ -72,3 +72,21 @@ The user-facing workspace SHALL NOT expose standalone marketing, Agent alias, Im
 - **GIVEN** a login return target is `/image`, `/prompt`, or another retired or unapproved route
 - **WHEN** the Web application sanitizes it
 - **THEN** the user is returned to `/`
+
+### Requirement: The sidebar prioritizes conversation actions and recent history
+
+The expanded user sidebar SHALL place the new-conversation action directly below the product logo. It SHALL label the history section “对话” without rendering a separate Agent navigation title card. The history section SHALL show at most 5 most-recent threads by default and SHALL provide a control to reveal all remaining threads and collapse them again.
+
+#### Scenario: User opens a sidebar with more than five conversations
+
+- **GIVEN** an authenticated user has more than 5 Agent threads
+- **WHEN** the expanded sidebar first renders
+- **THEN** it displays the 5 most-recent threads
+- **AND** it displays a control with the number of hidden threads
+
+#### Scenario: User expands conversation history
+
+- **GIVEN** additional threads are folded
+- **WHEN** the user activates the expand control
+- **THEN** all threads become visible
+- **AND** the same control allows the history to be collapsed to 5 threads again

@@ -31,3 +31,8 @@
 
 - [x] 6.1 更新 proposal、design 和 user-workspace-routing，明确删除 `/api` C 端页面但保留 `/api/v1/*`、Swagger 与 SDK，并通过 strict validation
 - [x] 6.2 删除 `/api` 页面、侧栏入口和专属图标，运行 Web test、typecheck、lint、build、dev 404 冒烟和 OpenSpec strict validation
+
+## 7. 对话侧栏层级
+
+- [x] 7.1 更新 design 和 user-workspace-routing，明确新建会话按钮、对话标题和默认 5 条折叠行为，并通过 strict validation
+- [ ] 7.2 重构侧栏结构与视觉，增加历史折叠 helper/test，运行 Web test、typecheck、lint、build、浏览器视觉验证和 OpenSpec strict validation
