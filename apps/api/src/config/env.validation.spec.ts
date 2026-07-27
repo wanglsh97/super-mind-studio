@@ -42,6 +42,40 @@ describe('validateEnvironment', () => {
     expect(environment.OPEN_SANDBOX_REQUEST_TIMEOUT_SECONDS).toBe(30)
     expect(environment.OPEN_SANDBOX_READY_TIMEOUT_SECONDS).toBe(60)
     expect(environment.OPEN_SANDBOX_USE_SERVER_PROXY).toBe(true)
+    expect(environment.AGENT_WEB_SEARCH_ENABLED).toBe(true)
+    expect(environment.AGENT_WEB_SEARCH_PROVIDER).toBe('auto')
+    expect(environment.AGENT_WEB_SEARCH_TIMEOUT_MS).toBe(25_000)
+    expect(environment.AGENT_WEB_SEARCH_MAX_RESPONSE_BYTES).toBe(2_097_152)
+    expect(environment.AGENT_WEB_SEARCH_MAX_OUTPUT_CHARS).toBe(30_000)
+    expect(environment.EXA_API_KEY).toBeUndefined()
+    expect(environment.PARALLEL_API_KEY).toBeUndefined()
+  })
+
+  it('accepts a fixed anonymous web-search provider without API keys', () => {
+    expect(
+      validateEnvironment({
+        ...requiredEnvironment,
+        AGENT_WEB_SEARCH_PROVIDER: 'parallel',
+        EXA_API_KEY: '',
+        PARALLEL_API_KEY: '',
+      }),
+    ).toMatchObject({
+      AGENT_WEB_SEARCH_ENABLED: true,
+      AGENT_WEB_SEARCH_PROVIDER: 'parallel',
+      EXA_API_KEY: undefined,
+      PARALLEL_API_KEY: undefined,
+    })
+  })
+
+  it('rejects unsafe web-search resource limits', () => {
+    expect(() =>
+      validateEnvironment({
+        ...requiredEnvironment,
+        AGENT_WEB_SEARCH_TIMEOUT_MS: '999',
+        AGENT_WEB_SEARCH_MAX_RESPONSE_BYTES: '512',
+        AGENT_WEB_SEARCH_MAX_OUTPUT_CHARS: '999',
+      }),
+    ).toThrow('环境变量校验失败')
   })
 
   it('requires private connection settings when OpenSandbox is selected', () => {

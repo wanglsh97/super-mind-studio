@@ -1,7 +1,7 @@
 ## 1. 规格与配置
 
 - [x] 1.1 新增 `agent-web-search` proposal、design、capability spec 和任务，并通过 OpenSpec strict validation
-- [ ] 1.2 增加 enable、provider、超时、响应/输出上限及可选 Key 的环境校验和 `.env.example`，验证默认匿名模式不要求凭证
+- [x] 1.2 增加 enable、provider、超时、响应/输出上限及可选 Key 的环境校验和 `.env.example`，验证默认匿名模式不要求凭证
 
 ## 2. 双 Provider 搜索实现
 

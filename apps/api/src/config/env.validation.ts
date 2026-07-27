@@ -88,6 +88,23 @@ const environmentSchema = z
     OPEN_SANDBOX_REQUEST_TIMEOUT_SECONDS: z.coerce.number().int().min(1).max(300).default(30),
     OPEN_SANDBOX_READY_TIMEOUT_SECONDS: z.coerce.number().int().min(1).max(120).default(60),
     OPEN_SANDBOX_USE_SERVER_PROXY: booleanFromEnv.default(true),
+    AGENT_WEB_SEARCH_ENABLED: booleanFromEnv.default(true),
+    AGENT_WEB_SEARCH_PROVIDER: z.enum(['auto', 'exa', 'parallel']).default('auto'),
+    AGENT_WEB_SEARCH_TIMEOUT_MS: z.coerce.number().int().min(1_000).max(60_000).default(25_000),
+    AGENT_WEB_SEARCH_MAX_RESPONSE_BYTES: z.coerce
+      .number()
+      .int()
+      .min(1_024)
+      .max(4_194_304)
+      .default(2_097_152),
+    AGENT_WEB_SEARCH_MAX_OUTPUT_CHARS: z.coerce
+      .number()
+      .int()
+      .min(1_000)
+      .max(50_000)
+      .default(30_000),
+    EXA_API_KEY: optionalSecret,
+    PARALLEL_API_KEY: optionalSecret,
     MOCK_PROVIDER_ENABLED: booleanFromEnv.default(true),
     QWEN_ENABLED: booleanFromEnv.default(false),
     GLM_ENABLED: booleanFromEnv.default(false),
