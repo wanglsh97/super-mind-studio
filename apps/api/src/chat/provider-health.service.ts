@@ -1,5 +1,5 @@
 import type { ChatAdapterId } from './chat.constants'
-import type { ModelSummary } from '@aigateway/sdk'
+import type { ModelSummary } from '@supermind/sdk'
 import { Inject, Injectable, Logger } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 

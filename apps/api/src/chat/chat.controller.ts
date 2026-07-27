@@ -6,7 +6,7 @@ import type {
   ChatSseErrorPayload,
   ChatSseUsagePayload,
   TextModelAlias,
-} from '@aigateway/sdk'
+} from '@supermind/sdk'
 import {
   BadRequestException,
   Body,

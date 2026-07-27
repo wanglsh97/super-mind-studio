@@ -1,4 +1,4 @@
-# AI Gateway Studio 协作说明
+# Super Mind Studio 协作说明
 
 本文件适用于整个仓库。所有开发代理在分析、设计、编码、测试和交付时都必须遵守。
 
@@ -10,7 +10,7 @@
 
 ## 2. 项目目标
 
-AI Gateway Studio 是一个公开访问的 AI 能力演示站及其管理员中后台，V1 包含：
+Super Mind Studio 是一个公开访问的 AI 能力演示站及其管理员中后台，V1 包含：
 
 1. API 网关服务建设，包括统一模型协议、数据库表、日志计费、限流、测试和单机部署基础。
 2. 管理员中后台，包括登录、Dashboard、请求日志、数据库业务表维护和操作审计。
@@ -61,7 +61,7 @@ npx -y @fission-ai/openspec@1.6.0 validate build-aigateway-v1 --type change --st
 3. 首个验收闭环必须是：
 
 ```text
-Web → @aigateway/sdk → NestJS API → Mock Adapter → SSE → PostgreSQL
+Web → @supermind/sdk → NestJS API → Mock Adapter → SSE → PostgreSQL
 ```
 
 4. Mock 闭环稳定后，再逐个接入 Qwen、GLM、DeepSeek。
@@ -75,7 +75,7 @@ Web → @aigateway/sdk → NestJS API → Mock Adapter → SSE → PostgreSQL
 - Monorepo：pnpm workspace。
 - Web：Next.js 16、React 19、Tailwind CSS 4、shadcn/ui、Zustand 5、ECharts 6。
 - API：NestJS 11 + Express。
-- SDK：仓库内唯一业务 SDK 包 `@aigateway/sdk`。
+- SDK：仓库内唯一业务 SDK 包 `@supermind/sdk`。
 - 数据库：PostgreSQL 17 + Prisma 7。
 - 缓存：Redis 8，仅用于限流和短期模型健康状态。
 - 日志：Pino 结构化日志。
@@ -90,7 +90,7 @@ apps/
   web/                 # 用户端网页和 /admin 管理后台
   api/                 # NestJS 模块化单体 API
 packages/
-  sdk/                 # @aigateway/sdk
+  sdk/                 # @supermind/sdk
 prisma/
   schema.prisma
   migrations/
@@ -103,7 +103,7 @@ spec/                  # PRD 与技术选型文档
 ```
 
 - `apps/web` 不得直接调用厂商 API，也不得持有厂商 API Key。
-- 用户端 Chat、Image、Prompt 调用必须经过 `@aigateway/sdk`。
+- 用户端 Chat、Image、Prompt 调用必须经过 `@supermind/sdk`。
 - 厂商协议、鉴权、错误和响应类型必须限制在 `apps/api` 的 Adapter 层。
 - 不要把 Chat、Image、Prompt 拆成多个 npm SDK 包。
 - 管理后台可使用独立的内部 admin client，但不能绕过服务端认证和字段白名单。

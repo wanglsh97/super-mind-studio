@@ -1,4 +1,4 @@
-import type { AgentSkillMarketItem } from '@aigateway/sdk'
+import type { AgentSkillMarketItem } from '@supermind/sdk'
 import { Inject, Injectable, NotFoundException } from '@nestjs/common'
 
 import type { AgentSkillDescriptor } from './agent-skill.registry'

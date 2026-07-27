@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common'
 
-import type { AgentSkillCategory } from '@aigateway/sdk'
+import type { AgentSkillCategory } from '@supermind/sdk'
 
 import {
   SkillClaimPersistenceError,

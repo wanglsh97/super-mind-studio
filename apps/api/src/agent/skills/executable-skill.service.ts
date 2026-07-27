@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common'
-import type { AgentExecutionErrorCode, AgentSkillFileEntry } from '@aigateway/sdk'
+import type { AgentExecutionErrorCode, AgentSkillFileEntry } from '@supermind/sdk'
 
 import {
   SKILL_OBJECT_STORE_PORT,

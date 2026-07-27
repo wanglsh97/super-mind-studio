@@ -93,7 +93,7 @@ export function LoginContent() {
       <div className="mx-auto grid max-w-[72rem] grid-cols-1 items-center gap-12 lg:grid-cols-[1.15fr_0.85fr] lg:gap-32">
         <div className="min-w-0 max-lg:order-2">
           <p className="font-mono text-[0.62rem] font-bold tracking-[0.13em] text-[#7b718a]">
-            AI GATEWAY / ACCESS
+            SUPER MIND / ACCESS
           </p>
           <h1 className="mt-5 font-display text-[clamp(3rem,6vw,5.6rem)] leading-[0.98] font-black tracking-tight text-ink">
             One clear identity.

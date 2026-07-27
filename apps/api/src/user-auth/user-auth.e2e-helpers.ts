@@ -1,4 +1,4 @@
-import { createAIGatewayClient, type AIGatewayClient } from '@aigateway/sdk'
+import { createAIGatewayClient, type AIGatewayClient } from '@supermind/sdk'
 import type { INestApplication } from '@nestjs/common'
 
 import type { PrismaService } from '../database/prisma.service'

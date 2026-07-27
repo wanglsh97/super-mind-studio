@@ -1,4 +1,4 @@
-import type { AgentExecutionError } from '@aigateway/sdk'
+import type { AgentExecutionError } from '@supermind/sdk'
 
 import type { AgentExecutionSessionService } from '../sandbox/agent-execution-session.service'
 import { renderActiveSkillPrompt } from '../skills/active-skill-prompt'

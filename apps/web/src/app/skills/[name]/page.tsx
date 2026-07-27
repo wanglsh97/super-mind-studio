@@ -1,6 +1,6 @@
 'use client'
 
-import { createAIGatewayClient, type AgentSkillMarketDetail } from '@aigateway/sdk'
+import { createAIGatewayClient, type AgentSkillMarketDetail } from '@supermind/sdk'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { useEffect, useState } from 'react'

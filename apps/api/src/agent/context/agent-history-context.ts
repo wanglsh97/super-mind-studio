@@ -1,4 +1,4 @@
-import type { AgentMediaReferencePart, AgentMessagePart } from '@aigateway/sdk'
+import type { AgentMediaReferencePart, AgentMessagePart } from '@supermind/sdk'
 
 import type { AgentMessage, AgentMessageRole } from '../../generated/prisma/client'
 import type { ChatAdapterMessage } from '../../chat/adapters/chat-adapter'
@@ -23,15 +23,18 @@ export function assembleAgentHistory(input: AgentHistoryAssemblyInput): ChatAdap
   const system = input.currentMessages.filter((message) => message.role === 'system')
   const current = input.currentMessages.filter((message) => message.role !== 'system')
   const summary = input.summary
-    ? [{
-        role: 'user' as const,
-        content: `<conversation_summary trust="historical-unverified">${JSON.stringify(input.summary.content)}</conversation_summary>`,
-      }]
+    ? [
+        {
+          role: 'user' as const,
+          content: `<conversation_summary trust="historical-unverified">${JSON.stringify(input.summary.content)}</conversation_summary>`,
+        },
+      ]
     : []
   const history = input.persistedMessages
-    .filter((message) =>
-      message.runId !== input.currentRunId &&
-      message.sequence > (input.summary?.coveredThroughSequence ?? -1),
+    .filter(
+      (message) =>
+        message.runId !== input.currentRunId &&
+        message.sequence > (input.summary?.coveredThroughSequence ?? -1),
     )
     .flatMap((message) => persistedMessageToAdapter(message, input.reasoningMode ?? 'native'))
   return [...system, ...summary, ...history, ...current]
@@ -44,11 +47,11 @@ export function selectMessagesForForcedSummary(
   coveredThroughSequence: number,
   minimumTurns = 2,
 ): AgentMessage[] {
-  const uncovered = messages.filter((message) =>
-    message.runId !== currentRunId && message.sequence > coveredThroughSequence,
+  const uncovered = messages.filter(
+    (message) => message.runId !== currentRunId && message.sequence > coveredThroughSequence,
   )
   const userIndexes = uncovered
-    .map((message, index) => message.role === 'USER' ? index : -1)
+    .map((message, index) => (message.role === 'USER' ? index : -1))
     .filter((index) => index >= 0)
   const keepFrom = userIndexes.at(-minimumTurns) ?? 0
   return uncovered.slice(0, keepFrom)
@@ -74,12 +77,14 @@ export function persistedMessageToAdapter(
       reasoningMode === 'tagged' && reasoning
         ? `${taggedReasoning(reasoning)}${text ? `\n${text}` : ''}`
         : text
-    return [{
-      role: 'assistant',
-      content,
-      ...(reasoningMode === 'native' && reasoning ? { reasoningContent: reasoning } : {}),
-      ...(toolCalls.length > 0 ? { toolCalls } : {}),
-    }]
+    return [
+      {
+        role: 'assistant',
+        content,
+        ...(reasoningMode === 'native' && reasoning ? { reasoningContent: reasoning } : {}),
+        ...(toolCalls.length > 0 ? { toolCalls } : {}),
+      },
+    ]
   }
 
   return parts
@@ -115,7 +120,8 @@ function visibleContent(parts: readonly AgentMessagePart[]): string {
   return parts
     .flatMap((part) => {
       if (part.type === 'text') return [part.text]
-      if (part.type === 'media-reference') return [mediaReferencePlaceholder(part as AgentMediaReferencePart)]
+      if (part.type === 'media-reference')
+        return [mediaReferencePlaceholder(part as AgentMediaReferencePart)]
       return []
     })
     .join('\n')
@@ -126,8 +132,5 @@ function taggedReasoning(value: string): string {
 }
 
 function escapeXml(value: string): string {
-  return value
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
+  return value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
 }

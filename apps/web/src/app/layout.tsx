@@ -9,10 +9,10 @@ import './globals.css'
 
 export const metadata: Metadata = {
   title: {
-    default: 'AI Gateway Studio',
-    template: '%s · AI Gateway Studio',
+    default: 'Super Mind Studio',
+    template: '%s · Super Mind Studio',
   },
-  description: '统一体验 Chat、文生图与 Prompt 优化能力',
+  description: '从灵感到作品的 AI Creative Workspace',
 }
 
 export const viewport: Viewport = {

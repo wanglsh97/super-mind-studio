@@ -1,4 +1,4 @@
-import type { ChatSsePayload } from '@aigateway/sdk'
+import type { ChatSsePayload } from '@supermind/sdk'
 import type { Response } from 'express'
 
 const CHAT_SSE_DONE = '[DONE]'

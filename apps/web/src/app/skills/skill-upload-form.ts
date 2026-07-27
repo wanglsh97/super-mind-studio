@@ -1,4 +1,4 @@
-import type { AgentSkillCategory } from '@aigateway/sdk'
+import type { AgentSkillCategory } from '@supermind/sdk'
 
 export const SKILL_CATEGORIES = [
   { value: 'development', label: '开发工具' },

@@ -1,4 +1,4 @@
-import type { ImageTask } from '@aigateway/sdk'
+import type { ImageTask } from '@supermind/sdk'
 import {
   BadGatewayException,
   BadRequestException,

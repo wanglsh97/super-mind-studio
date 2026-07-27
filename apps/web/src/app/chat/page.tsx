@@ -1,7 +1,7 @@
 'use client'
 
-import { createAIGatewayClient } from '@aigateway/sdk'
-import type { TextModelAlias, TextModelId } from '@aigateway/sdk'
+import { createAIGatewayClient } from '@supermind/sdk'
+import type { TextModelAlias, TextModelId } from '@supermind/sdk'
 import {
   AssistantRuntimeProvider,
   AuiIf,
@@ -149,7 +149,7 @@ function ChatContent() {
                     <UserMessage />
                   ) : (
                     <AssistantMessage
-                      label="AI GATEWAY · AGENT RESPONSE"
+                      label="SUPER MIND · AGENT RESPONSE"
                       metadata={<ChatMessageMetadata />}
                     />
                   )
@@ -178,7 +178,10 @@ function ChatContent() {
                 <AgentComposerFooter>
                   <AgentComposerActions>
                     <AgentComposerAction href="/chat/compare">模型对比</AgentComposerAction>
-                    <AgentComposerAction expanded={settingsOpen} onClick={() => setSettingsOpen((open) => !open)}>
+                    <AgentComposerAction
+                      expanded={settingsOpen}
+                      onClick={() => setSettingsOpen((open) => !open)}
+                    >
                       参数
                       <span aria-hidden="true">{settingsOpen ? '−' : '+'}</span>
                     </AgentComposerAction>
@@ -211,7 +214,9 @@ function ChatContent() {
 
 function ChatMessageMetadata() {
   const custom = useAuiState(({ message }) => message.metadata.custom) as AgentMessageMetadata
-  return <ChatUsageMetadata usage={custom.usage} model={custom.model} requestId={custom.requestId} />
+  return (
+    <ChatUsageMetadata usage={custom.usage} model={custom.model} requestId={custom.requestId} />
+  )
 }
 
 function isTextModelAlias(value: string): value is TextModelAlias {

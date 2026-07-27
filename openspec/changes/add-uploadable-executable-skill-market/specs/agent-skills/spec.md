@@ -56,7 +56,7 @@ The system SHALL persist an idempotent added/not-added state per user and publis
 
 ### Requirement: The Skill market uses the public SDK contract
 
-The `/skills` experience SHALL use `@aigateway/sdk` for public discovery, authenticated add/remove state, upload finalization and owner management. It SHALL provide loading, empty, authentication, upload, pending-review, rejected, delisted and error states. The SDK MUST NOT expose OSS management credentials or permit a non-owner to mutate Skill content.
+The `/skills` experience SHALL use `@supermind/sdk` for public discovery, authenticated add/remove state, upload finalization and owner management. It SHALL provide loading, empty, authentication, upload, pending-review, rejected, delisted and error states. The SDK MUST NOT expose OSS management credentials or permit a non-owner to mutate Skill content.
 
 #### Scenario: A user adds a Skill from the market
 

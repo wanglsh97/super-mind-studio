@@ -1,6 +1,6 @@
 # OpenCodex 本机配置
 
-本文记录 AI Gateway Studio 开发机使用
+本文记录 Super Mind Studio 开发机使用
 [OpenCodex](https://github.com/lidge-jun/opencodex) 的配置。OpenCodex 是 Codex 前的本机代理，
 不属于本项目的运行时依赖，也不会随 Web、API 或 Docker Compose 部署。
 
@@ -93,15 +93,15 @@ codex exec -m kimi/kimi-k2.7-code "只回复 OK"
 
 当前 Kimi registry 发布以下模型：
 
-| Codex 模型 ID | 上下文窗口 | 说明 |
-| --- | ---: | --- |
-| `kimi/kimi-k2.7-code` | 262,144 | 默认编程模型 |
-| `kimi/kimi-k2.7-code-highspeed` | 262,144 | 高速编程模型 |
-| `kimi/k3` | 262,144 | 文本/图像输入，支持 `low`、`high`、`max` reasoning |
-| `kimi/k3[1m]` | 1,048,576 | 百万上下文，文本/图像输入 |
-| `kimi/kimi-k2.6` | 262,144 | 兼容模型 |
-| `kimi/kimi-k2.5` | 262,144 | 兼容模型 |
-| `kimi/kimi-for-coding` | 262,144 | 兼容编程模型 |
+| Codex 模型 ID                   | 上下文窗口 | 说明                                               |
+| ------------------------------- | ---------: | -------------------------------------------------- |
+| `kimi/kimi-k2.7-code`           |    262,144 | 默认编程模型                                       |
+| `kimi/kimi-k2.7-code-highspeed` |    262,144 | 高速编程模型                                       |
+| `kimi/k3`                       |    262,144 | 文本/图像输入，支持 `low`、`high`、`max` reasoning |
+| `kimi/k3[1m]`                   |  1,048,576 | 百万上下文，文本/图像输入                          |
+| `kimi/kimi-k2.6`                |    262,144 | 兼容模型                                           |
+| `kimi/kimi-k2.5`                |    262,144 | 兼容模型                                           |
+| `kimi/kimi-for-coding`          |    262,144 | 兼容编程模型                                       |
 
 ## 日常操作与恢复
 
@@ -149,4 +149,4 @@ export no_proxy="$NO_PROXY"
 - 不要把 `hostname` 改为 `0.0.0.0`；确需远程访问时，必须先配置
   `OPENCODEX_API_AUTH_TOKEN`、防火墙及可信网络边界。
 - 新增第三方 provider 时使用 `${ENV_VAR}` 引用密钥，不要把密钥直接写入 JSON。
-- OpenCodex 只影响开发机上的 Codex 请求路由，不改变 AI Gateway Studio 的正式技术架构和服务流量。
+- OpenCodex 只影响开发机上的 Codex 请求路由，不改变 Super Mind Studio 的正式技术架构和服务流量。

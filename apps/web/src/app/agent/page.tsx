@@ -1,6 +1,6 @@
 'use client'
 
-import { createAIGatewayClient } from '@aigateway/sdk'
+import { createAIGatewayClient } from '@supermind/sdk'
 import type {
   AgentContextBudgetState,
   AgentContextSummary,
@@ -8,7 +8,7 @@ import type {
   AgentStreamEvent,
   TextModelAlias,
   TextModelId,
-} from '@aigateway/sdk'
+} from '@supermind/sdk'
 import {
   AssistantRuntimeProvider,
   AuiIf,
@@ -271,7 +271,7 @@ function AgentConsole() {
                     <UserMessage />
                   ) : (
                     <AssistantMessage
-                      label="AI GATEWAY · AGENT"
+                      label="SUPER MIND · AGENT"
                       metadata={<AgentMessageMetadata />}
                       renderPart={(part) => {
                         if (part.type === 'tool-call') return part.toolUI ?? null

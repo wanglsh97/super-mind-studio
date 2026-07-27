@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 
-import type { AgentSkillFileEntry } from '@aigateway/sdk'
+import type { AgentSkillFileEntry } from '@supermind/sdk'
 
 import type {
   SkillObjectStorePort,

@@ -1,6 +1,6 @@
 ## 1. Mock Agent 首个纵向闭环
 
-- [x] 1.1 为 `@aigateway/sdk` 定义 Agent thread/run/message part/event/error 公共契约与序列化测试，保持 Pi 和 provider 类型不进入 SDK 公共面
+- [x] 1.1 为 `@supermind/sdk` 定义 Agent thread/run/message part/event/error 公共契约与序列化测试，保持 Pi 和 provider 类型不进入 SDK 公共面
 - [x] 1.2 新增 AgentThread、AgentMessage、AgentRun、AgentEvent、AgentToolCall Prisma 模型、索引、关联约束和正式 migration，并验证生成客户端与迁移回滚说明
 - [x] 1.3 建立 NestJS AgentModule、线程/运行 repository 端口和用户 owner 过滤，添加跨用户读取/修改拒绝测试
 - [x] 1.4 定义 provider-neutral `ModelInvocationPort` 的 text/reasoning/tool-call/tool-result/usage 事件，并以不改变现有 Chat 行为的方式从 Chat 编排中提取复用边界

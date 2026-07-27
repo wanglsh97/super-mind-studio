@@ -1,4 +1,4 @@
-import type { ChatFinishReason } from '@aigateway/sdk'
+import type { ChatFinishReason } from '@supermind/sdk'
 
 import type {
   ChatAdapterRequest,

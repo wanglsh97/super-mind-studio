@@ -1,4 +1,4 @@
-import type { AgentMessagePart } from '@aigateway/sdk'
+import type { AgentMessagePart } from '@supermind/sdk'
 import { Inject, Injectable } from '@nestjs/common'
 
 import { Prisma } from '../generated/prisma/client'

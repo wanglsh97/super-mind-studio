@@ -1,7 +1,7 @@
 import type { Entry, ZipFile } from 'yauzl'
 import { fromBuffer } from 'yauzl'
 
-import type { AgentSkillFileEntry } from '@aigateway/sdk'
+import type { AgentSkillFileEntry } from '@supermind/sdk'
 
 export interface SkillZipLimits {
   maxCompressedBytes: number

@@ -1,4 +1,4 @@
-import type { AgentMessage, AgentRunSummary, AgentStreamEvent } from '@aigateway/sdk'
+import type { AgentMessage, AgentRunSummary, AgentStreamEvent } from '@supermind/sdk'
 
 import {
   initialAgentRunViewState,

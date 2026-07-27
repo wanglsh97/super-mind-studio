@@ -5,7 +5,7 @@ import type {
   AgentRunTerminalStatus,
   AgentStreamEvent,
   AgentToolCallStatus,
-} from '@aigateway/sdk'
+} from '@supermind/sdk'
 import type { AgentEvent } from '@earendil-works/pi-agent-core'
 import type { AssistantMessageEvent } from '@earendil-works/pi-ai'
 

@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common'
 
-import type { AgentSkillCategory, AgentSkillFileEntry } from '@aigateway/sdk'
+import type { AgentSkillCategory, AgentSkillFileEntry } from '@supermind/sdk'
 
 import { PrismaService } from '../../../database/prisma.service'
 

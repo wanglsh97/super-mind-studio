@@ -1,6 +1,6 @@
 'use client'
 
-import { createAIGatewayClient, type OwnerSkillRecord } from '@aigateway/sdk'
+import { createAIGatewayClient, type OwnerSkillRecord } from '@supermind/sdk'
 import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
 

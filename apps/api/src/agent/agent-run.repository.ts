@@ -1,4 +1,4 @@
-import type { AgentStreamEvent } from '@aigateway/sdk'
+import type { AgentStreamEvent } from '@supermind/sdk'
 import { Inject, Injectable } from '@nestjs/common'
 
 import { Prisma } from '../generated/prisma/client'
@@ -43,7 +43,10 @@ export interface FinalizeAgentRunInput {
 }
 
 /** 未终结（进行中）的 run 状态。 */
-export const ACTIVE_AGENT_RUN_STATUSES = ['RUNNING', 'CANCELLING'] as const satisfies readonly AgentRunStatus[]
+export const ACTIVE_AGENT_RUN_STATUSES = [
+  'RUNNING',
+  'CANCELLING',
+] as const satisfies readonly AgentRunStatus[]
 
 /**
  * AgentRun 持久化端口。

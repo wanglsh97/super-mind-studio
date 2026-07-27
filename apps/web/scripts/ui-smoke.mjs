@@ -1,9 +1,11 @@
 import { chromium } from 'playwright'
 import { mkdir } from 'node:fs/promises'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 const baseUrl = process.env.UI_BASE_URL ?? 'http://localhost:3000'
-const outDir = path.resolve('/Users/wangls/Desktop/workspace/ai-gateway-studio/apps/web/tmp/ui-smoke')
+const scriptDir = path.dirname(fileURLToPath(import.meta.url))
+const outDir = path.resolve(scriptDir, '../tmp/ui-smoke')
 
 const routes = [
   { path: '/', name: 'home', expect: ['一个入口', '开始对话'] },
@@ -27,7 +29,10 @@ for (const theme of ['light', 'dark']) {
     colorScheme: theme,
   })
   await context.addInitScript(() => {
-    document.documentElement.classList.toggle('dark', window.matchMedia('(prefers-color-scheme: dark)').matches)
+    document.documentElement.classList.toggle(
+      'dark',
+      window.matchMedia('(prefers-color-scheme: dark)').matches,
+    )
   })
   if (theme === 'dark') {
     await context.addInitScript(() => {
@@ -100,12 +105,21 @@ for (const theme of ['light', 'dark']) {
 await browser.close()
 
 const failed = results.filter(
-  (r) =>
-    r.status >= 400 ||
-    r.missingExpect.length > 0 ||
-    r.issues.length > 0 ||
-    !r.screenshotOk,
+  (r) => r.status >= 400 || r.missingExpect.length > 0 || r.issues.length > 0 || !r.screenshotOk,
 )
 
-console.log(JSON.stringify({ baseUrl, outDir, passed: results.length - failed.length, total: results.length, failed, results }, null, 2))
+console.log(
+  JSON.stringify(
+    {
+      baseUrl,
+      outDir,
+      passed: results.length - failed.length,
+      total: results.length,
+      failed,
+      results,
+    },
+    null,
+    2,
+  ),
+)
 process.exit(failed.length > 0 ? 1 : 0)

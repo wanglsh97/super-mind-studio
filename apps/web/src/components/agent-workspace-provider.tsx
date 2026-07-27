@@ -1,7 +1,7 @@
 'use client'
 
-import { createAIGatewayClient } from '@aigateway/sdk'
-import type { AgentRunSummary, AgentThreadSummary, ModelSummary } from '@aigateway/sdk'
+import { createAIGatewayClient } from '@supermind/sdk'
+import type { AgentRunSummary, AgentThreadSummary, ModelSummary } from '@supermind/sdk'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import {
   createContext,
@@ -113,8 +113,7 @@ export function AgentWorkspaceProvider({ children }: Readonly<{ children: ReactN
     setThreads((current) => {
       const next = current.map((item) => (item.id === threadId ? updated : item))
       return next.sort(
-        (left, right) =>
-          new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime(),
+        (left, right) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime(),
       )
     })
     return updated

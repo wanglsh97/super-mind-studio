@@ -1,4 +1,4 @@
-import type { Capability } from '@aigateway/sdk'
+import type { Capability } from '@supermind/sdk'
 import { Inject, Injectable, Logger, ServiceUnavailableException } from '@nestjs/common'
 
 import { Prisma, RequestCapability, RequestStatus } from '../generated/prisma/client'

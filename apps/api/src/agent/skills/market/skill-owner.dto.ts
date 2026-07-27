@@ -1,4 +1,4 @@
-import type { AgentSkillCategory } from '@aigateway/sdk'
+import type { AgentSkillCategory } from '@supermind/sdk'
 import { IsIn, IsString, IsUUID, Matches, MaxLength, MinLength } from 'class-validator'
 
 import { SKILL_CATEGORIES } from '../publishing/skill-publishing.service'

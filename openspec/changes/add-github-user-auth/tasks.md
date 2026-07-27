@@ -16,7 +16,7 @@
 - [x] 2.1 实现统一 `UserSessionGuard` 和 current-user 注入，所有业务 Service 只接受服务端解析的用户身份
 - [x] 2.2 保护 Chat 和 Prompt 优化 API，在 Adapter 调用前创建带必填 `userId` 的 RequestLog，并保持原有 IP 限流
 - [x] 2.3 保护 Image 创建、状态和下载 API，为任务写入必填 `userId`，使用 `taskId + userId` 校验所有权并对越权统一返回 404
-- [x] 2.4 更新 `@aigateway/sdk` 的 401/session 相关 typed error 行为，不增加或透传客户端 `userId`
+- [x] 2.4 更新 `@supermind/sdk` 的 401/session 相关 typed error 行为，不增加或透传客户端 `userId`
 - [x] 2.5 更新 Mock Adapter、测试 factory 和数据库清理工具，为所有付费路径提供确定性测试用户和 Session
 - [x] 2.6 添加 API/SDK 集成与 E2E，覆盖匿名 401、登录成功、日志归属、图片跨用户越权、多设备 Session、过期和当前设备退出
 

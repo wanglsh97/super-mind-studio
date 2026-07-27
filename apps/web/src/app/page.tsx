@@ -73,7 +73,7 @@ function GatewayPrism() {
           <span className="absolute h-px w-[180%] liquid-spectrum opacity-40" />
           <span className="absolute h-[180%] w-px liquid-spectrum opacity-30" />
           <span className="liquid-glass relative grid size-[4.25rem] place-items-center rounded-[1.5rem] text-sm font-black text-brand shadow-[0_18px_40px_rgb(39_100_255/0.2)] sm:size-20">
-            AG
+            SM
           </span>
         </div>
 
@@ -125,7 +125,7 @@ export default function HomePage() {
         <div className="max-w-[43rem]">
           <p className="liquid-label flex items-center gap-3">
             <span className="h-px w-8 liquid-spectrum" />
-            AI 能力工作台
+            SUPER MIND STUDIO
           </p>
           <h1 className="mt-7 font-display text-[clamp(3.4rem,5.8vw,6.3rem)] leading-[0.92] font-semibold tracking-[-0.07em] text-ink">
             想法，穿过
@@ -135,8 +135,8 @@ export default function HomePage() {
             </span>
           </h1>
           <p className="mt-8 max-w-[36rem] text-[clamp(1rem,1.35vw,1.16rem)] leading-[1.85] text-ink-muted">
-            对话、图像与 Prompt
-            优化聚合在同一个入口。你专注表达目标，模型选择、流式传输和费用记录由网关安静处理。
+            从灵感探索到内容创作，对话、图像、Prompt 与 Agent
+            聚合在同一个入口。你专注表达目标，模型选择、流式传输和费用记录由网关安静处理。
           </p>
 
           <div className="mt-10 flex flex-col gap-3 sm:flex-row">
@@ -259,8 +259,8 @@ export default function HomePage() {
       </section>
 
       <footer className="mx-auto flex max-w-[82rem] flex-col justify-between gap-2 border-t border-line-soft px-5 py-8 font-mono text-[0.6rem] tracking-wide text-ink-muted sm:flex-row sm:px-8 lg:px-12">
-        <span>AI Gateway Studio</span>
-        <span>One clear surface. Many intelligences.</span>
+        <span>Super Mind Studio</span>
+        <span>Ideas, amplified.</span>
       </footer>
     </main>
   )

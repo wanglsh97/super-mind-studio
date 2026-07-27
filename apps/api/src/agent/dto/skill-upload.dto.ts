@@ -1,4 +1,4 @@
-import type { CreateSkillUploadSessionRequest } from '@aigateway/sdk'
+import type { CreateSkillUploadSessionRequest } from '@supermind/sdk'
 import { IsInt, IsOptional, IsString, Matches, Max, Min } from 'class-validator'
 
 import { MAX_SKILL_PACKAGE_BYTES } from '../skills/upload/skill-upload-session.service'

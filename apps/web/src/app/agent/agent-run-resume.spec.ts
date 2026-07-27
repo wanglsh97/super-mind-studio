@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 
-import type { AgentMessage, AgentStreamEvent } from '@aigateway/sdk'
+import type { AgentMessage, AgentStreamEvent } from '@supermind/sdk'
 
 import {
   foldEventsFromCursor,
@@ -43,7 +43,10 @@ describe('agent run resume helpers', () => {
     const resumed = foldEventsFromCursor(events, 3)
     assert.equal(full.messages.filter((message) => message.role === 'tool').length, 1)
     // 从 sequence 3 之后开始：跳过已见的 tool-call，只吃 tool-result → 单独 tool 消息
-    assert.equal(resumed.messages.some((message) => message.role === 'tool'), true)
+    assert.equal(
+      resumed.messages.some((message) => message.role === 'tool'),
+      true,
+    )
     const fromMid = foldEventsFromCursor(events, 4)
     assert.equal(fromMid.messages.length, 0)
     assert.equal(fromMid.status, 'succeeded')
@@ -67,7 +70,10 @@ describe('agent run resume helpers', () => {
     const view = foldEventsFromCursor(events, -1)
     const merged = mergeThreadMessagesWithRunView(history, view)
     assert.equal(merged[0]?.role, 'user')
-    assert.equal(merged.some((message) => message.id === 'stale-a'), false)
+    assert.equal(
+      merged.some((message) => message.id === 'stale-a'),
+      false,
+    )
     assert.ok(merged.some((message) => message.role === 'assistant'))
   })
 

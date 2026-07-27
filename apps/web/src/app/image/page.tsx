@@ -1,7 +1,7 @@
 'use client'
 
-import { AIGatewayTimeoutError, createAIGatewayClient } from '@aigateway/sdk'
-import type { ImageModelAlias, ImageTask, ModelSummary } from '@aigateway/sdk'
+import { AIGatewayTimeoutError, createAIGatewayClient } from '@supermind/sdk'
+import type { ImageModelAlias, ImageTask, ModelSummary } from '@supermind/sdk'
 import type { ReactNode } from 'react'
 import { useEffect, useRef, useState } from 'react'
 

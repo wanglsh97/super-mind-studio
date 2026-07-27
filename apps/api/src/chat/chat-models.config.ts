@@ -1,4 +1,4 @@
-import type { TextModelAlias } from '@aigateway/sdk'
+import type { TextModelAlias } from '@supermind/sdk'
 
 export interface ChatModelConfig {
   id: string

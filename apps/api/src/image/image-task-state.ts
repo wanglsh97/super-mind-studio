@@ -1,4 +1,4 @@
-import type { ImageTaskStatus } from '@aigateway/sdk'
+import type { ImageTaskStatus } from '@supermind/sdk'
 
 const ALLOWED_TRANSITIONS: Readonly<Record<ImageTaskStatus, readonly ImageTaskStatus[]>> = {
   pending: ['running', 'succeeded', 'failed'],

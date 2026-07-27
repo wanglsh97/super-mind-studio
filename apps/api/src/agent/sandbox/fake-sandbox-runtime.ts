@@ -5,7 +5,7 @@ import type {
   AgentExecutionErrorCode,
   AgentSandboxLimitReason,
   AgentShellOutput,
-} from '@aigateway/sdk'
+} from '@supermind/sdk'
 
 import {
   DEFAULT_SANDBOX_LIMITS,

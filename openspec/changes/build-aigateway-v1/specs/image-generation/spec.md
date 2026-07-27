@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: Authenticated users can submit image generation jobs
-The Image page SHALL require a valid GitHub UserSession, then allow the user to enter a Chinese or English Prompt, select an enabled image alias (`wanxiang` or `cogview`), configure only supported generation options, and submit a job through `@aigateway/sdk`.
+The Image page SHALL require a valid GitHub UserSession, then allow the user to enter a Chinese or English Prompt, select an enabled image alias (`wanxiang` or `cogview`), configure only supported generation options, and submit a job through `@supermind/sdk`.
 
 #### Scenario: Image job is accepted
 - **GIVEN** a valid UserSession, a valid Prompt, an enabled image model, and an IP below its rate limit
@@ -32,7 +32,7 @@ Providers that only expose synchronous image generation MAY return a terminal su
 - **THEN** the API resumes status lookup from PostgreSQL and the provider task ID
 
 ### Requirement: SDK encapsulates submit and poll behavior
-`@aigateway/sdk` SHALL provide low-level submit/status methods and a bounded polling helper that stops on success, failure, timeout, or caller cancellation.
+`@supermind/sdk` SHALL provide low-level submit/status methods and a bounded polling helper that stops on success, failure, timeout, or caller cancellation.
 
 #### Scenario: Polling times out
 - **GIVEN** a task remains non-terminal beyond the configured SDK timeout

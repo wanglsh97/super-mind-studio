@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 
-import type { AgentExecutionError, AgentRunTerminalStatus } from '@aigateway/sdk'
+import type { AgentExecutionError, AgentRunTerminalStatus } from '@supermind/sdk'
 import { Inject, Injectable, Logger } from '@nestjs/common'
 
 import type { Message, Usage as PiUsage } from '@earendil-works/pi-ai'

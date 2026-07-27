@@ -1,5 +1,10 @@
-import type { TextModelAlias } from '@aigateway/sdk'
-import { BadRequestException, Inject, Injectable, ServiceUnavailableException } from '@nestjs/common'
+import type { TextModelAlias } from '@supermind/sdk'
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  ServiceUnavailableException,
+} from '@nestjs/common'
 
 import type { ChatAdapter, ChatAdapterEvent } from './adapters/chat-adapter'
 import { ChatAdapterError } from './adapters/chat-adapter'
@@ -64,7 +69,11 @@ export class ModelInvocationService implements ModelInvocationPort {
           if (event.providerRequestId !== undefined) providerRequestId = event.providerRequestId
           const mapped = this.mapEvent(event, provider, resolvedModel, providerRequestId)
           if (mapped === undefined) continue
-          if (mapped.type === 'text' || mapped.type === 'reasoning' || mapped.type === 'tool-call') {
+          if (
+            mapped.type === 'text' ||
+            mapped.type === 'reasoning' ||
+            mapped.type === 'tool-call'
+          ) {
             contentEmitted = true
           }
           yield mapped

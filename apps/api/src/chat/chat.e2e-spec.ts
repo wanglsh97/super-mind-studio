@@ -1,6 +1,6 @@
 import type { AddressInfo } from 'node:net'
 
-import type { AIGatewayClient, ChatEvent, ChatMessage } from '@aigateway/sdk'
+import type { AIGatewayClient, ChatEvent, ChatMessage } from '@supermind/sdk'
 import type { INestApplication } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
 

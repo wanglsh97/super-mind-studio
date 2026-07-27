@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 
-import type { ImageTask } from '@aigateway/sdk'
+import type { ImageTask } from '@supermind/sdk'
 import {
   Body,
   Controller,
@@ -102,7 +102,7 @@ export class ImageController {
     response.set({
       'content-type': image.contentType,
       'content-length': String(image.body.byteLength),
-      'content-disposition': `attachment; filename="aigateway-${taskId}-${index}.${extension}"`,
+      'content-disposition': `attachment; filename="super-mind-${taskId}-${index}.${extension}"`,
       'x-content-type-options': 'nosniff',
       'cache-control': 'private, max-age=300',
     })

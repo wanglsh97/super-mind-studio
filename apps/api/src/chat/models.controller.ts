@@ -1,4 +1,4 @@
-import type { ImageModelAlias, ModelSummary } from '@aigateway/sdk'
+import type { ImageModelAlias, ModelSummary } from '@supermind/sdk'
 import { Controller, Get, Inject } from '@nestjs/common'
 
 import { ImageAdapterRegistry } from '../image/adapters/image-adapter.registry'

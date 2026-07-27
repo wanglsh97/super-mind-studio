@@ -14,7 +14,7 @@ export class HealthController {
   live() {
     return {
       status: 'ok',
-      service: 'ai-gateway-api',
+      service: 'super-mind-api',
       timestamp: new Date().toISOString(),
     }
   }

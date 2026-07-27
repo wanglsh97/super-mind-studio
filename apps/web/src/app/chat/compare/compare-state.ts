@@ -1,4 +1,4 @@
-import type { ChatEvent, TextModelId, Usage } from '@aigateway/sdk'
+import type { ChatEvent, TextModelId, Usage } from '@supermind/sdk'
 
 export type CompareStatus = 'loading' | 'streaming' | 'success' | 'error' | 'cancelled'
 

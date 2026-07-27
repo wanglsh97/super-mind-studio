@@ -1,4 +1,4 @@
-import type { AgentStreamEvent } from '@aigateway/sdk'
+import type { AgentStreamEvent } from '@supermind/sdk'
 import {
   Body,
   Controller,

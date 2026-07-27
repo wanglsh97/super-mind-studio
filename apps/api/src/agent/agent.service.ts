@@ -3,7 +3,7 @@ import type {
   AgentThread,
   AgentThreadListPage,
   AgentThreadSummary,
-} from '@aigateway/sdk'
+} from '@supermind/sdk'
 import {
   BadRequestException,
   ConflictException,

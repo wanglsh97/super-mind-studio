@@ -4,7 +4,7 @@
 
 ## What Changes
 
-- 建立 pnpm monorepo 下的模块化单体工程边界，统一 Web、API、内部 `@aigateway/sdk`、数据库和基础设施配置。
+- 建立 pnpm monorepo 下的模块化单体工程边界，统一 Web、API、内部 `@supermind/sdk`、数据库和基础设施配置。
 - 先通过 Mock Adapter 串通公开聊天页到 SSE 响应、请求日志和计费记录的完整链路，形成第一个可验收版本。
 - 在统一模型网关后逐个接入通义千问、智谱 GLM、DeepSeek，并补齐模型别名、取消请求、错误归一化、首包前故障转移和多模型对比。
 - 将可选择的模型实例与厂商 Adapter 解耦，通过仓库内受版本控制的服务端模型目录配置公开模型 ID、社区名称、厂商和上游模型 ID，使同一厂商可并列新增多个模型而无需扩展前端联合类型或开放运行时配置入口。
@@ -41,4 +41,4 @@
 
 ## V1 Acceptance Boundary
 
-本 change 的最低成功标准是：用户从浏览器发起聊天请求，经 `@aigateway/sdk` 调用 NestJS API，Mock Adapter 以 SSE 返回内容，页面可正确展示，并在 PostgreSQL 中形成可被管理后台查询的请求日志与计费记录。其余能力按 tasks 中的里程碑逐步加入，每个里程碑保持上述主链路可运行。
+本 change 的最低成功标准是：用户从浏览器发起聊天请求，经 `@supermind/sdk` 调用 NestJS API，Mock Adapter 以 SSE 返回内容，页面可正确展示，并在 PostgreSQL 中形成可被管理后台查询的请求日志与计费记录。其余能力按 tasks 中的里程碑逐步加入，每个里程碑保持上述主链路可运行。

@@ -1,4 +1,4 @@
-import type { TextModelAlias } from '@aigateway/sdk'
+import type { TextModelAlias } from '@supermind/sdk'
 
 export const TEXT_MODEL_ALIASES = [
   'qwen',

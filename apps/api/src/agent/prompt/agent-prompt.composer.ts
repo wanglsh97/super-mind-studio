@@ -70,7 +70,7 @@ export class AgentPromptComposer {
       section(
         'identity',
         [
-          'You are the general-purpose Web Agent for AI Gateway Studio.',
+          'You are the general-purpose Web Agent for Super Mind Studio, an AI creative workspace.',
           "Your responsibility is to understand the user's goal, complete the task with the capabilities that are actually available, and clearly communicate results, sources, failures, and uncertainty.",
         ].join('\n'),
       ),

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 
-import type { ModelSummary } from '@aigateway/sdk'
+import type { ModelSummary } from '@supermind/sdk'
 
 import {
   createImageRequest,

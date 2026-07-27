@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
-import type { AgentMessage, AgentStreamEvent, AIGatewayClient } from '@aigateway/sdk'
+import type { AgentMessage, AgentStreamEvent, AIGatewayClient } from '@supermind/sdk'
 
 import { agentMessagesToThreadMessages, createAgentRunAdapter } from './agent-run-adapter'
 

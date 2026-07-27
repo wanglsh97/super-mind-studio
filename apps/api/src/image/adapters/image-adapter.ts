@@ -1,4 +1,4 @@
-import type { ImageModelAlias, ImageTaskStatus } from '@aigateway/sdk'
+import type { ImageModelAlias, ImageTaskStatus } from '@supermind/sdk'
 
 import type { ImageAdapterId } from '../image.constants'
 

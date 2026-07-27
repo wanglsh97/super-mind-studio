@@ -1,4 +1,4 @@
-name: ai-gateway-studio
+name: super-mind-studio
 
 services:
   postgres:
@@ -30,6 +30,8 @@ services:
 
 volumes:
   postgres-data:
+    # Preserve the pre-rebrand local volume so existing databases remain attached.
+    name: ai-gateway-studio_postgres-data
 
 networks:
   backend:

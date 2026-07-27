@@ -22,9 +22,9 @@ export DATABASE_URL="$TEST_DATABASE_URL"
 
 corepack pnpm db:generate
 corepack pnpm db:migrate:deploy
-corepack pnpm --filter @aigateway/sdk test
-corepack pnpm --filter @aigateway/api test
+corepack pnpm --filter @supermind/sdk test
+corepack pnpm --filter @supermind/api test
 corepack pnpm test:e2e
-corepack pnpm --filter @aigateway/web test
-corepack pnpm --filter @aigateway/sdk build
-corepack pnpm --filter @aigateway/web build
+corepack pnpm --filter @supermind/web test
+corepack pnpm --filter @supermind/sdk build
+corepack pnpm --filter @supermind/web build

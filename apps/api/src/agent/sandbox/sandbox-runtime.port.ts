@@ -1,4 +1,4 @@
-import type { AgentExecutionError, AgentSandboxLimitReason, AgentShellOutput } from '@aigateway/sdk'
+import type { AgentExecutionError, AgentSandboxLimitReason, AgentShellOutput } from '@supermind/sdk'
 
 export const SANDBOX_RUNTIME_PORT = Symbol('SANDBOX_RUNTIME_PORT')
 

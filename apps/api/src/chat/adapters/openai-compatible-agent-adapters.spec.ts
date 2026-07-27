@@ -1,4 +1,4 @@
-import type { TextModelAlias } from '@aigateway/sdk'
+import type { TextModelAlias } from '@supermind/sdk'
 
 import type { OpenAICompatibleFetch } from '../transports/openai-compatible-chat.transport'
 import { OpenAICompatibleChatTransport } from '../transports/openai-compatible-chat.transport'

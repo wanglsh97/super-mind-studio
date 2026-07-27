@@ -1,6 +1,6 @@
 ## Context
 
-AI Gateway Studio 已有匿名用户端、NestJS API、PostgreSQL 请求日志和独立管理员会话。新增身份能力的目标是识别模型调用者，而不是建设通用账号平台。GitHub OAuth 负责证明外部身份；本地数据库负责用户映射、应用 Session、请求归属和资源授权。
+Super Mind Studio 已有匿名用户端、NestJS API、PostgreSQL 请求日志和独立管理员会话。新增身份能力的目标是识别模型调用者，而不是建设通用账号平台。GitHub OAuth 负责证明外部身份；本地数据库负责用户映射、应用 Session、请求归属和资源授权。
 
 ## Goals / Non-goals
 
@@ -25,7 +25,7 @@ Browser -> GET /api/v1/auth/github -> GitHub authorize
 GitHub -> GET /api/v1/auth/github/callback -> NestJS API
 NestJS API -> GitHub token/user/emails endpoints
 NestJS API -> User upsert + UserSession insert -> HttpOnly cookie
-Browser -> @aigateway/sdk -> SessionGuard -> CurrentUser
+Browser -> @supermind/sdk -> SessionGuard -> CurrentUser
 CurrentUser -> RequestLog / ImageGenerationTask ownership
 ```
 

@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import type { AddressInfo } from 'node:net'
 
-import type { AIGatewayClient } from '@aigateway/sdk'
+import type { AIGatewayClient } from '@supermind/sdk'
 import type { INestApplication } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
 

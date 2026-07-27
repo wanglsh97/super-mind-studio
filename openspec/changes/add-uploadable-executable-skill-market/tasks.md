@@ -1,6 +1,6 @@
 ## 1. Mock Skill 执行首个纵向闭环
 
-- [x] 1.1 为 `@aigateway/sdk` 定义 Skill 市场项、添加状态、手动选择、激活事件、Shell/文件工具事件和标准错误契约，并添加序列化测试
+- [x] 1.1 为 `@supermind/sdk` 定义 Skill 市场项、添加状态、手动选择、激活事件、Shell/文件工具事件和标准错误契约，并添加序列化测试
 - [x] 1.2 新增 `Skill`、`SkillReview`、`UserFile` 及 AgentRun/AgentToolCall 扩展字段的 Prisma migration，验证全局名称、用户添加唯一约束和关联删除边界
 - [x] 1.3 定义 `SkillObjectStorePort` 与确定性内存实现，支持包元数据、`SKILL.md`、文件树、输入文件和结果文件 fixture
 - [x] 1.4 定义 `SandboxRuntimePort` 与确定性 Fake Adapter，覆盖创建、命令、文件、取消、预算超限、销毁和泄漏查询
@@ -30,7 +30,7 @@
 - [x] 3.5 实现 owner/admin 立即下架、市场隐藏、既有添加记录保留和新 Run 激活拒绝
 - [x] 3.6 实现公开分页、关键词搜索、固定分类筛选、最新/添加人数排序和 Skill 详情 API
 - [x] 3.7 将 `UserAgentSkill` 迁移为无 enabled 的添加状态，实现幂等添加/移除、50 个上限、跨用户隔离和 addCount 一致性
-- [x] 3.8 扩展 `@aigateway/sdk` 的市场、owner、添加/移除和管理员审核 client，覆盖 URL、credentials、分页和错误 envelope
+- [x] 3.8 扩展 `@supermind/sdk` 的市场、owner、添加/移除和管理员审核 client，覆盖 URL、credentials、分页和错误 envelope
 - [x] 3.9 完成 `/skills`、详情、“我的 Skill”和管理员审核页面，覆盖 empty/auth/pending/rejected/delisted/error 状态
 - [x] 3.10 运行市场 service、PostgreSQL 事务、SDK、页面与管理员未授权 E2E，并执行 typecheck、lint 和 build
 

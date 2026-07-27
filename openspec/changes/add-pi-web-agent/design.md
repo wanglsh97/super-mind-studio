@@ -1,6 +1,6 @@
 ## Context
 
-AI Gateway Studio 已有 `/chat`、`/image`、`/prompt` 专业页面以及稳定的 `@aigateway/sdk → NestJS → Adapter → provider` 调用链。当前 Chat 使用 assistant-ui LocalRuntime 管理浏览器内存消息，每个请求只执行一次模型流；它不提供服务端会话、工具调用循环、网页读取或断线后的运行恢复。
+Super Mind Studio 已有 `/chat`、`/image`、`/prompt` 专业页面以及稳定的 `@supermind/sdk → NestJS → Adapter → provider` 调用链。当前 Chat 使用 assistant-ui LocalRuntime 管理浏览器内存消息，每个请求只执行一次模型流；它不提供服务端会话、工具调用循环、网页读取或断线后的运行恢复。
 
 本 change 新增独立 `/agent`，以 `@earendil-works/pi-agent-core` 的 harness/Agent loop 作为服务端编排核心。Agent 面向通用助手场景，首个工具是 `web_fetch`；图片、视频、skills 和 MCP 后续通过相同 registry 扩展。GitHub 登录用户是唯一使用者，NestJS 继续是认证、计费、限流和数据真源。
 
@@ -38,7 +38,7 @@ AgentModule 不通过 HTTP 调用本机 `/api/v1/chat/completions`，也不让 P
 
 ```mermaid
 flowchart LR
-    W["/agent + @aigateway/sdk"] --> AC["AgentController"]
+    W["/agent + @supermind/sdk"] --> AC["AgentController"]
     AC --> AR["AgentRunService"]
     AR --> PI["Pi harness"]
     PI --> SP["Pi StreamFn bridge"]
@@ -50,7 +50,7 @@ flowchart LR
     TR --> WF["web_fetch"]
 ```
 
-Pi `StreamFn` bridge 在 Pi 的 `Context/AssistantMessageEvent` 与平台内部 tool-calling 事件之间转换。公共 `@aigateway/sdk` 不暴露 Pi `Model`、`Context` 或 `AgentTool` 类型，避免 SDK 被 Pi 实现绑定。
+Pi `StreamFn` bridge 在 Pi 的 `Context/AssistantMessageEvent` 与平台内部 tool-calling 事件之间转换。公共 `@supermind/sdk` 不暴露 Pi `Model`、`Context` 或 `AgentTool` 类型，避免 SDK 被 Pi 实现绑定。
 
 ### Decision 3: Tool calling is a provider-neutral internal contract
 

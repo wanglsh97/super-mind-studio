@@ -1,4 +1,4 @@
-import type { ImageModelAlias } from '@aigateway/sdk'
+import type { ImageModelAlias } from '@supermind/sdk'
 import {
   IsIn,
   IsInt,

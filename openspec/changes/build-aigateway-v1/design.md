@@ -1,12 +1,12 @@
 ## Context
 
-AI Gateway Studio 由两个认证边界组成：GitHub 用户登录后使用 Chat、文生图和 Prompt 优化；固定管理员通过独立 Session 进入 `/admin` 查看运行情况、完整请求详情并维护白名单业务数据。V1 的价值不是一次性覆盖所有模型，而是证明统一协议、SDK dogfooding、请求可观测和单机交付形成闭环。
+Super Mind Studio 定位为 AI 灵感创作平台，由两个认证边界组成：GitHub 用户登录后使用 Chat、文生图、Prompt 优化、Agent 和 Skill；固定管理员通过独立 Session 进入 `/admin` 查看运行情况、完整请求详情并维护白名单业务数据。AI Gateway 是底层技术模块。V1 的价值不是一次性覆盖所有模型，而是证明统一协议、SDK dogfooding、请求可观测和单机交付形成闭环。
 
 已确认约束：
 
 - 阿里云 ECS Ubuntu 4 核 8G 单机部署，Nginx 同时接受域名和公网 IP。
 - Node.js 24 LTS、TypeScript、pnpm monorepo、Next.js、NestJS、PostgreSQL、Prisma、Redis、Pino 和 Docker Compose。
-- Web 仅依赖一个内部包 `@aigateway/sdk`；模型厂商差异全部收敛在 API 的 Adapter 层。
+- Web 仅依赖一个内部包 `@supermind/sdk`；模型厂商差异全部收敛在 API 的 Adapter 层。
 - V1 接入 Qwen、GLM、DeepSeek、Wanxiang 和 CogView，但当前没有真实 API Key，因此 Mock 闭环不能依赖外部服务。
 - V1 不使用 BullMQ；日志和计费同步直写 PostgreSQL；Redis 仅保存可重建的限流和健康状态。
 - V1 完整保存 Prompt；用户端只使用 GitHub OAuth，管理员开发账号固定为 `root/123456`。成本硬顶、内容审核、正式管理员认证和 Prompt 数据治理明确推迟。
@@ -40,7 +40,7 @@ flowchart LR
     U["GitHub-authenticated user"] --> N["Nginx :80/:443"]
     M["Administrator"] --> N
     N -->|"/, /chat, /image, /prompt, /admin"| W["Next.js Web"]
-    W -->|"Browser + @aigateway/sdk /api/v1"| N
+    W -->|"Browser + @supermind/sdk /api/v1"| N
     N -->|"/api/v1, /api-docs, /health"| A["NestJS API"]
     A --> P[("PostgreSQL")]
     A --> R[("Redis")]
@@ -59,7 +59,7 @@ apps/
   web/                         # Next.js public site + /admin
   api/                         # NestJS modular monolith
 packages/
-  sdk/                         # @aigateway/sdk, public AI contracts/client
+  sdk/                         # @supermind/sdk, public AI contracts/client
   config/                      # shared TS/eslint/tailwind config if needed
 prisma/
   schema.prisma
@@ -124,7 +124,7 @@ Controller 只能依赖应用 Service；应用 Service 通过接口依赖 Adapte
 ```mermaid
 sequenceDiagram
     participant B as Browser
-    participant S as @aigateway/sdk
+    participant S as @supermind/sdk
     participant A as NestJS API
     participant R as Redis
     participant P as PostgreSQL
@@ -195,7 +195,7 @@ Prompt 页面只提交 `{ prompt, mode }`。`PromptTemplateRegistry` 将 mode �
 
 ## SDK and API Contracts
 
-`@aigateway/sdk` 的公开面按业务能力组织在一个包内：
+`@supermind/sdk` 的公开面按业务能力组织在一个包内：
 
 ```ts
 interface AIGatewayClient {
@@ -230,7 +230,7 @@ SDK 负责 base URL、Fetch、POST SSE 解析、`[DONE]` 校验、typed error、
 
 ### Decision 2: One internal SDK as the only public Web client
 
-Web 强制使用 `@aigateway/sdk`，用真实页面验证 SDK，而不是为每种能力建包。可选方案是直接在 React 组件 Fetch，初期代码少，但会让 SSE、错误、轮询和取消逻辑散落页面，无法证明网关调用契约稳定。
+Web 强制使用 `@supermind/sdk`，用真实页面验证 SDK，而不是为每种能力建包。可选方案是直接在 React 组件 Fetch，初期代码少，但会让 SSE、错误、轮询和取消逻辑散落页面，无法证明网关调用契约稳定。
 
 ### Decision 3: Provider-neutral Adapter plus shared compatible transport
 
@@ -268,7 +268,7 @@ Chat 使用 POST、请求体、AbortSignal 和响应状态检查，浏览器原�
 
 ### Decision 11: assistant-ui owns the Agent conversation UI, not the gateway protocol
 
-单模型 Agent 会话使用 `@assistant-ui/react` 的 LocalRuntime 以及 Thread、Message、Composer 和 ActionBar primitives 管理客户端消息状态、自动滚动、取消和无障碍交互。右侧聊天模块保留独立容器，但内部不再用顶部工具栏切断消息画布；模型切换、对比入口、生成参数和新会话操作统一收进吸附底部的 Composer 卡片，卡片下展示 AI 内容甄别提醒。LocalRuntime 的自定义 `ChatModelAdapter` 只把 assistant-ui 的文本消息映射到仓库内 `@aigateway/sdk`，继续消费既有 POST SSE 契约；Web 不引入 Vercel AI SDK、assistant-ui Cloud 或厂商协议。多模型对比仍由 `@aigateway/sdk` compare helper 管理独立请求和 AbortController，避免 UI runtime 改变已确认的每路隔离语义。
+单模型 Agent 会话使用 `@assistant-ui/react` 的 LocalRuntime 以及 Thread、Message、Composer 和 ActionBar primitives 管理客户端消息状态、自动滚动、取消和无障碍交互。右侧聊天模块保留独立容器，但内部不再用顶部工具栏切断消息画布；模型切换、对比入口、生成参数和新会话操作统一收进吸附底部的 Composer 卡片，卡片下展示 AI 内容甄别提醒。LocalRuntime 的自定义 `ChatModelAdapter` 只把 assistant-ui 的文本消息映射到仓库内 `@supermind/sdk`，继续消费既有 POST SSE 契约；Web 不引入 Vercel AI SDK、assistant-ui Cloud 或厂商协议。多模型对比仍由 `@supermind/sdk` compare helper 管理独立请求和 AbortController，避免 UI runtime 改变已确认的每路隔离语义。
 
 ### Decision 12: Version-controlled model catalog is separate from provider adapters
 

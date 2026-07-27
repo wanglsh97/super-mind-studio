@@ -1,6 +1,6 @@
 import type { AddressInfo } from 'node:net'
 
-import { AIGatewayError, createAIGatewayClient } from '@aigateway/sdk'
+import { AIGatewayError, createAIGatewayClient } from '@supermind/sdk'
 import type { INestApplication } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
 import { ZipFile } from 'yazl'

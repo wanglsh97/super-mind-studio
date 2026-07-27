@@ -1,7 +1,7 @@
 'use client'
 
-import { createAIGatewayClient } from '@aigateway/sdk'
-import type { OptimizePromptResult, PromptOptimizationMode } from '@aigateway/sdk'
+import { createAIGatewayClient } from '@supermind/sdk'
+import type { OptimizePromptResult, PromptOptimizationMode } from '@supermind/sdk'
 import { useState } from 'react'
 
 import { AssistantMarkdown } from '../chat/assistant-markdown'

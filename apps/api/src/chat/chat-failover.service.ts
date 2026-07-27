@@ -1,4 +1,4 @@
-import type { TextModelAlias } from '@aigateway/sdk'
+import type { TextModelAlias } from '@supermind/sdk'
 import { Inject, Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 

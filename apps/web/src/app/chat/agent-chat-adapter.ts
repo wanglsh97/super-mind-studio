@@ -1,4 +1,4 @@
-import type { AIGatewayClient, ChatMessage, TextModelId, Usage } from '@aigateway/sdk'
+import type { AIGatewayClient, ChatMessage, TextModelId, Usage } from '@supermind/sdk'
 import type { ChatModelAdapter, ThreadMessage } from '@assistant-ui/react'
 
 export interface AgentChatOptions {

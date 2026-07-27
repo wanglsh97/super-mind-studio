@@ -40,10 +40,10 @@ function tableMenuKey(name: string) {
 function AdminBrand({ collapsed }: Readonly<{ collapsed: boolean }>) {
   return (
     <div className={`aigateway-admin-brand${collapsed ? ' aigateway-admin-brand--collapsed' : ''}`}>
-      <div className="aigateway-admin-brand-mark">AG</div>
+      <div className="aigateway-admin-brand-mark">SM</div>
       {!collapsed ? (
         <div className="aigateway-admin-brand-text">
-          <div className="aigateway-admin-brand-title">AI Gateway</div>
+          <div className="aigateway-admin-brand-title">Super Mind</div>
           <div className="aigateway-admin-brand-subtitle">管理控制台</div>
         </div>
       ) : null}

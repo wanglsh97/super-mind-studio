@@ -1,6 +1,6 @@
 import { EventEmitter } from 'node:events'
 
-import type { ChatFinishReason } from '@aigateway/sdk'
+import type { ChatFinishReason } from '@supermind/sdk'
 import type { Request, Response } from 'express'
 
 import type { RequestLifecycleService } from '../request-lifecycle/request-lifecycle.service'

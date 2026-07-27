@@ -1,4 +1,4 @@
-name: ai-gateway-studio-prod
+name: super-mind-studio-prod
 
 x-bounded-logging: &bounded-logging
   driver: json-file
@@ -45,7 +45,7 @@ services:
     logging: *bounded-logging
 
   web:
-    image: ai-gateway-web:${APP_VERSION:?APP_VERSION is required}
+    image: super-mind-web:${APP_VERSION:?APP_VERSION is required}
     build:
       context: ../..
       dockerfile: apps/web/Dockerfile
@@ -69,7 +69,7 @@ services:
     logging: *bounded-logging
 
   api:
-    image: ai-gateway-api:${APP_VERSION:?APP_VERSION is required}
+    image: super-mind-api:${APP_VERSION:?APP_VERSION is required}
     build:
       context: ../..
       dockerfile: apps/api/Dockerfile
@@ -144,7 +144,7 @@ services:
     logging: *bounded-logging
 
   migrate:
-    image: ai-gateway-migration:${APP_VERSION:?APP_VERSION is required}
+    image: super-mind-migration:${APP_VERSION:?APP_VERSION is required}
     build:
       context: ../..
       dockerfile: apps/api/Dockerfile
@@ -225,6 +225,8 @@ services:
 
 volumes:
   postgres-data:
+    # Preserve the pre-rebrand production volume so existing databases remain attached.
+    name: ai-gateway-studio-prod_postgres-data
 
 networks:
   frontend:

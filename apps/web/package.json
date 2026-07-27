@@ -1,5 +1,5 @@
 {
-  "name": "@aigateway/web",
+  "name": "@supermind/web",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -11,7 +11,7 @@
     "test": "tsx --test \"src/**/*.spec.ts\""
   },
   "dependencies": {
-    "@aigateway/sdk": "workspace:*",
+    "@supermind/sdk": "workspace:*",
     "@ant-design/icons": "^6.3.2",
     "@ant-design/nextjs-registry": "^1.3.0",
     "@assistant-ui/react": "^0.14.27",

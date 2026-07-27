@@ -1,6 +1,12 @@
 import { chromium } from 'playwright'
+import { mkdir } from 'node:fs/promises'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 const baseUrl = 'http://localhost:3000'
+const scriptDir = path.dirname(fileURLToPath(import.meta.url))
+const outDir = path.resolve(scriptDir, '../tmp/ui-smoke')
+await mkdir(outDir, { recursive: true })
 const browser = await chromium.launch({ headless: true })
 
 for (const [name, width] of [
@@ -15,7 +21,7 @@ for (const [name, width] of [
   await page.goto(`${baseUrl}/`, { waitUntil: 'networkidle' })
   await page.waitForTimeout(1000)
   await page.screenshot({
-    path: `/Users/wangls/Desktop/workspace/ai-gateway-studio/apps/web/tmp/ui-smoke/home-${name}.png`,
+    path: path.join(outDir, `home-${name}.png`),
     fullPage: false,
   })
 
@@ -25,7 +31,7 @@ for (const [name, width] of [
   await page.goto(`${baseUrl}/agent`, { waitUntil: 'networkidle' })
   await page.waitForTimeout(800)
   await page.screenshot({
-    path: `/Users/wangls/Desktop/workspace/ai-gateway-studio/apps/web/tmp/ui-smoke/agent-guard-${name}.png`,
+    path: path.join(outDir, `agent-guard-${name}.png`),
     fullPage: false,
   })
 

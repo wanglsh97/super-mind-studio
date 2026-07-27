@@ -1,4 +1,4 @@
-import type { TextModelAlias } from '@aigateway/sdk'
+import type { TextModelAlias } from '@supermind/sdk'
 
 import deepseekLogo from './deepseek-color.png'
 import kimiLogo from './kimi.webp'

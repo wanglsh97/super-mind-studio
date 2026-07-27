@@ -1,4 +1,4 @@
-import type { AgentMediaReferencePart } from '@aigateway/sdk'
+import type { AgentMediaReferencePart } from '@supermind/sdk'
 
 const MAX_MEDIA_FIELD_LENGTH = 240
 

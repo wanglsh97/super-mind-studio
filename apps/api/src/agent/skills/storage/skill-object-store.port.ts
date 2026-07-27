@@ -1,4 +1,4 @@
-import type { AgentSkillFileEntry } from '@aigateway/sdk'
+import type { AgentSkillFileEntry } from '@supermind/sdk'
 
 export const SKILL_OBJECT_STORE_PORT = Symbol('SKILL_OBJECT_STORE_PORT')
 

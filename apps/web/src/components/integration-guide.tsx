@@ -17,7 +17,7 @@ const curlExample = `curl -N 'http://localhost:3000/api/v1/chat/completions' \\
     "maxTokens": 512
   }'`
 
-const sdkExample = `import { createAIGatewayClient } from '@aigateway/sdk'
+const sdkExample = `import { createAIGatewayClient } from '@supermind/sdk'
 
 const gateway = createAIGatewayClient()
 
@@ -134,7 +134,7 @@ export function IntegrationGuide() {
           language="TypeScript"
           title="通过统一 SDK 调用"
           description="适合仓库内的 Web 应用。SDK 负责解析 SSE、校验 [DONE]，并返回带类型的事件。"
-          command="@aigateway/sdk · workspace"
+          command="@supermind/sdk · workspace"
           code={sdkExample}
         />
       </div>

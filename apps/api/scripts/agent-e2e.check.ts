@@ -6,7 +6,7 @@ import { randomUUID } from 'node:crypto'
 
 import { NestFactory } from '@nestjs/core'
 
-import type { AgentStreamEvent } from '@aigateway/sdk'
+import type { AgentStreamEvent } from '@supermind/sdk'
 
 import { AppModule } from '../src/app.module'
 import { configureApplication } from '../src/configure-app'
@@ -22,10 +22,10 @@ import { UserSessionService } from '../src/user-auth/user-session.service'
  * follow-up turn → SSE cursor → PostgreSQL RequestLog/BillingRecord。
  * 通过 `pnpm test:agent-e2e` 执行（需要本地 Postgres/Redis 与完整 .env）。
  */
-// @aigateway/sdk 为 ESM（仅 import 条件），在 tsx/CJS 下用原生动态 import 加载其构建产物。
+// @supermind/sdk 为 ESM（仅 import 条件），在 tsx/CJS 下用原生动态 import 加载其构建产物。
 const nativeImport = new Function('specifier', 'return import(specifier)') as (
   specifier: string,
-) => Promise<typeof import('@aigateway/sdk')>
+) => Promise<typeof import('@supermind/sdk')>
 
 async function main(): Promise<void> {
   // 强制 Mock、确定性、零成本：仅启用 Mock Adapter，禁用所有真实 provider。
@@ -36,7 +36,7 @@ async function main(): Promise<void> {
   }
   assert.equal(process.env.AGENT_WEB_FETCH_FIXTURE, 'true')
 
-  const { createAIGatewayClient } = await nativeImport('@aigateway/sdk')
+  const { createAIGatewayClient } = await nativeImport('@supermind/sdk')
   const app = await NestFactory.create(AppModule, { bufferLogs: true })
   configureApplication(app)
   await app.listen(0, '127.0.0.1')

@@ -5,7 +5,7 @@ import type {
   AgentStreamEvent,
   AgentThreadSummary,
   AIGatewayClient,
-} from '@aigateway/sdk'
+} from '@supermind/sdk'
 import type {
   ChatModelAdapter,
   ChatModelRunResult,

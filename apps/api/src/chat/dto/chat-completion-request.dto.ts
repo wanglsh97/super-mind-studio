@@ -1,4 +1,4 @@
-import type { ChatMessage, TextModelId } from '@aigateway/sdk'
+import type { ChatMessage, TextModelId } from '@supermind/sdk'
 import { Type } from 'class-transformer'
 import {
   ArrayMinSize,

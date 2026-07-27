@@ -7,7 +7,7 @@ import type {
   AgentRunSummary,
   AgentThreadSummary,
   AgentContextSummary as AgentContextSummaryDto,
-} from '@aigateway/sdk'
+} from '@supermind/sdk'
 
 import type {
   AgentMessage as AgentMessageRow,

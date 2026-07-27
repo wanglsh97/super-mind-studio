@@ -1,4 +1,4 @@
-import type { Capability, TextModelAlias } from '@aigateway/sdk'
+import type { Capability, TextModelAlias } from '@supermind/sdk'
 
 export interface ChatCapabilityContext {
   modelId: string

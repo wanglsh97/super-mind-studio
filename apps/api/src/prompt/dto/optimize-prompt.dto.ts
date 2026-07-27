@@ -1,4 +1,4 @@
-import type { PromptOptimizationMode } from '@aigateway/sdk'
+import type { PromptOptimizationMode } from '@supermind/sdk'
 import { IsIn, IsString, MaxLength, MinLength } from 'class-validator'
 
 const PROMPT_OPTIMIZATION_MODES = [

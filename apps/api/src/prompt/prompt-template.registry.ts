@@ -1,4 +1,4 @@
-import type { PromptOptimizationMode } from '@aigateway/sdk'
+import type { PromptOptimizationMode } from '@supermind/sdk'
 import { Injectable } from '@nestjs/common'
 
 export interface PromptTemplate {

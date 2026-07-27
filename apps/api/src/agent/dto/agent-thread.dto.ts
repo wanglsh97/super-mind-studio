@@ -1,11 +1,17 @@
-import type { CreateAgentThreadRequest, UpdateAgentThreadRequest } from '@aigateway/sdk'
+import type { CreateAgentThreadRequest, UpdateAgentThreadRequest } from '@supermind/sdk'
 import { Type } from 'class-transformer'
-import { IsInt, IsOptional, IsString, Matches, Max, MaxLength, Min, MinLength } from 'class-validator'
-
 import {
-  AGENT_THREAD_LIST_MAX_PAGE_SIZE,
-  AGENT_THREAD_TITLE_MAX_LENGTH,
-} from '../agent.constants'
+  IsInt,
+  IsOptional,
+  IsString,
+  Matches,
+  Max,
+  MaxLength,
+  Min,
+  MinLength,
+} from 'class-validator'
+
+import { AGENT_THREAD_LIST_MAX_PAGE_SIZE, AGENT_THREAD_TITLE_MAX_LENGTH } from '../agent.constants'
 
 export class CreateAgentThreadDto implements CreateAgentThreadRequest {
   @IsString()

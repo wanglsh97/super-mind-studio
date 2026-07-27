@@ -152,7 +152,9 @@ export async function fetchValidatedUrl(
   })
 }
 
-export async function performPinnedRequest(input: PinnedRequestInput): Promise<PinnedRequestResult> {
+export async function performPinnedRequest(
+  input: PinnedRequestInput,
+): Promise<PinnedRequestResult> {
   const { url, pinnedIp, signal } = input
   const parsed = new URL(url.href)
   const originPath = `${parsed.pathname}${parsed.search}` || '/'
@@ -181,7 +183,7 @@ export async function performPinnedRequest(input: PinnedRequestInput): Promise<P
       headers: {
         accept: 'text/html,application/xhtml+xml,application/json,text/plain;q=0.9,*/*;q=0.1',
         'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8',
-        'user-agent': 'AIGatewayStudio-WebFetch/1.0',
+        'user-agent': 'SuperMindStudio-WebFetch/1.0',
         host: url.port ? `${url.hostname}:${url.port}` : url.hostname,
       },
     })

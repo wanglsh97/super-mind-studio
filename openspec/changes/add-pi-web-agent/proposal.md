@@ -34,9 +34,9 @@
 
 - `apps/web` 新增 `/agent` 页面、会话侧栏、Agent 事件恢复、reasoning/tool UI 和累计费用展示。
 - `apps/api` 新增 Agent、Agent Session、Agent Tool 模块，并扩展内部模型调用端口以支持结构化 tool calling 和 provider reasoning；厂商协议仍限制在 Adapter 层。
-- `packages/sdk` 新增 Agent thread/run/event 客户端契约；Web 仍只通过 `@aigateway/sdk` 访问公开业务 API。
+- `packages/sdk` 新增 Agent thread/run/event 客户端契约；Web 仍只通过 `@supermind/sdk` 访问公开业务 API。
 - Prisma 新增 Agent 会话、消息、运行、事件和工具调用相关表及正式 migration；PostgreSQL 是运行记录真源，Redis 仅用于用户级 active run 锁和短期取消状态。
 - Prisma 新增每个 thread 至多一条的 `AgentContextSummary`；摘要覆盖更新不删除原始消息，每次模型压缩调用继续通过 RequestLog/BillingRecord 审计。
 - 新增 Pi agent core 及网页正文抽取所需依赖；不引入 `pi-coding-agent`、TUI、BullMQ、独立 Worker 或浏览器自动化集群。
-- 首个验收闭环为：`/agent` → `@aigateway/sdk` → NestJS AgentModule → Pi harness → Mock tool-calling model → `web_fetch` → 后续模型 turn → SSE/event cursor → PostgreSQL 日志与费用。
+- 首个验收闭环为：`/agent` → `@supermind/sdk` → NestJS AgentModule → Pi harness → Mock tool-calling model → `web_fetch` → 后续模型 turn → SSE/event cursor → PostgreSQL 日志与费用。
 - 回滚时可隐藏 `/agent` 导航并停止 Agent API；现有 `/chat`、`/image`、`/prompt` 不依赖新模块。新增数据库表保留以避免破坏性回滚，后续版本再通过 migration 清理。

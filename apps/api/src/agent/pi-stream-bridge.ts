@@ -1,4 +1,4 @@
-import type { ChatFinishReason } from '@aigateway/sdk'
+import type { ChatFinishReason } from '@supermind/sdk'
 import type {
   Api,
   AssistantMessage,
@@ -92,7 +92,9 @@ function textOf(content: string | (TextContent | ImageContent)[]): string {
 /**
  * 把 Pi 工具定义映射为平台中立的 JSON Schema 工具。
  */
-export function piToolsToDefinitions(tools: readonly Tool[] | undefined): ChatAdapterToolDefinition[] {
+export function piToolsToDefinitions(
+  tools: readonly Tool[] | undefined,
+): ChatAdapterToolDefinition[] {
   return (tools ?? []).map((tool) => ({
     name: tool.name,
     description: tool.description,
@@ -124,7 +126,9 @@ function toPiUsage(usage: ChatAdapterUsage): Usage {
   }
 }
 
-function toDoneReason(reason: ChatFinishReason): Extract<StopReason, 'stop' | 'length' | 'toolUse'> {
+function toDoneReason(
+  reason: ChatFinishReason,
+): Extract<StopReason, 'stop' | 'length' | 'toolUse'> {
   if (reason === 'length') return 'length'
   if (reason === 'tool_calls') return 'toolUse'
   return 'stop'
@@ -291,11 +295,7 @@ export interface PiStreamFnDeps {
  * done/error 事件到达后流自动完成。StreamFn 契约要求不抛错，错误由 error 事件编码。
  */
 export function createPiStreamFn(deps: PiStreamFnDeps): StreamFn {
-  return async (
-    model: Model<Api>,
-    context: Context,
-    options?: SimpleStreamOptions,
-  ) => {
+  return async (model: Model<Api>, context: Context, options?: SimpleStreamOptions) => {
     const { createAssistantMessageEventStream } = await loadPiAi()
     const stream = createAssistantMessageEventStream()
     const signal = options?.signal ?? new AbortController().signal
@@ -303,7 +303,7 @@ export function createPiStreamFn(deps: PiStreamFnDeps): StreamFn {
     const rawMessages = piContextToInvocationMessages(context)
     const tools = piToolsToDefinitions(context.tools)
     const invokePrepared = async function* (): AsyncGenerator<ModelStreamEvent> {
-      const messages = await deps.prepareMessages?.(rawMessages, tools) ?? rawMessages
+      const messages = (await deps.prepareMessages?.(rawMessages, tools)) ?? rawMessages
       const request: ModelInvocationRequest = {
         requestId: deps.createRequestId(),
         modelId: model.id,
@@ -340,7 +340,11 @@ export function createPiStreamFn(deps: PiStreamFnDeps): StreamFn {
  * StreamFn 只用 `id` 路由到 ModelInvocationPort，其余字段为占位符；真实解析、鉴权与计费
  * 都在服务端端口内完成，不依赖该对象承载厂商配置。
  */
-export function createPiModel(modelId: string, provider: string, contextWindow = 128_000): Model<Api> {
+export function createPiModel(
+  modelId: string,
+  provider: string,
+  contextWindow = 128_000,
+): Model<Api> {
   return {
     id: modelId,
     name: modelId,

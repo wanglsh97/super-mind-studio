@@ -1,6 +1,6 @@
 'use client'
 
-import type { TextModelAlias, TextModelId, Usage } from '@aigateway/sdk'
+import type { TextModelAlias, TextModelId, Usage } from '@supermind/sdk'
 import {
   ActionBarPrimitive,
   AuiIf,

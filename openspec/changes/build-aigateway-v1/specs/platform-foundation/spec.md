@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: Monorepo provides one runnable product boundary
-The system SHALL use a pnpm workspace containing the Next.js Web application, the NestJS API application, and one internal `@aigateway/sdk` package. The Web application SHALL call public AI APIs through `@aigateway/sdk` rather than importing provider SDKs or provider-specific response types.
+The system SHALL use a pnpm workspace containing the Next.js Web application, the NestJS API application, and one internal `@supermind/sdk` package. The Web application SHALL call public AI APIs through `@supermind/sdk` rather than importing provider SDKs or provider-specific response types.
 
 #### Scenario: Workspace is installed and built
 - **GIVEN** a clean checkout with the documented Node.js and pnpm versions
@@ -44,7 +44,7 @@ The API SHALL expose liveness and readiness states for the application, PostgreS
 - **AND** public paid model calls fail closed rather than bypassing rate limits
 
 ### Requirement: User capabilities share a responsive workspace shell
-The user-facing Web application SHALL present Chat, Image, Skills, and API integration guidance in a shared workspace shell. On desktop, the shell SHALL provide a left sidebar with the AI Gateway brand at the top, capability navigation in the middle, user identity at the bottom, and a control that collapses the sidebar. On narrow screens, the same navigation SHALL be available as a dismissible drawer without causing horizontal page overflow. The administrator console MAY retain its independent navigation shell.
+The user-facing Web application SHALL present Chat, Image, Skills, and API integration guidance in a shared workspace shell. On desktop, the shell SHALL provide a left sidebar with the Super Mind Studio brand at the top, capability navigation in the middle, user identity at the bottom, and a control that collapses the sidebar. On narrow screens, the same navigation SHALL be available as a dismissible drawer without causing horizontal page overflow. The administrator console MAY retain its independent navigation shell.
 
 #### Scenario: User navigates capabilities on desktop
 - **GIVEN** the user opens a user-facing capability page on a desktop viewport

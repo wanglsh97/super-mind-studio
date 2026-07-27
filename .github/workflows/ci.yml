@@ -169,7 +169,7 @@ jobs:
           file: apps/web/Dockerfile
           target: runtime
           push: false
-          tags: ai-gateway-web:${{ github.sha }}
+          tags: super-mind-web:${{ github.sha }}
           cache-from: type=gha,scope=web
           cache-to: type=gha,mode=max,scope=web
 
@@ -180,7 +180,7 @@ jobs:
           file: apps/api/Dockerfile
           target: runtime
           push: false
-          tags: ai-gateway-api:${{ github.sha }}
+          tags: super-mind-api:${{ github.sha }}
           cache-from: type=gha,scope=api
           cache-to: type=gha,mode=max,scope=api
 
@@ -191,6 +191,6 @@ jobs:
           file: apps/api/Dockerfile
           target: migration
           push: false
-          tags: ai-gateway-migration:${{ github.sha }}
+          tags: super-mind-migration:${{ github.sha }}
           cache-from: type=gha,scope=migration
           cache-to: type=gha,mode=max,scope=migration

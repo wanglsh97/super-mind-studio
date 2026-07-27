@@ -1,4 +1,4 @@
-import type { ImageTask } from '@aigateway/sdk'
+import type { ImageTask } from '@supermind/sdk'
 
 export const IMAGE_HISTORY_KEY = 'aigateway-image-history-v1'
 export const IMAGE_HISTORY_MAX = 5

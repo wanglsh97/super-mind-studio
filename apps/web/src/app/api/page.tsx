@@ -9,8 +9,8 @@ type ExampleKind = 'sdk' | 'curl'
 const examples: Record<ExampleKind, { label: string; meta: string; code: string }> = {
   sdk: {
     label: 'TypeScript SDK',
-    meta: '@aigateway/sdk',
-    code: `import { createAIGatewayClient } from '@aigateway/sdk'
+    meta: '@supermind/sdk',
+    code: `import { createAIGatewayClient } from '@supermind/sdk'
 
 const gateway = createAIGatewayClient()
 

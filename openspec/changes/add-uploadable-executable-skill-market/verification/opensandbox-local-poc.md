@@ -51,7 +51,7 @@ curl --noproxy '*' http://127.0.0.1:8080/health
 保持 Server 运行，在仓库根目录执行：
 
 ```bash
-pnpm --filter @aigateway/api test:opensandbox-poc
+pnpm --filter @supermind/api test:opensandbox-poc
 ```
 
 可通过以下环境变量覆盖默认值：
@@ -97,7 +97,7 @@ SDK 的 `mode` 字段按文档传 `755`/`644` 这类十进制数字表示的权�
 OPEN_SANDBOX_DOMAIN=127.0.0.1:8080 \
 OPEN_SANDBOX_USE_SERVER_PROXY=false \
 OPEN_SANDBOX_REQUEST_TIMEOUT_SECONDS=180 \
-pnpm --filter @aigateway/api test:opensandbox-adapter
+pnpm --filter @supermind/api test:opensandbox-adapter
 ```
 
 本地 Docker 将 execd 端口发布到宿主机，因此关闭 Server Proxy；业务 ECS 无法直连

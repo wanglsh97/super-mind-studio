@@ -14,7 +14,7 @@ import {
   FIXTURE_USER_IDENTITY,
   provisionFixtureUserSession,
 } from '../user-auth/user-auth.e2e-helpers'
-import type { AIGatewayClient } from '@aigateway/sdk'
+import type { AIGatewayClient } from '@supermind/sdk'
 
 const databaseUrl = process.env.TEST_DATABASE_URL
 

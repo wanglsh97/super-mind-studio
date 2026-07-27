@@ -1,6 +1,6 @@
-# AI Gateway Studio
+# Super Mind Studio
 
-AI Gateway Studio 是一个公开首页、GitHub 登录保护的 AI 能力演示站及管理员中后台。Chat、文生图和 Prompt 优化强制使用 GitHub OAuth 登录；项目不提供本地注册、密码登录或找回密码。当前工程优先使用 Mock Adapter 串通完整链路。
+Super Mind Studio 是一个面向灵感探索与内容创作的 AI 工作空间。用户通过 GitHub 登录后可以使用 Chat、多模型对比、文生图、Prompt 优化、Agent 与 Skill；管理员中后台负责模型调用、费用、日志和业务数据治理。底层 AI Gateway 统一模型协议与厂商差异，当前工程优先使用 Mock Adapter 串通完整链路。
 
 ## 环境要求
 

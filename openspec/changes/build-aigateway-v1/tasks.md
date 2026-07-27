@@ -1,4 +1,4 @@
-# AI Gateway Studio V1 实施任务
+# Super Mind Studio V1 实施任务
 
 任务按三个产品建设板块归类。三个板块不是强制串行阶段：为满足“优先串通流程”，第一实施波次应先完成板块一的 `1.1–1.20`，随后立即完成板块三的 `3.1–3.6`，形成 Web → SDK → API → Mock Adapter → SSE → PostgreSQL 闭环；再继续完善真实模型、管理员中后台和其他用户能力。
 
@@ -26,7 +26,7 @@
 - [x] 1.15 实现 `RequestLifecycleService.start`，在 provider 调用前创建含完整 messages 的 `RequestLog(pending)`，写库失败时禁止调用模型
 - [x] 1.16 实现 `POST /api/v1/chat/completions`，强制 `stream: true` 并依次输出 delta、usage 和唯一 `[DONE]`
 - [x] 1.17 实现成功、失败、取消统一终结逻辑，在事务中更新 RequestLog 并 upsert 一对一 BillingRecord
-- [x] 1.18 在 `@aigateway/sdk` 实现 Fetch POST SSE parser、typed event/error、request ID、usage、`[DONE]` 校验和 AbortSignal
+- [x] 1.18 在 `@supermind/sdk` 实现 Fetch POST SSE parser、typed event/error、request ID、usage、`[DONE]` 校验和 AbortSignal
 - [x] 1.19 添加无外部网络的 API/SDK Chat E2E，覆盖 delta、usage、`[DONE]`、取消、完整 Prompt 和费用落库
 - [x] 1.20 建立 Mock Chat 回归基线，确保无任何真实 API Key 时也能稳定执行
 
@@ -120,7 +120,7 @@
 
 - [x] 3.1 初始化 `apps/web` Next.js 用户端，完成首页、桌面导航、PC-only 布局和亮/暗主题
 - [x] 3.2 实现 `/chat` 最小单模型页面：输入、发送、增量内容、loading 和 error
-- [x] 3.3 Web Chat 仅通过 workspace `@aigateway/sdk` 调用，不在组件中复制 SSE/parser 或引用 provider 类型
+- [x] 3.3 Web Chat 仅通过 workspace `@supermind/sdk` 调用，不在组件中复制 SSE/parser 或引用 provider 类型
 - [x] 3.4 实现停止生成和清空对话，取消后 UI 立即停止追加并与数据库 cancelled 状态一致
 - [x] 3.5 展示最终 usage、人民币估算、模型 alias 和 request ID
 - [x] 3.6 完成第一波端到端验收：浏览器 → SDK → API → Mock Adapter → SSE → RequestLog/BillingRecord
@@ -164,3 +164,4 @@
 - [x] 3.25 完成用户端 PC 桌面验收，确认三项能力均能在 Mock 模式独立演示，真实模型可按 alias 单独启停
 - [x] 3.30 将用户端共享外壳、首页、登录、Chat、文生图、Prompt、Skill 与 API 页面统一为白色 Liquid Glass 视觉系统，并完成 PC 桌面截图验收
 - [x] 3.31 移除移动端导航和窄屏重排入口，将用户端固定为最低 1366px 的 PC-only 桌面布局
+- [x] 3.32 将产品品牌统一为 Super Mind Studio，将 workspace SDK scope 迁移为 `@supermind/sdk`，并保留 AI Gateway 作为底层技术模块

@@ -45,7 +45,7 @@ export class ExecutableSkillRepository implements ExecutableSkillRepositoryPort 
           id: MOCK_EXECUTABLE_SKILL.owner.id,
           githubId: MOCK_EXECUTABLE_SKILL.owner.githubId,
           githubUsername: MOCK_EXECUTABLE_SKILL.owner.githubUsername,
-          displayName: 'AI Gateway Skills',
+          displayName: 'Super Mind Skills',
           lastLoginAt: new Date(0),
         },
         update: {},

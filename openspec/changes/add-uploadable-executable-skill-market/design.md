@@ -111,7 +111,7 @@ Deletion first makes the file unavailable, then attempts OSS removal. Failure re
 
 ### Decision 11: Existing SDK and administrator boundaries remain
 
-All Web business operations use `@aigateway/sdk`; direct OSS transfer uses only API-issued narrow credentials. New API groups cover market discovery, owner upload, add/remove, user files, Agent selection and administrator review.
+All Web business operations use `@supermind/sdk`; direct OSS transfer uses only API-issued narrow credentials. New API groups cover market discovery, owner upload, add/remove, user files, Agent selection and administrator review.
 
 The existing fixed administrator session protects review and delist operations. This remains a development-only authentication boundary and is not made production-safe by this change.
 

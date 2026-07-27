@@ -1,7 +1,7 @@
 'use client'
 
-import { createAIGatewayClient } from '@aigateway/sdk'
-import type { ChatCompareSession, ChatEvent, ModelSummary, TextModelId } from '@aigateway/sdk'
+import { createAIGatewayClient } from '@supermind/sdk'
+import type { ChatCompareSession, ChatEvent, ModelSummary, TextModelId } from '@supermind/sdk'
 import Link from 'next/link'
 import type { FormEvent } from 'react'
 import { useEffect, useReducer, useRef, useState } from 'react'

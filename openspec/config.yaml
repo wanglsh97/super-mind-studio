@@ -1,10 +1,10 @@
 schema: spec-driven
 
 context: |
-  项目：AI Gateway Studio，一个公开访问的 AI 能力演示站及其管理后台。
+  项目：Super Mind Studio，一个面向灵感探索与内容创作的 AI Creative Workspace 及其管理后台。
   需求基线：spec/需求文档.md。
   技术基线：spec/技术选型方案.md。
-  V1 技术栈：pnpm monorepo、TypeScript、Next.js、NestJS、@aigateway/sdk、
+  V1 技术栈：pnpm monorepo、TypeScript、Next.js、NestJS、@supermind/sdk、
   PostgreSQL、Prisma、Redis、Pino、Nginx、Docker Compose。
   V1 部署目标：阿里云 ECS（Ubuntu，4 核 8G）单机一体化部署，同时支持域名和公网 IP。
   后续版本若经用户明确确认，可以通过独立 OpenSpec change 增加专用执行节点或其他基础设施，

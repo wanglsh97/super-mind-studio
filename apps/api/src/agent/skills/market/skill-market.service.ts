@@ -4,7 +4,7 @@ import type {
   AgentSkillCategory,
   AgentSkillMarketDetail,
   AgentSkillMarketSummary,
-} from '@aigateway/sdk'
+} from '@supermind/sdk'
 
 import {
   publicFileTree,

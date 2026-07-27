@@ -6,7 +6,7 @@ The public Chat page SHALL let an anonymous visitor select one enabled text-mode
 #### Scenario: Successful streamed conversation
 - **GIVEN** an enabled model alias and a visitor below the rate limit
 - **WHEN** the visitor submits a non-empty message
-- **THEN** the Web application calls `@aigateway/sdk`
+- **THEN** the Web application calls `@supermind/sdk`
 - **AND** assistant content is rendered incrementally until the completion event
 - **AND** the final usage and estimated CNY cost are available to the client
 

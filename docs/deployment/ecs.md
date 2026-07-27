@@ -19,8 +19,8 @@
 ```bash
 sudo apt-get update
 sudo apt-get install -y git
-git clone https://github.com/wanglsh97/ai-gateway-studio.git
-cd ai-gateway-studio
+git clone https://github.com/wanglsh97/ai-gateway-studio.git super-mind-studio
+cd super-mind-studio
 sudo sh infra/scripts/ecs-bootstrap.sh
 ```
 

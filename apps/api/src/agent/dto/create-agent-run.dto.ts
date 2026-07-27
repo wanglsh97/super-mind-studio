@@ -1,4 +1,4 @@
-import type { CreateAgentRunRequest } from '@aigateway/sdk'
+import type { CreateAgentRunRequest } from '@supermind/sdk'
 import { Type } from 'class-transformer'
 import {
   ArrayMaxSize,

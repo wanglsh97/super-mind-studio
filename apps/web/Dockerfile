@@ -23,7 +23,7 @@ COPY packages/sdk packages/sdk
 ARG API_INTERNAL_URL=http://api:3001
 ENV API_INTERNAL_URL=$API_INTERNAL_URL
 
-RUN pnpm --filter @aigateway/web... build
+RUN pnpm --filter @supermind/web... build
 
 FROM node:24-bookworm-slim AS runtime
 

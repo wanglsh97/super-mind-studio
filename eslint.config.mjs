@@ -43,11 +43,11 @@ export default tseslint.config(
         'error',
         {
           name: 'fetch',
-          message: 'Chat 页面必须通过 @aigateway/sdk 发起请求。',
+          message: 'Chat 页面必须通过 @supermind/sdk 发起请求。',
         },
         {
           name: 'EventSource',
-          message: 'Chat 页面必须使用 @aigateway/sdk 提供的 POST SSE 能力。',
+          message: 'Chat 页面必须使用 @supermind/sdk 提供的 POST SSE 能力。',
         },
       ],
       'no-restricted-imports': [
@@ -65,11 +65,11 @@ export default tseslint.config(
         'error',
         {
           selector: "CallExpression[callee.property.name='getReader']",
-          message: 'Chat 页面不得自行解析 ReadableStream，请使用 @aigateway/sdk。',
+          message: 'Chat 页面不得自行解析 ReadableStream，请使用 @supermind/sdk。',
         },
         {
           selector: "NewExpression[callee.name='TextDecoder']",
-          message: 'Chat 页面不得自行实现 SSE 文本解析，请使用 @aigateway/sdk。',
+          message: 'Chat 页面不得自行实现 SSE 文本解析，请使用 @supermind/sdk。',
         },
       ],
     },

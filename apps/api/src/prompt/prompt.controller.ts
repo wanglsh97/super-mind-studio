@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 
-import type { OptimizePromptResult, TextModelAlias } from '@aigateway/sdk'
+import type { OptimizePromptResult, TextModelAlias } from '@supermind/sdk'
 import {
   Body,
   Controller,

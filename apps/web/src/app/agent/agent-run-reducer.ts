@@ -7,7 +7,7 @@ import type {
   AgentStreamEvent,
   GatewayError,
   AgentContextBudgetState,
-} from '@aigateway/sdk'
+} from '@supermind/sdk'
 
 /**
  * 纯函数：把 Agent run 事件流折叠为消息视图。
@@ -136,7 +136,9 @@ function appendDelta(
       if (last && last.type === kind) {
         parts[parts.length - 1] = { type: kind, text: last.text + delta }
       } else {
-        parts.push(kind === 'text' ? { type: 'text', text: delta } : { type: 'reasoning', text: delta })
+        parts.push(
+          kind === 'text' ? { type: 'text', text: delta } : { type: 'reasoning', text: delta },
+        )
       }
       return { ...message, parts }
     }),

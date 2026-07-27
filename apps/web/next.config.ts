@@ -5,7 +5,7 @@ const apiInternalUrl = (process.env.API_INTERNAL_URL ?? 'http://localhost:3001')
 const nextConfig: NextConfig = {
   output: 'standalone',
   reactStrictMode: true,
-  transpilePackages: ['@aigateway/sdk'],
+  transpilePackages: ['@supermind/sdk'],
   async rewrites() {
     return [
       {

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 
-import type { AgentStreamEvent } from '@aigateway/sdk'
+import type { AgentStreamEvent } from '@supermind/sdk'
 
 import { initialAgentRunViewState, isActiveStatus, reduceAgentEvents } from './agent-run-reducer.js'
 
@@ -21,7 +21,14 @@ const events: AgentStreamEvent[] = [
     toolName: 'web_fetch',
     args: { url: 'https://a.test' },
   },
-  { type: 'tool-status', sequence: 5, runId, toolCallId: 't1', toolName: 'web_fetch', status: 'running' },
+  {
+    type: 'tool-status',
+    sequence: 5,
+    runId,
+    toolCallId: 't1',
+    toolName: 'web_fetch',
+    status: 'running',
+  },
   {
     type: 'tool-result',
     sequence: 6,
@@ -69,7 +76,12 @@ describe('reduceAgentEvents', () => {
       role: 'assistant',
       parts: [
         { type: 'reasoning', text: '先思考' },
-        { type: 'tool-call', toolCallId: 't1', toolName: 'web_fetch', args: { url: 'https://a.test' } },
+        {
+          type: 'tool-call',
+          toolCallId: 't1',
+          toolName: 'web_fetch',
+          args: { url: 'https://a.test' },
+        },
       ],
       createdAt: '',
     })
@@ -107,7 +119,13 @@ describe('reduceAgentEvents', () => {
     assert.equal(errored.error?.code, 'AGENT_RUN_FAILED')
 
     const limited = reduceAgentEvents(initialAgentRunViewState(), [
-      { type: 'run-terminal', sequence: 0, runId, status: 'limit_reached', limitReason: 'web_fetch_calls' },
+      {
+        type: 'run-terminal',
+        sequence: 0,
+        runId,
+        status: 'limit_reached',
+        limitReason: 'web_fetch_calls',
+      },
     ])
     assert.equal(limited.status, 'limit_reached')
     assert.equal(limited.limitReason, 'web_fetch_calls')

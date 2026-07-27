@@ -1,4 +1,4 @@
-import type { AgentMediaReferencePart } from '@aigateway/sdk'
+import type { AgentMediaReferencePart } from '@supermind/sdk'
 
 import { mediaReferencePlaceholder } from './agent-media-placeholder'
 

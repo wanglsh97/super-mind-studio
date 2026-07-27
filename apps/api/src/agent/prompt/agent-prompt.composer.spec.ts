@@ -108,7 +108,7 @@ describe('AgentPromptComposer', () => {
       now: new Date('2026-07-21T00:00:00.000Z'),
     })
     expect(result.manifest.promptHash).toBe(
-      '91aca5f13815bd1a1ec901c00c59ee55ea3c84335073276adb3e1f28c3214076',
+      '33652293ea3120bda40ab12849b7a475ecb34bd8d9626ccb8b87dcbe7bf5780f',
     )
     expect(result.manifest.summaryId).toBe('summary-1')
   })

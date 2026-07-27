@@ -6,7 +6,7 @@ import { USER_SESSION_COOKIE } from './user-auth/user-auth.constants'
 
 export function configureApiDocumentation(app: INestApplication): void {
   const config = new DocumentBuilder()
-    .setTitle('AI Gateway Studio API')
+    .setTitle('Super Mind Studio API')
     .setDescription(
       'Chat、文生图与 Prompt 优化要求 GitHub 用户 Session Cookie；管理员接口使用独立管理员 Session Cookie。OAuth code、access token 和 Cookie 均不得写入请求正文或日志。',
     )
@@ -24,6 +24,6 @@ export function configureApiDocumentation(app: INestApplication): void {
   SwaggerModule.setup('api-docs', app, documentFactory, {
     jsonDocumentUrl: 'api-docs/openapi.json',
     yamlDocumentUrl: 'api-docs/openapi.yaml',
-    customSiteTitle: 'AI Gateway Studio API',
+    customSiteTitle: 'Super Mind Studio API',
   })
 }

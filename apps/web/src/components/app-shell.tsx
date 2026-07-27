@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { Suspense, type ReactNode, useEffect, useRef, useState } from 'react'
 
-import type { AgentThreadSummary } from '@aigateway/sdk'
+import type { AgentThreadSummary } from '@supermind/sdk'
 
 import { logoutUser, sanitizeUserReturnTo } from '../lib/user-auth-client'
 import { cn } from '../lib/cn'
@@ -569,13 +569,13 @@ function Brand({ compact = false }: Readonly<{ compact?: boolean }>) {
   return (
     <Link
       href="/"
-      aria-label="AI Gateway 首页"
+      aria-label="Super Mind Studio 首页"
       className={cn('inline-flex min-w-0 items-center gap-3 rounded-xl', focusRing)}
     >
       <LogoMark />
       {!compact && (
         <span className="truncate font-display text-base font-semibold tracking-[-0.03em] text-ink dark:text-white">
-          AI Gateway
+          Super Mind Studio
         </span>
       )}
     </Link>
@@ -590,7 +590,7 @@ function LogoMark({ className }: Readonly<{ className?: string }>) {
         className,
       )}
     >
-      <span className="-rotate-45 font-mono text-[0.64rem] font-black text-white">AI</span>
+      <span className="-rotate-45 font-mono text-[0.64rem] font-black text-white">SM</span>
     </span>
   )
 }

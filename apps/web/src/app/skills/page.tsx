@@ -5,7 +5,7 @@ import {
   createAIGatewayClient,
   type AgentSkillCategory,
   type AgentSkillMarketSummary,
-} from '@aigateway/sdk'
+} from '@supermind/sdk'
 import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
 

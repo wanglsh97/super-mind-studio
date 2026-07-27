@@ -1,4 +1,4 @@
-import type { ImageModelAlias, ImageRequest, ImageTask, ModelSummary } from '@aigateway/sdk'
+import type { ImageModelAlias, ImageRequest, ImageTask, ModelSummary } from '@supermind/sdk'
 
 export interface ImageSizeOption {
   label: string

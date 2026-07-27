@@ -1,4 +1,4 @@
-import type { UpdateAgentThreadRequest } from '@aigateway/sdk'
+import type { UpdateAgentThreadRequest } from '@supermind/sdk'
 
 /**
  * 已存在 thread 的 modelId 不可通过 API 修改；更新契约仅允许 title。

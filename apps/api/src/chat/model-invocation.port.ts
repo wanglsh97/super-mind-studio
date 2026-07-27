@@ -1,4 +1,4 @@
-import type { ChatFinishReason, TextModelAlias } from '@aigateway/sdk'
+import type { ChatFinishReason, TextModelAlias } from '@supermind/sdk'
 
 import type {
   ChatAdapterMessage,

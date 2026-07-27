@@ -1,7 +1,7 @@
 'use client'
 
-import { createAIGatewayClient } from '@aigateway/sdk'
-import type { SkillUploadProgress } from '@aigateway/sdk'
+import { createAIGatewayClient } from '@supermind/sdk'
+import type { SkillUploadProgress } from '@supermind/sdk'
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 

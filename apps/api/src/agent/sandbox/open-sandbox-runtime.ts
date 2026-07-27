@@ -8,7 +8,7 @@ import {
   type ConnectionProtocol,
   type SandboxInfo,
 } from '@alibaba-group/opensandbox'
-import type { AgentExecutionError, AgentExecutionErrorCode, AgentShellOutput } from '@aigateway/sdk'
+import type { AgentExecutionError, AgentExecutionErrorCode, AgentShellOutput } from '@supermind/sdk'
 import type { OnModuleDestroy } from '@nestjs/common'
 
 import {
@@ -25,6 +25,7 @@ import {
 } from './sandbox-runtime.port'
 
 const MIB = 1024 * 1024
+// Keep the legacy owner key so deployments can still discover and clean up pre-rebrand sandboxes.
 const RUNTIME_OWNER = 'ai-gateway-studio'
 
 interface OpenSandboxRuntimeState {
