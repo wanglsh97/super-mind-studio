@@ -1,7 +1,7 @@
 ## 1. 规格与安全配置
 
 - [x] 1.1 新增 `agent-mcp-integration` proposal、design、capability specs 和任务，通过 OpenSpec strict validation
-- [ ] 1.2 增加平台 MCP Server JSON 配置、Bearer 环境引用、生产 HTTPS/本地 loopback、只读风险和限制参数校验，更新 `.env.example`
+- [x] 1.2 增加平台 MCP Server JSON 配置、Bearer 环境引用、生产 HTTPS/本地 loopback、只读风险和限制参数校验，更新 `.env.example`
 
 ## 2. 服务端 MCP 纵向切片
 

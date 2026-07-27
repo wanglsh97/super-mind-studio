@@ -49,6 +49,12 @@ describe('validateEnvironment', () => {
     expect(environment.AGENT_WEB_SEARCH_MAX_OUTPUT_CHARS).toBe(30_000)
     expect(environment.EXA_API_KEY).toBeUndefined()
     expect(environment.PARALLEL_API_KEY).toBeUndefined()
+    expect(environment.AGENT_MCP_SERVERS_JSON).toEqual([])
+    expect(environment.AGENT_MCP_DISCOVERY_TIMEOUT_MS).toBe(10_000)
+    expect(environment.AGENT_MCP_CALL_TIMEOUT_MS).toBe(30_000)
+    expect(environment.AGENT_MCP_MAX_TOOLS_PER_SERVER).toBe(50)
+    expect(environment.AGENT_MCP_MAX_RESPONSE_BYTES).toBe(1_048_576)
+    expect(environment.AGENT_MCP_MAX_OUTPUT_CHARS).toBe(20_000)
   })
 
   it('accepts a fixed anonymous web-search provider without API keys', () => {
@@ -76,6 +82,102 @@ describe('validateEnvironment', () => {
         AGENT_WEB_SEARCH_MAX_OUTPUT_CHARS: '999',
       }),
     ).toThrow('环境变量校验失败')
+  })
+
+  it('accepts a loopback MCP Server with an explicit read-only tool allowlist', () => {
+    const environment = validateEnvironment({
+      ...requiredEnvironment,
+      AGENT_MCP_SERVERS_JSON: JSON.stringify([
+        {
+          id: 'local-docs',
+          name: 'Local docs',
+          url: 'http://127.0.0.1:4100/mcp',
+          tools: [{ name: 'lookup', riskLevel: 'read' }],
+        },
+      ]),
+    })
+
+    expect(environment.AGENT_MCP_SERVERS_JSON).toEqual([
+      expect.objectContaining({
+        id: 'local-docs',
+        auth: { type: 'none' },
+        tools: [{ name: 'lookup', riskLevel: 'read' }],
+      }),
+    ])
+  })
+
+  it('rejects arbitrary HTTP MCP endpoints and unsupported risk levels', () => {
+    expect(() =>
+      validateEnvironment({
+        ...requiredEnvironment,
+        AGENT_MCP_SERVERS_JSON: JSON.stringify([
+          {
+            id: 'remote',
+            name: 'Remote',
+            url: 'http://example.com/mcp',
+            tools: [{ name: 'lookup', riskLevel: 'read' }],
+          },
+        ]),
+      }),
+    ).toThrow('loopback')
+
+    expect(() =>
+      validateEnvironment({
+        ...requiredEnvironment,
+        AGENT_MCP_SERVERS_JSON: JSON.stringify([
+          {
+            id: 'danger',
+            name: 'Danger',
+            url: 'https://example.com/mcp',
+            tools: [{ name: 'delete_all', riskLevel: 'destructive' }],
+          },
+        ]),
+      }),
+    ).toThrow('AGENT_MCP_SERVERS_JSON')
+  })
+
+  it('requires an existing bearer token environment reference without leaking its value', () => {
+    const token = 'mcp-secret-never-print'
+    const key = 'TEST_DOCS_MCP_TOKEN'
+    const previous = process.env[key]
+    process.env[key] = token
+    try {
+      expect(() =>
+        validateEnvironment({
+          ...requiredEnvironment,
+          AGENT_MCP_SERVERS_JSON: JSON.stringify([
+            {
+              id: 'docs',
+              name: 'Docs',
+              url: 'https://example.com/mcp',
+              auth: { type: 'bearer', tokenEnv: key },
+              tools: [{ name: 'lookup' }],
+            },
+          ]),
+        }),
+      ).not.toThrow()
+    } finally {
+      if (previous === undefined) delete process.env[key]
+      else process.env[key] = previous
+    }
+
+    try {
+      validateEnvironment({
+        ...requiredEnvironment,
+        AGENT_MCP_SERVERS_JSON: JSON.stringify([
+          {
+            id: 'docs',
+            name: 'Docs',
+            url: 'https://example.com/mcp',
+            auth: { type: 'bearer', tokenEnv: key },
+            tools: [{ name: 'lookup' }],
+          },
+        ]),
+      })
+    } catch (error) {
+      expect(String(error)).not.toContain(token)
+      expect(String(error)).not.toContain(key)
+    }
   })
 
   it('requires private connection settings when OpenSandbox is selected', () => {
