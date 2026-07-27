@@ -26,6 +26,8 @@ import {
   selectMessagesForForcedSummary,
 } from './context/agent-history-context'
 import { AgentMessageRepository } from './agent-message.repository'
+import { createAgentRunToolRegistry } from './agent-run-tools'
+import { AGENT_MCP_REGISTRY, type AgentMcpRegistry } from './mcp/agent-mcp.registry'
 import { AgentRunEventBus } from './agent-run-event-bus'
 import { AgentRunProjector } from './agent-run.projector'
 import { AgentRunRepository } from './agent-run.repository'
@@ -92,6 +94,7 @@ export class AgentRunService {
     private readonly contextSummaryService: AgentContextSummaryService,
     @Inject(AgentExecutionSessionService)
     private readonly executionSessions: AgentExecutionSessionService,
+    @Inject(AGENT_MCP_REGISTRY) private readonly mcp: AgentMcpRegistry,
   ) {}
 
   isRunning(runId: string): boolean {
@@ -180,6 +183,11 @@ export class AgentRunService {
         this.contextSummaries.findForThread(input.threadId),
       ])
       let activeSummary = initialSummary
+      const runTools = await createAgentRunToolRegistry(this.tools, this.mcp, {
+        runId: input.runId,
+        userId: input.userId,
+        signal: controller.signal,
+      })
       const composedPrompt = await this.promptComposer.compose({
         userId: input.userId,
         threadId: input.threadId,
@@ -187,6 +195,7 @@ export class AgentRunService {
         provider: input.provider,
         contextWindowTokens: input.contextWindowTokens,
         summaryId: activeSummary?.id ?? null,
+        tools: runTools.list(),
       })
       await this.runs.savePromptAudit(input.runId, composedPrompt.manifest)
       let contextLimitError: AgentContextLimitError | undefined
@@ -201,10 +210,10 @@ export class AgentRunService {
             })),
           ),
           model: createPiModel(input.modelId, input.provider, input.contextWindowTokens),
-          tools: this.tools
+          tools: runTools
             .list()
             .map((tool) =>
-              toPiAgentTool(tool, this.tools, { runId: input.runId, userId: input.userId }),
+              toPiAgentTool(tool, runTools, { runId: input.runId, userId: input.userId }),
             ),
         },
         streamFn: createPiStreamFn({

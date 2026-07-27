@@ -121,6 +121,39 @@ describe('AgentPromptComposer', () => {
     expect(result.systemPrompt).not.toContain('Parallel Web Search')
   })
 
+  it('uses one supplied run-scoped tool set for the prompt manifest', async () => {
+    const configuredMcp = mcpRegistry([
+      { id: 'docs', name: 'Docs', version: '1', description: 'Approved docs' },
+    ])
+    const composer = new AgentPromptComposer(
+      new AgentToolRegistry([tool]),
+      { listCandidates: async () => [] },
+      configuredMcp,
+      { recall: async () => [] },
+    )
+    const mcpTool: AgentToolDefinition = {
+      ...tool,
+      name: 'mcp__docs__lookup',
+      label: 'Docs · lookup',
+      description: 'Search approved docs',
+    }
+
+    const result = await composer.compose({
+      userId: 'u1',
+      threadId: 't1',
+      modelId: 'mock',
+      provider: 'mock',
+      contextWindowTokens: 100_000,
+      tools: [tool, mcpTool],
+    })
+
+    expect(result.manifest.toolNames).toEqual(['probe', 'mcp__docs__lookup'])
+    expect(result.systemPrompt).toContain(
+      '- mcp__docs__lookup [risk=read, approval=none]: Search approved docs',
+    )
+    expect(result.manifest.mcpServerIds).toEqual(['docs'])
+  })
+
   it('matches the reviewed V4 English golden prompt hash', async () => {
     const composer = new AgentPromptComposer(
       new AgentToolRegistry([]),
