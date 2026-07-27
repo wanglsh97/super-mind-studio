@@ -269,12 +269,6 @@ function AgentConsole() {
                 <AgentEmptyState
                   kicker="AGENT THREAD · EMPTY"
                   title="交给 Agent 一个可执行的任务"
-                  description="它可以自主调用工具（如 web_fetch），并在同一会话里跨多轮完成。"
-                  examples={[
-                    '总结 https://example.com/ 页面要点',
-                    '抓取指定 URL 并对比两处说法是否一致',
-                    '根据网页内容整理一份简短行动清单',
-                  ]}
                 />
               </ThreadPrimitive.Empty>
               <ThreadPrimitive.Messages>

@@ -485,15 +485,10 @@ export function ModelSelect({
 export function AgentEmptyState({
   kicker,
   title,
-  description,
-  examples,
 }: Readonly<{
   kicker: string
   title: string
-  description: string
-  examples: string[]
 }>) {
-  const api = useAui()
   return (
     <div className="grid min-h-[calc(100dvh-14rem)] place-items-center content-center text-center md:min-h-[calc(100dvh-15rem)]">
       <div
@@ -508,25 +503,6 @@ export function AgentEmptyState({
         {kicker}
       </p>
       <h2 className="mt-3 text-xl font-bold tracking-tight">{title}</h2>
-      <p className="mt-2 text-[0.82rem] text-ink-muted">{description}</p>
-      <div className="mt-6 flex w-full flex-col flex-wrap items-stretch justify-center gap-2 md:flex-row md:items-center">
-        {examples.map((example) => (
-          <button
-            key={example}
-            type="button"
-            onClick={() => api.composer().setText(example)}
-            className={cn(
-              'liquid-glass-soft flex items-center justify-between gap-3 rounded-xl px-3.5 py-3 text-left text-[0.72rem] text-ink-secondary transition-[border-color,color,transform] hover:border-brand/25 hover:text-brand-hover hover:-translate-y-0.5 dark:text-ink-dark-muted md:justify-start',
-              focusRing,
-            )}
-          >
-            {example}
-            <span className="text-brand" aria-hidden="true">
-              ↗
-            </span>
-          </button>
-        ))}
-      </div>
     </div>
   )
 }
