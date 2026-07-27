@@ -1,4 +1,4 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common'
+import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common'
 
 import type {
   AgentSkillCategory,
@@ -30,13 +30,18 @@ export class SkillMarketService {
   ) {}
 
   async list(query: SkillMarketQuery): Promise<PublicSkillMarketPage> {
-    const result = await this.repository.listPublished(query)
+    const normalizedQuery = {
+      ...query,
+      page: paginationInteger(query.page, 'page'),
+      pageSize: paginationInteger(query.pageSize, 'pageSize', 50),
+    }
+    const result = await this.repository.listPublished(normalizedQuery)
     return {
       items: result.items.map(toSummary),
-      page: query.page,
-      pageSize: query.pageSize,
+      page: normalizedQuery.page,
+      pageSize: normalizedQuery.pageSize,
       total: result.total,
-      totalPages: Math.ceil(result.total / query.pageSize),
+      totalPages: Math.ceil(result.total / normalizedQuery.pageSize),
     }
   }
 
@@ -55,6 +60,18 @@ export class SkillMarketService {
       files: publicFileTree(skill.fileTree),
     }
   }
+}
+
+function paginationInteger(value: unknown, field: 'page' | 'pageSize', max?: number): number {
+  const parsed = typeof value === 'number' ? value : Number(value)
+  if (!Number.isInteger(parsed) || parsed < 1 || (max !== undefined && parsed > max)) {
+    throw new BadRequestException({
+      code: 'INVALID_REQUEST',
+      message: `${field} 必须是${max === undefined ? '正整数' : `1 到 ${max} 之间的整数`}`,
+      retryable: false,
+    })
+  }
+  return parsed
 }
 
 function toSummary(skill: PublicSkillMarketRecord): AgentSkillMarketSummary {
