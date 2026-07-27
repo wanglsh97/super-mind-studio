@@ -18,6 +18,7 @@ import {
   hiddenAgentThreadCount,
   visibleAgentThreads,
 } from './agent-thread-list'
+import { BrandMark } from './brand-mark'
 import { ThemeToggle } from './theme-toggle'
 import { useUserSession } from './user-session-provider'
 
@@ -512,16 +513,7 @@ function Brand({ compact = false }: Readonly<{ compact?: boolean }>) {
 }
 
 function LogoMark({ className }: Readonly<{ className?: string }>) {
-  return (
-    <span
-      className={cn(
-        'grid size-10 rotate-45 place-items-center rounded-[0.9rem] border border-white/50 bg-[linear-gradient(135deg,#2764ff,#8b7cff)] shadow-[inset_0_1px_0_rgb(255_255_255/0.35),0_10px_24px_rgb(39_100_255/0.24)]',
-        className,
-      )}
-    >
-      <span className="-rotate-45 font-mono text-[0.64rem] font-black text-white">SM</span>
-    </span>
-  )
+  return <BrandMark className={cn('size-10 shrink-0 object-contain', className)} />
 }
 
 function UserAvatar({

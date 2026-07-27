@@ -14,6 +14,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import type { ReactNode } from 'react'
 import { Suspense, useEffect, useMemo, useState } from 'react'
 
+import { BrandMark } from '../../../components/brand-mark'
 import {
   AdminApiError,
   getAdminSession,
@@ -40,7 +41,7 @@ function tableMenuKey(name: string) {
 function AdminBrand({ collapsed }: Readonly<{ collapsed: boolean }>) {
   return (
     <div className={`aigateway-admin-brand${collapsed ? ' aigateway-admin-brand--collapsed' : ''}`}>
-      <div className="aigateway-admin-brand-mark">SM</div>
+      <BrandMark className="aigateway-admin-brand-mark" alt="Super Mind Studio" />
       {!collapsed ? (
         <div className="aigateway-admin-brand-text">
           <div className="aigateway-admin-brand-title">Super Mind</div>

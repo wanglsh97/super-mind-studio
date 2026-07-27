@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
 import { logoutUser, sanitizeUserReturnTo } from '../lib/user-auth-client'
+import { BrandMark } from './brand-mark'
 import { ThemeToggle } from './theme-toggle'
 import { useUserSession } from './user-session-provider'
 
@@ -43,9 +44,7 @@ export function SiteHeader() {
           className="inline-flex items-center gap-2.5 rounded-md font-semibold tracking-tight text-[#211b32] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#7057e8] dark:text-white"
           aria-label="Super Mind Studio Agent 工作台"
         >
-          <span className="grid h-8 w-8 rotate-45 place-items-center rounded-[0.55rem] bg-[#7057e8] text-xs font-bold text-white shadow-sm">
-            <span className="-rotate-45">SM</span>
-          </span>
+          <BrandMark className="size-8 shrink-0 object-contain" />
           <span>Super Mind Studio</span>
         </Link>
 
