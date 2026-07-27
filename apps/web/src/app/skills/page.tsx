@@ -11,6 +11,7 @@ import { useCallback, useEffect, useState } from 'react'
 
 import { useAuthenticationFailure } from '../../components/use-authentication-failure'
 import { useUserSession } from '../../components/user-session-provider'
+import { cn } from '../../lib/cn'
 import type { SkillFolderFile } from './skill-folder-package'
 import { SkillUploadDialog } from './skill-upload-dialog'
 
@@ -29,9 +30,7 @@ export default function SkillsPage() {
   const handleAuthenticationFailure = useAuthenticationFailure()
   const [items, setItems] = useState<AgentSkillMarketSummary[]>([])
   const [added, setAdded] = useState<Set<string>>(new Set())
-  const [keyword, setKeyword] = useState('')
   const [category, setCategory] = useState<AgentSkillCategory | ''>('')
-  const [sort, setSort] = useState<'latest' | 'popular'>('latest')
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [loading, setLoading] = useState(true)
@@ -46,9 +45,8 @@ export default function SkillsPage() {
       const result = await client.skills.list({
         page,
         pageSize: 12,
-        ...(keyword.trim() ? { keyword: keyword.trim() } : {}),
         ...(category ? { category } : {}),
-        sort,
+        sort: 'latest',
       })
       setItems(result.items)
       setTotalPages(Math.max(1, result.totalPages))
@@ -65,7 +63,7 @@ export default function SkillsPage() {
     } finally {
       setLoading(false)
     }
-  }, [category, handleAuthenticationFailure, keyword, page, session.status, sort])
+  }, [category, handleAuthenticationFailure, page, session.status])
 
   useEffect(() => {
     void load()
@@ -114,18 +112,10 @@ export default function SkillsPage() {
 
   return (
     <main className="mx-auto max-w-[76rem] px-4 py-10 sm:px-6 md:px-10 md:py-16">
-      <header className="grid gap-8 border-b border-line pb-9 lg:grid-cols-[1fr_auto] lg:items-end">
-        <div>
-          <p className="liquid-label text-brand">OPEN SKILL REGISTRY</p>
-          <h1 className="mt-3 font-display text-[clamp(2.8rem,7vw,5.8rem)] leading-[0.9] font-semibold tracking-[-0.065em]">
-            找到下一种
-            <br />
-            工作方式。
-          </h1>
-          <p className="mt-6 max-w-xl text-sm leading-6 text-ink-muted">
-            浏览已审核的传统 Skill 资源包。添加后，可在 Agent Run 中手动指定，也可交给模型自主选择。
-          </p>
-        </div>
+      <header className="flex flex-wrap items-center justify-between gap-4 border-b border-line pb-6">
+        <h1 className="font-display text-[clamp(1.65rem,3vw,2.35rem)] font-semibold tracking-[-0.04em]">
+          探索并添加适合你的 Skill
+        </h1>
         <div className="flex flex-wrap gap-2">
           <Link className={secondaryButton} href="/skills/mine">
             我的 Skill
@@ -136,48 +126,38 @@ export default function SkillsPage() {
         </div>
       </header>
 
-      <section className="liquid-glass-soft mt-7 grid gap-3 rounded-2xl p-3 md:grid-cols-[1fr_11rem_10rem_auto]">
-        <input
-          aria-label="搜索 Skill"
-          value={keyword}
-          onChange={(event) => {
-            setKeyword(event.target.value)
-            setPage(1)
-          }}
-          placeholder="搜索名称、标题、简介或作者"
-          className={controlClass}
-        />
-        <select
-          aria-label="分类"
-          value={category}
-          onChange={(event) => {
-            setCategory(event.target.value as AgentSkillCategory | '')
-            setPage(1)
-          }}
-          className={controlClass}
-        >
-          <option value="">全部分类</option>
+      <section
+        aria-label="Skill 分类"
+        className="mt-6 flex min-h-12 items-center gap-5 border-b border-line"
+      >
+        <h2 className="shrink-0 text-sm font-bold text-ink-secondary">分类</h2>
+        <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto pb-1">
+          <button
+            type="button"
+            aria-pressed={category === ''}
+            className={cn(categoryTabClass, category === '' && categoryTabActiveClass)}
+            onClick={() => {
+              setCategory('')
+              setPage(1)
+            }}
+          >
+            全部
+          </button>
           {AGENT_SKILL_CATEGORIES.map((value) => (
-            <option key={value} value={value}>
+            <button
+              key={value}
+              type="button"
+              aria-pressed={category === value}
+              className={cn(categoryTabClass, category === value && categoryTabActiveClass)}
+              onClick={() => {
+                setCategory(value)
+                setPage(1)
+              }}
+            >
               {categoryLabels[value]}
-            </option>
+            </button>
           ))}
-        </select>
-        <select
-          aria-label="排序"
-          value={sort}
-          onChange={(event) => {
-            setSort(event.target.value as 'latest' | 'popular')
-            setPage(1)
-          }}
-          className={controlClass}
-        >
-          <option value="latest">最新发布</option>
-          <option value="popular">添加最多</option>
-        </select>
-        <button type="button" onClick={() => void load()} className={secondaryButton}>
-          刷新
-        </button>
+        </div>
       </section>
 
       {error ? (
@@ -195,7 +175,7 @@ export default function SkillsPage() {
       ) : items.length === 0 ? (
         <section className="mt-8 rounded-3xl border border-dashed border-line p-16 text-center">
           <p className="font-semibold">没有匹配的已发布 Skill</p>
-          <p className="mt-2 text-sm text-ink-muted">换个关键词或清除分类筛选。</p>
+          <p className="mt-2 text-sm text-ink-muted">切换其他分类试试。</p>
         </section>
       ) : (
         <section className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -287,8 +267,9 @@ export default function SkillsPage() {
   )
 }
 
-const controlClass =
-  'min-h-11 rounded-xl border border-white/80 bg-white/55 px-3 text-sm outline-none focus:border-brand/40 focus:ring-3 focus:ring-brand-focus/10'
+const categoryTabClass =
+  'shrink-0 rounded-lg px-3 py-2 text-xs font-semibold whitespace-nowrap text-ink-muted transition-[background,color] hover:bg-brand/6 hover:text-brand-hover focus-visible:outline-2 focus-visible:outline-brand-focus focus-visible:outline-offset-1 dark:hover:bg-brand/12 dark:hover:text-brand-light'
+const categoryTabActiveClass = 'bg-brand/10 text-brand-hover dark:bg-brand/16 dark:text-brand-light'
 const primaryButton =
   'liquid-button inline-flex min-h-10 items-center justify-center rounded-xl px-4 text-xs font-bold text-white transition hover:-translate-y-0.5 disabled:opacity-50'
 const secondaryButton =
