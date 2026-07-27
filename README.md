@@ -1,6 +1,6 @@
 # Super Mind Studio
 
-Super Mind Studio 是一个面向灵感探索与内容创作的 AI 工作空间。用户通过 GitHub 登录后可以在 Agent 中进行普通对话或多步任务，并使用多模型对比、文生图、Prompt 优化与 Skill；管理员中后台负责模型调用、费用、日志和业务数据治理。底层 AI Gateway 统一模型协议与厂商差异，当前工程优先使用 Mock Adapter 串通完整链路。
+Super Mind Studio 是一个面向灵感探索与任务执行的 AI Agent 工作空间。用户通过 GitHub 登录后可以在 Agent 中进行普通对话或多步任务，并使用多模型对比与 Skill；管理员中后台负责模型调用、费用、日志和业务数据治理。底层 AI Gateway 仍统一提供 Chat、Image 与 Prompt 能力及厂商适配，当前工程优先使用 Mock Adapter 串通完整链路。
 
 ## 环境要求
 
@@ -46,6 +46,8 @@ pnpm dev
 `/agent` 是普通对话和工具型多步任务的统一入口，会话与运行事件持久化到 PostgreSQL。旧 `/chat` 不再加载独立的浏览器内存聊天应用，访问时会兼容跳转到 `/agent`。
 
 多模型对比暂时保留在 `/chat/compare`，可从 Agent Composer 进入；每个模型仍使用独立 Chat SSE 请求和取消状态。底层 `POST /api/v1/chat/completions` 与 `@supermind/sdk` Chat client 继续保留，供模型对比、Prompt 优化及其他内部场景复用。
+
+C 端不再提供 `/image` 与 `/prompt` 页面，访问这两个地址直接返回 404，不做兼容跳转。Image/Prompt 的 API、SDK、数据库记录和管理端日志仍保留，供 Agent 工具化或后续内部场景复用。
 
 ## Agent Skill 市场
 
