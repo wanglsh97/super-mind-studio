@@ -146,6 +146,50 @@ describe('OpenSandboxRuntime adapter mapping', () => {
     await runtime.onModuleDestroy()
   })
 
+  it('compensates an SDK sandbox created before metadata inspection fails', async () => {
+    const client = new StubOpenSandboxClient()
+    const instance = new StubOpenSandboxInstance('partial', {
+      image: 'example.test/sandbox:v1',
+      timeoutSeconds: 120,
+      cpu: '1',
+      memory: '1024Mi',
+      metadata: {},
+    })
+    const kill = jest.spyOn(instance, 'kill')
+    const close = jest.spyOn(instance, 'close')
+    jest.spyOn(instance, 'getInfo').mockRejectedValue(new Error('inspect failed'))
+    jest.spyOn(client, 'create').mockResolvedValue(instance)
+    const runtime = createRuntime(client)
+
+    await expect(runtime.createSandbox({ runId: 'run-partial' })).rejects.toMatchObject({
+      code: 'SANDBOX_UNAVAILABLE',
+    })
+    expect(kill).toHaveBeenCalledTimes(1)
+    expect(close).toHaveBeenCalledTimes(1)
+    await runtime.onModuleDestroy()
+  })
+
+  it('retains local state after a network-interrupted destroy so the call can be retried', async () => {
+    const client = new StubOpenSandboxClient()
+    const runtime = createRuntime(client)
+    const sandbox = await runtime.createSandbox({ runId: 'run-destroy-retry' })
+    const instance = (await client.connect(sandbox.sandboxId)) as StubOpenSandboxInstance
+    const kill = jest
+      .spyOn(instance, 'kill')
+      .mockRejectedValueOnce(new Error('network failure'))
+      .mockImplementationOnce(async () => {
+        instance.killed = true
+      })
+
+    await expect(runtime.destroySandbox(sandbox.sandboxId)).rejects.toMatchObject({
+      code: 'SANDBOX_UNAVAILABLE',
+    })
+    await expect(runtime.destroySandbox(sandbox.sandboxId)).resolves.toBeUndefined()
+    await expect(runtime.destroySandbox(sandbox.sandboxId)).resolves.toBeUndefined()
+    expect(kill).toHaveBeenCalledTimes(2)
+    await runtime.onModuleDestroy()
+  })
+
   it('maps accepted resource limits and runtime ownership metadata into SDK creation', async () => {
     const client = new StubOpenSandboxClient()
     const create = jest.spyOn(client, 'create')

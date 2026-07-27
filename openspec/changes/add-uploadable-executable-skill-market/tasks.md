@@ -43,7 +43,7 @@
 - [ ] 4.5 测量冷启动、包下载、首条命令、销毁和并发延迟，记录目标 ECS 规格、最大安全并发与月成本估算
 - [x] 4.6 实现 OpenSandbox TypeScript Adapter，将厂商类型限制在 Adapter 内，并通过与 Fake Adapter 相同的 contract suite
 - [x] 4.7 实现 API 到 OpenSandbox 的私网认证、连接/请求超时、重试边界、健康检查和 readiness 降级
-- [ ] 4.8 实现终态幂等销毁和过期 sandbox reconciliation，覆盖 NestJS 重启、网络中断和部分创建失败
+- [x] 4.8 实现终态幂等销毁和过期 sandbox reconciliation，覆盖 NestJS 重启、网络中断和部分创建失败
 - [ ] 4.9 使用真实 OpenSandbox 完成最低资源端到端 smoke，记录版本、节点规格和每 Run 实测资源，不执行无界压力测试
 
 ## 5. 模型自主 Skill 激活与 Run 级 Shell

@@ -113,10 +113,16 @@ export class AgentExecutionSessionService {
       runId,
       ...(signal === undefined ? {} : { signal }),
     })
-    const ready = await this.sandboxes.waitUntilReady(created.sandboxId, signal)
-    const session = { userId, sandboxId: ready.sandboxId, activeSkills: new Map() }
-    this.sessions.set(runId, session)
-    return session
+    try {
+      const ready = await this.sandboxes.waitUntilReady(created.sandboxId, signal)
+      const session = { userId, sandboxId: ready.sandboxId, activeSkills: new Map() }
+      this.sessions.set(runId, session)
+      return session
+    } catch (error) {
+      // Preserve the creation/ready error. A failed compensating destroy is retried by reconciliation.
+      await this.sandboxes.destroySandbox(created.sandboxId).catch(() => undefined)
+      throw error
+    }
   }
 
   private requireActiveSession(runId: string, userId: string): RunExecutionSession {

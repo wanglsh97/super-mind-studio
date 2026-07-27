@@ -150,7 +150,7 @@ export class OpenSandboxRuntime implements SandboxRuntimePort, OnModuleDestroy {
     const limits = { ...DEFAULT_SANDBOX_LIMITS, ...input.limits }
     validateLimits(limits)
 
-    let instance: OpenSandboxInstance
+    let instance: OpenSandboxInstance | undefined
     try {
       instance = await this.client.create({
         image: this.image,
@@ -163,20 +163,21 @@ export class OpenSandboxRuntime implements SandboxRuntimePort, OnModuleDestroy {
         },
       })
       throwIfAborted(input.signal)
+      const info = await instance.getInfo()
+      const descriptor = descriptorFromInfo(info, input.runId, 'creating')
+      this.states.set(instance.id, {
+        descriptor,
+        limits,
+        usage: emptyUsage(),
+        instance,
+        activeCommandIds: new Set(),
+      })
+      return { ...descriptor }
     } catch (error) {
+      if (instance) await killAndCloseBestEffort(instance)
+      if (input.signal?.aborted) throw abortReason(input.signal)
       throw normalizeUnavailable(error, '创建 Sandbox 失败')
     }
-
-    const info = await instance.getInfo()
-    const descriptor = descriptorFromInfo(info, input.runId, 'creating')
-    this.states.set(instance.id, {
-      descriptor,
-      limits,
-      usage: emptyUsage(),
-      instance,
-      activeCommandIds: new Set(),
-    })
-    return { ...descriptor }
   }
 
   async waitUntilReady(sandboxId: string, signal?: AbortSignal): Promise<SandboxDescriptor> {
@@ -190,6 +191,7 @@ export class OpenSandboxRuntime implements SandboxRuntimePort, OnModuleDestroy {
       return { ...state.descriptor }
     } catch (error) {
       state.descriptor.status = 'failed'
+      await killAndCloseBestEffort(state.instance)
       if (isTimeoutError(error)) {
         throw executionError('SANDBOX_TIMEOUT', '等待 Sandbox ready 超时', true)
       }
@@ -331,20 +333,27 @@ export class OpenSandboxRuntime implements SandboxRuntimePort, OnModuleDestroy {
   async destroySandbox(sandboxId: string, signal?: AbortSignal): Promise<void> {
     throwIfAborted(signal)
     const state = this.states.get(sandboxId)
+    let destroyed = false
     try {
       if (state) {
         await state.instance.kill()
       } else {
         await this.client.kill(sandboxId)
       }
+      destroyed = true
     } catch (error) {
-      if (!isNotFoundError(error)) throw normalizeUnavailable(error, '销毁 Sandbox 失败')
+      if (isNotFoundError(error)) {
+        destroyed = true
+      } else {
+        throw normalizeUnavailable(error, '销毁 Sandbox 失败')
+      }
     } finally {
-      if (state) {
+      if (state && destroyed) {
         state.descriptor.status = 'destroyed'
         state.usage.diskBytes = 0
         state.activeCommandIds.clear()
         await state.instance.close().catch(() => undefined)
+        this.states.delete(sandboxId)
       }
     }
   }
@@ -408,6 +417,11 @@ export class OpenSandboxRuntime implements SandboxRuntimePort, OnModuleDestroy {
     }
     return state
   }
+}
+
+async function killAndCloseBestEffort(instance: OpenSandboxInstance): Promise<void> {
+  await instance.kill().catch(() => undefined)
+  await instance.close().catch(() => undefined)
 }
 
 class SdkOpenSandboxClient implements OpenSandboxClient {
