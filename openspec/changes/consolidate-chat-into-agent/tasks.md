@@ -15,6 +15,6 @@
 ## 4. Agent-only C 端收敛
 
 - [x] 4.1 扩展 proposal、design 和 user-workspace-routing spec，明确 `/image`、`/prompt` 无兼容跳转且底层 API/SDK 保留，通过 strict validation
-- [ ] 4.2 删除 Image/Prompt 页面及页面专属 helper/test，确认无残留前端引用
+- [x] 4.2 删除 Image/Prompt 页面及页面专属 helper/test，确认无残留前端引用
 - [ ] 4.3 从首页、导航、登录页和 returnTo 白名单移除 Image/Prompt，只保留 Agent 主入口及配套 Skill/API
 - [ ] 4.4 同步 README、PRD、技术方案，运行 Web test、typecheck、lint、build、dev 404 冒烟和 OpenSpec strict validation
