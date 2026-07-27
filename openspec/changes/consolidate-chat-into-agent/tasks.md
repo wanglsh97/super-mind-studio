@@ -10,4 +10,4 @@
 
 ## 3. 验收
 
-- [ ] 3.1 增加路由与认证 helper 回归测试，运行 Web test、typecheck、lint、build 和 OpenSpec strict validation
+- [x] 3.1 增加路由与认证 helper 回归测试，运行 Web test、typecheck、lint、build 和 OpenSpec strict validation
