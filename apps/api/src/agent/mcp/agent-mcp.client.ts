@@ -1,5 +1,6 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
+import { Injectable } from '@nestjs/common'
 
 export type AgentMcpClientErrorCode =
   | 'MCP_ABORTED'
@@ -61,6 +62,7 @@ interface ConnectedClient {
   responseTooLarge: () => boolean
 }
 
+@Injectable()
 export class AgentMcpSdkClient {
   async discover(options: DiscoverAgentMcpToolsOptions): Promise<AgentMcpDiscoveryResult> {
     return this.withClient(options, async ({ client }) => {

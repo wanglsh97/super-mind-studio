@@ -12,6 +12,7 @@ const tokenEnvironmentName = z
 
 const configuredToolSchema = z.object({
   name: remoteToolName,
+  description: z.string().trim().min(1).max(300).optional(),
   riskLevel: z.enum(['read', 'external_send']).default('read'),
 })
 

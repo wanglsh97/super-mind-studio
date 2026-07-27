@@ -11,7 +11,8 @@ import { AgentContextSummaryRepository } from './context/agent-context-summary.r
 import { AgentContextSummaryService } from './context/agent-context-summary.service'
 import { AgentController } from './agent.controller'
 import { AgentMessageRepository } from './agent-message.repository'
-import { AGENT_MCP_REGISTRY, EmptyAgentMcpRegistry } from './mcp/agent-mcp.registry'
+import { AgentMcpSdkClient } from './mcp/agent-mcp.client'
+import { AGENT_MCP_REGISTRY, PlatformAgentMcpRegistry } from './mcp/agent-mcp.registry'
 import { AGENT_MEMORY_PROVIDER, EmptyAgentMemoryProvider } from './memory/agent-memory.provider'
 import { AgentRunEventBus } from './agent-run-event-bus'
 import { AgentRunRepository } from './agent-run.repository'
@@ -181,8 +182,9 @@ export function createSandboxRuntime(
       useFactory: createSandboxRuntime,
     },
     AgentExecutionSessionService,
-    EmptyAgentMcpRegistry,
-    { provide: AGENT_MCP_REGISTRY, useExisting: EmptyAgentMcpRegistry },
+    AgentMcpSdkClient,
+    PlatformAgentMcpRegistry,
+    { provide: AGENT_MCP_REGISTRY, useExisting: PlatformAgentMcpRegistry },
     EmptyAgentMemoryProvider,
     { provide: AGENT_MEMORY_PROVIDER, useExisting: EmptyAgentMemoryProvider },
     {

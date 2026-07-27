@@ -32,9 +32,9 @@ describe('AgentPromptComposer', () => {
         },
       ],
     }
-    const mcp: AgentMcpRegistry = {
-      listServers: () => [{ id: 'docs', name: 'Docs', version: '1', description: '外部 <说明>' }],
-    }
+    const mcp = mcpRegistry([
+      { id: 'docs', name: 'Docs', version: '1', description: '外部 <说明>' },
+    ])
     const memory: AgentMemoryProvider = {
       recall: async () => [
         { id: 'm1', version: '1', scope: 'user', kind: 'preference', content: '使用 <中文>' },
@@ -74,7 +74,7 @@ describe('AgentPromptComposer', () => {
     const composer = new AgentPromptComposer(
       new AgentToolRegistry([]),
       { listCandidates: async () => [] },
-      { listServers: () => [] },
+      mcpRegistry(),
       { recall: async () => [] },
     )
     const result = await composer.compose({
@@ -103,7 +103,7 @@ describe('AgentPromptComposer', () => {
         }),
       ]),
       { listCandidates: async () => [] },
-      { listServers: () => [] },
+      mcpRegistry(),
       { recall: async () => [] },
     )
     const result = await composer.compose({
@@ -125,7 +125,7 @@ describe('AgentPromptComposer', () => {
     const composer = new AgentPromptComposer(
       new AgentToolRegistry([]),
       { listCandidates: async () => [] },
-      { listServers: () => [] },
+      mcpRegistry(),
       { recall: async () => [] },
     )
     const result = await composer.compose({
@@ -155,7 +155,7 @@ describe('AgentPromptComposer', () => {
     const composer = new AgentPromptComposer(
       new AgentToolRegistry([tool]),
       { listCandidates: async () => candidates },
-      { listServers: () => [] },
+      mcpRegistry(),
       { recall: async () => [] },
     )
 
@@ -184,3 +184,13 @@ describe('AgentPromptComposer', () => {
     )
   })
 })
+
+function mcpRegistry(
+  servers: ReturnType<AgentMcpRegistry['listServers']> = [],
+): AgentMcpRegistry {
+  return {
+    listServers: () => servers,
+    resolveTools: async () => [],
+    listStatuses: async () => [],
+  }
+}

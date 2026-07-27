@@ -71,11 +71,11 @@ export function validateToolArguments(
       if (maxLength !== undefined && value.length > maxLength) {
         return fail(`参数 ${key} 长度不得大于 ${maxLength}`)
       }
-    } else if (expectedType === 'number') {
+    } else if (expectedType === 'number' || expectedType === 'integer') {
       if (typeof value !== 'number' || Number.isNaN(value)) {
-        return fail(`参数 ${key} 必须是 number`)
+        return fail(`参数 ${key} 必须是 ${expectedType}`)
       }
-      if (schema.integer === true && !Number.isInteger(value)) {
+      if ((expectedType === 'integer' || schema.integer === true) && !Number.isInteger(value)) {
         return fail(`参数 ${key} 必须是整数`)
       }
       const minimum = typeof schema.minimum === 'number' ? schema.minimum : undefined
