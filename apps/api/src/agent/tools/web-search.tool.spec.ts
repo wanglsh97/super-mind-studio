@@ -117,10 +117,7 @@ describe('web_search tool', () => {
     const cancelled = new AbortController()
     cancelled.abort()
     await expect(
-      tool.execute(
-        { query: 'test' },
-        { toolCallId: 'call-cancel', signal: cancelled.signal },
-      ),
+      tool.execute({ query: 'test' }, { toolCallId: 'call-cancel', signal: cancelled.signal }),
     ).resolves.toMatchObject({
       isError: true,
       summary: '网页搜索已取消',

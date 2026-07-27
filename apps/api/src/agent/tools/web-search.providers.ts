@@ -85,9 +85,7 @@ export async function callWebSearchProvider(
     },
     headers: {
       'User-Agent': 'supermind-studio/0.1.0',
-      ...(options.parallelApiKey
-        ? { Authorization: `Bearer ${options.parallelApiKey}` }
-        : {}),
+      ...(options.parallelApiKey ? { Authorization: `Bearer ${options.parallelApiKey}` } : {}),
     },
     signal: options.signal,
     timeoutMs: options.timeoutMs,

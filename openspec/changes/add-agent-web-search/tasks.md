@@ -14,4 +14,4 @@
 - [x] 3.1 增加不访问公网的双 provider contract/Agent registry 测试，确认 Pi prompt 只暴露统一 `web_search`
 - [x] 3.2 增加显式 `test:smoke:web-search`，使用匿名免费端点对 Exa 与 Parallel 各查询一次并记录非敏感结果
 - [x] 3.3 更新 README 和配置说明，记录第三方数据流、匿名额度非 SLA、关闭/固定 provider 方法
-- [ ] 3.4 运行相关测试、typecheck、lint、build 和 OpenSpec strict validation，按已验证 checkbox 独立提交
+- [x] 3.4 运行相关测试、typecheck、lint、build 和 OpenSpec strict validation，按已验证 checkbox 独立提交

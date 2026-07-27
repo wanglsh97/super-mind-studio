@@ -1,4 +1,7 @@
-import { callWebSearchProvider, type WebSearchProvider } from '../src/agent/tools/web-search.providers'
+import {
+  callWebSearchProvider,
+  type WebSearchProvider,
+} from '../src/agent/tools/web-search.providers'
 
 void main()
 

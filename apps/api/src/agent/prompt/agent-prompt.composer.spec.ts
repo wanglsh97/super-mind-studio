@@ -116,9 +116,7 @@ describe('AgentPromptComposer', () => {
     })
 
     expect(result.manifest.toolNames).toEqual(['web_search'])
-    expect(result.systemPrompt).toContain(
-      '- web_search [risk=external_send, approval=none]:',
-    )
+    expect(result.systemPrompt).toContain('- web_search [risk=external_send, approval=none]:')
     expect(result.systemPrompt).not.toContain('web_search_exa')
     expect(result.systemPrompt).not.toContain('Parallel Web Search')
   })

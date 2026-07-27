@@ -134,9 +134,7 @@ describe('web-search providers', () => {
 
   it('does not expose credential-bearing URLs through request errors', async () => {
     const fetchImpl = jest.fn(async () => {
-      throw new Error(
-        'fetch failed for https://mcp.exa.ai/mcp?exaApiKey=must-not-leak',
-      )
+      throw new Error('fetch failed for https://mcp.exa.ai/mcp?exaApiKey=must-not-leak')
     }) as typeof fetch
     await expect(
       callWebSearchProvider({

@@ -72,15 +72,9 @@ export function resolveAgentTools(
     const parallelApiKey = config.get<string>('PARALLEL_API_KEY')
     tools.push(
       createWebSearchTool({
-        providerMode: config.get<'auto' | 'exa' | 'parallel'>(
-          'AGENT_WEB_SEARCH_PROVIDER',
-          'auto',
-        ),
+        providerMode: config.get<'auto' | 'exa' | 'parallel'>('AGENT_WEB_SEARCH_PROVIDER', 'auto'),
         timeoutMs: config.get<number>('AGENT_WEB_SEARCH_TIMEOUT_MS', 25_000),
-        maxResponseBytes: config.get<number>(
-          'AGENT_WEB_SEARCH_MAX_RESPONSE_BYTES',
-          2_097_152,
-        ),
+        maxResponseBytes: config.get<number>('AGENT_WEB_SEARCH_MAX_RESPONSE_BYTES', 2_097_152),
         maxOutputChars: config.get<number>('AGENT_WEB_SEARCH_MAX_OUTPUT_CHARS', 30_000),
         ...(exaApiKey ? { exaApiKey } : {}),
         ...(parallelApiKey ? { parallelApiKey } : {}),

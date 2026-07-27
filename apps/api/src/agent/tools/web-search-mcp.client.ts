@@ -94,10 +94,7 @@ export function parseWebSearchMcpResponse(body: string): string {
   throw new WebSearchMcpError('WEB_SEARCH_EMPTY_RESULT', '搜索服务没有返回文本结果')
 }
 
-async function readLimitedBody(
-  response: Response,
-  maxResponseBytes: number,
-): Promise<string> {
+async function readLimitedBody(response: Response, maxResponseBytes: number): Promise<string> {
   if (!response.body) {
     throw new WebSearchMcpError('WEB_SEARCH_EMPTY_RESULT', '搜索服务没有返回响应体')
   }
@@ -163,14 +160,9 @@ export async function callWebSearchMcp(options: WebSearchMcpClientOptions): Prom
     })
 
     if (!response.ok) {
-      throw new WebSearchMcpError(
-        'WEB_SEARCH_HTTP_ERROR',
-        `搜索服务返回 HTTP ${response.status}`,
-      )
+      throw new WebSearchMcpError('WEB_SEARCH_HTTP_ERROR', `搜索服务返回 HTTP ${response.status}`)
     }
-    return parseWebSearchMcpResponse(
-      await readLimitedBody(response, options.maxResponseBytes),
-    )
+    return parseWebSearchMcpResponse(await readLimitedBody(response, options.maxResponseBytes))
   } catch (error) {
     if (error instanceof WebSearchMcpError) throw error
     if (options.signal.aborted) {
@@ -182,10 +174,7 @@ export async function callWebSearchMcp(options: WebSearchMcpClientOptions): Prom
         `web_search 在 ${options.timeoutMs}ms 后超时`,
       )
     }
-    throw new WebSearchMcpError(
-      'WEB_SEARCH_REQUEST_FAILED',
-      'web_search 请求失败',
-    )
+    throw new WebSearchMcpError('WEB_SEARCH_REQUEST_FAILED', 'web_search 请求失败')
   } finally {
     clearTimeout(timeout)
     options.signal.removeEventListener('abort', abortFromCaller)

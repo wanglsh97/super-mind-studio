@@ -25,8 +25,7 @@ export const WEB_SEARCH_TOOL_PARAMETERS: Record<string, unknown> = {
     livecrawl: {
       type: 'string',
       enum: ['fallback', 'preferred'],
-      description:
-        "Live crawl preference when supported: 'fallback' (default) or 'preferred'.",
+      description: "Live crawl preference when supported: 'fallback' (default) or 'preferred'.",
     },
     type: {
       type: 'string',
@@ -101,9 +100,7 @@ export function createWebSearchTool(
           timeoutMs: options.timeoutMs,
           maxResponseBytes: options.maxResponseBytes,
           ...(options.exaApiKey ? { exaApiKey: options.exaApiKey } : {}),
-          ...(options.parallelApiKey
-            ? { parallelApiKey: options.parallelApiKey }
-            : {}),
+          ...(options.parallelApiKey ? { parallelApiKey: options.parallelApiKey } : {}),
           ...(options.fetchImpl ? { fetchImpl: options.fetchImpl } : {}),
         })
 

@@ -31,7 +31,9 @@ export function validateToolArguments(
   }
 
   const properties =
-    parameters.properties && typeof parameters.properties === 'object' && !Array.isArray(parameters.properties)
+    parameters.properties &&
+    typeof parameters.properties === 'object' &&
+    !Array.isArray(parameters.properties)
       ? (parameters.properties as Record<string, Record<string, unknown>>)
       : {}
 

@@ -39,7 +39,10 @@ describe('web-search MCP client', () => {
     ['', 'WEB_SEARCH_EMPTY_RESULT'],
     ['not-json', 'WEB_SEARCH_EMPTY_RESULT'],
     ['data: {broken}', 'WEB_SEARCH_PROTOCOL_ERROR'],
-    [JSON.stringify({ error: { code: -32_000, message: 'provider rejected' } }), 'WEB_SEARCH_PROTOCOL_ERROR'],
+    [
+      JSON.stringify({ error: { code: -32_000, message: 'provider rejected' } }),
+      'WEB_SEARCH_PROTOCOL_ERROR',
+    ],
     [JSON.stringify({ result: { content: [] } }), 'WEB_SEARCH_EMPTY_RESULT'],
   ])('normalizes invalid payload %#', (body, code) => {
     try {
@@ -85,7 +88,9 @@ describe('web-search MCP client', () => {
   })
 
   it('rejects non-success HTTP status without returning its body', async () => {
-    const fetchImpl = jest.fn(async () => new Response('secret body', { status: 429 })) as typeof fetch
+    const fetchImpl = jest.fn(
+      async () => new Response('secret body', { status: 429 }),
+    ) as typeof fetch
     await expect(
       callWebSearchMcp({
         url: 'https://search.example.test/mcp?apiKey=secret',
