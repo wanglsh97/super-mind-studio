@@ -18,7 +18,7 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common'
-import { ApiCookieAuth, ApiTags } from '@nestjs/swagger'
+import { ApiCookieAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger'
 import type { Request, Response } from 'express'
 
 import { CurrentUser } from '../user-auth/current-user.decorator'
@@ -59,6 +59,38 @@ export class AgentController {
   ) {}
 
   @Get('mcp/servers')
+  @ApiOperation({ summary: '读取平台 MCP Server 脱敏状态' })
+  @ApiOkResponse({
+    description: '不返回 endpoint、认证配置、header 或 token',
+    schema: {
+      type: 'array',
+      items: {
+        type: 'object',
+        required: [
+          'id',
+          'name',
+          'version',
+          'description',
+          'status',
+          'allowedToolCount',
+          'discoveredToolCount',
+          'registeredToolCount',
+          'errorCode',
+        ],
+        properties: {
+          id: { type: 'string' },
+          name: { type: 'string' },
+          version: { type: 'string' },
+          description: { type: 'string' },
+          status: { type: 'string', enum: ['configured', 'ready', 'error'] },
+          allowedToolCount: { type: 'integer', minimum: 0 },
+          discoveredToolCount: { type: 'integer', minimum: 0 },
+          registeredToolCount: { type: 'integer', minimum: 0 },
+          errorCode: { type: 'string', nullable: true },
+        },
+      },
+    },
+  })
   async listMcpServers() {
     return this.mcp.listStatuses()
   }

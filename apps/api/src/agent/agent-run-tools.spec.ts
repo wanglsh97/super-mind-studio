@@ -35,9 +35,6 @@ describe('createAgentRunToolRegistry', () => {
 
     expect(resolveTools).toHaveBeenCalledTimes(1)
     expect(resolveTools).toHaveBeenCalledWith(input)
-    expect(registry.list().map((item) => item.name)).toEqual([
-      'web_fetch',
-      'mcp__docs__lookup',
-    ])
+    expect(registry.list().map((item) => item.name)).toEqual(['web_fetch', 'mcp__docs__lookup'])
   })
 })

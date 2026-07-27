@@ -21,9 +21,7 @@ describe('PlatformAgentMcpRegistry', () => {
     description: 'Approved documentation',
     url: 'https://mcp.example.test/mcp',
     auth: { type: 'none' as const },
-    tools: [
-      { name: 'lookup', description: 'Search approved docs', riskLevel: 'read' as const },
-    ],
+    tools: [{ name: 'lookup', description: 'Search approved docs', riskLevel: 'read' as const }],
   }
 
   it('registers only configured tools with a stable namespace and sanitized schema', async () => {
@@ -130,9 +128,7 @@ describe('MCP tool safety helpers', () => {
   })
 
   it('rejects unsupported and oversized schemas', () => {
-    expect(
-      sanitizeMcpInputSchema({ inputSchema: { type: 'string' } }),
-    ).toBeNull()
+    expect(sanitizeMcpInputSchema({ inputSchema: { type: 'string' } })).toBeNull()
     expect(
       sanitizeMcpInputSchema({
         inputSchema: {
@@ -144,10 +140,7 @@ describe('MCP tool safety helpers', () => {
   })
 })
 
-function createRegistry(
-  server: object,
-  client: AgentMcpSdkClient,
-): PlatformAgentMcpRegistry {
+function createRegistry(server: object, client: AgentMcpSdkClient): PlatformAgentMcpRegistry {
   return new PlatformAgentMcpRegistry(
     new ConfigService({
       AGENT_MCP_SERVERS_JSON: [server],

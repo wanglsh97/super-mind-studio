@@ -72,10 +72,7 @@ export class AgentMcpSdkClient {
       do {
         pageCount += 1
         if (pageCount > 20) {
-          throw new AgentMcpClientError(
-            'MCP_PROTOCOL_ERROR',
-            'MCP tools/list 分页超过安全上限',
-          )
+          throw new AgentMcpClientError('MCP_PROTOCOL_ERROR', 'MCP tools/list 分页超过安全上限')
         }
         const page = await client.listTools(
           cursor === undefined ? undefined : { cursor },
@@ -141,10 +138,7 @@ export class AgentMcpSdkClient {
         maxRetries: 0,
       },
     })
-    const client = new Client(
-      { name: 'super-mind-studio', version: '0.1.0' },
-      { capabilities: {} },
-    )
+    const client = new Client({ name: 'super-mind-studio', version: '0.1.0' }, { capabilities: {} })
 
     try {
       // SDK v1's declaration is not exactOptionalPropertyTypes-safe although the runtime
@@ -166,10 +160,7 @@ export class AgentMcpSdkClient {
         )
       }
       if (isTimeoutError(error)) {
-        throw new AgentMcpClientError(
-          'MCP_TIMEOUT',
-          `MCP 请求在 ${options.timeoutMs}ms 后超时`,
-        )
+        throw new AgentMcpClientError('MCP_TIMEOUT', `MCP 请求在 ${options.timeoutMs}ms 后超时`)
       }
       throw new AgentMcpClientError('MCP_CONNECTION_FAILED', 'MCP 连接或请求失败')
     } finally {
@@ -186,10 +177,7 @@ function requestOptions(options: Pick<AgentMcpConnectionOptions, 'signal' | 'tim
   }
 }
 
-function createBoundedFetch(
-  maxResponseBytes: number,
-  onTooLarge: () => void,
-): typeof fetch {
+function createBoundedFetch(maxResponseBytes: number, onTooLarge: () => void): typeof fetch {
   return (async (input: Parameters<typeof fetch>[0], init?: RequestInit) => {
     const response = await fetch(input, init)
     const declaredLength = Number(response.headers.get('content-length'))

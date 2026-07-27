@@ -1,4 +1,4 @@
-import { createServer, type IncomingMessage, type ServerResponse } from 'node:http'
+import { createServer, type IncomingMessage } from 'node:http'
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
@@ -10,9 +10,11 @@ export interface McpFixtureServer {
   close(): Promise<void>
 }
 
-export async function startMcpFixtureServer(options: {
-  bearerToken?: string
-} = {}): Promise<McpFixtureServer> {
+export async function startMcpFixtureServer(
+  options: {
+    bearerToken?: string
+  } = {},
+): Promise<McpFixtureServer> {
   const calls: Array<{ toolName: string; arguments: Record<string, unknown> }> = []
   const server = createServer(async (request, response) => {
     if (request.url !== '/mcp' || request.method !== 'POST') {
@@ -26,10 +28,7 @@ export async function startMcpFixtureServer(options: {
       )
       return
     }
-    if (
-      options.bearerToken &&
-      request.headers.authorization !== `Bearer ${options.bearerToken}`
-    ) {
+    if (options.bearerToken && request.headers.authorization !== `Bearer ${options.bearerToken}`) {
       response.writeHead(401, { 'content-type': 'application/json' })
       response.end(JSON.stringify({ error: 'unauthorized' }))
       return
@@ -37,7 +36,6 @@ export async function startMcpFixtureServer(options: {
 
     const mcp = createFixtureMcpServer(calls)
     const transport = new StreamableHTTPServerTransport({
-      sessionIdGenerator: undefined,
       enableJsonResponse: true,
     })
     response.once('close', () => {
@@ -46,9 +44,7 @@ export async function startMcpFixtureServer(options: {
     })
     try {
       const body = await readJsonBody(request)
-      await mcp.connect(
-        transport as unknown as Parameters<McpServer['connect']>[0],
-      )
+      await mcp.connect(transport as unknown as Parameters<McpServer['connect']>[0])
       await transport.handleRequest(request, response, body)
     } catch {
       if (!response.headersSent) {
@@ -122,13 +118,4 @@ async function readJsonBody(request: IncomingMessage): Promise<unknown> {
     chunks.push(buffer)
   }
   return JSON.parse(Buffer.concat(chunks).toString('utf8')) as unknown
-}
-
-export function endJson(
-  response: ServerResponse,
-  status: number,
-  value: unknown,
-): void {
-  response.writeHead(status, { 'content-type': 'application/json' })
-  response.end(JSON.stringify(value))
 }

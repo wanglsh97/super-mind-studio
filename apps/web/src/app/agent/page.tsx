@@ -74,10 +74,7 @@ import {
   resolveAgentToolActivityState,
   type AgentToolActivityState,
 } from './agent-tool-activity'
-import {
-  parseNamespacedMcpToolName,
-  summarizeAgentMcpStatuses,
-} from './agent-mcp-status'
+import { parseNamespacedMcpToolName, summarizeAgentMcpStatuses } from './agent-mcp-status'
 
 const client = createAIGatewayClient()
 

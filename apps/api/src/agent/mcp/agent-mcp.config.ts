@@ -6,9 +6,7 @@ const serverId = z
 const remoteToolName = z
   .string()
   .regex(/^[A-Za-z0-9_-]{1,64}$/, '只能包含字母、数字、下划线或连字符')
-const tokenEnvironmentName = z
-  .string()
-  .regex(/^[A-Z][A-Z0-9_]{1,63}$/, '必须是大写环境变量名')
+const tokenEnvironmentName = z.string().regex(/^[A-Z][A-Z0-9_]{1,63}$/, '必须是大写环境变量名')
 
 const configuredToolSchema = z.object({
   name: remoteToolName,

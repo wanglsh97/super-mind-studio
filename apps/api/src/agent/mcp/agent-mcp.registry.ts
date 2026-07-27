@@ -3,11 +3,7 @@ import { ConfigService } from '@nestjs/config'
 
 import type { AgentToolDefinition, AgentToolResult } from '../tools/agent-tool'
 import type { AgentMcpServerConfig } from './agent-mcp.config'
-import {
-  AgentMcpClientError,
-  AgentMcpSdkClient,
-  type AgentMcpRemoteTool,
-} from './agent-mcp.client'
+import { AgentMcpClientError, AgentMcpSdkClient, type AgentMcpRemoteTool } from './agent-mcp.client'
 
 export interface AgentMcpServerDescriptor {
   id: string
@@ -106,7 +102,9 @@ export class PlatformAgentMcpRegistry implements AgentMcpRegistry {
     return snapshots.flatMap((snapshot) => snapshot.tools)
   }
 
-  async listStatuses(signal = new AbortController().signal): Promise<readonly AgentMcpServerStatus[]> {
+  async listStatuses(
+    signal: AbortSignal = new AbortController().signal,
+  ): Promise<readonly AgentMcpServerStatus[]> {
     if (this.servers.length === 0) return []
     const snapshots = await Promise.all(
       this.servers.map((server) => this.discoverServer(server, signal)),
@@ -162,8 +160,7 @@ export class PlatformAgentMcpRegistry implements AgentMcpRegistry {
         tools,
       }
     } catch (error) {
-      const errorCode =
-        error instanceof AgentMcpClientError ? error.code : 'MCP_CONNECTION_FAILED'
+      const errorCode = error instanceof AgentMcpClientError ? error.code : 'MCP_CONNECTION_FAILED'
       return {
         descriptor: baseDescriptor,
         status: {

@@ -70,6 +70,24 @@ Agent 提供统一的 `web_search` 工具，服务端参考 OpenCode 通过远�
 pnpm test:smoke:web-search
 ```
 
+## Agent MCP 接入
+
+Agent 支持由平台管理员在 API 服务端配置远程 MCP Server。每次 Agent run 开始前，API 会通过 Streamable HTTP 发现允许的工具，并把 built-in 与 MCP 工具集合冻结到本次运行；远程工具统一命名为 `mcp__<server-id>__<tool-name>`。浏览器只能读取脱敏后的 Server 状态和工具数量，不会收到 endpoint、Authorization header 或 token。
+
+默认 `AGENT_MCP_SERVERS_JSON=[]`，不建立任何 MCP 连接。下面的示例只允许调用远端 `lookup` 工具，并把平台维护的描述提供给模型：
+
+```dotenv
+DOCS_MCP_TOKEN=<仅保存在服务端的 token>
+AGENT_MCP_SERVERS_JSON=[{"id":"docs","name":"Docs","url":"https://mcp.example.com/mcp","auth":{"type":"bearer","tokenEnv":"DOCS_MCP_TOKEN"},"tools":[{"name":"lookup","description":"Search approved docs","riskLevel":"read"}]}]
+```
+
+V1 只支持 Streamable HTTP、静态工具白名单以及 `read`/`external_send` 风险级别；不支持浏览器自助添加 Server、OAuth、stdio、resources、prompts、sampling、elicitation 或破坏性工具。生产环境只允许 HTTPS endpoint，本地开发和测试可使用 loopback HTTP。配置中的工具必须同时存在于远端 `tools/list` 与平台白名单中才会注册。
+
+相关接口与验证命令：
+
+- `GET /api/v1/agent/mcp/servers`：要求用户 Session，只返回脱敏状态。
+- `pnpm test:smoke:mcp`：启动本地 Streamable HTTP fixture，完成发现和调用，不访问公网。
+
 ## 阿里云 ECS 生产部署
 
 项目提供 Web/API 多阶段镜像、单机生产 Compose、Nginx SSE 代理、日志轮转、PostgreSQL 备份恢复和人工发布脚本。部署前请完整阅读 [ECS 单机部署与回滚手册](docs/deployment/ecs.md)。

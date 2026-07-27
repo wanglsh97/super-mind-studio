@@ -76,9 +76,12 @@ KIMI_ENABLED=false
 WANXIANG_ENABLED=false
 COGVIEW_ENABLED=false
 ADMIN_FIXED_CREDENTIALS_ENABLED=false
+AGENT_MCP_SERVERS_JSON=[]
 ```
 
 生产必须设置 `GITHUB_OAUTH_ENABLED=true`。Compose 会把 GitHub OAuth 和两类 Session 配置显式注入 API；缺少任一必填值时应在启动前失败。OAuth App 的主页 URL 使用 `https://<DOMAIN>`，不要填写公网 IP，也不要把 Client Secret 复制到命令输出、日志或工单。
+
+首次部署保持 MCP 关闭。启用前应审核 Server 身份、工具语义、数据出境和外部副作用，并把精确工具白名单写入 `AGENT_MCP_SERVERS_JSON`。生产 endpoint 必须使用 HTTPS；Bearer token 通过配置中的 `tokenEnv` 引用，不能嵌入 JSON。模板与 Compose 默认提供 `AGENT_MCP_TOKEN` 槽位；如需多个独立 token，先在 `infra/compose/compose.prod.yml` 的 API `environment` 中逐项增加对应变量，再在 JSON 中引用。不要使用 `env_file` 把整份生产配置无差别注入 API。
 
 不要把 `.env.production`、API Key、数据库密码、Cookie secret、证书私钥或数据库备份提交到 Git。
 

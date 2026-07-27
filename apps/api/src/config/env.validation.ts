@@ -1,9 +1,6 @@
 import { z } from 'zod'
 
-import {
-  assertAgentMcpEnvironment,
-  parseAgentMcpServersJson,
-} from '../agent/mcp/agent-mcp.config'
+import { assertAgentMcpEnvironment, parseAgentMcpServersJson } from '../agent/mcp/agent-mcp.config'
 
 const booleanFromEnv = z.preprocess((value) => {
   if (typeof value !== 'string') return value
@@ -119,18 +116,8 @@ const environmentSchema = z
         return z.NEVER
       }
     }, z.array(z.unknown()).default([])),
-    AGENT_MCP_DISCOVERY_TIMEOUT_MS: z.coerce
-      .number()
-      .int()
-      .min(1_000)
-      .max(60_000)
-      .default(10_000),
-    AGENT_MCP_CALL_TIMEOUT_MS: z.coerce
-      .number()
-      .int()
-      .min(1_000)
-      .max(120_000)
-      .default(30_000),
+    AGENT_MCP_DISCOVERY_TIMEOUT_MS: z.coerce.number().int().min(1_000).max(60_000).default(10_000),
+    AGENT_MCP_CALL_TIMEOUT_MS: z.coerce.number().int().min(1_000).max(120_000).default(30_000),
     AGENT_MCP_MAX_TOOLS_PER_SERVER: z.coerce.number().int().min(1).max(100).default(50),
     AGENT_MCP_MAX_RESPONSE_BYTES: z.coerce
       .number()
@@ -138,12 +125,7 @@ const environmentSchema = z
       .min(1_024)
       .max(4_194_304)
       .default(1_048_576),
-    AGENT_MCP_MAX_OUTPUT_CHARS: z.coerce
-      .number()
-      .int()
-      .min(1_000)
-      .max(50_000)
-      .default(20_000),
+    AGENT_MCP_MAX_OUTPUT_CHARS: z.coerce.number().int().min(1_000).max(50_000).default(20_000),
     EXA_API_KEY: optionalSecret,
     PARALLEL_API_KEY: optionalSecret,
     MOCK_PROVIDER_ENABLED: booleanFromEnv.default(true),
