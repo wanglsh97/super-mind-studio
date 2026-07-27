@@ -60,4 +60,41 @@ describe('AgentExecutionSessionService sandbox cleanup', () => {
     expect(skills.activateManually).toHaveBeenCalledTimes(50)
     await service.destroyRun('run-many')
   })
+
+  it('isolates workspaces between Runs and rejects cross-user reuse', async () => {
+    const skills = {
+      activateManually: jest.fn(async (_userId: string, selected: readonly string[]) => [
+        {
+          manifest: {
+            skillId: `id-${selected[0]}`,
+            name: selected[0],
+            packageSha256: 'b'.repeat(64),
+          },
+          archive: new Uint8Array(),
+          skillMarkdown: '# Isolated',
+          files: [],
+        },
+      ]),
+    } as unknown as ExecutableSkillService
+    const sandboxes = new FakeSandboxRuntime()
+    const service = new AgentExecutionSessionService(skills, sandboxes)
+    const first = await service.activateSkill('run-1', 'user-1', 'isolated-skill')
+    const second = await service.activateSkill('run-2', 'user-1', 'isolated-skill')
+
+    expect(first.sandboxId).not.toBe(second.sandboxId)
+    await service.writeFile(
+      'run-1',
+      'user-1',
+      '/workspace/work/private.txt',
+      new TextEncoder().encode('run-1-only'),
+    )
+    await expect(
+      service.readFile('run-2', 'user-1', '/workspace/work/private.txt'),
+    ).resolves.toBeNull()
+    await expect(
+      service.readFile('run-1', 'user-2', '/workspace/work/private.txt'),
+    ).rejects.toThrow('owner mismatch')
+    await service.destroyRun('run-1')
+    await service.destroyRun('run-2')
+  })
 })
