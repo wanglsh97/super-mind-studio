@@ -192,7 +192,7 @@ export default function SkillsPage() {
 
       <section
         aria-label="Skill 分类"
-        className="mt-6 flex min-h-12 items-center gap-5 border-b border-line"
+        className="mt-6 flex min-h-12 items-center gap-5 border-b border-line px-5 md:px-6"
       >
         <h2 className="shrink-0 text-sm font-bold text-ink-secondary">分类</h2>
         <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto pb-1">
