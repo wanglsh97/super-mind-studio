@@ -2,7 +2,6 @@
 
 import { createAIGatewayClient } from '@supermind/sdk'
 import type { SkillUploadProgress } from '@supermind/sdk'
-import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 
 import { useAuthenticationFailure } from '../../components/use-authentication-failure'
