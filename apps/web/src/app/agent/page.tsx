@@ -4,6 +4,7 @@ import { createAIGatewayClient } from '@supermind/sdk'
 import type {
   AgentContextBudgetState,
   AgentContextSummary,
+  AgentMcpServerStatus,
   AgentSkillCandidate,
   AgentStreamEvent,
   TextModelAlias,
@@ -73,6 +74,10 @@ import {
   resolveAgentToolActivityState,
   type AgentToolActivityState,
 } from './agent-tool-activity'
+import {
+  parseNamespacedMcpToolName,
+  summarizeAgentMcpStatuses,
+} from './agent-mcp-status'
 
 const client = createAIGatewayClient()
 
@@ -114,6 +119,8 @@ function AgentConsole() {
   const [skillCandidates, setSkillCandidates] = useState<AgentSkillCandidate[]>([])
   const [selectedSkillNames, setSelectedSkillNames] = useState<string[]>([])
   const [skillLoadState, setSkillLoadState] = useState<'loading' | 'ready' | 'failed'>('loading')
+  const [mcpServers, setMcpServers] = useState<AgentMcpServerStatus[]>([])
+  const [mcpLoadState, setMcpLoadState] = useState<'loading' | 'ready' | 'failed'>('loading')
 
   const skipHydrationRef = useRef(false)
   const contextRef = useRef({
@@ -198,6 +205,16 @@ function AgentConsole() {
 
   useEffect(() => {
     void loadSkillCandidates()
+    void client.agent.mcp
+      .servers()
+      .then((servers) => {
+        setMcpServers(servers)
+        setMcpLoadState('ready')
+      })
+      .catch((error) => {
+        handleAuthenticationFailure(error)
+        setMcpLoadState('failed')
+      })
   }, [])
 
   const modelOptions = useMemo<ModelOption[]>(
@@ -274,7 +291,33 @@ function AgentConsole() {
                       label="SUPER MIND · AGENT"
                       metadata={<AgentMessageMetadata />}
                       renderPart={(part) => {
-                        if (part.type === 'tool-call') return part.toolUI ?? null
+                        if (part.type === 'tool-call') {
+                          if (part.toolUI) return part.toolUI
+                          const toolPart = part as typeof part & {
+                            toolName?: unknown
+                            args?: unknown
+                            result?: unknown
+                            isError?: unknown
+                          }
+                          if (typeof toolPart.toolName !== 'string') return null
+                          const parsed = parseNamespacedMcpToolName(toolPart.toolName)
+                          if (parsed) {
+                            const result = isSandboxToolResult(toolPart.result)
+                              ? toolPart.result
+                              : undefined
+                            return (
+                              <McpToolActivityCard
+                                serverId={parsed.serverId}
+                                remoteToolName={parsed.remoteToolName}
+                                args={isRecord(toolPart.args) ? toolPart.args : {}}
+                                result={result}
+                                running={result === undefined}
+                                isError={toolPart.isError === true}
+                              />
+                            )
+                          }
+                          return null
+                        }
                         if (part.type === 'text')
                           return <AssistantMarkdown>{part.text ?? ''}</AssistantMarkdown>
                         if (part.type === 'reasoning') {
@@ -290,6 +333,7 @@ function AgentConsole() {
             </AgentThreadViewport>
             <AgentScrollToBottom />
             <AgentComposerDock>
+              <AgentMcpStatusPanel statuses={mcpServers} loadState={mcpLoadState} />
               <AgentSkillSelector
                 candidates={skillCandidates}
                 selectedNames={selectedSkillNames}
@@ -632,6 +676,14 @@ interface SandboxToolResult {
   audit?: Record<string, unknown>
 }
 
+function isSandboxToolResult(value: unknown): value is SandboxToolResult {
+  return isRecord(value)
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
 const ShellToolUI = makeAssistantToolUI<
   { command?: string; workingDirectory?: string },
   SandboxToolResult
@@ -800,6 +852,100 @@ function SandboxToolActivityCard({
           </code>
         ) : null}
         {detail ? <p className="font-mono text-[0.68rem] text-ink-subtle">{detail}</p> : null}
+        {result?.summary ? <p className="text-xs text-ink-muted">{result.summary}</p> : null}
+      </div>
+    </div>
+  )
+}
+
+function AgentMcpStatusPanel({
+  statuses,
+  loadState,
+}: {
+  statuses: AgentMcpServerStatus[]
+  loadState: 'loading' | 'ready' | 'failed'
+}) {
+  const summary = summarizeAgentMcpStatuses(statuses)
+  return (
+    <details className="mx-1 rounded-xl border border-line/80 bg-surface-inset/60 px-3 py-2 text-xs text-ink-muted">
+      <summary className="cursor-pointer font-semibold text-ink">
+        MCP Servers ·{' '}
+        {loadState === 'loading'
+          ? '检查中'
+          : loadState === 'failed'
+            ? '状态不可用'
+            : `${summary.readyCount}/${summary.serverCount} ready · ${summary.registeredToolCount} tools`}
+      </summary>
+      {loadState === 'ready' && statuses.length === 0 ? (
+        <p className="mt-2 text-ink-subtle">未配置平台 MCP Server。</p>
+      ) : null}
+      {statuses.length > 0 ? (
+        <ul className="mt-2 space-y-1.5">
+          {statuses.map((server) => (
+            <li key={server.id} className="flex flex-wrap items-center gap-2">
+              <span className="font-semibold text-ink">{server.name}</span>
+              <span
+                className={cn(
+                  'rounded-full px-2 py-0.5 text-[0.68rem] font-bold',
+                  server.status === 'ready'
+                    ? 'bg-[#dff2e6] text-[#2f7a4d] dark:bg-[#193426]'
+                    : 'bg-[#f6dddd] text-[#a63d3d] dark:bg-[#3d2222]',
+                )}
+              >
+                {server.status}
+              </span>
+              <span className="font-mono text-[0.68rem] text-ink-subtle">
+                {server.registeredToolCount}/{server.allowedToolCount} tools
+                {server.errorCode ? ` · ${server.errorCode}` : ''}
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </details>
+  )
+}
+
+function McpToolActivityCard({
+  serverId,
+  remoteToolName,
+  args,
+  result,
+  running,
+  isError,
+}: {
+  serverId: string
+  remoteToolName: string
+  args: Record<string, unknown>
+  result?: SandboxToolResult | undefined
+  running: boolean
+  isError: boolean
+}) {
+  const state = resolveAgentToolActivityState({
+    running,
+    status: result?.status,
+    isError,
+    audit: result?.audit,
+  })
+  return (
+    <div
+      className={cn(
+        'my-2 overflow-hidden rounded-xl border bg-surface text-sm',
+        toolStateClassName(state),
+      )}
+    >
+      <div className="flex flex-wrap items-center gap-2 border-b border-current/10 px-3 py-2">
+        <span className="font-mono text-xs font-bold">
+          {serverId} · {remoteToolName}
+        </span>
+        <span className="rounded-full bg-current/8 px-2 py-0.5 text-[0.68rem] font-bold">
+          {AGENT_TOOL_ACTIVITY_LABELS[state]}
+        </span>
+      </div>
+      <div className="space-y-1 px-3 py-2">
+        <code className="block max-h-24 overflow-auto whitespace-pre-wrap break-all text-xs text-ink">
+          {JSON.stringify(args)}
+        </code>
         {result?.summary ? <p className="text-xs text-ink-muted">{result.summary}</p> : null}
       </div>
     </div>

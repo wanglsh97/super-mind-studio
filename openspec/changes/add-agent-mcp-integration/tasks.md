@@ -12,7 +12,7 @@
 ## 3. 状态与前端可见性
 
 - [x] 3.1 增加已认证 MCP Server 只读状态 API 与 `@supermind/sdk` 类型/client，确保响应不含 endpoint/auth/token 信息
-- [ ] 3.2 在 Agent 页面展示 MCP readiness/工具数量，并为动态 `mcp__*` 工具调用渲染通用活动卡
+- [x] 3.2 在 Agent 页面展示 MCP readiness/工具数量，并为动态 `mcp__*` 工具调用渲染通用活动卡
 
 ## 4. 验收与交付
 
