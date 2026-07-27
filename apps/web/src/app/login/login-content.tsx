@@ -1,9 +1,9 @@
 'use client'
 
-import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
+import { BrandMark } from '../../components/brand-mark'
 import { useUserSession } from '../../components/user-session-provider'
 import { cn } from '../../lib/cn'
 import {
@@ -12,69 +12,8 @@ import {
   userLoginErrorMessage,
 } from '../../lib/user-auth-client'
 
-const destinations = [
-  { name: 'Conversations', detail: 'PERSIST', dotClass: 'bg-brand' },
-  { name: 'Tools', detail: 'ACT', dotClass: 'bg-coral' },
-  { name: 'Skills', detail: 'EXTEND', dotClass: 'bg-mint' },
-]
-
 const focusRing =
   'focus-visible:outline-3 focus-visible:outline-brand focus-visible:outline-offset-4'
-
-function IdentityRelay() {
-  return (
-    <div
-      className="liquid-glass mt-10 overflow-hidden rounded-[2rem]"
-      aria-label="One GitHub identity connects to the Agent workspace"
-    >
-      <div className="relative z-1 flex items-center justify-between border-b border-white/70 px-4 py-3 font-mono text-[0.54rem] font-bold tracking-widest text-ink-subtle">
-        <span>IDENTITY RELAY</span>
-        <span className="flex items-center gap-2">
-          <i className="size-1.5 rounded-full bg-mint shadow-[0_0_8px_#53d6bd]" />
-          READY
-        </span>
-      </div>
-
-      <div className="relative grid min-h-60 grid-cols-[1fr_1.35fr] items-center bg-[linear-gradient(rgb(39_100_255/0.035)_1px,transparent_1px),linear-gradient(90deg,rgb(39_100_255/0.035)_1px,transparent_1px)] bg-size-[28px_28px] p-8 max-sm:min-h-52 max-sm:p-5">
-        <div className="liquid-glass relative z-2 grid size-24 place-items-center justify-self-center rounded-[2rem] max-sm:size-[4.7rem]">
-          <span
-            className="absolute inset-[-0.7rem] animate-login-orbit rounded-[2.3rem] border border-dashed border-brand/25"
-            aria-hidden="true"
-          />
-          <strong className="font-display text-xl text-brand">GH</strong>
-          <small className="absolute top-[calc(100%+0.8rem)] font-mono text-[0.5rem] tracking-widest text-[#8f849f]">
-            YOUR IDENTITY
-          </small>
-        </div>
-
-        <div className="pointer-events-none absolute top-1/2 left-[31%] z-1 h-[5.8rem] w-[24%] -translate-y-1/2 border-t border-r border-brand/20 max-sm:left-[28%]">
-          <span className="absolute top-0 right-[-24%] h-px w-[24%] bg-brand/20" />
-          <span className="absolute top-1/2 right-[-24%] h-px w-[24%] bg-brand/20" />
-          <span className="absolute bottom-0 right-[-24%] h-px w-[24%] bg-brand/20" />
-        </div>
-
-        <div className="relative z-2 grid gap-2">
-          {destinations.map((destination) => (
-            <div
-              key={destination.name}
-              className="liquid-glass-soft grid min-h-[2.9rem] grid-cols-[auto_1fr_auto] items-center gap-2.5 rounded-xl px-3 text-[0.68rem]"
-            >
-              <i className={cn('size-1.5 rounded-full', destination.dotClass)} />
-              <span>{destination.name}</span>
-              <small className="font-mono text-[0.5rem] text-[#817591]">{destination.detail}</small>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="relative z-1 flex items-center justify-between border-t border-white/70 px-4 py-3 font-mono text-[0.54rem] font-bold tracking-widest text-ink-subtle">
-        <span className="before:text-[#8c75ef] before:content-['/ ']">ONE SIGN-IN</span>
-        <span className="before:text-[#8c75ef] before:content-['/ ']">ONE WORKSPACE</span>
-        <span className="before:text-[#8c75ef] before:content-['/ ']">FREE ACCESS</span>
-      </div>
-    </div>
-  )
-}
 
 export function LoginContent() {
   const searchParams = useSearchParams()
@@ -89,38 +28,18 @@ export function LoginContent() {
   }, [returnTo, router, session.status])
 
   return (
-    <main className="relative min-h-[calc(100svh-65px)] overflow-hidden px-6 py-12 md:px-10 md:py-[6.5rem]">
-      <div className="mx-auto grid max-w-[72rem] grid-cols-1 items-center gap-12 lg:grid-cols-[1.15fr_0.85fr] lg:gap-32">
-        <div className="min-w-0 max-lg:order-2">
-          <p className="font-mono text-[0.62rem] font-bold tracking-[0.13em] text-[#7b718a]">
-            SUPER MIND / ACCESS
-          </p>
-          <h1 className="mt-5 font-display text-[clamp(3rem,6vw,5.6rem)] leading-[0.98] font-black tracking-tight text-ink">
-            One clear identity.
-            <br />
-            <span className="text-brand">One agent workspace.</span>
-          </h1>
-          <p className="mt-5 max-w-[35rem] text-sm leading-relaxed text-ink-muted max-lg:hidden">
-            Bring your GitHub identity. We&apos;ll open your Agent workspace.
-          </p>
-          <div className="max-lg:hidden">
-            <IdentityRelay />
-          </div>
-        </div>
-
+    <main className="relative grid min-h-screen place-items-center overflow-hidden px-6 py-12 md:px-10">
+      <div className="w-full max-w-[38rem]">
         <section
-          className="liquid-glass relative overflow-hidden rounded-[2.2rem] p-8 max-lg:order-1 md:p-12"
+          className="liquid-glass relative overflow-hidden rounded-[2.2rem] p-8 md:p-12"
           aria-labelledby="login-title"
         >
           <div className="pointer-events-none absolute top-0 right-0 size-[4.5rem] border-b border-l border-line bg-brand-subtle [clip-path:polygon(100%_0,100%_100%,0_0)] dark:border-[#403654] dark:bg-brand-subtle" />
           <div className="absolute top-4 right-4 z-1 font-mono text-[0.5rem] tracking-widest text-ink-subtle">
             ACCESS / 01
           </div>
-          <div
-            className="grid size-14 place-items-center rounded-full bg-ink font-display text-sm text-white dark:bg-[#f7f3ff] dark:text-ink"
-            aria-hidden="true"
-          >
-            GH
+          <div className="liquid-glass-soft grid size-16 place-items-center rounded-[1.25rem] border-brand/20 bg-brand/10 shadow-[inset_0_1px_0_rgb(255_255_255/0.82),0_10px_28px_rgb(39_100_255/0.16)] dark:border-brand/25 dark:bg-brand/14">
+            <BrandMark className="size-[3.65rem] object-contain" alt="Super Mind Studio" />
           </div>
           <p className="mt-8 font-mono text-[0.62rem] font-bold tracking-[0.13em] text-brand">
             USER SIGN IN
@@ -179,18 +98,7 @@ export function LoginContent() {
             <span>SECURE OAUTH</span>
             <span>NO PASSWORD STORED</span>
           </div>
-
-          <Link
-            className="mt-10 inline-block text-xs font-semibold text-ink-muted hover:text-brand"
-            href="/"
-          >
-            ← Back to home
-          </Link>
         </section>
-
-        <div className="lg:hidden max-lg:order-3">
-          <IdentityRelay />
-        </div>
       </div>
     </main>
   )

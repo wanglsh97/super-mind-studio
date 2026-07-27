@@ -74,7 +74,13 @@ function UserWorkspace({ children }: Readonly<{ children: ReactNode }>) {
   }
 
   return (
-    <div className="relative min-h-screen min-w-[1366px]">
+    <div
+      data-login-shell={pathname.startsWith('/login') ? '' : undefined}
+      className={cn(
+        'relative min-h-screen',
+        pathname.startsWith('/login') ? 'min-w-0' : 'min-w-[1366px]',
+      )}
+    >
       <aside
         className={cn(
           'liquid-glass fixed inset-y-0 left-0 z-[60] flex flex-col rounded-r-[2rem] border-y-0 border-l-0 p-4 transition-[width,transform] duration-200',
