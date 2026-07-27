@@ -167,7 +167,7 @@ export function SkillUploadDialog({
           <div>
             <p className="liquid-label text-brand">UPLOAD SKILL</p>
             <h2 id="skill-upload-title" className="mt-2 text-2xl font-extrabold tracking-tight">
-              上传 Skill
+              上传技能
             </h2>
           </div>
           <button
@@ -267,9 +267,6 @@ export function SkillUploadDialog({
               {state === 'submitted' ? (
                 <div className="rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-200">
                   已提交管理员首次发布审核。
-                  <Link href="/skills" className="ml-2 font-bold underline underline-offset-2">
-                    返回 Skill 中心
-                  </Link>
                 </div>
               ) : (
                 <div className="flex flex-wrap gap-3">

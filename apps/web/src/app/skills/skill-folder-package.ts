@@ -35,9 +35,9 @@ interface SkillFrontmatter {
 export async function prepareSkillFolder(
   selectedFiles: readonly SkillFolderFile[],
 ): Promise<PreparedSkillFolder> {
-  if (selectedFiles.length === 0) throw new Error('请选择包含 SKILL.md 的 Skill 文件夹')
+  if (selectedFiles.length === 0) throw new Error('请选择包含 SKILL.md 的技能文件夹')
   if (selectedFiles.length > MAX_FILE_COUNT) {
-    throw new Error(`Skill 文件夹最多包含 ${MAX_FILE_COUNT.toLocaleString('en-US')} 个文件`)
+    throw new Error(`技能文件夹最多包含 ${MAX_FILE_COUNT.toLocaleString('en-US')} 个文件`)
   }
 
   const folderName = selectedFolderName(selectedFiles)
@@ -46,7 +46,7 @@ export async function prepareSkillFolder(
     path: packageRelativePath(file, folderName),
   }))
   const uniquePaths = new Set(entries.map((entry) => entry.path))
-  if (uniquePaths.size !== entries.length) throw new Error('Skill 文件夹包含重复路径')
+  if (uniquePaths.size !== entries.length) throw new Error('技能文件夹包含重复路径')
 
   let sourceBytes = 0
   for (const entry of entries) {
@@ -54,7 +54,7 @@ export async function prepareSkillFolder(
       throw new Error(`文件 ${entry.path} 超过 50 MiB`)
     }
     sourceBytes += entry.file.size
-    if (sourceBytes > MAX_EXPANDED_BYTES) throw new Error('Skill 文件夹总大小不能超过 200 MiB')
+    if (sourceBytes > MAX_EXPANDED_BYTES) throw new Error('技能文件夹总大小不能超过 200 MiB')
     if (entry.path.split('/').length - 1 > MAX_DIRECTORY_DEPTH) {
       throw new Error(`文件 ${entry.path} 超过 20 层目录限制`)
     }
@@ -126,7 +126,7 @@ function selectedFolderName(files: readonly SkillFolderFile[]): string {
 function packageRelativePath(file: SkillFolderFile, folderName: string): string {
   const path = normalizedInputPath(file)
   const relativePath = folderName ? path.slice(folderName.length + 1) : path
-  if (!relativePath) throw new Error('Skill 文件夹包含无效路径')
+  if (!relativePath) throw new Error('技能文件夹包含无效路径')
   return relativePath
 }
 
@@ -137,7 +137,7 @@ function normalizedInputPath(file: SkillFolderFile): string {
     value.startsWith('/') ||
     segments.some((segment) => !segment || segment === '.' || segment === '..')
   ) {
-    throw new Error(`Skill 文件夹包含无效路径：${value || file.name}`)
+    throw new Error(`技能文件夹包含无效路径：${value || file.name}`)
   }
   return segments.join('/')
 }

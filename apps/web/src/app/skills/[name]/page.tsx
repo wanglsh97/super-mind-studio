@@ -35,7 +35,7 @@ export default function SkillDetailPage() {
       })
       .catch((cause: unknown) => {
         if (active && !handleAuthenticationFailure(cause)) {
-          setError(cause instanceof Error ? cause.message : 'Skill 详情加载失败')
+          setError(cause instanceof Error ? cause.message : '技能详情加载失败')
         }
       })
       .finally(() => {
@@ -54,7 +54,7 @@ export default function SkillDetailPage() {
       setAdded(!added)
     } catch (cause) {
       if (!handleAuthenticationFailure(cause)) {
-        setError(cause instanceof Error ? cause.message : 'Skill 添加状态更新失败')
+        setError(cause instanceof Error ? cause.message : '技能添加状态更新失败')
       }
     } finally {
       setBusy(false)
@@ -70,7 +70,7 @@ export default function SkillDetailPage() {
     return (
       <main className="mx-auto max-w-3xl px-5 py-20">
         <p role="alert" className="rounded-2xl bg-rose-50 p-5 text-rose-700">
-          {error || 'Skill 不存在或已下架'}
+          {error || '技能不存在或已下架'}
         </p>
         <Link href="/skills" className="mt-6 inline-block text-sm font-bold text-brand">
           ← 返回市场
@@ -120,7 +120,7 @@ export default function SkillDetailPage() {
         <article className="rounded-3xl border border-line bg-surface-card p-6 md:p-8">
           <p className="font-mono text-[0.62rem] font-bold tracking-widest text-brand">SKILL.md</p>
           <pre className="mt-5 overflow-x-auto whitespace-pre-wrap font-sans text-sm leading-7 text-ink-muted">
-            {detail.skillMarkdown || '该 Skill 暂无可展示说明。'}
+            {detail.skillMarkdown || '该技能暂无可展示说明。'}
           </pre>
         </article>
         <aside className="rounded-3xl border border-line bg-[#24202e] p-6 text-white">

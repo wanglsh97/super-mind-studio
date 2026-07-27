@@ -92,7 +92,7 @@ export default function SkillsPage() {
       setAdded(new Set(candidates.map((skill) => skill.name)))
     } catch (cause) {
       if (!handleAuthenticationFailure(cause)) {
-        setError(cause instanceof Error ? cause.message : 'Skill 加载失败')
+        setError(cause instanceof Error ? cause.message : '技能加载失败')
       }
     } finally {
       setLoading(false)
@@ -116,7 +116,7 @@ export default function SkillsPage() {
       if (files.length > 0) setUploadFiles(files)
     } catch (cause) {
       if (cause instanceof DOMException && cause.name === 'AbortError') return
-      setError(cause instanceof Error ? cause.message : '无法读取所选 Skill 文件夹')
+      setError(cause instanceof Error ? cause.message : '无法读取所选技能文件夹')
     }
   }
 
@@ -140,7 +140,7 @@ export default function SkillsPage() {
       }
     } catch (cause) {
       if (!handleAuthenticationFailure(cause)) {
-        setError(cause instanceof Error ? cause.message : 'Skill 添加状态更新失败')
+        setError(cause instanceof Error ? cause.message : '技能添加状态更新失败')
       }
     } finally {
       setBusy('')
@@ -185,16 +185,15 @@ export default function SkillsPage() {
         </div>
         <div className="flex flex-wrap gap-2 md:justify-self-end">
           <button type="button" className={primaryButton} onClick={() => void chooseSkillFolder()}>
-            上传 Skill
+            上传技能
           </button>
         </div>
       </header>
 
       <section
-        aria-label="Skill 分类"
+        aria-label="技能分类"
         className="mt-6 flex min-h-12 items-center gap-5 border-b border-line px-5 md:px-6"
       >
-        <h2 className="shrink-0 text-sm font-bold text-ink-secondary">分类</h2>
         <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto pb-1">
           <button
             type="button"
@@ -263,7 +262,7 @@ export default function SkillsPage() {
         </section>
       ) : session.status !== 'authenticated' && view !== 'market' ? (
         <section className="mt-8 rounded-3xl border border-dashed border-line p-16 text-center">
-          <p className="font-semibold">登录后查看{view === 'added' ? '已添加' : '我的'} Skill</p>
+          <p className="font-semibold">登录后查看{view === 'added' ? '已添加' : '我的'} 技能</p>
           <Link className={cn(primaryButton, 'mt-5')} href="/login?returnTo=%2Fskills">
             使用 GitHub 登录
           </Link>
@@ -271,14 +270,7 @@ export default function SkillsPage() {
       ) : view === 'mine' ? (
         ownedItems.length === 0 ? (
           <section className="mt-8 rounded-3xl border border-dashed border-line p-16 text-center">
-            <p className="font-semibold">你还没有上传 Skill</p>
-            <button
-              type="button"
-              className={cn(primaryButton, 'mt-5')}
-              onClick={() => void chooseSkillFolder()}
-            >
-              上传第一个
-            </button>
+            <p className="font-semibold">你还没有上传过技能哦～</p>
           </section>
         ) : (
           <section className="mt-8 grid gap-3">
@@ -335,10 +327,10 @@ export default function SkillsPage() {
       ) : items.length === 0 ? (
         <section className="mt-8 rounded-3xl border border-dashed border-line p-16 text-center">
           <p className="font-semibold">
-            {view === 'added' ? '还没有添加 Skill' : '没有匹配的已发布 Skill'}
+            {view === 'added' ? '还没有添加技能' : '没有匹配的已发布技能'}
           </p>
           <p className="mt-2 text-sm text-ink-muted">
-            {view === 'added' ? '从其他分类中找到 Skill 并添加。' : '切换其他分类试试。'}
+            {view === 'added' ? '从其他分类中找到技能并添加。' : '切换其他分类试试。'}
           </p>
         </section>
       ) : (
