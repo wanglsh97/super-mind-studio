@@ -170,11 +170,15 @@ export default function SkillsPage() {
 
   return (
     <main className="mx-auto max-w-[76rem] px-4 py-10 sm:px-6 md:px-10 md:py-16">
-      <header className="flex flex-wrap items-center justify-between gap-4 border-b border-line pb-6">
-        <h1 className="font-display text-[clamp(1.65rem,3vw,2.35rem)] font-semibold tracking-[-0.04em]">
-          探索并添加适合你的 Skill
+      <header className="grid items-center gap-6 border-b border-line pb-7 md:grid-cols-[minmax(0,1fr)_auto]">
+        <h1 className="max-w-[48rem] border-l-2 border-brand/70 pl-4 font-display text-[clamp(1.15rem,2vw,1.5rem)] font-medium leading-[1.55] tracking-[-0.025em]">
+          <span className="text-ink">技能是人工智能代理可复用的功能。</span>{' '}
+          <span className="text-ink-muted">
+            它们提供了程序化的知识，有助于 <span className="font-semibold text-brand">Agent</span>{' '}
+            更高效地完成特定任务。
+          </span>
         </h1>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 md:justify-self-end">
           <button type="button" className={primaryButton} onClick={() => void chooseSkillFolder()}>
             上传 Skill
           </button>
