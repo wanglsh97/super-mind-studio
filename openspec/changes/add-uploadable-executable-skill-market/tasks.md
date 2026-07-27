@@ -3,12 +3,12 @@
 - [x] 1.1 为 `@supermind/sdk` 定义 Skill 市场项、添加状态、手动选择、激活事件、Shell/文件工具事件和标准错误契约，并添加序列化测试
 - [x] 1.2 新增 `Skill`、`SkillReview`、`UserFile` 及 AgentRun/AgentToolCall 扩展字段的 Prisma migration，验证全局名称、用户添加唯一约束和关联删除边界
 - [x] 1.3 定义 `SkillObjectStorePort` 与确定性内存实现，支持包元数据、`SKILL.md`、文件树、输入文件和结果文件 fixture
-- [x] 1.4 定义 `SandboxRuntimePort` 与确定性 Fake Adapter，覆盖创建、命令、文件、取消、预算超限、销毁和泄漏查询
+- [x] 1.4 定义 `SandboxRuntimePort` 与 OpenSandbox Adapter，并以 SDK client test double 覆盖创建、命令、文件、取消、预算超限、销毁和泄漏查询
 - [x] 1.5 实现最小 Skill repository/service：一个预置 published Skill、用户幂等添加、50 个上限、手动激活和当前包 SHA-256 manifest
-- [x] 1.6 将 Agent Tool registry 接入 `activate_skill`、Fake Shell 和文件工具，保证所有调用仍经过 Pi harness、Run 状态机和持久化事件
-- [x] 1.7 扩展 Agent Run API 与 SDK，使手动选择的 Skill 完成 Mock tool call → Fake Sandbox → tool result → follow-up 模型 turn → SSE cursor
+- [x] 1.6 将 Agent Tool registry 接入 `activate_skill`、OpenSandbox Shell 和文件工具，保证所有调用仍经过 Pi harness、Run 状态机和持久化事件
+- [x] 1.7 扩展 Agent Run API 与 SDK，使手动选择的 Skill 完成 Mock tool call → OpenSandbox → tool result → follow-up 模型 turn → SSE cursor
 - [x] 1.8 在 `/agent` 增加最小 Skill 选择器和 Shell/文件工具卡片，覆盖 loading、running、success、failed、cancelled 和 limit 状态
-- [x] 1.9 添加无外网 E2E，串通 Web → SDK → Agent API → Mock Adapter → Fake Sandbox → SSE → PostgreSQL AgentRun/AgentToolCall/RequestLog/BillingRecord
+- [x] 1.9 添加真实 OpenSandbox E2E，串通 Web → SDK → Agent API → Mock Model Adapter → OpenSandbox → SSE → PostgreSQL AgentRun/AgentToolCall/RequestLog/BillingRecord
 - [x] 1.10 运行首个闭环相关单测、Prisma 集成测试、Agent E2E、typecheck、lint 和 build，并确认未启用功能旗标时现有 Agent/Skill 回归通过
 
 ## 2. 私有 OSS 与传统 Skill 包上传
@@ -41,7 +41,7 @@
 - [ ] 4.3 验证 OpenSandbox 一 vCPU、1 GiB 内存、2 GiB 磁盘、64 进程、可配置 3,600 秒 TTL 和 60 秒命令超时的实际强制行为
 - [ ] 4.4 验证任意公网访问可用，同时 loopback、VPC 私网、云元数据、业务服务和 OpenSandbox 控制面不可达
 - [ ] 4.5 测量冷启动、包下载、首条命令、销毁和并发延迟，记录目标 ECS 规格、最大安全并发与月成本估算
-- [x] 4.6 实现 OpenSandbox TypeScript Adapter，将厂商类型限制在 Adapter 内，并通过与 Fake Adapter 相同的 contract suite
+- [x] 4.6 实现唯一的 OpenSandbox TypeScript Adapter，将厂商类型限制在 Adapter 内，并通过 SDK client test double contract suite
 - [x] 4.7 实现 API 到 OpenSandbox 的私网认证、连接/请求超时、重试边界、健康检查和 readiness 降级
 - [x] 4.8 实现终态幂等销毁和过期 sandbox reconciliation，覆盖 NestJS 重启、网络中断和部分创建失败
 - [ ] 4.9 使用真实 OpenSandbox 完成最低资源端到端 smoke，记录版本、节点规格和每 Run 实测资源，不执行无界压力测试
@@ -55,6 +55,7 @@
 - [x] 5.5 实现 Run 内单一 Sandbox workspace 布局和多 Skill 共享，验证不同 Run、用户和线程之间完全隔离
   - [x] 5.5.1 改为每个 Run 启动即创建 Sandbox，active Skills 通过短时只读 OSS URL 下载、校验并安装；运行时不依赖 PostgreSQL 包内容投影
   - [x] 5.5.2 将 Sandbox 生命周期迁移为 Thread 级复用，增加 `SANDBOX_TIMEOUT_SECONDS=3600`，在 Run 终态保留、Thread 删除或空闲/硬超时后销毁，并按 Run 重置激活与资源计数
+  - [x] 5.5.3 删除应用内 Fake Sandbox Runtime 和运行时选择开关，本地与生产 API 均强制配置真实 OpenSandbox Server；单元测试只替换 OpenSandbox SDK client
 - [x] 5.6 实现 autonomous Shell 工具、cwd、60 秒命令超时、20 次调用限制、AbortSignal 和后台进程终态清理
 - [ ] 5.7 实现单次 1 MiB、Run 总计 5 MiB 工具输出截断及 100 MiB 出口流量终止，并将 limit reason 返回模型与 UI
 - [ ] 5.8 持久化 Skill 激活、sandbox 生命周期、命令、退出状态、耗时、截断和错误审计，敏感签名 URL 不进入 Pino

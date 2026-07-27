@@ -70,6 +70,8 @@ Agent Thread 在第一次 Run 时按需创建一个隔离沙箱，同一 Thread 
 
 `SANDBOX_TIMEOUT_SECONDS` 同时控制沙箱最大生命周期和空闲保留上限，默认值为 `3600`（1 小时）。OpenSandbox 的创建请求会接收同样的硬 TTL，API 重启后会从 PostgreSQL 恢复未过期 Thread 沙箱的清理期限。
 
+本地开发与生产环境都只使用真实 OpenSandbox Server，不提供进程内 Sandbox fallback。API 启动前必须配置 `OPEN_SANDBOX_DOMAIN`、`OPEN_SANDBOX_API_KEY`，并按需配置协议、镜像、请求/就绪超时和 server proxy；缺少连接配置时 API 会直接拒绝启动。
+
 `/api/v1/admin/*` 使用另一枚 `aigateway_admin_session` Cookie，与 GitHub 用户 Session 完全隔离。Swagger 只描述 Cookie 认证边界，不展示或接收 OAuth code、GitHub access token、Client Secret 或原始 Session token。
 
 ## Agent 网页搜索

@@ -2,7 +2,13 @@
 
 ### Requirement: Untrusted Skill execution uses an external Sandbox runtime port
 
-NestJS SHALL execute Skill Shell and file operations only through a `SandboxRuntimePort`. The first production adapter SHALL use OpenSandbox on a dedicated execution node with Docker and gVisor. Skill code MUST NOT execute in the NestJS process, business-service containers, database host context or browser.
+NestJS SHALL execute Skill Shell and file operations only through a `SandboxRuntimePort`. The only application runtime adapter SHALL use OpenSandbox on a dedicated execution node with Docker and gVisor in both local development and production. The API SHALL NOT provide an in-process sandbox runtime or runtime-selection flag; startup configuration SHALL require the OpenSandbox endpoint and API key. Unit tests MAY replace only the OpenSandbox SDK client behind the real adapter with a deterministic test double. Skill code MUST NOT execute in the NestJS process, business-service containers, database host context or browser.
+
+#### Scenario: OpenSandbox connection settings are missing
+
+- **GIVEN** a local or production API process has no OpenSandbox endpoint or API key
+- **WHEN** environment validation runs during startup
+- **THEN** startup fails explicitly instead of selecting an in-process fallback
 
 #### Scenario: A Skill requests Shell execution
 
@@ -72,7 +78,7 @@ The platform SHALL enforce per-sandbox limits of one vCPU, 1 GiB memory, 2 GiB t
 
 #### Scenario: Sandbox TTL expires
 
-- **GIVEN** a Thread sandbox reaches its configured 1,800-second lifetime
+- **GIVEN** a Thread sandbox reaches its configured 3,600-second lifetime
 - **WHEN** work is still active
 - **THEN** OpenSandbox terminates it and any active Agent Run ends with an explicit sandbox limit reason
 

@@ -77,11 +77,10 @@ const environmentSchema = z
     OSS_TIMEOUT_MS: z.coerce.number().int().min(1_000).max(120_000).default(30_000),
     SKILL_UPLOAD_TTL_SECONDS: z.coerce.number().int().min(60).max(900).default(300),
     SKILL_STAGING_CLEANUP_BATCH: z.coerce.number().int().min(1).max(500).default(100),
-    SANDBOX_RUNTIME_DRIVER: z.enum(['fake', 'opensandbox']).default('fake'),
     SANDBOX_TIMEOUT_SECONDS: z.coerce.number().int().min(60).max(86_400).default(3_600),
-    OPEN_SANDBOX_DOMAIN: optionalSecret,
+    OPEN_SANDBOX_DOMAIN: z.string().min(1, 'OPEN_SANDBOX_DOMAIN 必填'),
     OPEN_SANDBOX_PROTOCOL: z.enum(['http', 'https']).default('http'),
-    OPEN_SANDBOX_API_KEY: optionalSecret,
+    OPEN_SANDBOX_API_KEY: z.string().min(1, 'OPEN_SANDBOX_API_KEY 必填'),
     OPEN_SANDBOX_IMAGE: z
       .string()
       .min(1)
@@ -215,17 +214,6 @@ const environmentSchema = z
             code: 'custom',
             path: [key],
             message: `使用 OSS 对象存储时必须配置 ${key}`,
-          })
-        }
-      }
-    }
-    if (env.SANDBOX_RUNTIME_DRIVER === 'opensandbox') {
-      for (const key of ['OPEN_SANDBOX_DOMAIN', 'OPEN_SANDBOX_API_KEY'] as const) {
-        if (!env[key]) {
-          context.addIssue({
-            code: 'custom',
-            path: [key],
-            message: `使用 OpenSandbox runtime 时必须配置 ${key}`,
           })
         }
       }

@@ -11,6 +11,7 @@
 - 每个 Agent Thread 首次执行时创建一个可跨多轮 Run 复用的 OpenSandbox Linux 沙箱；默认最大生命周期和空闲清理上限均由 `SANDBOX_TIMEOUT_SECONDS=3600` 控制。手动选择的 active Skills 在首次模型调用前通过短时只读 OSS URL 下载并安装，模型也可从已添加 Skill 的名称与简介目录中调用 `activate_skill` 继续激活其他 Skill。
 - 新增永久用户文件能力：输入附件与 Skill 结果存入私有 OSS，使用短时签名 URL 上传/下载，每用户总配额 1 GiB。
 - 新增独立 OpenSandbox 执行节点，首选 Docker + gVisor；每个 Agent Thread 最多一个临时沙箱并强制 CPU、内存、磁盘、时长和进程上限，同时继续按 Run 重置流量、Shell 次数和输出预算。
+- 本地开发与生产 API 均强制连接真实 OpenSandbox Server，删除进程内 Fake Runtime 与运行时选择开关；单元测试只允许替换 OpenSandbox SDK client，不能形成可被应用启动选择的 fallback。
 - 管理后台新增首次发布审核、驳回和强制下架，并写入不可变管理员审计日志。
 
 ## Capabilities

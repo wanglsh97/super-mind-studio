@@ -147,7 +147,7 @@ The existing fixed administrator session protects review and delist operations. 
 2. Add private OSS prefixes, scoped-signing adapter, upload sessions, `Skill`/`SkillReview`/`UserFile` schema and migrations behind feature flags.
 3. Seed the three platform Skills as published database/OSS packages and migrate `UserAgentSkill` rows from installed/enabled to added state.
 4. Release market discovery, owner upload and administrator first-review flows while executable activation remains disabled.
-5. Add `SandboxRuntimePort`, OpenSandbox adapter and deterministic fake adapter tests; then enable manual Skill activation for internal users.
+5. Add `SandboxRuntimePort`, the mandatory OpenSandbox adapter and SDK-client test doubles for unit tests; then enable manual Skill activation for internal users.
 6. Add `activate_skill`, autonomous Shell/file tools, user inputs/exports, hard budgets, audit events and full Mock/OpenSandbox E2E.
 7. Enable public upload only after deployment smoke verifies isolation, OSS ownership, sandbox cleanup and fixed administrator release warning.
 

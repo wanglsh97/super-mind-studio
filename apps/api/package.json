@@ -12,7 +12,7 @@
     "test": "jest --runInBand",
     "test:agent-harness": "AGENT_WEB_FETCH_FIXTURE=true tsx scripts/agent-harness.check.ts",
     "test:agent-run": "AGENT_WEB_FETCH_FIXTURE=true tsx --env-file-if-exists=../../.env scripts/agent-run.check.ts",
-    "test:agent-e2e": "AGENT_WEB_FETCH_FIXTURE=true SKILL_OBJECT_STORE_DRIVER=memory SANDBOX_RUNTIME_DRIVER=fake MOCK_PROVIDER_ENABLED=true QWEN_ENABLED=false GLM_ENABLED=false DEEPSEEK_ENABLED=false KIMI_ENABLED=false WANXIANG_ENABLED=false COGVIEW_ENABLED=false tsx scripts/agent-e2e.check.ts",
+    "test:agent-e2e": "AGENT_WEB_FETCH_FIXTURE=true SKILL_OBJECT_STORE_DRIVER=memory MOCK_PROVIDER_ENABLED=true QWEN_ENABLED=false GLM_ENABLED=false DEEPSEEK_ENABLED=false KIMI_ENABLED=false WANXIANG_ENABLED=false COGVIEW_ENABLED=false tsx --env-file-if-exists=../../.env scripts/agent-e2e.check.ts",
     "test:opensandbox-poc": "tsx scripts/opensandbox-poc.check.ts",
     "test:opensandbox-adapter": "tsx --env-file-if-exists=../../.env scripts/opensandbox-adapter.smoke.ts",
     "test:smoke:deepseek": "tsx --env-file-if-exists=../../.env scripts/deepseek-chat.smoke.ts",

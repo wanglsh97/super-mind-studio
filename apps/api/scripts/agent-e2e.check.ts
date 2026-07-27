@@ -18,7 +18,7 @@ import { UserSessionService } from '../src/user-auth/user-session.service'
 /**
  * Agent 端到端检查（tsx + 真实 HTTP + PostgreSQL，不依赖公网）。
  *
- * 串通：SDK → Agent API → 手动 Skill 激活 → Pi harness → Fake Sandbox Shell →
+ * 串通：SDK → Agent API → 手动 Skill 激活 → Pi harness → OpenSandbox Shell →
  * follow-up turn → SSE cursor → PostgreSQL RequestLog/BillingRecord。
  * 通过 `pnpm test:agent-e2e` 执行（需要本地 Postgres/Redis 与完整 .env）。
  */
@@ -111,7 +111,7 @@ async function main(): Promise<void> {
     const shellCall = events.find(
       (event) => event.type === 'tool-call' && event.toolName === 'shell',
     )
-    assert.ok(shellCall, 'Mock 模型应调用 Fake Sandbox Shell')
+    assert.ok(shellCall, 'Mock 模型应调用 OpenSandbox Shell')
     const terminal = events.at(-1)
     assert.equal(terminal?.type, 'run-terminal')
     assert.equal(terminal && 'status' in terminal ? terminal.status : undefined, 'succeeded')
@@ -224,7 +224,7 @@ async function main(): Promise<void> {
     }
 
     console.log(
-      'agent-e2e.check PASS: Web→SDK→API→manual Skill→Pi→Fake Sandbox Shell→follow-up→SSE cursor→PostgreSQL',
+      'agent-e2e.check PASS: Web→SDK→API→manual Skill→Pi→OpenSandbox Shell→follow-up→SSE cursor→PostgreSQL',
     )
   } finally {
     if (threadId)

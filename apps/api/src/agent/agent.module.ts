@@ -22,7 +22,6 @@ import { AgentStartupCleanupService } from './agent-startup-cleanup.service'
 import { AgentThreadRepository } from './agent-thread.repository'
 import { AgentPromptComposer } from './prompt/agent-prompt.composer'
 import { AgentExecutionSessionService } from './sandbox/agent-execution-session.service'
-import { FakeSandboxRuntime } from './sandbox/fake-sandbox-runtime'
 import { OpenSandboxRuntime } from './sandbox/open-sandbox-runtime'
 import { SANDBOX_RUNTIME_PORT } from './sandbox/sandbox-runtime.port'
 import type { SandboxRuntimePort } from './sandbox/sandbox-runtime.port'
@@ -84,11 +83,7 @@ export function resolveAgentTools(
   return [...tools, ...createExecutableSkillTools(sessions)]
 }
 
-export function createSandboxRuntime(
-  config: ConfigService,
-  fake: FakeSandboxRuntime,
-): SandboxRuntimePort {
-  if (config.get<string>('SANDBOX_RUNTIME_DRIVER', 'fake') !== 'opensandbox') return fake
+export function createSandboxRuntime(config: ConfigService): SandboxRuntimePort {
   return new OpenSandboxRuntime({
     domain: config.getOrThrow<string>('OPEN_SANDBOX_DOMAIN'),
     protocol: config.get<'http' | 'https'>('OPEN_SANDBOX_PROTOCOL', 'http'),
@@ -162,21 +157,8 @@ export function createSandboxRuntime(
     { provide: SKILL_UPLOAD_CLOCK, useValue: () => new Date() },
     SkillUploadSessionService,
     {
-      provide: FakeSandboxRuntime,
-      useFactory: () =>
-        new FakeSandboxRuntime({
-          commands: [
-            {
-              command: 'node scripts/clean.mjs',
-              stdout: 'Mock Skill completed\n',
-              durationMs: 25,
-            },
-          ],
-        }),
-    },
-    {
       provide: SANDBOX_RUNTIME_PORT,
-      inject: [ConfigService, FakeSandboxRuntime],
+      inject: [ConfigService],
       useFactory: createSandboxRuntime,
     },
     AgentExecutionSessionService,

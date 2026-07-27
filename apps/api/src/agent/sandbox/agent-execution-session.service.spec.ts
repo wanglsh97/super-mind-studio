@@ -7,7 +7,7 @@ import {
   MOCK_EXECUTABLE_SKILL_SHA256,
 } from '../skills/executable-skill.fixture'
 import { AgentExecutionSessionService } from './agent-execution-session.service'
-import { FakeSandboxRuntime } from './fake-sandbox-runtime'
+import { createOpenSandboxRuntimeTestDouble } from './open-sandbox-runtime.test'
 import type { SandboxRuntimePort } from './sandbox-runtime.port'
 
 function setup(
@@ -62,7 +62,7 @@ function setup(
         },
       ]),
   } as unknown as ExecutableSkillService
-  const sandboxes = options.sandboxes ?? new FakeSandboxRuntime()
+  const sandboxes = options.sandboxes ?? createOpenSandboxRuntimeTestDouble()
   const config = {
     get: jest.fn((_key: string, fallback: number) => fallback),
   } as unknown as ConfigService

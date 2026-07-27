@@ -50,7 +50,7 @@ const DEFAULT_FETCH_URL = 'https://example.com/'
  * - `FETCH:<n>`：需要 n 次 web_fetch 后再作答（默认 1）。
  * - `SCENARIO:unknown-tool`：首轮请求一个未注册工具。
  * - `SCENARIO:invalid-args`：首轮请求缺少 url 的 web_fetch。
- * - `SCENARIO:shell`：首轮请求 Fake Sandbox Shell 执行确定性 Mock Skill 命令。
+ * - `SCENARIO:shell`：首轮请求 OpenSandbox Shell 执行确定性 Mock Skill 命令。
  * - `SCENARIO:stream-error`：首轮以模型流错误终止。
  * - `URL:<url>` 或消息中的 http(s) 链接：作为 web_fetch 目标。
  */

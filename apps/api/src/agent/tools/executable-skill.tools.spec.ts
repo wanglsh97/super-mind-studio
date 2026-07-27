@@ -1,5 +1,5 @@
 import { AgentExecutionSessionService } from '../sandbox/agent-execution-session.service'
-import { FakeSandboxRuntime } from '../sandbox/fake-sandbox-runtime'
+import { createOpenSandboxRuntimeTestDouble } from '../sandbox/open-sandbox-runtime.test'
 import type { AgentThreadRepository } from '../agent-thread.repository'
 import type { ExecutableSkillService } from '../skills/executable-skill.service'
 import type { ConfigService } from '@nestjs/config'
@@ -42,9 +42,7 @@ function setup() {
       ]
     }),
   } as unknown as ExecutableSkillService
-  const sandbox = new FakeSandboxRuntime({
-    commands: [{ command: 'node scripts/clean.mjs', stdout: 'cleaned\n', durationMs: 12 }],
-  })
+  const sandbox = createOpenSandboxRuntimeTestDouble()
   const threads = {
     findSandboxForOwner: jest.fn().mockResolvedValue(null),
     markSandboxReady: jest.fn().mockResolvedValue(undefined),
