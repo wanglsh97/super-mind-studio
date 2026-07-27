@@ -47,6 +47,10 @@ Agent 页面实现迁移到 `apps/web/src/app/page.tsx`，原营销 Hero 与 `ap
 
 Agent 已是唯一 C 端工作台，登录用户不需要先经过 Hero 或 CTA。根路径直接渲染受登录保护的 Agent 页面，营销 Hero、Gateway Prism、接入说明与底部 CTA 全部删除。
 
+### `/api` 展示页直接删除
+
+现有 `/api` 页面只手工列出少量 Gateway endpoint，与已经包含 Agent thread/run、MCP、Skill 市场和上传能力的 `@supermind/sdk` 不再一致。删除页面、侧栏入口和页面专属示例代码，不保留 redirect。该路由退役不影响 Nginx/Next rewrites 下的 `/api/v1/*` 请求、NestJS Swagger `/api-docs`、SDK 源码或仓库文档。
+
 ## Risks / Trade-offs
 
 - Agent 比旧 Chat 多一次 thread/run 持久化并受单用户 active run 约束，但换来刷新恢复、审计和扩展能力一致性。
@@ -58,7 +62,7 @@ Agent 已是唯一 C 端工作台，登录用户不需要先经过 Hero 或 CTA�
 ## Verification
 
 - 路由测试确认 `/chat` 不渲染旧 UI，并跳转到 `/`。
-- 构建产物不再包含 `/agent`、`/image`、`/prompt`，dev 验证三者返回 404。
+- 构建产物不再包含 `/agent`、`/image`、`/prompt`、`/api` 页面，dev 验证四者返回 404；`/api/v1/*` 仍按现有代理配置访问网关。
 - 根路径源码与渲染结果直接提供 Agent，不再包含营销 Hero。
 - 用户认证 helper 测试确认 `/agent`、`/chat`、`/image`、`/prompt` 和非法回跳为 `/`，对比页仍允许。
 - Web 测试、typecheck、lint 和生产 build 通过。

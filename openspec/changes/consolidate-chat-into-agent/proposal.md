@@ -10,7 +10,8 @@
 - 在 Agent Composer 中保留“模型对比”入口；`/chat/compare` 暂时保持独立页面和现有并发隔离语义。
 - 删除只服务于旧 `/chat` 页面的浏览器内存 Chat adapter。
 - 直接删除 `/image`、`/prompt` 路由及页面专属 form/history/helper/test，不提供兼容跳转。
-- 根工作台、全局导航、登录回跳和登录页只呈现 Agent 及其配套 Skill/API 能力，不再维护营销首页或宣传独立 Image/Prompt 页面。
+- 根工作台、全局导航、登录回跳和登录页只呈现 Agent 及其配套 Skill 能力，不再维护营销首页或独立 Image/Prompt/API 展示页面。
+- 删除 `/api` C 端页面和导航入口，不提供兼容跳转；保留同源 `/api/v1/*` 网关、Swagger、`@supermind/sdk` 与开发文档。
 - 保留 Chat/Image/Prompt Gateway API、`@supermind/sdk`、数据库与管理员日志，供 Agent 工具化扩展和 API 演示继续复用；不改变网关协议。
 
 ## Capabilities
@@ -22,11 +23,11 @@
 ### Modified Capabilities
 
 - `web-agent`: `/` 成为普通对话和工具型任务的统一入口，并提供模型对比子入口。
-- `user-workspace-routing`: Agent-only 根工作台导航、登录回跳、旧 `/chat` 兼容行为及 `/agent`、Image、Prompt 路由退役。
+- `user-workspace-routing`: Agent-only 根工作台导航、登录回跳、旧 `/chat` 兼容行为及 `/agent`、Image、Prompt、API 展示路由退役。
 
 ## Impact
 
-- `apps/web` 删除营销首页及旧 Chat、Image、Prompt 页面专属代码，把 Agent 页面迁移到根路径并更新导航、登录回跳和对比页返回入口。
+- `apps/web` 删除营销首页及旧 Chat、Image、Prompt、API 展示页面专属代码，把 Agent 页面迁移到根路径并更新导航、登录回跳和对比页返回入口。
 - `spec/需求文档.md`、`spec/技术选型方案.md` 和 README 同步新的用户端信息架构。
 - API、SDK、数据库和部署拓扑不变，无 migration。
 - 回滚时可恢复旧首页、`/agent`、`/chat`、`/image`、`/prompt` 页面和导航；底层 Gateway API 始终保留。

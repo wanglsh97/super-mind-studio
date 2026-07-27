@@ -26,3 +26,8 @@
 - [x] 5.1 更新 proposal、design、web-agent 和 user-workspace-routing，明确 `/` 直接承载 Agent、`/agent` 无兼容跳转，并通过 strict validation
 - [x] 5.2 将 Agent 页面迁移到 `/`，删除 Hero 与 `/agent` 路由，更新 Chat 兼容跳转、导航、thread URL、登录回跳和模型对比返回入口
 - [x] 5.3 同步 README、PRD、技术方案，运行 Web test、typecheck、lint、build、dev 路由冒烟和 OpenSpec strict validation
+
+## 6. API 展示页退役
+
+- [x] 6.1 更新 proposal、design 和 user-workspace-routing，明确删除 `/api` C 端页面但保留 `/api/v1/*`、Swagger 与 SDK，并通过 strict validation
+- [ ] 6.2 删除 `/api` 页面、侧栏入口和专属图标，运行 Web test、typecheck、lint、build、dev 404 冒烟和 OpenSpec strict validation
