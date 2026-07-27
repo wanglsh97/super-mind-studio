@@ -1,6 +1,6 @@
 # Super Mind Studio
 
-Super Mind Studio 是一个面向灵感探索与内容创作的 AI 工作空间。用户通过 GitHub 登录后可以使用 Chat、多模型对比、文生图、Prompt 优化、Agent 与 Skill；管理员中后台负责模型调用、费用、日志和业务数据治理。底层 AI Gateway 统一模型协议与厂商差异，当前工程优先使用 Mock Adapter 串通完整链路。
+Super Mind Studio 是一个面向灵感探索与内容创作的 AI 工作空间。用户通过 GitHub 登录后可以在 Agent 中进行普通对话或多步任务，并使用多模型对比、文生图、Prompt 优化与 Skill；管理员中后台负责模型调用、费用、日志和业务数据治理。底层 AI Gateway 统一模型协议与厂商差异，当前工程优先使用 Mock Adapter 串通完整链路。
 
 ## 环境要求
 
@@ -40,6 +40,12 @@ pnpm dev
 - `POST /api/v1/images/generations` 及任务状态/下载
 - `POST /api/v1/prompts/optimize`
 - `/api/v1/agent/*`（持久 Agent 会话、运行事件和 Skill 市场）
+
+## 用户对话入口
+
+`/agent` 是普通对话和工具型多步任务的统一入口，会话与运行事件持久化到 PostgreSQL。旧 `/chat` 不再加载独立的浏览器内存聊天应用，访问时会兼容跳转到 `/agent`。
+
+多模型对比暂时保留在 `/chat/compare`，可从 Agent Composer 进入；每个模型仍使用独立 Chat SSE 请求和取消状态。底层 `POST /api/v1/chat/completions` 与 `@supermind/sdk` Chat client 继续保留，供模型对比、Prompt 优化及其他内部场景复用。
 
 ## Agent Skill 市场
 
@@ -150,7 +156,7 @@ KIMI_BASE_URL=https://api.moonshot.cn/v1
 pnpm test:smoke:kimi
 ```
 
-浏览器手工验收时运行 `pnpm dev`，先通过 GitHub 登录，再访问同源 `/chat` 发起请求；页面展示的 request ID 应能在 `RequestLog` 中查到唯一的 `SUCCEEDED` 记录、必填 `userId` 及其一对一 `BillingRecord`。API 的注入点使用显式 token，使 `tsx watch` 开发态与 TypeScript 生产构建保持一致。
+浏览器手工验收时运行 `pnpm dev`，先通过 GitHub 登录，再访问同源 `/agent` 发起普通对话；Agent 的内部模型调用应能在 `RequestLog` 中查到 `SUCCEEDED` 记录、必填 `userId` 及其一对一 `BillingRecord`。访问 `/chat` 应直接跳转到 `/agent`。API 的注入点使用显式 token，使 `tsx watch` 开发态与 TypeScript 生产构建保持一致。
 
 重置测试数据库前必须显式提供数据库名包含 `_test` 或 `test_` 的 `DATABASE_URL`：
 
