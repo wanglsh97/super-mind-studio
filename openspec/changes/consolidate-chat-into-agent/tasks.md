@@ -36,3 +36,8 @@
 
 - [x] 7.1 更新 design 和 user-workspace-routing，明确新建会话按钮、对话标题和默认 5 条折叠行为，并通过 strict validation
 - [x] 7.2 重构侧栏结构与视觉，增加历史折叠 helper/test，运行 Web test、typecheck、lint、build、浏览器视觉验证和 OpenSpec strict validation
+
+## 8. 侧栏视觉降噪
+
+- [x] 8.1 更新 design 和 user-workspace-routing，明确新建会话次级样式及 Skill 入口迁入用户菜单，并通过 strict validation
+- [ ] 8.2 重设新建会话样式、删除侧栏 Skill 卡片并加入用户菜单入口，运行 Web test、typecheck、lint、build、浏览器验证和 OpenSpec strict validation

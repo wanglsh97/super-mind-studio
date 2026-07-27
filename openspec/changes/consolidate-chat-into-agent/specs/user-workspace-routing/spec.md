@@ -75,7 +75,7 @@ The user-facing workspace SHALL NOT expose standalone marketing, Agent alias, Im
 
 ### Requirement: The sidebar prioritizes conversation actions and recent history
 
-The expanded user sidebar SHALL place the new-conversation action directly below the product logo. It SHALL label the history section “对话” without rendering a separate Agent navigation title card. The history section SHALL show at most 5 most-recent threads by default and SHALL provide a control to reveal all remaining threads and collapse them again.
+The expanded user sidebar SHALL place a visually secondary new-conversation action directly below the product logo. It SHALL label the history section “对话” without rendering separate Agent or Skill navigation title cards. The history section SHALL show at most 5 most-recent threads by default and SHALL provide a control to reveal all remaining threads and collapse them again. The user-account menu SHALL provide the entry to `/skills`.
 
 #### Scenario: User opens a sidebar with more than five conversations
 
@@ -90,3 +90,9 @@ The expanded user sidebar SHALL place the new-conversation action directly below
 - **WHEN** the user activates the expand control
 - **THEN** all threads become visible
 - **AND** the same control allows the history to be collapsed to 5 threads again
+
+#### Scenario: User opens Skill management
+
+- **GIVEN** the Skill card has been removed from the main sidebar
+- **WHEN** an authenticated user opens the user-account menu
+- **THEN** the menu contains a “技能” entry targeting `/skills`
