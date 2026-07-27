@@ -10,6 +10,27 @@ The public Chat page SHALL let an anonymous visitor select one enabled text-mode
 - **AND** assistant content is rendered incrementally until the completion event
 - **AND** the final usage and estimated CNY cost are available to the client
 
+### Requirement: Assistant SVG code blocks render as isolated safe previews
+The Chat page SHALL render a completed fenced `svg` code block in assistant Markdown as an inline preview after applying an SVG-specific element and attribute allowlist. Raw HTML outside fenced SVG blocks MUST remain disabled. Incomplete streamed SVG blocks SHALL remain code until the closing fence and closing `svg` element are available. Scriptable elements, event-handler attributes, embedded HTML, and externally loaded resources MUST NOT reach the rendered preview.
+
+#### Scenario: Safe SVG code block completes
+- **GIVEN** an assistant message contains a fenced `svg` code block with supported vector elements and attributes
+- **WHEN** the closing `svg` element and Markdown fence have arrived
+- **THEN** the Chat page displays the sanitized SVG preview
+- **AND** surrounding Markdown continues to render normally
+
+#### Scenario: SVG code block contains active content
+- **GIVEN** an assistant fenced `svg` block contains scripts, event handlers, embedded HTML, or external resources
+- **WHEN** the Chat page renders the completed message
+- **THEN** unsupported elements and attributes are removed before insertion into the document
+- **AND** raw HTML rendering remains disabled for all other assistant content
+
+#### Scenario: SVG is still streaming
+- **GIVEN** an assistant fenced `svg` block has not received its closing fence or closing `svg` element
+- **WHEN** another text delta is rendered
+- **THEN** the partial SVG is displayed as code
+- **AND** no partial SVG is inserted into the document
+
 ### Requirement: Chat uses one stable POST SSE contract
 `POST /api/v1/chat/completions` SHALL require `stream: true` and return OpenAI-compatible `text/event-stream` chunks, a platform usage extension, and a final `data: [DONE]` frame. Every accepted request SHALL have a request ID that is available in the response and persisted record.
 

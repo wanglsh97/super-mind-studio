@@ -1,6 +1,8 @@
+import DOMPurify from 'isomorphic-dompurify'
 import React from 'react'
-import type { ComponentProps } from 'react'
+import type { ComponentProps, ReactElement, ReactNode } from 'react'
 import Markdown from 'react-markdown'
+import type { ExtraProps } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 
 const allowedElements = [
@@ -29,7 +31,101 @@ const allowedElements = [
   'td',
 ] as const
 
+const allowedSvgTags = [
+  'svg',
+  'title',
+  'desc',
+  'defs',
+  'g',
+  'path',
+  'rect',
+  'circle',
+  'ellipse',
+  'line',
+  'polyline',
+  'polygon',
+  'text',
+  'tspan',
+  'linearGradient',
+  'radialGradient',
+  'stop',
+  'clipPath',
+  'mask',
+] as const
+
+const allowedSvgAttributes = [
+  'xmlns',
+  'viewBox',
+  'preserveAspectRatio',
+  'role',
+  'aria-label',
+  'aria-labelledby',
+  'aria-describedby',
+  'id',
+  'width',
+  'height',
+  'x',
+  'y',
+  'x1',
+  'y1',
+  'x2',
+  'y2',
+  'cx',
+  'cy',
+  'r',
+  'rx',
+  'ry',
+  'fx',
+  'fy',
+  'fr',
+  'd',
+  'points',
+  'pathLength',
+  'fill',
+  'fill-opacity',
+  'fill-rule',
+  'stroke',
+  'stroke-width',
+  'stroke-linecap',
+  'stroke-linejoin',
+  'stroke-dasharray',
+  'stroke-dashoffset',
+  'stroke-opacity',
+  'opacity',
+  'transform',
+  'font-family',
+  'font-size',
+  'font-style',
+  'font-weight',
+  'letter-spacing',
+  'text-anchor',
+  'dominant-baseline',
+  'gradientUnits',
+  'gradientTransform',
+  'offset',
+  'stop-color',
+  'stop-opacity',
+  'clip-path',
+  'clip-rule',
+  'mask',
+] as const
+
+const localPaintReference = /^url\(\s*#[A-Za-z_][\w:.-]*\s*\)$/i
+const paintReferenceAttributes = new Set(['fill', 'stroke', 'clip-path', 'mask'])
+
+DOMPurify.addHook('uponSanitizeAttribute', (_node, data) => {
+  if (
+    paintReferenceAttributes.has(data.attrName.toLowerCase()) &&
+    /url\s*\(/i.test(data.attrValue) &&
+    !localPaintReference.test(data.attrValue)
+  ) {
+    data.keepAttr = false
+  }
+})
+
 export function AssistantMarkdown({ children }: { children: string }) {
+  const completedSvgBlocks = findCompletedSvgBlocks(children)
+
   return (
     <div className="space-y-3 break-words [&_a]:text-cyan-700 [&_a]:underline [&_blockquote]:border-l-2 [&_blockquote]:border-slate-300 [&_blockquote]:pl-3 [&_code]:rounded [&_code]:bg-slate-200/70 [&_code]:px-1 [&_pre]:overflow-x-auto [&_pre]:rounded-xl [&_pre]:bg-slate-950 [&_pre]:p-4 [&_pre]:text-slate-100 [&_table]:block [&_table]:overflow-x-auto [&_td]:border [&_td]:border-slate-200 [&_td]:p-2 [&_th]:border [&_th]:border-slate-200 [&_th]:p-2 dark:[&_a]:text-cyan-300 dark:[&_code]:bg-white/10 dark:[&_td]:border-white/10 dark:[&_th]:border-white/10">
       <Markdown
@@ -38,7 +134,10 @@ export function AssistantMarkdown({ children }: { children: string }) {
         allowedElements={[...allowedElements]}
         unwrapDisallowed
         urlTransform={safeMarkdownUrl}
-        components={{ a: SafeLink }}
+        components={{
+          a: SafeLink,
+          pre: (props) => <SvgAwarePre {...props} completedSvgBlocks={completedSvgBlocks} />,
+        }}
       >
         {children}
       </Markdown>
@@ -46,7 +145,90 @@ export function AssistantMarkdown({ children }: { children: string }) {
   )
 }
 
-function SafeLink({ href, children, ...props }: ComponentProps<'a'>) {
+type MarkdownCodeElement = ReactElement<{
+  className?: string
+  children?: ReactNode
+}>
+
+function SvgAwarePre({
+  children,
+  completedSvgBlocks,
+  node: _node,
+  ...props
+}: ComponentProps<'pre'> & ExtraProps & { completedSvgBlocks: ReadonlySet<string> }) {
+  void _node
+  const child = React.Children.count(children) === 1 ? React.Children.only(children) : null
+
+  if (isSvgCodeElement(child)) {
+    const source = normalizeSvgSource(child.props.children)
+    const sanitized = completedSvgBlocks.has(source) ? sanitizeSvg(source) : null
+
+    if (sanitized) {
+      return (
+        <div
+          data-svg-preview
+          role="img"
+          aria-label="模型生成的 SVG 预览"
+          className="my-3 overflow-auto rounded-xl border border-line bg-white p-4 shadow-sm dark:border-line-soft dark:bg-surface-inset [&_svg]:mx-auto [&_svg]:block [&_svg]:h-auto [&_svg]:max-h-[32rem] [&_svg]:max-w-full"
+          dangerouslySetInnerHTML={{ __html: sanitized }}
+        />
+      )
+    }
+  }
+
+  return <pre {...props}>{children}</pre>
+}
+
+function isSvgCodeElement(value: ReactNode): value is MarkdownCodeElement {
+  return (
+    React.isValidElement<{ className?: string }>(value) &&
+    value.props.className?.split(/\s+/).includes('language-svg') === true
+  )
+}
+
+function normalizeSvgSource(value: ReactNode): string {
+  return String(value ?? '').trim()
+}
+
+export function findCompletedSvgBlocks(markdown: string): ReadonlySet<string> {
+  const completed = new Set<string>()
+  const blockPattern = /(?:^|\n)(`{3,}|~{3,})[ \t]*svg[ \t]*\n([\s\S]*?)\n\1[ \t]*(?=\n|$)/gi
+
+  for (const match of markdown.matchAll(blockPattern)) {
+    completed.add(normalizeSvgSource(match[2]))
+  }
+
+  return completed
+}
+
+export function sanitizeSvg(source: string): string | null {
+  const normalized = source.trim()
+  const openingTags = normalized.match(/<svg(?:\s|>)/gi)?.length ?? 0
+  const closingTags = normalized.match(/<\/svg\s*>/gi)?.length ?? 0
+
+  if (
+    openingTags !== 1 ||
+    closingTags !== 1 ||
+    !/^<svg(?:\s|>)/i.test(normalized) ||
+    !/<\/svg\s*>$/i.test(normalized)
+  ) {
+    return null
+  }
+
+  const sanitized = DOMPurify.sanitize(normalized, {
+    ALLOWED_TAGS: [...allowedSvgTags],
+    ALLOWED_ATTR: [...allowedSvgAttributes],
+    ALLOW_DATA_ATTR: false,
+    ALLOW_ARIA_ATTR: true,
+    FORBID_TAGS: ['script', 'foreignObject', 'style', 'a', 'image', 'use', 'animate', 'set'],
+    FORBID_ATTR: ['style', 'href', 'xlink:href'],
+  }).trim()
+
+  return /^<svg(?:\s|>)/i.test(sanitized) && /<\/svg\s*>$/i.test(sanitized) ? sanitized : null
+}
+
+function SafeLink({ href, children, node: _node, ...props }: ComponentProps<'a'> & ExtraProps) {
+  void _node
   return (
     <a {...props} href={href} target="_blank" rel="noreferrer noopener">
       {children}

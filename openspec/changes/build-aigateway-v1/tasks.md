@@ -165,3 +165,4 @@
 - [x] 3.30 将用户端共享外壳、首页、登录、Chat、文生图、Prompt、Skill 与 API 页面统一为白色 Liquid Glass 视觉系统，并完成 PC 桌面截图验收
 - [x] 3.31 移除移动端导航和窄屏重排入口，将用户端固定为最低 1366px 的 PC-only 桌面布局
 - [x] 3.32 将产品品牌统一为 Super Mind Studio，将 workspace SDK scope 迁移为 `@supermind/sdk`，并保留 AI Gateway 作为底层技术模块
+- [x] 3.33 为 assistant-ui 消息 Markdown 增加 fenced SVG 安全预览，流式未闭合时保留源码并阻止脚本、外部资源和原始 HTML
