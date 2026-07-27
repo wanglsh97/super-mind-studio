@@ -291,6 +291,25 @@ function AgentThreadLinks() {
   const [actionError, setActionError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [expanded, setExpanded] = useState(false)
+  const [openActionsId, setOpenActionsId] = useState<string | null>(null)
+  const openActionsRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    if (!openActionsId) return
+    function closeActions(event: MouseEvent | KeyboardEvent) {
+      if (event instanceof KeyboardEvent && event.key !== 'Escape') return
+      if (event instanceof MouseEvent && openActionsRef.current?.contains(event.target as Node)) {
+        return
+      }
+      setOpenActionsId(null)
+    }
+    document.addEventListener('mousedown', closeActions)
+    document.addEventListener('keydown', closeActions)
+    return () => {
+      document.removeEventListener('mousedown', closeActions)
+      document.removeEventListener('keydown', closeActions)
+    }
+  }, [openActionsId])
 
   if (session.status !== 'authenticated') return null
 
@@ -346,10 +365,11 @@ function AgentThreadLinks() {
           const href = `/?thread=${encodeURIComponent(thread.id)}`
           const isActive = thread.id === activeThreadId
           const isRenaming = renamingId === thread.id
+          const actionsOpen = openActionsId === thread.id
           return (
             <li
               key={thread.id}
-              className="group grid grid-cols-[minmax(0,1fr)_auto] items-center gap-0.5"
+              className="group relative grid grid-cols-[minmax(0,1fr)_auto] items-center gap-0.5"
             >
               {isRenaming ? (
                 <form
@@ -395,36 +415,66 @@ function AgentThreadLinks() {
                   >
                     {thread.title}
                   </Link>
-                  <div className="flex gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
-                    <button
-                      type="button"
-                      className={threadActionClass}
-                      title="重命名"
-                      aria-label={`重命名「${thread.title}」`}
-                      disabled={busy}
-                      onClick={() => {
-                        setActionError(null)
-                        setRenamingId(thread.id)
-                      }}
-                    >
-                      改
-                    </button>
+                  <div className="relative" ref={actionsOpen ? openActionsRef : undefined}>
                     <button
                       type="button"
                       className={cn(
-                        threadActionClass,
-                        'hover:bg-danger/12 hover:text-danger dark:hover:text-ink',
+                        'grid size-7 place-items-center rounded-lg text-ink-faint opacity-0 transition-[background,color,opacity] hover:bg-surface-inset hover:text-ink-secondary group-hover:opacity-100 group-focus-within:opacity-100 dark:hover:bg-brand/12 dark:hover:text-ink',
+                        actionsOpen && 'bg-surface-inset text-ink-secondary opacity-100',
+                        focusRing,
                       )}
-                      title="删除"
-                      aria-label={`删除「${thread.title}」`}
+                      title="会话操作"
+                      aria-label={`打开「${thread.title}」的操作菜单`}
+                      aria-haspopup="menu"
+                      aria-expanded={actionsOpen}
                       disabled={busy}
-                      onClick={() => {
-                        setActionError(null)
-                        setPendingDelete(thread)
-                      }}
+                      onClick={() =>
+                        setOpenActionsId((current) => (current === thread.id ? null : thread.id))
+                      }
                     >
-                      删
+                      <EllipsisIcon />
                     </button>
+
+                    {actionsOpen ? (
+                      <div
+                        role="menu"
+                        aria-label={`「${thread.title}」会话操作`}
+                        className="liquid-glass absolute top-[calc(100%+0.35rem)] right-0 z-20 grid w-36 gap-0.5 rounded-xl p-1.5 shadow-[0_14px_36px_rgb(30_40_70/0.16)]"
+                      >
+                        <button
+                          type="button"
+                          role="menuitem"
+                          className={cn(
+                            threadMenuActionClass,
+                            'text-ink-secondary hover:text-brand-hover dark:text-ink-dark-muted dark:hover:text-ink',
+                          )}
+                          onClick={() => {
+                            setOpenActionsId(null)
+                            setActionError(null)
+                            setRenamingId(thread.id)
+                          }}
+                        >
+                          <EditIcon />
+                          <span>编辑标题</span>
+                        </button>
+                        <button
+                          type="button"
+                          role="menuitem"
+                          className={cn(
+                            threadMenuActionClass,
+                            'text-danger hover:bg-danger/10 hover:text-danger dark:text-danger-light dark:hover:bg-danger/12 dark:hover:text-danger-light',
+                          )}
+                          onClick={() => {
+                            setOpenActionsId(null)
+                            setActionError(null)
+                            setPendingDelete(thread)
+                          }}
+                        >
+                          <TrashIcon />
+                          <span>删除</span>
+                        </button>
+                      </div>
+                    ) : null}
                   </div>
                 </>
               )}
@@ -497,6 +547,9 @@ function AgentThreadLinks() {
 
 const threadActionClass =
   'cursor-pointer rounded-md border-0 bg-transparent px-1.5 py-1 text-[0.68rem] font-semibold leading-none text-ink-subtle transition-colors hover:bg-brand/10 hover:text-ink-secondary disabled:cursor-not-allowed disabled:opacity-50 dark:hover:text-ink'
+
+const threadMenuActionClass =
+  'flex min-h-9 w-full items-center gap-2.5 rounded-lg border-0 bg-transparent px-2.5 text-left text-[0.75rem] font-semibold shadow-none transition-[background,color] hover:bg-surface-inset focus-visible:outline-2 focus-visible:outline-brand-focus focus-visible:outline-offset-1 dark:hover:bg-brand/12 [&_svg]:size-4 [&_svg]:shrink-0'
 
 const confirmActionClass =
   'rounded-lg border border-line px-3 py-2 text-sm font-semibold dark:border-line-soft'
@@ -581,6 +634,30 @@ function SparkIcon() {
     <Icon>
       <path d="m12 3 1.2 3.8L17 8l-3.8 1.2L12 13l-1.2-3.8L7 8l3.8-1.2L12 3Z" />
       <path d="m18 14 .8 2.2L21 17l-2.2.8L18 20l-.8-2.2L15 17l2.2-.8L18 14ZM5 13l.7 1.8 1.8.7-1.8.7L5 18l-.7-1.8-1.8-.7 1.8-.7L5 13Z" />
+    </Icon>
+  )
+}
+function EllipsisIcon() {
+  return (
+    <Icon>
+      <circle cx="5" cy="12" r="1" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" />
+      <circle cx="19" cy="12" r="1" fill="currentColor" stroke="none" />
+    </Icon>
+  )
+}
+function EditIcon() {
+  return (
+    <Icon>
+      <path d="M4 20h4l11-11a2.8 2.8 0 0 0-4-4L4 16v4Z" />
+      <path d="m13.5 6.5 4 4" />
+    </Icon>
+  )
+}
+function TrashIcon() {
+  return (
+    <Icon>
+      <path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5" />
     </Icon>
   )
 }
