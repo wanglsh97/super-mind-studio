@@ -62,7 +62,7 @@ Before the first model invocation of every Run, the platform SHALL authorize and
 
 ### Requirement: Sandbox resource budgets are enforced outside the model
 
-The platform SHALL enforce per-sandbox limits of one vCPU, 1 GiB memory, 2 GiB temporary disk, 64 processes and a configurable total lifetime defaulting to 1,800 seconds through `SANDBOX_TIMEOUT_SECONDS`. The same value SHALL bound idle retention. Each Shell command SHALL be limited to 60 seconds; each Run SHALL independently permit at most 20 Shell calls, 100 MiB outbound traffic, 1 MiB returned by one call and 5 MiB total returned tool output. Skill instructions MUST NOT raise these limits.
+The platform SHALL enforce per-sandbox limits of one vCPU, 1 GiB memory, 2 GiB temporary disk, 64 processes and a configurable total lifetime defaulting to 3,600 seconds through `SANDBOX_TIMEOUT_SECONDS`. The same value SHALL bound idle retention. Each Shell command SHALL be limited to 60 seconds; each Run SHALL independently permit at most 20 Shell calls, 100 MiB outbound traffic, 1 MiB returned by one call and 5 MiB total returned tool output. Skill instructions MUST NOT raise these limits.
 
 #### Scenario: Shell call budget is exhausted
 

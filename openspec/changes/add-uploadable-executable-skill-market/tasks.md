@@ -38,7 +38,7 @@
 
 - [ ] 4.1 锁定候选 OpenSandbox、Docker 和 gVisor 版本，在独立测试节点记录安装、启动、升级和卸载步骤
 - [x] 4.2 编写可重复 PoC 验收，覆盖创建、ready、Shell、工作目录、文件上传/下载、退出码、stdout/stderr、取消和销毁
-- [ ] 4.3 验证 OpenSandbox 一 vCPU、1 GiB 内存、2 GiB 磁盘、64 进程、可配置 1,800 秒 TTL 和 60 秒命令超时的实际强制行为
+- [ ] 4.3 验证 OpenSandbox 一 vCPU、1 GiB 内存、2 GiB 磁盘、64 进程、可配置 3,600 秒 TTL 和 60 秒命令超时的实际强制行为
 - [ ] 4.4 验证任意公网访问可用，同时 loopback、VPC 私网、云元数据、业务服务和 OpenSandbox 控制面不可达
 - [ ] 4.5 测量冷启动、包下载、首条命令、销毁和并发延迟，记录目标 ECS 规格、最大安全并发与月成本估算
 - [x] 4.6 实现 OpenSandbox TypeScript Adapter，将厂商类型限制在 Adapter 内，并通过与 Fake Adapter 相同的 contract suite
@@ -54,7 +54,7 @@
 - [x] 5.4 实现手动选择 Skill 的 pre-activation，并允许模型继续激活其他 Skill，不设置独立 active Skill 数上限
 - [x] 5.5 实现 Run 内单一 Sandbox workspace 布局和多 Skill 共享，验证不同 Run、用户和线程之间完全隔离
   - [x] 5.5.1 改为每个 Run 启动即创建 Sandbox，active Skills 通过短时只读 OSS URL 下载、校验并安装；运行时不依赖 PostgreSQL 包内容投影
-  - [x] 5.5.2 将 Sandbox 生命周期迁移为 Thread 级复用，增加 `SANDBOX_TIMEOUT_SECONDS=1800`，在 Run 终态保留、Thread 删除或空闲/硬超时后销毁，并按 Run 重置激活与资源计数
+  - [x] 5.5.2 将 Sandbox 生命周期迁移为 Thread 级复用，增加 `SANDBOX_TIMEOUT_SECONDS=3600`，在 Run 终态保留、Thread 删除或空闲/硬超时后销毁，并按 Run 重置激活与资源计数
 - [x] 5.6 实现 autonomous Shell 工具、cwd、60 秒命令超时、20 次调用限制、AbortSignal 和后台进程终态清理
 - [ ] 5.7 实现单次 1 MiB、Run 总计 5 MiB 工具输出截断及 100 MiB 出口流量终止，并将 limit reason 返回模型与 UI
 - [ ] 5.8 持久化 Skill 激活、sandbox 生命周期、命令、退出状态、耗时、截断和错误审计，敏感签名 URL 不进入 Pino
@@ -84,6 +84,6 @@
 - [ ] 7.4 更新 PRD、技术选型、README、Swagger、`.env.example` 和部署文档，明确后 V1 双节点、OSS、OpenSandbox、固定管理员及已接受风险
 - [ ] 7.5 配置 Nginx/私网路由、OSS CORS 与 lifecycle、OpenSandbox 日志轮转、健康检查和 sandbox 节点监控
 - [ ] 7.6 完成故障演练：OSS 不可用、OpenSandbox 不可用、sandbox 泄漏、API 重启、磁盘/流量/TTL 超限和用户取消
-- [ ] 7.7 完成回滚演练：停止新 Run、在配置的 1,800 秒最大生命周期内销毁剩余 Thread sandbox、关闭上传/执行入口并恢复提示型 Skill 兼容路径
+- [ ] 7.7 完成回滚演练：停止新 Run、在配置的 3,600 秒最大生命周期内销毁剩余 Thread sandbox、关闭上传/执行入口并恢复提示型 Skill 兼容路径
 - [ ] 7.8 运行全量单元、contract、PostgreSQL/Redis/OSS 集成、Mock/OpenSandbox 流式 E2E、页面 E2E、typecheck、lint、build 和部署冒烟
 - [ ] 7.9 对 `add-uploadable-executable-skill-market` 执行 strict OpenSpec 校验，并确认所有 checkbox 只在实现和对应验证完成后勾选

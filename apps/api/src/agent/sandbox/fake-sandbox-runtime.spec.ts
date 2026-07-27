@@ -9,7 +9,7 @@ describe('FakeSandboxRuntime', () => {
     const sandbox = await runtime.createSandbox({
       runId: 'run-1',
       threadId: 'thread-1',
-      limits: { sandboxTimeoutMs: 1_800_000 },
+      limits: { sandboxTimeoutMs: 3_600_000 },
     })
     await runtime.waitUntilReady(sandbox.sandboxId)
     await runtime.writeFile({

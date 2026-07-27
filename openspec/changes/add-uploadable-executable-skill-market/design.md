@@ -95,7 +95,7 @@ The existing Agent Run resource and cursor SSE remain authoritative. Browser dis
 
 ### Decision 8: Hard budgets apply uniformly
 
-The accepted defaults are one vCPU, 1 GiB memory, 2 GiB disk, 64 processes, a configurable 1,800-second Thread sandbox TTL (`SANDBOX_TIMEOUT_SECONDS`), 60 seconds per command, 20 Shell calls per Run, 100 MiB outbound traffic per Run, 1 MiB per returned output and 5 MiB total returned output per Run. The same timeout also bounds idle retention, and cleanup uses the earlier of the OpenSandbox hard expiry and the idle deadline. One user still has at most one active Agent Run.
+The accepted defaults are one vCPU, 1 GiB memory, 2 GiB disk, 64 processes, a configurable 3,600-second Thread sandbox TTL (`SANDBOX_TIMEOUT_SECONDS`), 60 seconds per command, 20 Shell calls per Run, 100 MiB outbound traffic per Run, 1 MiB per returned output and 5 MiB total returned output per Run. The same timeout also bounds idle retention, and cleanup uses the earlier of the OpenSandbox hard expiry and the idle deadline. One user still has at most one active Agent Run.
 
 Shell and file calls are autonomous with `approvalPolicy=none`. The UI shows ordered tool cards and audit results after calls start; it does not pause for confirmation.
 

@@ -78,7 +78,7 @@ const environmentSchema = z
     SKILL_UPLOAD_TTL_SECONDS: z.coerce.number().int().min(60).max(900).default(300),
     SKILL_STAGING_CLEANUP_BATCH: z.coerce.number().int().min(1).max(500).default(100),
     SANDBOX_RUNTIME_DRIVER: z.enum(['fake', 'opensandbox']).default('fake'),
-    SANDBOX_TIMEOUT_SECONDS: z.coerce.number().int().min(60).max(86_400).default(1_800),
+    SANDBOX_TIMEOUT_SECONDS: z.coerce.number().int().min(60).max(86_400).default(3_600),
     OPEN_SANDBOX_DOMAIN: optionalSecret,
     OPEN_SANDBOX_PROTOCOL: z.enum(['http', 'https']).default('http'),
     OPEN_SANDBOX_API_KEY: optionalSecret,

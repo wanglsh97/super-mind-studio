@@ -41,7 +41,7 @@ export class AgentExecutionSessionService {
     @Inject(AgentThreadRepository) private readonly threads: AgentThreadRepository,
     @Inject(ConfigService) config: ConfigService,
   ) {
-    this.timeoutMs = config.get<number>('SANDBOX_TIMEOUT_SECONDS', 1_800) * 1_000
+    this.timeoutMs = config.get<number>('SANDBOX_TIMEOUT_SECONDS', 3_600) * 1_000
   }
 
   async startRun(

@@ -38,7 +38,7 @@ describe('validateEnvironment', () => {
     expect(environment.SKILL_UPLOAD_TTL_SECONDS).toBe(300)
     expect(environment.SKILL_STAGING_CLEANUP_BATCH).toBe(100)
     expect(environment.SANDBOX_RUNTIME_DRIVER).toBe('fake')
-    expect(environment.SANDBOX_TIMEOUT_SECONDS).toBe(1_800)
+    expect(environment.SANDBOX_TIMEOUT_SECONDS).toBe(3_600)
     expect(environment.OPEN_SANDBOX_PROTOCOL).toBe('http')
     expect(environment.OPEN_SANDBOX_REQUEST_TIMEOUT_SECONDS).toBe(30)
     expect(environment.OPEN_SANDBOX_READY_TIMEOUT_SECONDS).toBe(60)

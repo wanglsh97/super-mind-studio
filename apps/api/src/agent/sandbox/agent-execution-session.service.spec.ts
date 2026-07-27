@@ -98,7 +98,7 @@ describe('AgentExecutionSessionService Thread sandbox lifecycle', () => {
     expect(createSandbox).toHaveBeenCalledWith(
       expect.objectContaining({
         threadId: 'thread-1',
-        limits: expect.objectContaining({ sandboxTimeoutMs: 1_800_000 }),
+        limits: expect.objectContaining({ sandboxTimeoutMs: 3_600_000 }),
       }),
     )
     expect(skills.prepareActivation).toHaveBeenCalledTimes(2)
