@@ -20,6 +20,7 @@
     "test:smoke:glm": "corepack pnpm --filter @supermind/api test:smoke:glm",
     "test:smoke:kimi": "corepack pnpm --filter @supermind/api test:smoke:kimi",
     "test:smoke:qwen": "corepack pnpm --filter @supermind/api test:smoke:qwen",
+    "test:smoke:web-search": "corepack pnpm --filter @supermind/api test:smoke:web-search",
     "test:smoke:cogview": "corepack pnpm --filter @supermind/api test:smoke:cogview",
     "test:smoke:wanxiang": "corepack pnpm --filter @supermind/api test:smoke:wanxiang",
     "test:agent-harness": "corepack pnpm --filter @supermind/api test:agent-harness",
