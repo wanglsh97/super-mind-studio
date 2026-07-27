@@ -5,7 +5,7 @@
 
 ## 2. 服务端 MCP 纵向切片
 
-- [ ] 2.1 引入官方 MCP SDK v1，实现 Streamable HTTP 连接、分页 `tools/list`、`tools/call`、超时/取消/关闭和输出规范化
+- [x] 2.1 引入官方 MCP SDK v1，实现 Streamable HTTP 连接、分页 `tools/list`、`tools/call`、超时/取消/关闭和输出规范化
 - [ ] 2.2 实现平台 MCP registry、精确工具白名单与 namespaced 动态定义，覆盖冲突、schema/描述上限和凭证脱敏
 - [ ] 2.3 在 Agent run 开始前冻结 built-in + MCP 工具集合，并统一用于 Prompt、上下文预算、Pi 执行和 PostgreSQL 审计
 

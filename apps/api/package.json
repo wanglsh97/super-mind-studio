@@ -26,10 +26,10 @@
     "test:e2e": "jest --config jest.e2e.config.cjs --runInBand"
   },
   "dependencies": {
-    "@supermind/sdk": "workspace:*",
     "@alibaba-group/opensandbox": "0.1.10",
     "@earendil-works/pi-agent-core": "0.80.10",
     "@earendil-works/pi-ai": "0.80.10",
+    "@modelcontextprotocol/sdk": "1.29.0",
     "@nestjs/common": "^11.1.28",
     "@nestjs/config": "^4.0.4",
     "@nestjs/core": "^11.1.28",
@@ -39,6 +39,7 @@
     "@nestjs/terminus": "^11.1.1",
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
+    "@supermind/sdk": "workspace:*",
     "ali-oss": "6.23.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
