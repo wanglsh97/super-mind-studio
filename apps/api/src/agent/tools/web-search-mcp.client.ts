@@ -184,7 +184,7 @@ export async function callWebSearchMcp(options: WebSearchMcpClientOptions): Prom
     }
     throw new WebSearchMcpError(
       'WEB_SEARCH_REQUEST_FAILED',
-      error instanceof Error ? error.message.slice(0, 300) : 'web_search 请求失败',
+      'web_search 请求失败',
     )
   } finally {
     clearTimeout(timeout)
