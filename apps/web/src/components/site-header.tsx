@@ -8,11 +8,7 @@ import { logoutUser, sanitizeUserReturnTo } from '../lib/user-auth-client'
 import { ThemeToggle } from './theme-toggle'
 import { useUserSession } from './user-session-provider'
 
-const navigation = [
-  { href: '/agent', label: 'Agent' },
-  { href: '/image', label: '文生图' },
-  { href: '/prompt', label: 'Prompt 优化' },
-]
+const navigation = [{ href: '/agent', label: 'Agent' }]
 
 export function SiteHeader() {
   const router = useRouter()

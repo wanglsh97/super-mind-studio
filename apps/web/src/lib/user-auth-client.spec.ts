@@ -12,19 +12,21 @@ import {
 
 describe('user auth login helpers', () => {
   it('allows only explicit same-origin capability paths', () => {
-    assert.equal(sanitizeUserReturnTo('/image'), '/image')
+    assert.equal(sanitizeUserReturnTo('/agent'), '/agent')
     for (const unsafe of [
       'https://attacker.example',
       '//attacker.example',
       '/admin',
       '/chat',
       '/chat?next=x',
+      '/image',
+      '/prompt',
     ]) {
       assert.equal(sanitizeUserReturnTo(unsafe), '/agent')
     }
     assert.equal(sanitizeUserReturnTo(null), '/agent')
     assert.equal(sanitizeUserReturnTo('/chat/compare'), '/chat/compare')
-    assert.equal(githubLoginUrl('/prompt'), '/api/v1/auth/github?returnTo=%2Fprompt')
+    assert.equal(githubLoginUrl('/chat/compare'), '/api/v1/auth/github?returnTo=%2Fchat%2Fcompare')
   })
 
   it('maps callback errors without exposing provider details', () => {

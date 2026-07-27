@@ -1,4 +1,4 @@
-export const USER_RETURN_PATHS = ['/agent', '/chat/compare', '/image', '/prompt'] as const
+export const USER_RETURN_PATHS = ['/agent', '/chat/compare'] as const
 
 export interface UserSessionProfile {
   id: string

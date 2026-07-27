@@ -12,22 +12,6 @@ const capabilities = [
     icon: AgentIcon,
     accent: 'from-[#2764ff] to-[#8b7cff]',
   },
-  {
-    name: 'Image',
-    label: '把文字变成画面',
-    description: '描述构图与风格，持续追踪生成进度，完成后直接下载。',
-    href: '/image',
-    icon: ImageIcon,
-    accent: 'from-[#8b7cff] to-[#ef85c7]',
-  },
-  {
-    name: 'Prompt',
-    label: '让指令更清晰',
-    description: '扩写、精简或结构化，把一个念头整理成可执行的 Prompt。',
-    href: '/prompt',
-    icon: PromptIcon,
-    accent: 'from-[#23a6b6] to-[#50d8c3]',
-  },
 ]
 
 const focusRing =
@@ -135,8 +119,8 @@ export default function HomePage() {
             </span>
           </h1>
           <p className="mt-8 max-w-[36rem] text-[clamp(1rem,1.35vw,1.16rem)] leading-[1.85] text-ink-muted">
-            从灵感探索到内容创作，对话、图像、Prompt 与 Agent
-            聚合在同一个入口。你专注表达目标，模型选择、流式传输和费用记录由网关安静处理。
+            从灵感探索到任务执行，对话、工具、Skill 与模型能力聚合在 Agent
+            工作台。你专注表达目标，模型选择、流式传输和费用记录由网关安静处理。
           </p>
 
           <div className="mt-10 flex flex-col gap-3 sm:flex-row">
@@ -183,19 +167,19 @@ export default function HomePage() {
       >
         <div className="grid items-end gap-6 lg:grid-cols-[1fr_0.8fr]">
           <div>
-            <p className="liquid-label">Choose a surface</p>
+            <p className="liquid-label">One workspace</p>
             <h2 className="mt-5 max-w-3xl font-display text-[clamp(2.5rem,5vw,4.8rem)] leading-[1.02] font-semibold tracking-[-0.055em]">
-              同一层玻璃，
+              一个 Agent，
               <br />
-              映出三种工作方式。
+              承接每一种任务。
             </h2>
           </div>
           <p className="max-w-md pb-1 text-sm leading-7 text-ink-muted lg:justify-self-end">
-            每个入口共享统一模型网关，同时保留最适合当前任务的交互与反馈。
+            对话、工具调用、Skill 和模型比较都在同一个工作台内持续推进。
           </p>
         </div>
 
-        <div className="mt-14 grid gap-4 lg:grid-cols-3">
+        <div className="mt-14 grid max-w-2xl gap-4">
           {capabilities.map((capability) => {
             const Icon = capability.icon
             return (
@@ -279,39 +263,6 @@ function AgentIcon() {
         strokeLinejoin="round"
       />
       <path d="M8 10h8M8 14h5" strokeLinecap="round" />
-    </svg>
-  )
-}
-
-function ImageIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      className="size-5 fill-none stroke-current stroke-[1.8]"
-      aria-hidden="true"
-    >
-      <rect x="3.5" y="4" width="17" height="16" rx="3" />
-      <circle cx="9" cy="9.5" r="1.5" />
-      <path d="m5.5 18 4.2-4.5 3 3 2.3-2.3 3.5 3.8" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
-function PromptIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      className="size-5 fill-none stroke-current stroke-[1.8]"
-      aria-hidden="true"
-    >
-      <path
-        d="m12 3 1.4 4.1L17.5 8.5l-4.1 1.4L12 14l-1.4-4.1-4.1-1.4 4.1-1.4L12 3Z"
-        strokeLinejoin="round"
-      />
-      <path
-        d="m18.5 14 .8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8.8-2.2Z"
-        strokeLinejoin="round"
-      />
     </svg>
   )
 }

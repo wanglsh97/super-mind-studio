@@ -13,9 +13,9 @@ import {
 } from '../../lib/user-auth-client'
 
 const destinations = [
-  { name: 'Agent', detail: 'PERSIST', dotClass: 'bg-brand' },
-  { name: 'Image', detail: 'CREATE', dotClass: 'bg-coral' },
-  { name: 'Prompt', detail: 'REFINE', dotClass: 'bg-mint' },
+  { name: 'Conversations', detail: 'PERSIST', dotClass: 'bg-brand' },
+  { name: 'Tools', detail: 'ACT', dotClass: 'bg-coral' },
+  { name: 'Skills', detail: 'EXTEND', dotClass: 'bg-mint' },
 ]
 
 const focusRing =
@@ -25,7 +25,7 @@ function IdentityRelay() {
   return (
     <div
       className="liquid-glass mt-10 overflow-hidden rounded-[2rem]"
-      aria-label="One GitHub identity connects to three AI tools"
+      aria-label="One GitHub identity connects to the Agent workspace"
     >
       <div className="relative z-1 flex items-center justify-between border-b border-white/70 px-4 py-3 font-mono text-[0.54rem] font-bold tracking-widest text-ink-subtle">
         <span>IDENTITY RELAY</span>
@@ -69,7 +69,7 @@ function IdentityRelay() {
 
       <div className="relative z-1 flex items-center justify-between border-t border-white/70 px-4 py-3 font-mono text-[0.54rem] font-bold tracking-widest text-ink-subtle">
         <span className="before:text-[#8c75ef] before:content-['/ ']">ONE SIGN-IN</span>
-        <span className="before:text-[#8c75ef] before:content-['/ ']">THREE TOOLS</span>
+        <span className="before:text-[#8c75ef] before:content-['/ ']">ONE WORKSPACE</span>
         <span className="before:text-[#8c75ef] before:content-['/ ']">FREE ACCESS</span>
       </div>
     </div>
@@ -98,10 +98,10 @@ export function LoginContent() {
           <h1 className="mt-5 font-display text-[clamp(3rem,6vw,5.6rem)] leading-[0.98] font-black tracking-tight text-ink">
             One clear identity.
             <br />
-            <span className="text-brand">Every capability.</span>
+            <span className="text-brand">One agent workspace.</span>
           </h1>
           <p className="mt-5 max-w-[35rem] text-sm leading-relaxed text-ink-muted max-lg:hidden">
-            Bring your GitHub identity. We&apos;ll open the route to every AI tool in the studio.
+            Bring your GitHub identity. We&apos;ll open your Agent workspace.
           </p>
           <div className="max-lg:hidden">
             <IdentityRelay />
@@ -132,7 +132,7 @@ export function LoginContent() {
             Continue with GitHub
           </h2>
           <p className="mt-4 text-sm leading-relaxed text-ink-muted">
-            Sign in once. Use every tool for free.
+            Sign in once. Continue in your Agent workspace.
           </p>
 
           {errorMessage && (

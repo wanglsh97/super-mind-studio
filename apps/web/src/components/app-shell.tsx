@@ -24,7 +24,6 @@ const shellIconButtonClass =
 
 const navigation = [
   { href: '/agent', label: '智能体', description: '对话与多步任务', icon: AgentIcon },
-  { href: '/image', label: '图片', description: '从文字生成图像', icon: ImageIcon },
   { href: '/skills', label: '技能', description: '查看已安装能力', icon: SparkIcon },
   { href: '/api', label: 'API', description: '接入网关能力', icon: ApiIcon },
 ]
@@ -650,15 +649,6 @@ function AgentIcon() {
       <circle cx="9" cy="13" r="1" />
       <circle cx="15" cy="13" r="1" />
       <path d="M2 12v3M22 12v3" />
-    </Icon>
-  )
-}
-function ImageIcon() {
-  return (
-    <Icon>
-      <rect x="3" y="4" width="18" height="16" rx="3" />
-      <circle cx="9" cy="9" r="2" />
-      <path d="m4 17 4.5-4 3.5 3 3-2.5 5 4.5" />
     </Icon>
   )
 }
