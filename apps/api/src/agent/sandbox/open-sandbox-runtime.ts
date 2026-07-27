@@ -225,6 +225,7 @@ export class OpenSandboxRuntime implements SandboxRuntimePort, OnModuleDestroy {
     let currentCommandId = ''
 
     try {
+      await state.instance.ensureDirectory(input.workingDirectory)
       const execution = await state.instance.runCommand({
         command: input.command,
         workingDirectory: input.workingDirectory,

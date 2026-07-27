@@ -53,7 +53,7 @@
 - [x] 5.3 在激活后把完整转义 `SKILL.md` 加入后续模型调用，验证平台规则、工具权限和硬预算不能被 Skill 文本覆盖
 - [x] 5.4 实现手动选择 Skill 的 pre-activation，并允许模型继续激活其他 Skill，不设置独立 active Skill 数上限
 - [x] 5.5 实现 Run 内单一 Sandbox workspace 布局和多 Skill 共享，验证不同 Run、用户和线程之间完全隔离
-- [ ] 5.6 实现 autonomous Shell 工具、cwd、60 秒命令超时、20 次调用限制、AbortSignal 和后台进程终态清理
+- [x] 5.6 实现 autonomous Shell 工具、cwd、60 秒命令超时、20 次调用限制、AbortSignal 和后台进程终态清理
 - [ ] 5.7 实现单次 1 MiB、Run 总计 5 MiB 工具输出截断及 100 MiB 出口流量终止，并将 limit reason 返回模型与 UI
 - [ ] 5.8 持久化 Skill 激活、sandbox 生命周期、命令、退出状态、耗时、截断和错误审计，敏感签名 URL 不进入 Pino
 - [ ] 5.9 完善 `/agent` 自动/手动 Skill UX、当前激活 Skill、Shell 日志与 Run 限制展示，确认调用不会弹出审批

@@ -233,6 +233,24 @@ describe('OpenSandboxRuntime adapter mapping', () => {
     await runtime.onModuleDestroy()
   })
 
+  it('creates the requested workspace cwd before running a command', async () => {
+    const client = new StubOpenSandboxClient()
+    const runtime = createRuntime(client)
+    const sandbox = await runtime.createSandbox({ runId: 'run-cwd' })
+    await runtime.waitUntilReady(sandbox.sandboxId)
+    const instance = (await client.connect(sandbox.sandboxId)) as StubOpenSandboxInstance
+    const ensureDirectory = jest.spyOn(instance, 'ensureDirectory')
+
+    await runtime.runCommand({
+      sandboxId: sandbox.sandboxId,
+      command: 'pwd',
+      workingDirectory: '/workspace/work/nested',
+    })
+
+    expect(ensureDirectory).toHaveBeenCalledWith('/workspace/work/nested')
+    await runtime.onModuleDestroy()
+  })
+
   it('lists only expired owned sandboxes as leaks', async () => {
     const client = new StubOpenSandboxClient()
     const runtime = createRuntime(client)

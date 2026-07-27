@@ -183,4 +183,31 @@ describe('FakeSandboxRuntime', () => {
       outputTotalBytes: 5 * 1024 * 1024,
     })
   })
+
+  it('allows exactly 20 Shell calls under the default Run budget', async () => {
+    const runtime = new FakeSandboxRuntime()
+    const sandbox = await runtime.createSandbox({ runId: 'default-shell-budget' })
+    await runtime.waitUntilReady(sandbox.sandboxId)
+
+    for (let call = 0; call < DEFAULT_SANDBOX_LIMITS.shellCallLimit; call += 1) {
+      await expect(
+        runtime.runCommand({
+          sandboxId: sandbox.sandboxId,
+          command: `echo ${call}`,
+          workingDirectory: '/workspace/work',
+        }),
+      ).resolves.toMatchObject({ exitCode: 0, limitReason: null })
+    }
+    await expect(
+      runtime.runCommand({
+        sandboxId: sandbox.sandboxId,
+        command: 'echo over-limit',
+        workingDirectory: '/workspace/work',
+      }),
+    ).resolves.toMatchObject({
+      exitCode: null,
+      limitReason: 'shell_calls',
+      error: { code: 'SHELL_CALL_LIMIT' },
+    })
+  })
 })
