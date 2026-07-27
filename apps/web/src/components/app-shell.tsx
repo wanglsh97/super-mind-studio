@@ -13,6 +13,11 @@ import {
   useAgentActiveThreadId,
   useAgentWorkspace,
 } from './agent-workspace-provider'
+import {
+  AGENT_THREAD_PREVIEW_LIMIT,
+  hiddenAgentThreadCount,
+  visibleAgentThreads,
+} from './agent-thread-list'
 import { ThemeToggle } from './theme-toggle'
 import { useUserSession } from './user-session-provider'
 
@@ -23,7 +28,6 @@ const shellIconButtonClass =
   'liquid-glass-soft grid size-9 shrink-0 place-items-center rounded-xl text-ink-muted transition-[background,color,transform] hover:-translate-y-0.5 hover:text-brand-hover dark:hover:text-ink [&_svg]:size-4'
 
 const navigation = [
-  { href: '/', label: '智能体', description: '对话与多步任务', icon: AgentIcon },
   { href: '/skills', label: '技能', description: '查看已安装能力', icon: SparkIcon },
 ]
 
@@ -115,42 +119,33 @@ function UserWorkspace({ children }: Readonly<{ children: ReactNode }>) {
           )}
         </div>
 
-        <nav className="flex flex-1 flex-col gap-1.5 overflow-y-auto pt-12" aria-label="功能菜单">
+        <NewConversationButton collapsed={collapsed} />
+
+        <nav className="flex flex-1 flex-col overflow-y-auto pt-7" aria-label="工作区导航">
           {!collapsed && (
-            <p className="mb-1.5 ml-3 font-mono text-[0.61rem] font-bold tracking-[0.16em] text-ink-subtle uppercase">
-              功能
+            <p className="mb-2 px-2 font-mono text-[0.61rem] font-bold tracking-[0.16em] text-ink-subtle uppercase">
+              对话
             </p>
           )}
-          {navigation.map((item) => {
-            const active =
-              pathname === item.href ||
-              pathname.startsWith(`${item.href}/`) ||
-              (item.href === '/' && pathname === '/chat/compare')
-            const Icon = item.icon
-            if (item.href === '/') {
-              return (
-                <AgentNavGroup
-                  key={item.href}
-                  active={active}
-                  collapsed={collapsed}
-                  label={item.label}
-                  description={item.description}
-                  Icon={Icon}
-                />
-              )
-            }
-            return (
+          {!collapsed ? (
+            <Suspense fallback={null}>
+              <AgentThreadLinks />
+            </Suspense>
+          ) : null}
+
+          <div className={cn('mt-5 border-t border-line-soft pt-4', collapsed && 'mt-2 pt-3')}>
+            {navigation.map((item) => (
               <SidebarNavLink
                 key={item.href}
                 href={item.href}
-                active={active}
+                active={pathname === item.href || pathname.startsWith(`${item.href}/`)}
                 collapsed={collapsed}
                 label={item.label}
                 description={item.description}
-                Icon={Icon}
+                Icon={item.icon}
               />
-            )
-          })}
+            ))}
+          </div>
         </nav>
 
         <div
@@ -266,6 +261,29 @@ function UserWorkspace({ children }: Readonly<{ children: ReactNode }>) {
 const menuItemClass =
   'flex min-h-[2.65rem] w-full items-center gap-3 rounded-xl border-0 bg-transparent px-3 py-2 text-left text-[0.78rem] font-semibold text-ink-secondary shadow-none transition-[background,color] hover:bg-surface-inset hover:text-brand-hover dark:text-[#d8d1e3] dark:hover:bg-[#352d45] dark:hover:text-ink [&_svg]:size-4 [&_svg]:shrink-0'
 
+function NewConversationButton({ collapsed }: Readonly<{ collapsed: boolean }>) {
+  return (
+    <Link
+      href="/"
+      aria-label="新建会话"
+      title={collapsed ? '新建会话' : undefined}
+      className={cn(
+        'group relative mt-5 flex min-h-12 w-full items-center gap-3 overflow-hidden rounded-2xl border border-white/35 bg-[linear-gradient(135deg,#2764ff_0%,#7057e8_100%)] px-3.5 text-sm font-bold text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.28),0_14px_30px_rgb(39_100_255/0.22)] transition-[transform,box-shadow,filter] hover:-translate-y-0.5 hover:brightness-105 hover:shadow-[inset_0_1px_0_rgb(255_255_255/0.32),0_17px_34px_rgb(39_100_255/0.28)]',
+        collapsed && 'mx-auto size-11 min-h-11 w-11 justify-center rounded-xl px-0',
+        focusRing,
+      )}
+    >
+      <span
+        className="grid size-7 shrink-0 place-items-center rounded-lg bg-white/16 text-xl font-light leading-none ring-1 ring-white/20 transition-transform group-hover:rotate-90"
+        aria-hidden="true"
+      >
+        +
+      </span>
+      {!collapsed && <span>新建会话</span>}
+    </Link>
+  )
+}
+
 function SidebarNavLink({
   href,
   active,
@@ -325,38 +343,6 @@ function SidebarNavLink({
   )
 }
 
-function AgentNavGroup({
-  active,
-  collapsed,
-  label,
-  description,
-  Icon,
-}: Readonly<{
-  active: boolean
-  collapsed: boolean
-  label: string
-  description: string
-  Icon: () => ReactNode
-}>) {
-  return (
-    <div className={active ? 'is-active' : undefined}>
-      <SidebarNavLink
-        href="/"
-        active={active}
-        collapsed={collapsed}
-        label={label}
-        description={description}
-        Icon={Icon}
-      />
-      {active && !collapsed ? (
-        <Suspense fallback={null}>
-          <AgentThreadLinks />
-        </Suspense>
-      ) : null}
-    </div>
-  )
-}
-
 function AgentThreadLinks() {
   const session = useUserSession()
   const { threads, loading, listError, renameThread, deleteThread } = useAgentWorkspace()
@@ -365,8 +351,12 @@ function AgentThreadLinks() {
   const [pendingDelete, setPendingDelete] = useState<AgentThreadSummary | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [expanded, setExpanded] = useState(false)
 
   if (session.status !== 'authenticated') return null
+
+  const visibleThreads = visibleAgentThreads(threads, expanded)
+  const hiddenCount = hiddenAgentThreadCount(threads, expanded)
 
   async function submitRename(threadId: string, title: string) {
     const trimmed = title.trim()
@@ -401,16 +391,7 @@ function AgentThreadLinks() {
   }
 
   return (
-    <div
-      className="mb-1 ml-3 flex flex-col gap-0.5 border-l border-line pl-3 dark:border-line-soft"
-      aria-label="Agent 会话"
-    >
-      <Link
-        href="/"
-        className="block w-full rounded-lg border border-dashed border-line px-2.5 py-2 text-left text-[0.78rem] font-semibold text-ink-secondary transition-colors hover:border-brand hover:bg-brand/6 hover:text-ink-secondary dark:border-line-soft dark:text-ink-dark-muted dark:hover:text-ink"
-      >
-        + 新建会话
-      </Link>
+    <div className="mb-1 flex flex-col gap-0.5" aria-label="对话记录">
       {listError ? <p className="mx-1 text-[0.72rem] text-ink-subtle">{listError}</p> : null}
       {actionError ? <p className="mx-1 text-[0.72rem] text-danger">{actionError}</p> : null}
       {loading && threads.length === 0 ? (
@@ -422,7 +403,7 @@ function AgentThreadLinks() {
         </p>
       ) : null}
       <ul className="m-0 flex list-none flex-col gap-0.5 p-0">
-        {threads.map((thread) => {
+        {visibleThreads.map((thread) => {
           const href = `/?thread=${encodeURIComponent(thread.id)}`
           const isActive = thread.id === activeThreadId
           const isRenaming = renamingId === thread.id
@@ -512,6 +493,22 @@ function AgentThreadLinks() {
           )
         })}
       </ul>
+      {threads.length > AGENT_THREAD_PREVIEW_LIMIT ? (
+        <button
+          type="button"
+          className={cn(
+            'mt-1 flex min-h-9 w-full items-center justify-between rounded-xl px-2.5 text-[0.7rem] font-semibold text-ink-faint transition-[background,color] hover:bg-brand/6 hover:text-brand-hover dark:hover:bg-brand/12 dark:hover:text-brand-light',
+            focusRing,
+          )}
+          aria-expanded={expanded}
+          onClick={() => setExpanded((current) => !current)}
+        >
+          <span>{expanded ? '收起' : `展开其余 ${hiddenCount} 条`}</span>
+          <ChevronIcon
+            className={cn('size-3.5 transition-transform', expanded ? '-rotate-90' : 'rotate-90')}
+          />
+        </button>
+      ) : null}
 
       {pendingDelete ? (
         <div
@@ -638,17 +635,6 @@ function Icon({ children, className }: SvgProps) {
     >
       {children}
     </svg>
-  )
-}
-function AgentIcon() {
-  return (
-    <Icon>
-      <rect x="5" y="8" width="14" height="10" rx="2" />
-      <path d="M12 8V4M9 4h6" />
-      <circle cx="9" cy="13" r="1" />
-      <circle cx="15" cy="13" r="1" />
-      <path d="M2 12v3M22 12v3" />
-    </Icon>
   )
 }
 function SparkIcon() {
