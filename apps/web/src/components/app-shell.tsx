@@ -162,7 +162,7 @@ function UserWorkspace({ children }: Readonly<{ children: ReactNode }>) {
                     className={menuItemClass}
                   >
                     <SparkIcon />
-                    <span>技能</span>
+                    <span>技能中心</span>
                   </Link>
                   <ThemeToggle variant="menu" />
                   <Link
