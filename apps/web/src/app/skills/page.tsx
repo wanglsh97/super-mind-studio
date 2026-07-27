@@ -170,11 +170,19 @@ export default function SkillsPage() {
 
   return (
     <main className="mx-auto max-w-[76rem] px-4 py-10 sm:px-6 md:px-10 md:py-16">
-      <header className="grid items-center gap-4 border-b border-line pb-6 md:grid-cols-[minmax(0,1fr)_auto]">
-        <h1 className="max-w-[50rem] text-base font-normal leading-7 tracking-normal text-ink-secondary sm:text-[1.05rem]">
-          技能是人工智能代理可复用的功能。它们提供了程序化的知识，有助于 Agent
-          更高效地完成特定任务。
-        </h1>
+      <header className="liquid-glass-soft grid items-center gap-5 overflow-hidden rounded-[1.6rem] px-5 py-5 md:grid-cols-[minmax(0,1fr)_auto] md:px-6">
+        <div className="flex min-w-0 items-start gap-4">
+          <span
+            aria-hidden="true"
+            className="grid size-11 shrink-0 place-items-center rounded-[0.9rem] border border-brand/15 bg-brand/10 shadow-[inset_0_1px_0_rgb(255_255_255/0.8)]"
+          >
+            <span className="size-3 rotate-45 rounded-[0.2rem] bg-brand shadow-[0_5px_14px_rgb(39_100_255/0.35)]" />
+          </span>
+          <h1 className="max-w-[48rem] pt-1 text-[clamp(1rem,1.4vw,1.125rem)] font-medium leading-7 tracking-[-0.01em] text-ink-secondary">
+            技能是人工智能代理可复用的功能。它们提供了程序化的知识，有助于 Agent
+            更高效地完成特定任务。
+          </h1>
+        </div>
         <div className="flex flex-wrap gap-2 md:justify-self-end">
           <button type="button" className={primaryButton} onClick={() => void chooseSkillFolder()}>
             上传 Skill
