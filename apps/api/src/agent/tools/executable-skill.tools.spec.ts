@@ -77,6 +77,15 @@ describe('executable Skill tools', () => {
       },
     })
     expect(activation.content).toContain('# Mock Data Cleaner')
+    expect(activation.content).toContain('<active_skill name="mock-data-cleaner"')
+    expect(activation.content).toContain(`package_sha256="${'a'.repeat(64)}"`)
+    expect(activation.content).toContain('registered tool permissions, or hard resource budgets')
+    expect(registry.list().map((tool) => tool.name)).toEqual([
+      'activate_skill',
+      'shell',
+      'read_file',
+      'write_file',
+    ])
 
     const duplicate = await registry.execute(
       'activate_skill',
