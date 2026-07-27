@@ -16,15 +16,27 @@ An authenticated user SHALL upload Agent input files through short-lived, user-s
 - **WHEN** a client attempts to attach or download it
 - **THEN** the API responds as if the file does not exist and reveals no metadata
 
-### Requirement: Skill output files are exported before sandbox destruction
+### Requirement: Skill output files use an explicit durable export boundary
 
-The Agent runtime SHALL allow a Skill to mark generated files for export. Before destroying a successful or partially successful sandbox, NestJS SHALL copy accepted output files to private OSS, persist their metadata and expose short-lived signed download URLs through the SDK.
+The Agent runtime SHALL treat `/workspace/work` as temporary scratch space and `/workspace/output` as the only user-facing export boundary. For every completed artifact the model SHALL call the server-owned `export_file` tool with a regular file under `/workspace/output` before claiming that the file is available. NestJS SHALL verify the file size and SHA-256, reserve quota transactionally, copy it to private OSS, persist its `UserFile` metadata and expose an owner-authenticated same-origin content and download route through the SDK. That route MAY proxy the object or redirect to a fresh short-lived signed URL. Signed OSS URLs MUST NOT enter Agent messages, events or database records. The platform MUST NOT upload the complete sandbox, `/workspace/work`, Skill packages or dependency caches.
 
 #### Scenario: A Skill generates a result file
 
 - **GIVEN** an active Run creates a file within its output boundary
 - **WHEN** the Agent exports it
 - **THEN** the file remains downloadable after the sandbox is destroyed
+
+#### Scenario: A file remains only in temporary work space
+
+- **GIVEN** a Skill creates a file under `/workspace/work` but does not move it into `/workspace/output` and call `export_file`
+- **WHEN** the Run completes
+- **THEN** the platform does not advertise or upload that file and it expires with the Thread sandbox
+
+#### Scenario: A user views an exported image in chat
+
+- **GIVEN** an output image was exported to private OSS and recorded as an available `UserFile`
+- **WHEN** its owner opens the persisted Agent thread
+- **THEN** the chat restores a file card with a same-origin preview and download action without exposing a persistent OSS URL
 
 ### Requirement: File quotas are authoritative
 

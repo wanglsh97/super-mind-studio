@@ -154,7 +154,7 @@ describe('AgentPromptComposer', () => {
     expect(result.manifest.mcpServerIds).toEqual(['docs'])
   })
 
-  it('matches the reviewed V4 English golden prompt hash', async () => {
+  it('matches the reviewed V5 English golden prompt hash', async () => {
     const composer = new AgentPromptComposer(
       new AgentToolRegistry([]),
       { listCandidates: async () => [] },
@@ -170,8 +170,11 @@ describe('AgentPromptComposer', () => {
       summaryId: 'summary-1',
       now: new Date('2026-07-21T00:00:00.000Z'),
     })
+    expect(result.systemPrompt).toContain(
+      'Put every completed user-facing file under /workspace/output and call export_file',
+    )
     expect(result.manifest.promptHash).toBe(
-      '33652293ea3120bda40ab12849b7a475ecb34bd8d9626ccb8b87dcbe7bf5780f',
+      'e999179b1b1051154154e5f3dc636ac41a2a700afc6bed69aedd09a63a6c470c',
     )
     expect(result.manifest.summaryId).toBe('summary-1')
   })

@@ -231,6 +231,7 @@ model UserFile {
   userId           String            @db.Uuid
   runId            String?           @db.Uuid
   sourceToolCallId String?           @db.Uuid
+  sandboxPath      String?           @db.VarChar(1024)
   direction        UserFileDirection
   status           UserFileStatus    @default(PENDING_UPLOAD)
   name             String            @db.VarChar(255)
@@ -248,6 +249,7 @@ model UserFile {
   @@index([userId, status, createdAt])
   @@index([runId])
   @@index([sourceToolCallId])
+  @@unique([runId, direction, sandboxPath])
 }
 
 model UserSession {

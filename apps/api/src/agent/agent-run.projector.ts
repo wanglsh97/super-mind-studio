@@ -264,7 +264,10 @@ export class AgentRunProjector {
       return events
     }
     if (event.type === 'toolcall_end') {
-      const args = (event.toolCall.arguments ?? {}) as Record<string, unknown>
+      const args = sanitizeToolArgs(
+        event.toolCall.name,
+        (event.toolCall.arguments ?? {}) as Record<string, unknown>,
+      )
       assistant.parts.push({
         type: 'tool-call',
         toolCallId: event.toolCall.id,
@@ -294,10 +297,11 @@ export class AgentRunProjector {
   }
 
   private onToolStart(toolCallId: string, toolName: string, args: unknown): AgentStreamEvent[] {
+    const safeArgs = sanitizeToolArgs(toolName, asRecord(args))
     this.toolCalls.set(toolCallId, {
       toolCallId,
       toolName,
-      args: asRecord(args),
+      args: safeArgs,
       status: 'running',
       summary: null,
       audit: null,
@@ -346,7 +350,7 @@ export class AgentRunProjector {
     }
     this.messages.push(toolMessage)
 
-    return [
+    const events: AgentStreamEvent[] = [
       this.emit({
         type: 'tool-result',
         toolCallId,
@@ -357,6 +361,9 @@ export class AgentRunProjector {
         ...(audit === null ? {} : { audit }),
       }),
     ]
+    const fileEvent = projectFileOperation(toolCallId, toolName, status, audit)
+    if (fileEvent) events.push(this.emit(fileEvent))
+    return events
   }
 
   private appendText(message: ProjectedMessage, kind: 'text' | 'reasoning', delta: string): void {
@@ -409,6 +416,17 @@ function asRecord(value: unknown): Record<string, unknown> {
     : {}
 }
 
+function sanitizeToolArgs(
+  toolName: string,
+  args: Record<string, unknown>,
+): Record<string, unknown> {
+  if (toolName !== 'write_file' || typeof args.content !== 'string') return args
+  return {
+    ...args,
+    content: `[omitted ${new TextEncoder().encode(args.content).byteLength} bytes]`,
+  }
+}
+
 function extractToolResult(result: unknown): {
   summary: string | null
   audit: Record<string, unknown> | null
@@ -434,4 +452,29 @@ function textFromContent(content: unknown): string {
     )
     .join('')
     .slice(0, 200)
+}
+
+function projectFileOperation(
+  toolCallId: string,
+  toolName: string,
+  status: AgentToolCallStatus,
+  audit: Record<string, unknown> | null,
+): Omit<Extract<AgentStreamEvent, { type: 'file-operation' }>, 'sequence' | 'runId'> | undefined {
+  if (toolName !== 'export_file' || !audit) return undefined
+  const path = typeof audit.path === 'string' ? audit.path : ''
+  const size = typeof audit.size === 'number' ? audit.size : null
+  const fileId = typeof audit.fileId === 'string' ? audit.fileId : undefined
+  const sha256 = typeof audit.sha256 === 'string' ? audit.sha256 : undefined
+  if (!path) return undefined
+  return {
+    type: 'file-operation',
+    toolCallId,
+    status,
+    operation: 'export-output',
+    direction: 'output',
+    ...(fileId === undefined ? {} : { fileId }),
+    path,
+    size,
+    ...(sha256 === undefined ? {} : { sha256 }),
+  }
 }

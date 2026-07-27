@@ -28,6 +28,8 @@ import { UserSessionGuard } from '../user-auth/user-session.guard'
 import { AgentRunEventBus } from './agent-run-event-bus'
 import { AgentRunRepository } from './agent-run.repository'
 import { AgentService } from './agent.service'
+import { AgentOutputFileError } from './files/agent-output-file.repository'
+import { AgentOutputFileService } from './files/agent-output-file.service'
 import { AGENT_MCP_REGISTRY, type AgentMcpRegistry } from './mcp/agent-mcp.registry'
 import { CreateAgentRunDto } from './dto/create-agent-run.dto'
 import { CreateSkillUploadSessionDto } from './dto/skill-upload.dto'
@@ -51,6 +53,7 @@ export class AgentController {
   constructor(
     @Inject(AgentService) private readonly agent: AgentService,
     @Inject(AgentRunRepository) private readonly runs: AgentRunRepository,
+    @Inject(AgentOutputFileService) private readonly outputFiles: AgentOutputFileService,
     @Inject(AgentRunEventBus) private readonly bus: AgentRunEventBus,
     @Inject(AgentSkillService) private readonly skills: AgentSkillService,
     @Inject(ExecutableSkillService) private readonly executableSkills: ExecutableSkillService,
@@ -221,6 +224,42 @@ export class AgentController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.agent.cancelRun(user, runId)
+  }
+
+  @Get('files/:fileId/content')
+  async getOutputFile(
+    @Param('fileId', ParseUUIDPipe) fileId: string,
+    @Query('download') download: string | undefined,
+    @CurrentUser() user: AuthenticatedUser,
+    @Res() response: Response,
+  ): Promise<void> {
+    try {
+      const { record, stored } = await this.outputFiles.loadForOwner(fileId, user.id)
+      const shouldDownload = download === '1' || download === 'true'
+      const disposition = shouldDownload ? 'attachment' : 'inline'
+      response.status(200)
+      response.set({
+        'content-type': record.mimeType ?? stored.metadata.contentType,
+        'content-length': String(stored.bytes.byteLength),
+        'content-disposition': `${disposition}; filename*=UTF-8''${encodeURIComponent(record.name)}`,
+        'cache-control': 'private, no-store',
+        'x-content-type-options': 'nosniff',
+        'content-security-policy': "sandbox; default-src 'none'; style-src 'unsafe-inline'",
+      })
+      response.end(Buffer.from(stored.bytes))
+    } catch (error) {
+      if (!(error instanceof AgentOutputFileError)) throw error
+      throw new HttpException(
+        {
+          code: error.code,
+          message: error.message,
+          retryable: error.retryable,
+        },
+        error.code === 'OUTPUT_FILE_NOT_FOUND'
+          ? HttpStatus.NOT_FOUND
+          : HttpStatus.INTERNAL_SERVER_ERROR,
+      )
+    }
   }
 
   @Get('runs/:runId/events')

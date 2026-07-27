@@ -398,6 +398,44 @@ export class OpenSandboxRuntime implements SandboxRuntimePort, OnModuleDestroy {
     return bytes ? fileResult(path, bytes) : null
   }
 
+  async readOutputFile(
+    sandboxId: string,
+    path: string,
+    signal?: AbortSignal,
+  ): Promise<SandboxFileResult | null> {
+    throwIfAborted(signal)
+    const state = await this.requireReadyState(sandboxId)
+    assertOutputPath(path)
+    const candidate = shellQuote(path)
+    const checked = await state.instance.runCommand({
+      command: [
+        `candidate=${candidate}`,
+        '[ -f "$candidate" ] || exit 44',
+        '[ ! -L "$candidate" ] || exit 45',
+        'resolved="$(realpath -e -- "$candidate")" || exit 44',
+        'case "$resolved" in /workspace/output/*) printf "%s" "$resolved" ;; *) exit 45 ;; esac',
+      ].join('\n'),
+      workingDirectory: '/workspace/output',
+      timeoutSeconds: Math.max(1, Math.ceil(state.limits.commandTimeoutMs / 1_000)),
+      ...(signal === undefined ? {} : { signal }),
+      onInit: () => undefined,
+      onStdout: () => undefined,
+      onStderr: () => undefined,
+    })
+    if (checked.exitCode === 44) return null
+    if (checked.exitCode !== 0) {
+      throw executionError(
+        'FILE_ACCESS_DENIED',
+        '只能导出 /workspace/output 下非符号链接的普通文件',
+        false,
+      )
+    }
+    const resolved = checked.stdout.trim()
+    assertOutputPath(resolved)
+    const bytes = await state.instance.readFile(resolved)
+    return bytes ? fileResult(resolved, bytes) : null
+  }
+
   async getUsage(sandboxId: string, signal?: AbortSignal): Promise<SandboxUsage> {
     throwIfAborted(signal)
     const state = await this.requireState(sandboxId)
@@ -860,6 +898,17 @@ function assertWorkspacePath(path: string): void {
   ) {
     throw executionError('FILE_ACCESS_DENIED', `文件路径不在 Sandbox workspace 内: ${path}`, false)
   }
+}
+
+function assertOutputPath(path: string): void {
+  assertWorkspacePath(path)
+  if (!path.startsWith('/workspace/output/')) {
+    throw executionError('FILE_ACCESS_DENIED', '只能读取 /workspace/output 下的显式产物', false)
+  }
+}
+
+function shellQuote(value: string): string {
+  return `'${value.replaceAll("'", String.raw`'"'"'`)}'`
 }
 
 function assertSkillName(value: string): void {

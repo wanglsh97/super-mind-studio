@@ -160,7 +160,7 @@ export class AgentRunRepository {
         audit: (record.audit ?? Prisma.JsonNull) as Prisma.InputJsonValue,
         completedAt: new Date(),
       }
-      await this.prisma.agentToolCall.upsert({
+      const saved = await this.prisma.agentToolCall.upsert({
         where: { runId_toolCallId: { runId, toolCallId: record.toolCallId } },
         create: {
           runId,
@@ -171,6 +171,16 @@ export class AgentRunRepository {
         },
         update: data,
       })
+      const fileId =
+        record.toolName === 'export_file' && typeof record.audit?.fileId === 'string'
+          ? record.audit.fileId
+          : undefined
+      if (fileId) {
+        await this.prisma.userFile.updateMany({
+          where: { id: fileId, runId },
+          data: { sourceToolCallId: saved.id },
+        })
+      }
     }
   }
 

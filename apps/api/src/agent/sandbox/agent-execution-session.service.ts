@@ -128,6 +128,16 @@ export class AgentExecutionSessionService {
     return this.sandboxes.readFile(session.thread.sandboxId, path, signal)
   }
 
+  async readOutputFile(
+    runId: string,
+    userId: string,
+    path: string,
+    signal?: AbortSignal,
+  ): Promise<SandboxFileResult | null> {
+    const session = this.requireActiveSession(runId, userId)
+    return this.sandboxes.readOutputFile(session.thread.sandboxId, path, signal)
+  }
+
   async writeFile(
     runId: string,
     userId: string,

@@ -118,6 +118,12 @@ export interface SandboxRuntimePort {
   installSkillPackage(input: InstallSandboxSkillPackageInput): Promise<InstalledSandboxSkillPackage>
   writeFile(input: WriteSandboxFileInput): Promise<SandboxFileResult>
   readFile(sandboxId: string, path: string, signal?: AbortSignal): Promise<SandboxFileResult | null>
+  /** 读取显式产物：仅允许 /workspace/output 下非符号链接的普通文件。 */
+  readOutputFile(
+    sandboxId: string,
+    path: string,
+    signal?: AbortSignal,
+  ): Promise<SandboxFileResult | null>
   getUsage(sandboxId: string, signal?: AbortSignal): Promise<SandboxUsage>
   /** 中断遗留命令并重置下一 Run 的计数，保留 Thread workspace 文件。 */
   resetRunState(sandboxId: string, signal?: AbortSignal): Promise<void>

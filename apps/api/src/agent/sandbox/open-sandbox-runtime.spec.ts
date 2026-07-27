@@ -251,6 +251,73 @@ describe('OpenSandboxRuntime adapter mapping', () => {
     await runtime.onModuleDestroy()
   })
 
+  it('reads a regular file only after its real path is verified inside /workspace/output', async () => {
+    const client = new StubOpenSandboxClient()
+    const runtime = createRuntime(client)
+    const sandbox = await runtime.createSandbox({ runId: 'run-output-read' })
+    await runtime.waitUntilReady(sandbox.sandboxId)
+    const instance = (await client.connect(sandbox.sandboxId)) as StubOpenSandboxInstance
+    instance.files.set(
+      '/workspace/output/logo.svg',
+      new TextEncoder().encode('<svg aria-label="logo"/>'),
+    )
+    jest.spyOn(instance, 'runCommand').mockResolvedValueOnce({
+      id: 'verify-output',
+      exitCode: 0,
+      durationMs: 1,
+      stdout: '/workspace/output/logo.svg',
+      stderr: '',
+    })
+
+    await expect(
+      runtime.readOutputFile(sandbox.sandboxId, '/workspace/output/logo.svg'),
+    ).resolves.toMatchObject({
+      path: '/workspace/output/logo.svg',
+      sizeBytes: 24,
+    })
+    await runtime.onModuleDestroy()
+  })
+
+  it('returns null for a missing output and rejects symlinks or escaped real paths', async () => {
+    const client = new StubOpenSandboxClient()
+    const runtime = createRuntime(client)
+    const sandbox = await runtime.createSandbox({ runId: 'run-output-boundary' })
+    await runtime.waitUntilReady(sandbox.sandboxId)
+    const instance = (await client.connect(sandbox.sandboxId)) as StubOpenSandboxInstance
+    const runCommand = jest.spyOn(instance, 'runCommand')
+    runCommand.mockResolvedValueOnce({
+      id: 'verify-missing',
+      exitCode: 44,
+      durationMs: 1,
+      stdout: '',
+      stderr: '',
+    })
+    runCommand.mockResolvedValueOnce({
+      id: 'verify-symlink',
+      exitCode: 45,
+      durationMs: 1,
+      stdout: '',
+      stderr: '',
+    })
+
+    await expect(
+      runtime.readOutputFile(sandbox.sandboxId, '/workspace/output/missing.txt'),
+    ).resolves.toBeNull()
+    await expect(
+      runtime.readOutputFile(sandbox.sandboxId, '/workspace/output/secret-link'),
+    ).rejects.toMatchObject({
+      code: 'FILE_ACCESS_DENIED',
+      retryable: false,
+    })
+    await expect(
+      runtime.readOutputFile(sandbox.sandboxId, '/workspace/work/private.txt'),
+    ).rejects.toMatchObject({
+      code: 'FILE_ACCESS_DENIED',
+      retryable: false,
+    })
+    await runtime.onModuleDestroy()
+  })
+
   it('lists only expired owned sandboxes as leaks', async () => {
     const client = new StubOpenSandboxClient()
     const runtime = createRuntime(client)

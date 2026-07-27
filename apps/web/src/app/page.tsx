@@ -1,6 +1,6 @@
 'use client'
 
-import { createAIGatewayClient } from '@supermind/sdk'
+import { createAIGatewayClient, parseAgentOutputFileReference } from '@supermind/sdk'
 import type {
   AgentContextBudgetState,
   AgentContextSummary,
@@ -289,6 +289,7 @@ function AgentConsole() {
       <ShellToolUI />
       <ReadFileToolUI />
       <WriteFileToolUI />
+      <ExportFileToolUI />
       <AgentPageShell>
         <AgentConsolePanel label="智能体">
           <SandboxStatusModule telemetry={sandboxTelemetry} />
@@ -862,6 +863,91 @@ const WriteFileToolUI = makeAssistantToolUI<{ path?: string }, SandboxToolResult
   ),
 })
 
+const ExportFileToolUI = makeAssistantToolUI<{ path?: string }, SandboxToolResult>({
+  toolName: 'export_file',
+  render: ({ args, result, status, isError }) => {
+    if (status.type === 'running') {
+      return (
+        <SandboxToolActivityCard
+          toolName="export_file"
+          subject={args.path}
+          running
+          isError={false}
+        />
+      )
+    }
+    return <ArtifactCard path={args.path} result={result} isError={Boolean(isError)} />
+  },
+})
+
+function ArtifactCard({
+  path,
+  result,
+  isError,
+}: {
+  path?: string | undefined
+  result?: SandboxToolResult | undefined
+  isError: boolean
+}) {
+  const file = parseAgentOutputFileReference(result?.audit)
+
+  if (isError || !file) {
+    return (
+      <SandboxToolActivityCard
+        toolName="export_file"
+        subject={path}
+        result={result}
+        running={false}
+        isError
+      />
+    )
+  }
+  const previewable = file.mimeType.startsWith('image/')
+
+  return (
+    <figure className="my-3 overflow-hidden rounded-2xl border border-line bg-surface-card shadow-[0_14px_38px_rgb(37_57_103/0.09)]">
+      {previewable ? (
+        // 预览地址是经过 owner 校验、CSP sandbox 与 nosniff 保护的同源文件接口。
+        <img
+          src={file.contentUrl}
+          alt={file.name}
+          className="max-h-[28rem] w-full bg-white object-contain"
+        />
+      ) : null}
+      <figcaption className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold text-ink">{file.name}</p>
+          <p className="mt-0.5 text-xs text-ink-muted">
+            {file.mimeType} · {formatFileSize(file.sizeBytes)}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <a
+            href={file.contentUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="rounded-lg border border-line px-3 py-1.5 text-xs font-semibold text-ink transition hover:border-brand/40 hover:text-brand"
+          >
+            查看
+          </a>
+          <a
+            href={file.downloadUrl}
+            className="rounded-lg bg-brand px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-hover"
+          >
+            下载
+          </a>
+        </div>
+      </figcaption>
+    </figure>
+  )
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KiB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MiB`
+}
+
 function SandboxToolActivityCard({
   toolName,
   subject,
@@ -870,7 +956,7 @@ function SandboxToolActivityCard({
   running,
   isError,
 }: {
-  toolName: 'shell' | 'read_file' | 'write_file'
+  toolName: 'shell' | 'read_file' | 'write_file' | 'export_file'
   subject?: string | undefined
   detail?: string | undefined
   result?: SandboxToolResult | undefined

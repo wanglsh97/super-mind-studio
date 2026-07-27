@@ -107,7 +107,20 @@ This is broader than the existing `web_fetch` tool and is an explicitly accepted
 
 ### Decision 10: User files are durable OSS objects, not sandbox state
 
-Input uploads and output exports use private OSS objects plus `UserFile` ownership records. Each Run accepts 50 MiB input and 100 MiB output. Each user retains at most 1 GiB across both directions. Files persist until explicit deletion, survive thread deletion and Skill delisting, and download through short-lived signed URLs.
+Input uploads and output exports use private OSS objects plus `UserFile` ownership records. Each Run accepts 50 MiB input and 100 MiB output. Each user retains at most 1 GiB across both directions. Files persist until explicit deletion, survive thread deletion and Skill delisting, and are exposed through stable owner-authenticated same-origin routes. The API may proxy the private object or authorize a fresh short-lived signed redirect, but signed OSS URLs are never persisted or projected into chat history.
+
+The sandbox workspace has an explicit delivery boundary: `/workspace/work` is temporary scratch
+space, while only regular files under `/workspace/output` may be exported. The model MUST call the
+server-owned `export_file` tool for every user-facing artifact before claiming it is available.
+Export reads the accepted file through `SandboxRuntimePort`, verifies its size and SHA-256, reserves
+quota transactionally, writes it to private OSS and records a stable `UserFile` reference. The event
+stream and persisted tool result contain only the file ID and same-origin content/download routes,
+never an OSS signed URL. Those authenticated routes MAY proxy the private object or redirect to a
+fresh short-lived signed URL after owner authorization.
+
+The platform MUST NOT automatically upload `/workspace`, `/workspace/work`, Skill packages,
+dependency caches or other sandbox internals. A file left only in the sandbox is explicitly
+temporary and disappears with the Thread sandbox.
 
 Deletion first makes the file unavailable, then attempts OSS removal. Failure records a retryable cleanup state. Quota accounting includes pending-cleanup bytes until deletion is confirmed, preventing users from cycling failed deletes into excess allocation.
 

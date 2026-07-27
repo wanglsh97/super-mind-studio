@@ -213,6 +213,87 @@ describe('AgentRunProjector', () => {
     expect(toolCall).toMatchObject({ toolCallId: 'call_1', status: 'succeeded', isError: false })
   })
 
+  it('redacts write_file content from persisted events and tool-call records', () => {
+    const projector = new AgentRunProjector(runId, idFactory())
+    const events = drive(projector, [
+      { type: 'message_start', message: assistantMessage() },
+      update({
+        type: 'toolcall_end',
+        contentIndex: 0,
+        toolCall: {
+          type: 'toolCall',
+          id: 'call-write',
+          name: 'write_file',
+          arguments: { path: '/workspace/output/result.svg', content: '<svg>secret</svg>' },
+        },
+        partial: assistantMessage(),
+      }),
+      {
+        type: 'tool_execution_start',
+        toolCallId: 'call-write',
+        toolName: 'write_file',
+        args: { path: '/workspace/output/result.svg', content: '<svg>secret</svg>' },
+      },
+    ])
+
+    expect(events.find((event) => event.type === 'tool-call')).toMatchObject({
+      args: {
+        path: '/workspace/output/result.svg',
+        content: '[omitted 17 bytes]',
+      },
+    })
+    expect(projector.toolCallRecords()[0]?.args).toMatchObject({
+      content: '[omitted 17 bytes]',
+    })
+    expect(JSON.stringify(projector.messagesSnapshot())).not.toContain('<svg>secret</svg>')
+  })
+
+  it('projects an exported artifact as a replayable file-operation event', () => {
+    const projector = new AgentRunProjector(runId, idFactory())
+    const events = drive(projector, [
+      {
+        type: 'tool_execution_start',
+        toolCallId: 'call-export',
+        toolName: 'export_file',
+        args: { path: '/workspace/output/logo.svg' },
+      },
+      {
+        type: 'tool_execution_end',
+        toolCallId: 'call-export',
+        toolName: 'export_file',
+        result: {
+          content: [{ type: 'text', text: 'exported' }],
+          details: {
+            summary: '已导出产物 logo.svg',
+            audit: {
+              fileId: '00000000-0000-4000-8000-000000000001',
+              path: '/workspace/output/logo.svg',
+              size: 42,
+              sha256: 'a'.repeat(64),
+            },
+          },
+        },
+        isError: false,
+      },
+    ])
+
+    expect(events.map((event) => event.type)).toEqual([
+      'tool-status',
+      'tool-result',
+      'file-operation',
+    ])
+    expect(events.at(-1)).toMatchObject({
+      type: 'file-operation',
+      status: 'succeeded',
+      operation: 'export-output',
+      direction: 'output',
+      fileId: '00000000-0000-4000-8000-000000000001',
+      path: '/workspace/output/logo.svg',
+      size: 42,
+      sha256: 'a'.repeat(64),
+    })
+  })
+
   it('emits a normalized error event and failed terminal', () => {
     const projector = new AgentRunProjector(runId, idFactory())
     projector.start()

@@ -7,6 +7,8 @@ import { RequestLifecycleModule } from '../request-lifecycle/request-lifecycle.m
 import { UserAuthModule } from '../user-auth/user-auth.module'
 import { AgentActiveRunLock } from './agent-active-run.lock'
 import { AgentContextPreparer } from './context/agent-context-preparer'
+import { AgentOutputFileRepository } from './files/agent-output-file.repository'
+import { AgentOutputFileService } from './files/agent-output-file.service'
 import { AgentContextSummaryRepository } from './context/agent-context-summary.repository'
 import { AgentContextSummaryService } from './context/agent-context-summary.service'
 import { AgentController } from './agent.controller'
@@ -61,6 +63,7 @@ import { createWebSearchTool } from './tools/web-search.tool'
 export function resolveAgentTools(
   config: ConfigService,
   sessions: AgentExecutionSessionService,
+  outputs: AgentOutputFileService,
 ): readonly AgentToolDefinition[] {
   // CI/确定性 E2E 可显式启用 fixture；默认使用生产级联网 web_fetch。
   const webTool =
@@ -80,7 +83,7 @@ export function resolveAgentTools(
       }),
     )
   }
-  return [...tools, ...createExecutableSkillTools(sessions)]
+  return [...tools, ...createExecutableSkillTools(sessions, outputs)]
 }
 
 export function createSandboxRuntime(config: ConfigService): SandboxRuntimePort {
@@ -162,6 +165,8 @@ export function createSandboxRuntime(config: ConfigService): SandboxRuntimePort 
       useFactory: createSandboxRuntime,
     },
     AgentExecutionSessionService,
+    AgentOutputFileRepository,
+    AgentOutputFileService,
     AgentMcpSdkClient,
     PlatformAgentMcpRegistry,
     { provide: AGENT_MCP_REGISTRY, useExisting: PlatformAgentMcpRegistry },
@@ -169,11 +174,12 @@ export function createSandboxRuntime(config: ConfigService): SandboxRuntimePort 
     { provide: AGENT_MEMORY_PROVIDER, useExisting: EmptyAgentMemoryProvider },
     {
       provide: AGENT_TOOLS,
-      inject: [ConfigService, AgentExecutionSessionService],
+      inject: [ConfigService, AgentExecutionSessionService, AgentOutputFileService],
       useFactory: (
         config: ConfigService,
         sessions: AgentExecutionSessionService,
-      ): readonly AgentToolDefinition[] => resolveAgentTools(config, sessions),
+        outputs: AgentOutputFileService,
+      ): readonly AgentToolDefinition[] => resolveAgentTools(config, sessions, outputs),
     },
     AgentToolRegistry,
   ],

@@ -10,6 +10,8 @@ export type {
 } from './client.js'
 export { decodeAgentEvent, encodeAgentEvent } from './agent-events.js'
 export type { AgentEventWire } from './agent-events.js'
+export { parseAgentOutputFileReference } from './agent-files.js'
+export type { AgentOutputFileReference } from './agent-files.js'
 export type {
   AgentClient,
   AgentEventSubscribeOptions,

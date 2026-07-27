@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config'
 import { createSandboxRuntime, resolveAgentTools } from './agent.module'
 import { AgentExecutionSessionService } from './sandbox/agent-execution-session.service'
 import { OpenSandboxRuntime } from './sandbox/open-sandbox-runtime'
+import type { AgentOutputFileService } from './files/agent-output-file.service'
 
 describe('createSandboxRuntime', () => {
   it('always creates the OpenSandbox adapter', async () => {
@@ -25,9 +26,10 @@ describe('createSandboxRuntime', () => {
 
 describe('resolveAgentTools', () => {
   const sessions = {} as AgentExecutionSessionService
+  const outputs = {} as AgentOutputFileService
 
   it('registers one provider-neutral web_search tool by default', () => {
-    const tools = resolveAgentTools(new ConfigService(), sessions)
+    const tools = resolveAgentTools(new ConfigService(), sessions, outputs)
     expect(tools.map((tool) => tool.name)).toEqual(
       expect.arrayContaining(['web_fetch', 'web_search']),
     )
@@ -41,6 +43,7 @@ describe('resolveAgentTools', () => {
     const tools = resolveAgentTools(
       new ConfigService({ AGENT_WEB_SEARCH_ENABLED: false }),
       sessions,
+      outputs,
     )
     expect(tools.map((tool) => tool.name)).toContain('web_fetch')
     expect(tools.map((tool) => tool.name)).not.toContain('web_search')

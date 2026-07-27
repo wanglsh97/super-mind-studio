@@ -8,7 +8,7 @@ import { AGENT_SKILL_REGISTRY, type AgentSkillRegistry } from '../skills/agent-s
 import type { AgentToolDefinition } from '../tools/agent-tool'
 import { AgentToolRegistry } from '../tools/agent-tool.registry'
 
-export const AGENT_PROMPT_PROFILE_VERSION = 'web-agent-v4'
+export const AGENT_PROMPT_PROFILE_VERSION = 'web-agent-v5'
 export const MAX_PROMPT_CANDIDATE_SKILLS = 50
 export const MAX_PROMPT_CANDIDATE_DESCRIPTION_CHARS = 400
 export const MAX_PROMPT_CANDIDATE_DIRECTORY_CHARS = 24_000
@@ -16,7 +16,7 @@ export const MAX_PROMPT_CANDIDATE_DIRECTORY_CHARS = 24_000
 const COMPONENT_VERSIONS = Object.freeze({
   identity: '2',
   hierarchy: '3',
-  operatingPolicy: '2',
+  operatingPolicy: '3',
   securityBoundary: '3',
   runtimeContext: '1',
   capabilities: '2',
@@ -90,6 +90,7 @@ export class AgentPromptComposer {
           "Decide autonomously whether a registered tool is needed for the user's goal. Tools are optional capabilities; do not call them merely to demonstrate activity.",
           'Use an appropriate tool when the task requires current information, a specified source, or external data. Stable knowledge, explanations, and creative work do not require forced web access.',
           'Call only tools listed in available_capabilities and submit arguments that strictly follow their schemas. Never invent success for an unknown tool, a failed result, or insufficient permission.',
+          'Treat /workspace/work as temporary scratch space. Put every completed user-facing file under /workspace/output and call export_file for each one before claiming that it is available. A sandbox path alone is not a downloadable result.',
           'Stop calling tools and answer once you have enough information. Ask the user only when a missing choice would materially change the goal or an action would create an unauthorized external effect.',
         ].join('\n'),
       ),

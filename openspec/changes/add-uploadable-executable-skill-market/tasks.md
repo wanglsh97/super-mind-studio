@@ -70,11 +70,15 @@
 - [ ] 6.1 实现用户文件短时 OSS 上传、finalize、owner 过滤和稳定 Agent `file-reference` 契约
 - [ ] 6.2 实现每 Run 50 MiB 输入、100 MiB 输出和每用户 1 GiB 总配额的事务级预占与确认
 - [ ] 6.3 将用户选择的输入文件复制或挂载到 `/workspace/input`，验证文件名规范化、只读边界和跨用户拒绝
-- [ ] 6.4 实现 `/workspace/output` 显式导出、OSS 持久化、文件哈希和短时签名下载 URL
+- [ ] 6.4 实现 `/workspace/output` 显式导出、OSS 持久化、文件哈希和 owner 校验的稳定下载入口
+  - [x] 6.4.1 增加 `export_file` 工具，只接受 `/workspace/output`，并完成私有 OSS 写入、`UserFile`/`AgentRun.fileManifest` 元数据、稳定同源内容地址和可补读文件事件
+  - [x] 6.4.2 在 Agent Prompt 中区分临时 `/workspace/work` 与交付 `/workspace/output`，并禁止在事件和工具审计中持久化 `write_file` 正文或 OSS 签名 URL
+  - [ ] 6.4.3 增加 Run 终态未导出文件提示、真实 OpenSandbox 输出导出 E2E 和 OSS 故障恢复验证
 - [ ] 6.5 实现用户文件永久保留、幂等删除、OSS 失败 cleanup_pending 状态和配额继续占用规则
 - [ ] 6.6 确认删除 Agent thread、下架 Skill 或覆盖包均不删除已有用户文件，并添加关联回归测试
 - [ ] 6.7 扩展 SDK 文件上传、列表、下载、删除和 Run 附件 client，覆盖大文件进度、取消和过期签名
 - [ ] 6.8 完成 `/files` 与 Agent Composer 附件/结果交互，覆盖配额、空状态、永久文件和移动端下载
+  - [x] 6.8.1 在聊天消息中为已导出图片/文件展示可恢复的预览、查看和下载卡片，SVG 通过 owner 校验与 sandbox CSP 的同源响应预览
 - [ ] 6.9 添加 OSS/PostgreSQL 文件一致性、跨用户访问、配额竞争、导出失败和清理重试 E2E
 
 ## 7. 迁移、部署与交付验收

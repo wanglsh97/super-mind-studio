@@ -3,6 +3,7 @@ import { createOpenSandboxRuntimeTestDouble } from '../sandbox/open-sandbox-runt
 import type { AgentThreadRepository } from '../agent-thread.repository'
 import type { ExecutableSkillService } from '../skills/executable-skill.service'
 import type { ConfigService } from '@nestjs/config'
+import type { AgentOutputFileService } from '../files/agent-output-file.service'
 import {
   MOCK_EXECUTABLE_SKILL_DOWNLOAD,
   MOCK_EXECUTABLE_SKILL_SHA256,
@@ -54,14 +55,26 @@ function setup() {
     get: jest.fn((_key: string, fallback: number) => fallback),
   } as unknown as ConfigService
   const sessions = new AgentExecutionSessionService(skills, sandbox, threads, config)
-  const registry = new AgentToolRegistry(createExecutableSkillTools(sessions))
+  const outputs = {
+    export: jest.fn(async (_runId: string, _userId: string, path: string) => ({
+      id: '00000000-0000-4000-8000-000000000001',
+      name: 'result.txt',
+      mimeType: 'text/plain',
+      sizeBytes: 6,
+      sha256: 'a'.repeat(64),
+      path,
+      contentUrl: '/api/v1/agent/files/00000000-0000-4000-8000-000000000001/content',
+      downloadUrl: '/api/v1/agent/files/00000000-0000-4000-8000-000000000001/content?download=1',
+    })),
+  } as unknown as AgentOutputFileService
+  const registry = new AgentToolRegistry(createExecutableSkillTools(sessions, outputs))
   const context = {
     runId: 'run-1',
     userId: 'user-1',
     toolCallId: 'tool-1',
     signal: new AbortController().signal,
   }
-  return { context, registry, sandbox, sessions, skills }
+  return { context, registry, sandbox, sessions, skills, outputs }
 }
 
 describe('executable Skill tools', () => {
@@ -106,6 +119,7 @@ describe('executable Skill tools', () => {
       'shell',
       'read_file',
       'write_file',
+      'export_file',
     ])
 
     const duplicate = await registry.execute(
@@ -163,6 +177,21 @@ describe('executable Skill tools', () => {
         { ...context, toolCallId: 'tool-5' },
       ),
     ).resolves.toMatchObject({ isError: false, content: 'result', audit: { size: 6 } })
+    await expect(
+      registry.execute(
+        'export_file',
+        { path: '/workspace/output/result.txt' },
+        { ...context, toolCallId: 'tool-export' },
+      ),
+    ).resolves.toMatchObject({
+      isError: false,
+      summary: '已导出产物 result.txt',
+      audit: {
+        fileId: '00000000-0000-4000-8000-000000000001',
+        mimeType: 'text/plain',
+        size: 6,
+      },
+    })
 
     await sessions.finishRun('run-1')
     await expect(
