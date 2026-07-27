@@ -18,3 +18,4 @@
 
 - [x] 4.1 增加本地 Streamable HTTP fixture 的脱网 contract/integration 测试与显式 MCP smoke
 - [x] 4.2 更新 README、Swagger/配置说明，运行相关测试、typecheck、lint、build 和 OpenSpec strict validation
+- [x] 4.3 使用本地 fixture 启动 API/Web dev，验证 Nest 运行时依赖注入、工具发现、白名单注册与实际调用

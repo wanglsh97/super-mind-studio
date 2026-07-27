@@ -1,6 +1,7 @@
 import { ConfigService } from '@nestjs/config'
+import { Test } from '@nestjs/testing'
 
-import { AgentMcpClientError, type AgentMcpSdkClient } from './agent-mcp.client'
+import { AgentMcpClientError, AgentMcpSdkClient } from './agent-mcp.client'
 import {
   agentMcpToolName,
   EmptyAgentMcpRegistry,
@@ -23,6 +24,15 @@ describe('PlatformAgentMcpRegistry', () => {
     auth: { type: 'none' as const },
     tools: [{ name: 'lookup', description: 'Search approved docs', riskLevel: 'read' as const }],
   }
+
+  it('resolves its runtime dependencies through Nest without decorator metadata inference', async () => {
+    const moduleRef = await Test.createTestingModule({
+      providers: [ConfigService, AgentMcpSdkClient, PlatformAgentMcpRegistry],
+    }).compile()
+
+    expect(moduleRef.get(PlatformAgentMcpRegistry).listServers()).toEqual([])
+    await moduleRef.close()
+  })
 
   it('registers only configured tools with a stable namespace and sanitized schema', async () => {
     const client = {

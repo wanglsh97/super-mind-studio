@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common'
+import { Inject, Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 
 import type { AgentToolDefinition, AgentToolResult } from '../tools/agent-tool'
@@ -69,7 +69,9 @@ export class PlatformAgentMcpRegistry implements AgentMcpRegistry {
   private readonly lastStatuses = new Map<string, AgentMcpServerStatus>()
 
   constructor(
+    @Inject(ConfigService)
     private readonly config: ConfigService,
+    @Inject(AgentMcpSdkClient)
     private readonly client: AgentMcpSdkClient,
   ) {
     this.servers = config.get<AgentMcpServerConfig[]>('AGENT_MCP_SERVERS_JSON', [])
