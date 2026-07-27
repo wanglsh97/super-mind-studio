@@ -57,12 +57,37 @@ import {
 import type { AgentToolDefinition } from './tools/agent-tool'
 import { webFetchFixtureTool } from './tools/web-fetch-fixture.tool'
 import { webFetchTool } from './tools/web-fetch.tool'
+import { createWebSearchTool } from './tools/web-search.tool'
 
-function resolveAgentTools(sessions: AgentExecutionSessionService): readonly AgentToolDefinition[] {
+export function resolveAgentTools(
+  config: ConfigService,
+  sessions: AgentExecutionSessionService,
+): readonly AgentToolDefinition[] {
   // CI/确定性 E2E 可显式启用 fixture；默认使用生产级联网 web_fetch。
   const webTool =
     process.env.AGENT_WEB_FETCH_FIXTURE === 'true' ? webFetchFixtureTool : webFetchTool
-  return [webTool, ...createExecutableSkillTools(sessions)]
+  const tools: AgentToolDefinition[] = [webTool]
+  if (config.get<boolean>('AGENT_WEB_SEARCH_ENABLED', true)) {
+    const exaApiKey = config.get<string>('EXA_API_KEY')
+    const parallelApiKey = config.get<string>('PARALLEL_API_KEY')
+    tools.push(
+      createWebSearchTool({
+        providerMode: config.get<'auto' | 'exa' | 'parallel'>(
+          'AGENT_WEB_SEARCH_PROVIDER',
+          'auto',
+        ),
+        timeoutMs: config.get<number>('AGENT_WEB_SEARCH_TIMEOUT_MS', 25_000),
+        maxResponseBytes: config.get<number>(
+          'AGENT_WEB_SEARCH_MAX_RESPONSE_BYTES',
+          2_097_152,
+        ),
+        maxOutputChars: config.get<number>('AGENT_WEB_SEARCH_MAX_OUTPUT_CHARS', 30_000),
+        ...(exaApiKey ? { exaApiKey } : {}),
+        ...(parallelApiKey ? { parallelApiKey } : {}),
+      }),
+    )
+  }
+  return [...tools, ...createExecutableSkillTools(sessions)]
 }
 
 export function createSandboxRuntime(
@@ -168,9 +193,11 @@ export function createSandboxRuntime(
     { provide: AGENT_MEMORY_PROVIDER, useExisting: EmptyAgentMemoryProvider },
     {
       provide: AGENT_TOOLS,
-      inject: [AgentExecutionSessionService],
-      useFactory: (sessions: AgentExecutionSessionService): readonly AgentToolDefinition[] =>
-        resolveAgentTools(sessions),
+      inject: [ConfigService, AgentExecutionSessionService],
+      useFactory: (
+        config: ConfigService,
+        sessions: AgentExecutionSessionService,
+      ): readonly AgentToolDefinition[] => resolveAgentTools(config, sessions),
     },
     AgentToolRegistry,
   ],

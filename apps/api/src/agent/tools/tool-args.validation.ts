@@ -1,5 +1,5 @@
 /**
- * 轻量 JSON Schema 参数校验（仅覆盖 Agent 工具所需的 object/string/required/additionalProperties）。
+ * 轻量 JSON Schema 参数校验（覆盖 Agent 工具所需的基础 object/string/number 约束）。
  * 不引入 Ajv：保持依赖面小，并在 registry 层 fail-closed 拒绝无效参数。
  */
 
@@ -65,9 +65,24 @@ export function validateToolArguments(
       if (minLength !== undefined && value.length < minLength) {
         return fail(`参数 ${key} 长度不得小于 ${minLength}`)
       }
+      const maxLength = typeof schema.maxLength === 'number' ? schema.maxLength : undefined
+      if (maxLength !== undefined && value.length > maxLength) {
+        return fail(`参数 ${key} 长度不得大于 ${maxLength}`)
+      }
     } else if (expectedType === 'number') {
       if (typeof value !== 'number' || Number.isNaN(value)) {
         return fail(`参数 ${key} 必须是 number`)
+      }
+      if (schema.integer === true && !Number.isInteger(value)) {
+        return fail(`参数 ${key} 必须是整数`)
+      }
+      const minimum = typeof schema.minimum === 'number' ? schema.minimum : undefined
+      if (minimum !== undefined && value < minimum) {
+        return fail(`参数 ${key} 不得小于 ${minimum}`)
+      }
+      const maximum = typeof schema.maximum === 'number' ? schema.maximum : undefined
+      if (maximum !== undefined && value > maximum) {
+        return fail(`参数 ${key} 不得大于 ${maximum}`)
       }
     } else if (expectedType === 'boolean') {
       if (typeof value !== 'boolean') {
@@ -81,6 +96,9 @@ export function validateToolArguments(
       if (!Array.isArray(value)) {
         return fail(`参数 ${key} 必须是 array`)
       }
+    }
+    if (Array.isArray(schema.enum) && !schema.enum.includes(value)) {
+      return fail(`参数 ${key} 必须是允许的枚举值`)
     }
   }
 
