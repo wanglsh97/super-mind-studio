@@ -37,9 +37,9 @@
     "db:migrate:dev": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
     "db:test:reset": "sh infra/scripts/reset-test-database.sh",
-    "infra:up": "docker compose -f infra/compose/compose.yml -f infra/compose/compose.dev.yml up -d",
-    "infra:down": "docker compose -f infra/compose/compose.yml -f infra/compose/compose.dev.yml down",
-    "infra:logs": "docker compose -f infra/compose/compose.yml -f infra/compose/compose.dev.yml logs -f"
+    "infra:up": "docker compose --env-file .env -f infra/compose/compose.yml -f infra/compose/compose.dev.yml up -d",
+    "infra:down": "docker compose --env-file .env -f infra/compose/compose.yml -f infra/compose/compose.dev.yml down",
+    "infra:logs": "docker compose --env-file .env -f infra/compose/compose.yml -f infra/compose/compose.dev.yml logs -f"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
