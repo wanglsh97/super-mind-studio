@@ -267,8 +267,8 @@ export function SkillUploadDialog({
               {state === 'submitted' ? (
                 <div className="rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-200">
                   已提交管理员首次发布审核。
-                  <Link href="/skills/mine" className="ml-2 font-bold underline underline-offset-2">
-                    查看我的 Skill
+                  <Link href="/skills" className="ml-2 font-bold underline underline-offset-2">
+                    返回 Skill 中心
                   </Link>
                 </div>
               ) : (

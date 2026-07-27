@@ -31,7 +31,7 @@
 - [x] 3.6 实现公开分页、关键词搜索、固定分类筛选、最新/添加人数排序和 Skill 详情 API
 - [x] 3.7 将 `UserAgentSkill` 迁移为无 enabled 的添加状态，实现幂等添加/移除、50 个上限、跨用户隔离和 addCount 一致性
 - [x] 3.8 扩展 `@supermind/sdk` 的市场、owner、添加/移除和管理员审核 client，覆盖 URL、credentials、分页和错误 envelope
-- [x] 3.9 完成 `/skills`、详情、“我的 Skill”和管理员审核页面，覆盖 empty/auth/pending/rejected/delisted/error 状态
+- [x] 3.9 完成 `/skills`、详情、集成式“已添加/我的 Skill”分类和管理员审核页面，覆盖 empty/auth/pending/rejected/delisted/error 状态
 - [x] 3.10 运行市场 service、PostgreSQL 事务、SDK、页面与管理员未授权 E2E，并执行 typecheck、lint 和 build
 
 ## 4. OpenSandbox PoC 与生产 Adapter

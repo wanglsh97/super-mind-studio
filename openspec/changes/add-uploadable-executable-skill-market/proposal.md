@@ -29,7 +29,7 @@
 
 ## Impact
 
-- `apps/web` 新增 Skill 上传/详情/我的 Skill/我的文件页面，并扩展 `/agent` 的手动 Skill 选择、工具卡片和文件交互。
+- `apps/web` 新增 Skill 上传/详情/我的文件页面，将“已添加”和“我的 Skill”整合为 `/skills` 的一级分类，并扩展 `/agent` 的手动 Skill 选择、工具卡片和文件交互。
 - `apps/api` 新增 Skill 发布、审核、OSS 上传签名、用户文件、Sandbox runtime adapter 和 Agent 激活编排；现有固定管理员认证继续用于审核。
 - `packages/sdk` 增加市场搜索、上传、审核、添加、文件和沙箱事件契约；浏览器继续只调用同源 `/api`。
 - Prisma 将平台 Skill、审核、用户添加状态和用户文件持久化；AgentRun/AgentToolCall 增加 Skill 摘要、sandboxId、资源使用和终止原因。
