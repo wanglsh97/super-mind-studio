@@ -1,5 +1,6 @@
 import type { ExecutableSkillService } from '../skills/executable-skill.service'
 import { AgentExecutionSessionService } from './agent-execution-session.service'
+import { FakeSandboxRuntime } from './fake-sandbox-runtime'
 import type { SandboxRuntimePort } from './sandbox-runtime.port'
 
 describe('AgentExecutionSessionService sandbox cleanup', () => {
@@ -24,5 +25,39 @@ describe('AgentExecutionSessionService sandbox cleanup', () => {
 
     await expect(service.activateSkill('run-1', 'user-1', 'test-skill')).rejects.toBe(readyError)
     expect(destroySandbox).toHaveBeenCalledWith('sandbox-partial')
+  })
+
+  it('shares one sandbox across all added Skills without a separate active-Skill limit', async () => {
+    const names = Array.from({ length: 50 }, (_, index) => `skill-${index}`)
+    const skills = {
+      activateManually: jest.fn(async (_userId: string, selected: readonly string[]) => [
+        {
+          manifest: {
+            skillId: `id-${selected[0]}`,
+            name: selected[0],
+            packageSha256: 'a'.repeat(64),
+          },
+          archive: new Uint8Array(),
+          skillMarkdown: `# ${selected[0]}`,
+          files: [],
+        },
+      ]),
+    } as unknown as ExecutableSkillService
+    const sandboxes = new FakeSandboxRuntime()
+    const createSandbox = jest.spyOn(sandboxes, 'createSandbox')
+    const service = new AgentExecutionSessionService(skills, sandboxes)
+
+    for (const name of names) {
+      await expect(service.activateSkill('run-many', 'user-1', name)).resolves.toMatchObject({
+        skill: { manifest: { name } },
+        alreadyActive: false,
+      })
+    }
+    await expect(service.activateSkill('run-many', 'user-1', names[0]!)).resolves.toMatchObject({
+      alreadyActive: true,
+    })
+    expect(createSandbox).toHaveBeenCalledTimes(1)
+    expect(skills.activateManually).toHaveBeenCalledTimes(50)
+    await service.destroyRun('run-many')
   })
 })

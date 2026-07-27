@@ -21,13 +21,24 @@ const activatedSkill = {
 function setup() {
   const skills = {
     activateManually: jest.fn(async (_userId: string, names: readonly string[]) => {
-      if (names[0] !== 'mock-data-cleaner') {
+      if (names[0] !== 'mock-data-cleaner' && names[0] !== 'second-skill') {
         throw Object.assign(new Error('Skill 未添加'), {
           code: 'SKILL_NOT_ADDED',
           retryable: false,
         })
       }
-      return [activatedSkill]
+      return [
+        names[0] === 'mock-data-cleaner'
+          ? activatedSkill
+          : {
+              ...activatedSkill,
+              manifest: {
+                ...activatedSkill.manifest,
+                skillId: 'skill-2',
+                name: 'second-skill',
+              },
+            },
+      ]
     }),
   } as unknown as ExecutableSkillService
   const sandbox = new FakeSandboxRuntime({
@@ -97,6 +108,22 @@ describe('executable Skill tools', () => {
       alreadyActive: true,
     })
     expect(skills.activateManually).toHaveBeenCalledTimes(1)
+
+    const second = await registry.execute(
+      'activate_skill',
+      { name: 'second-skill' },
+      { ...context, toolCallId: 'tool-second-skill' },
+    )
+    expect(second).toMatchObject({
+      isError: false,
+      audit: {
+        sandboxId: activation.audit?.sandboxId,
+        skillId: 'skill-2',
+        skillName: 'second-skill',
+        alreadyActive: false,
+      },
+    })
+    expect(skills.activateManually).toHaveBeenCalledTimes(2)
 
     const shell = await registry.execute(
       'shell',

@@ -51,7 +51,7 @@
 - [x] 5.1 将 Prompt Composer 改为初始只注入最多 50 个 added published Skill 的名称与简介，添加信任层和 context budget 测试
 - [x] 5.2 实现 `activate_skill` JSON Schema、用户添加/发布授权、幂等单次激活、当前 OSS 下载和 SHA-256 记录
 - [x] 5.3 在激活后把完整转义 `SKILL.md` 加入后续模型调用，验证平台规则、工具权限和硬预算不能被 Skill 文本覆盖
-- [ ] 5.4 实现手动选择 Skill 的 pre-activation，并允许模型继续激活其他 Skill，不设置独立 active Skill 数上限
+- [x] 5.4 实现手动选择 Skill 的 pre-activation，并允许模型继续激活其他 Skill，不设置独立 active Skill 数上限
 - [ ] 5.5 实现 Run 内单一 Sandbox workspace 布局和多 Skill 共享，验证不同 Run、用户和线程之间完全隔离
 - [ ] 5.6 实现 autonomous Shell 工具、cwd、60 秒命令超时、20 次调用限制、AbortSignal 和后台进程终态清理
 - [ ] 5.7 实现单次 1 MiB、Run 总计 5 MiB 工具输出截断及 100 MiB 出口流量终止，并将 limit reason 返回模型与 UI
