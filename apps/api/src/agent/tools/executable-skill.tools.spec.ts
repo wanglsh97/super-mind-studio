@@ -46,7 +46,21 @@ function setup() {
 
 describe('executable Skill tools', () => {
   it('routes activation, Shell and file calls through one Run sandbox with auditable results', async () => {
-    const { context, registry, sessions } = setup()
+    const { context, registry, sessions, skills } = setup()
+
+    expect(registry.get('activate_skill').parameters).toEqual({
+      type: 'object',
+      additionalProperties: false,
+      required: ['name'],
+      properties: {
+        name: {
+          type: 'string',
+          minLength: 1,
+          maxLength: 64,
+          pattern: '^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$',
+        },
+      },
+    })
 
     const activation = await registry.execute(
       'activate_skill',
@@ -73,6 +87,7 @@ describe('executable Skill tools', () => {
       sandboxId: activation.audit?.sandboxId,
       alreadyActive: true,
     })
+    expect(skills.activateManually).toHaveBeenCalledTimes(1)
 
     const shell = await registry.execute(
       'shell',

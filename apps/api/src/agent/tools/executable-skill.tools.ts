@@ -7,7 +7,14 @@ const ACTIVATE_SKILL_PARAMETERS = {
   type: 'object',
   additionalProperties: false,
   required: ['name'],
-  properties: { name: { type: 'string', minLength: 1, maxLength: 64 } },
+  properties: {
+    name: {
+      type: 'string',
+      minLength: 1,
+      maxLength: 64,
+      pattern: '^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$',
+    },
+  },
 } as const
 
 const SHELL_PARAMETERS = {
