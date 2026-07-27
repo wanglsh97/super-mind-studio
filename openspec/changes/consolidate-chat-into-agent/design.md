@@ -43,6 +43,10 @@
 
 与 `/chat` 的历史兼容策略不同，`/image` 和 `/prompt` 不保留 page file 或 redirect。删除对应目录中的页面专属实现、helper 与测试后，Next.js 对这两个 URL 返回 404。共享 Markdown、SDK、API 和管理后台功能不属于页面专属代码，继续保留。
 
+### 首页不再展示 Capability 卡片区
+
+Agent 已是唯一 C 端工作台，首页 Hero 的“打开智能体”已能完成主导航。删除 `#capabilities` 区块、对应锚点按钮、单卡数据和图标实现，避免在同一页面重复表达 Agent 入口；接入说明与底部 Agent CTA 继续保留。
+
 ## Risks / Trade-offs
 
 - Agent 比旧 Chat 多一次 thread/run 持久化并受单用户 active run 约束，但换来刷新恢复、审计和扩展能力一致性。
@@ -55,6 +59,7 @@
 
 - 路由测试确认 `/chat` 不渲染旧 UI，并跳转到 `/agent`。
 - 构建产物不再包含 `/image`、`/prompt`，dev 验证两者返回 404。
+- 首页源码与渲染结果不再包含 `#capabilities` 或“浏览能力”入口。
 - 用户认证 helper 测试确认 `/chat`、`/image`、`/prompt` 和非法回跳为 `/agent`，对比页仍允许。
 - Web 测试、typecheck、lint 和生产 build 通过。
 - OpenSpec strict validation 通过。

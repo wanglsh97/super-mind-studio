@@ -30,7 +30,14 @@ The existing `/chat/compare` route SHALL remain available to authenticated users
 
 ### Requirement: The C-end workspace is dedicated to Agent
 
-The user-facing workspace SHALL NOT expose standalone Image or Prompt optimization pages or primary navigation items. `/image` and `/prompt` SHALL have no Next.js page implementation and SHALL return not found rather than redirecting. The underlying Gateway API and SDK capabilities MAY remain available for Agent integration, API demonstration, and administrative observability.
+The user-facing workspace SHALL NOT expose standalone Image or Prompt optimization pages, primary navigation items, or a homepage capability-card section. The homepage SHALL present Agent through its primary call to action without a `#capabilities` anchor or duplicate Agent capability card. `/image` and `/prompt` SHALL have no Next.js page implementation and SHALL return not found rather than redirecting. The underlying Gateway API and SDK capabilities MAY remain available for Agent integration, API demonstration, and administrative observability.
+
+#### Scenario: User opens the homepage
+
+- **GIVEN** Agent is the only C-end workspace
+- **WHEN** the homepage renders
+- **THEN** its primary action links directly to `/agent`
+- **AND** it does not render a `#capabilities` section or “浏览能力” anchor
 
 #### Scenario: User opens a retired Image URL
 
