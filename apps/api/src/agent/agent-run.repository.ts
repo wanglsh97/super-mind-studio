@@ -110,6 +110,17 @@ export class AgentRunRepository {
     await this.prisma.agentRun.update({ where: { id: runId }, data: { startedAt } })
   }
 
+  async markSandboxReady(
+    runId: string,
+    sandboxId: string,
+    sandboxStartedAt = new Date(),
+  ): Promise<void> {
+    await this.prisma.agentRun.update({
+      where: { id: runId },
+      data: { sandboxId, sandboxStartedAt },
+    })
+  }
+
   async savePromptAudit(runId: string, manifest: AgentPromptManifest): Promise<void> {
     await this.prisma.agentRun.update({
       where: { id: runId },

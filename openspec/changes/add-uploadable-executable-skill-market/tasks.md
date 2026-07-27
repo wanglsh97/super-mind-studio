@@ -60,6 +60,7 @@
 - [ ] 5.9 完善 `/agent` 自动/手动 Skill UX、当前激活 Skill、Shell 日志与 Run 限制展示，确认调用不会弹出审批
   - [x] 5.9.1 将手动 Skill 选择整合为 Composer `/` 搜索列表，并在 Composer 内展示可移除的已选项
   - [ ] 5.9.2 展示模型自动激活的当前 Skill、完整 Shell 日志与 Run 限制状态
+  - [x] 5.9.3 在用户端右上角展示 Run Sandbox 的未启动、创建中、就绪和失败状态
 - [ ] 5.10 添加 Mock 与 OpenSandbox Agent E2E，覆盖模型选择、多 Skill、上下文超限、命令失败、取消、断线重连和下架竞态
 
 ## 6. 永久用户文件与 Skill 结果导出

@@ -2,6 +2,8 @@ import type {
   AgentMessage,
   AgentContextBudgetState,
   AgentRunStatus,
+  AgentRunTerminalStatus,
+  AgentSandboxStatus,
   AgentStreamEvent,
   AgentThreadSummary,
   AIGatewayClient,
@@ -20,9 +22,10 @@ export interface AgentRunAdapterContext {
   selectedSkillNames: readonly string[]
   onThreadCreated: (thread: AgentThreadSummary) => void
   onRunCreated?: (run: { id: string; threadId: string }) => void
-  onRunFinished?: () => void
+  onRunFinished?: (status: AgentRunTerminalStatus) => void
   onContextBudget?: (budget: AgentContextBudgetState) => void
   onContextCompressed?: (event: Extract<AgentStreamEvent, { type: 'context-compressed' }>) => void
+  onSandboxStatus?: (status: AgentSandboxStatus, sandboxId?: string) => void
 }
 
 export interface AgentRunMetadata extends Record<string, unknown> {
@@ -94,6 +97,9 @@ export function createAgentRunAdapter(
         })) {
           if (event.type === 'context-budget') context.onContextBudget?.(event)
           if (event.type === 'context-compressed') context.onContextCompressed?.(event)
+          if (event.type === 'sandbox-status') {
+            context.onSandboxStatus?.(event.status, event.sandboxId)
+          }
           applyAgentEvent(parts, metadata, event)
           const content = toAssistantParts(parts)
           if (event.type === 'run-terminal') {
@@ -116,7 +122,7 @@ export function createAgentRunAdapter(
                     : { type: 'complete', reason: 'stop' },
             }
             yield result
-            context.onRunFinished?.()
+            context.onRunFinished?.(event.status)
             return
           }
           if (event.type === 'error') {

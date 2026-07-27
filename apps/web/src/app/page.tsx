@@ -5,6 +5,7 @@ import type {
   AgentContextBudgetState,
   AgentContextSummary,
   AgentMcpServerStatus,
+  AgentSandboxStatus,
   AgentSkillCandidate,
   AgentStreamEvent,
   TextModelAlias,
@@ -117,6 +118,7 @@ function AgentConsole() {
   const [skillLoadState, setSkillLoadState] = useState<'loading' | 'ready' | 'failed'>('loading')
   const [mcpServers, setMcpServers] = useState<AgentMcpServerStatus[]>([])
   const [mcpLoadState, setMcpLoadState] = useState<'loading' | 'ready' | 'failed'>('loading')
+  const [sandboxTelemetry, setSandboxTelemetry] = useState<SandboxTelemetry>({ status: 'idle' })
 
   const skipHydrationRef = useRef(false)
   const contextRef = useRef({
@@ -130,6 +132,7 @@ function AgentConsole() {
     onContextCompressed: (() => undefined) as (
       event: Extract<AgentStreamEvent, { type: 'context-compressed' }>,
     ) => void,
+    onSandboxStatus: (() => undefined) as (status: AgentSandboxStatus, sandboxId?: string) => void,
   })
 
   contextRef.current.threadId = activeThreadId
@@ -144,6 +147,7 @@ function AgentConsole() {
     openThread(thread.id)
   }
   contextRef.current.onRunCreated = (run) => {
+    setSandboxTelemetry({ status: 'creating' })
     setUserActiveRun({
       id: run.id,
       threadId: run.threadId,
@@ -166,6 +170,7 @@ function AgentConsole() {
     })
   }
   contextRef.current.onRunFinished = () => {
+    setSandboxTelemetry((current) => (current.status === 'failed' ? current : { status: 'idle' }))
     setUserActiveRun(null)
     void refreshThreads().catch(() => undefined)
   }
@@ -180,6 +185,12 @@ function AgentConsole() {
         })
         .catch(() => undefined)
     }
+  }
+  contextRef.current.onSandboxStatus = (status, sandboxId) => {
+    setSandboxTelemetry({
+      status,
+      ...(sandboxId === undefined ? {} : { sandboxId }),
+    })
   }
 
   const loadSkillCandidates = () => {
@@ -257,6 +268,13 @@ function AgentConsole() {
         onContextSummary={setContextSummary}
         onCompressionEvent={(event) => setCompressionEvents((current) => [...current, event])}
         onResetCompressionEvents={() => setCompressionEvents([])}
+        onSandboxStatus={(status, sandboxId) =>
+          setSandboxTelemetry({
+            status,
+            ...(sandboxId === undefined ? {} : { sandboxId }),
+          })
+        }
+        onSandboxIdle={() => setSandboxTelemetry({ status: 'idle' })}
       />
       <WebFetchToolUI />
       <ShellToolUI />
@@ -264,6 +282,7 @@ function AgentConsole() {
       <WriteFileToolUI />
       <AgentPageShell>
         <AgentConsolePanel label="智能体">
+          <SandboxStatusModule telemetry={sandboxTelemetry} />
           <AgentThreadRoot>
             <AgentThreadViewport>
               <ThreadPrimitive.Empty>
@@ -386,18 +405,98 @@ function AgentConsole() {
   )
 }
 
+type SandboxTelemetry = { status: 'idle' } | { status: AgentSandboxStatus; sandboxId?: string }
+
+const SANDBOX_STATUS_COPY: Record<
+  SandboxTelemetry['status'],
+  { label: string; note: string; tone: string; dot: string }
+> = {
+  idle: {
+    label: '未启动',
+    note: '随任务创建',
+    tone: 'text-ink-muted',
+    dot: 'bg-ink-subtle/45',
+  },
+  creating: {
+    label: '启动中',
+    note: '正在准备容器',
+    tone: 'text-brand',
+    dot: 'bg-brand animate-status-breathe',
+  },
+  ready: {
+    label: '容器就绪',
+    note: '隔离环境运行中',
+    tone: 'text-success',
+    dot: 'bg-success animate-status-breathe',
+  },
+  failed: {
+    label: '启动失败',
+    note: '本次任务不可执行',
+    tone: 'text-danger',
+    dot: 'bg-danger',
+  },
+}
+
+function SandboxStatusModule({ telemetry }: { telemetry: SandboxTelemetry }) {
+  const copy = SANDBOX_STATUS_COPY[telemetry.status]
+  const sandboxId = 'sandboxId' in telemetry ? telemetry.sandboxId : undefined
+  const shortId = sandboxId
+    ? sandboxId.length > 16
+      ? `${sandboxId.slice(0, 7)}…${sandboxId.slice(-5)}`
+      : sandboxId
+    : null
+
+  return (
+    <aside
+      aria-live="polite"
+      aria-label={`沙箱容器状态：${copy.label}`}
+      className="liquid-glass-soft fixed top-4 right-4 z-30 flex min-w-44 items-center gap-3 rounded-[1rem] border-line/75 px-3 py-2.5 shadow-[0_12px_32px_rgb(44_62_92/0.10)]"
+      title={shortId ? `Sandbox ID: ${sandboxId}` : copy.note}
+    >
+      <span
+        aria-hidden="true"
+        className="relative grid size-9 shrink-0 place-items-center rounded-xl border border-line bg-surface-inset/75 text-ink-muted"
+      >
+        <svg viewBox="0 0 24 24" className="size-[1.15rem] fill-none stroke-current stroke-[1.6]">
+          <path d="m4.5 7.5 7.5-4 7.5 4-7.5 4-7.5-4Z" strokeLinejoin="round" />
+          <path d="M4.5 7.5v8.7l7.5 4.3 7.5-4.3V7.5M12 11.5v9" strokeLinejoin="round" />
+        </svg>
+        <span
+          className={cn(
+            'absolute -right-0.5 -bottom-0.5 size-2.5 rounded-full border-2 border-surface-card',
+            copy.dot,
+          )}
+        />
+      </span>
+      <span className="min-w-0">
+        <span className="block font-mono text-[0.52rem] font-bold tracking-[0.16em] text-ink-subtle">
+          SANDBOX
+        </span>
+        <span className={cn('mt-0.5 block text-xs font-bold', copy.tone)}>{copy.label}</span>
+        <span className="mt-0.5 block max-w-28 truncate font-mono text-[0.54rem] text-ink-subtle">
+          {shortId ?? copy.note}
+        </span>
+      </span>
+    </aside>
+  )
+}
+
 function ThreadHydrator({
   skipHydrationRef,
   onContextBudget,
   onContextSummary,
   onCompressionEvent,
   onResetCompressionEvents,
+  onSandboxStatus,
+  onSandboxIdle,
 }: {
   skipHydrationRef: { current: boolean }
   onContextBudget: (budget: AgentContextBudgetState | null) => void
   onContextSummary: (summary: AgentContextSummary | null) => void
   onCompressionEvent: (event: Extract<AgentStreamEvent, { type: 'context-compressed' }>) => void
   onResetCompressionEvents: () => void
+  onSandboxStatus: (status: AgentSandboxStatus, sandboxId?: string) => void
+  onSandboxIdle: () => void
 }) {
   const api = useAui()
   const activeThreadId = useAgentActiveThreadId()
@@ -425,6 +524,7 @@ function ThreadHydrator({
           onContextBudget(null)
           onContextSummary(null)
           onResetCompressionEvents()
+          onSandboxIdle()
           return
         }
         const thread = await client.agent.threads.get(activeThreadId)
@@ -435,6 +535,7 @@ function ThreadHydrator({
         onResetCompressionEvents()
 
         if (isResumableActiveRun(thread.activeRun)) {
+          onSandboxStatus('creating')
           setUserActiveRun(thread.activeRun)
           setInterruptedNotice(null)
           setResumeNotice('运行仍在进行，正在按事件游标恢复…')
@@ -442,6 +543,7 @@ function ThreadHydrator({
 
           let view = initialAgentRunViewState()
           let afterSequence = -1
+          let sandboxFailed = false
           for await (const event of client.agent.runs.subscribe(thread.activeRun.id, {
             after: -1,
             signal: resumeAbort.signal,
@@ -450,6 +552,10 @@ function ThreadHydrator({
             view = foldEventsFromCursor([event], afterSequence, view)
             if (event.type === 'context-budget') onContextBudget(event)
             if (event.type === 'context-compressed') onCompressionEvent(event)
+            if (event.type === 'sandbox-status') {
+              sandboxFailed = event.status === 'failed'
+              onSandboxStatus(event.status, event.sandboxId)
+            }
             afterSequence = event.sequence
             api
               .thread()
@@ -459,6 +565,7 @@ function ThreadHydrator({
                 ),
               )
             if (event.type === 'run-terminal') {
+              if (!sandboxFailed) onSandboxIdle()
               setResumeNotice(null)
               setUserActiveRun(null)
               void refreshThreads().catch(() => undefined)
@@ -475,6 +582,7 @@ function ThreadHydrator({
         )
         if (thread.activeRun) setUserActiveRun(thread.activeRun)
         else setUserActiveRun(null)
+        onSandboxIdle()
         api.thread().reset(
           agentMessagesToThreadMessages(thread.messages, {
             lastRunStatus: thread.lastRun?.status ?? null,

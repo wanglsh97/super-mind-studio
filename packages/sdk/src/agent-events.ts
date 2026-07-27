@@ -6,6 +6,7 @@ import {
   AGENT_RUN_STATUSES,
   AGENT_RUN_TERMINAL_STATUSES,
   AGENT_SANDBOX_LIMIT_REASONS,
+  AGENT_SANDBOX_STATUSES,
   AGENT_SKILL_ACTIVATION_STATUSES,
   AGENT_TOOL_CALL_STATUSES,
   type AgentExecutionError,
@@ -16,6 +17,7 @@ import {
   type AgentRunTerminalStatus,
   type AgentRunUsage,
   type AgentSandboxLimitReason,
+  type AgentSandboxStatus,
   type AgentShellOutput,
   type AgentSkillActivationStatus,
   type AgentStreamEvent,
@@ -58,6 +60,15 @@ export function decodeAgentEvent(value: unknown, expectedRunId?: string): AgentS
   switch (type) {
     case 'run-status':
       return { type, ...base, status: runStatus(record.status) }
+    case 'sandbox-status': {
+      const sandboxId = optionalId(record.sandboxId)
+      return {
+        type,
+        ...base,
+        status: sandboxStatus(record.status),
+        ...(sandboxId === undefined ? {} : { sandboxId }),
+      }
+    }
     case 'run-terminal':
       return {
         type,
@@ -233,6 +244,13 @@ function runStatus(value: unknown): AgentRunStatus {
     throw protocol('Agent run status is invalid')
   }
   return status as AgentRunStatus
+}
+
+function sandboxStatus(value: unknown): AgentSandboxStatus {
+  if (!AGENT_SANDBOX_STATUSES.includes(value as AgentSandboxStatus)) {
+    throw protocol('Agent sandbox status is invalid')
+  }
+  return value as AgentSandboxStatus
 }
 
 function terminalStatus(value: unknown): AgentRunTerminalStatus {

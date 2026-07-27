@@ -94,6 +94,9 @@ export const AGENT_SANDBOX_LIMIT_REASONS = [
 ] as const
 export type AgentSandboxLimitReason = (typeof AGENT_SANDBOX_LIMIT_REASONS)[number]
 
+export const AGENT_SANDBOX_STATUSES = ['creating', 'ready', 'failed'] as const
+export type AgentSandboxStatus = (typeof AGENT_SANDBOX_STATUSES)[number]
+
 export const AGENT_FILE_OPERATIONS = ['stage-input', 'read', 'write', 'export-output'] as const
 export type AgentFileOperation = (typeof AGENT_FILE_OPERATIONS)[number]
 
@@ -278,6 +281,13 @@ export interface CreateAgentRunRequest {
  */
 export type AgentStreamEvent =
   | { type: 'run-status'; sequence: number; runId: string; status: AgentRunStatus }
+  | {
+      type: 'sandbox-status'
+      sequence: number
+      runId: string
+      status: AgentSandboxStatus
+      sandboxId?: string
+    }
   | {
       type: 'run-terminal'
       sequence: number

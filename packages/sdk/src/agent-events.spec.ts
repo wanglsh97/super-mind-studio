@@ -123,6 +123,14 @@ const events: AgentStreamEvent[] = [
     status: 'succeeded',
     limitReason: null,
   },
+  { type: 'sandbox-status', sequence: 15, runId, status: 'creating' },
+  {
+    type: 'sandbox-status',
+    sequence: 16,
+    runId,
+    status: 'ready',
+    sandboxId: 'sandbox-1',
+  },
 ]
 
 describe('agent event wire codec', () => {

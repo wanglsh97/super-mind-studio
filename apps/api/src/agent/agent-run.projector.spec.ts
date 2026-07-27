@@ -46,6 +46,27 @@ function drive(
 }
 
 describe('AgentRunProjector', () => {
+  it('projects Sandbox creation and readiness as ordered replayable events', () => {
+    const projector = new AgentRunProjector('run-sandbox', () => 'message-1')
+    const events = [
+      ...projector.start(),
+      ...projector.sandboxStatus({ status: 'creating' }),
+      ...projector.sandboxStatus({ status: 'ready', sandboxId: 'sandbox-1' }),
+    ]
+
+    expect(events).toEqual([
+      { type: 'run-status', sequence: 0, runId: 'run-sandbox', status: 'running' },
+      { type: 'sandbox-status', sequence: 1, runId: 'run-sandbox', status: 'creating' },
+      {
+        type: 'sandbox-status',
+        sequence: 2,
+        runId: 'run-sandbox',
+        status: 'ready',
+        sandboxId: 'sandbox-1',
+      },
+    ])
+  })
+
   it('projects manual Skill activation into ordered replayable events', () => {
     const projector = new AgentRunProjector('run-skill', () => 'message-1')
     const events = [

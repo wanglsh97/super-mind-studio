@@ -69,6 +69,7 @@ export {
   AGENT_RUN_STATUSES,
   AGENT_RUN_TERMINAL_STATUSES,
   AGENT_SANDBOX_LIMIT_REASONS,
+  AGENT_SANDBOX_STATUSES,
   AGENT_SKILL_ACTIVATION_STATUSES,
   AGENT_TOOL_CALL_STATUSES,
 } from './agent-types.js'
@@ -93,6 +94,7 @@ export type {
   AgentRunTerminalStatus,
   AgentRunUsage,
   AgentSandboxLimitReason,
+  AgentSandboxStatus,
   AgentShellOutput,
   AgentSkillActivationStatus,
   AgentStreamEvent,

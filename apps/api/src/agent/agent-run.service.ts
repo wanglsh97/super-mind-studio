@@ -127,7 +127,19 @@ export class AgentRunService {
     try {
       await this.runs.markStarted(input.runId)
       await persistAndPublish(projector.start())
-      await this.executionSessions.startRun(input.runId, input.userId, controller.signal)
+      await persistAndPublish(projector.sandboxStatus({ status: 'creating' }))
+      try {
+        const sandboxId = await this.executionSessions.startRun(
+          input.runId,
+          input.userId,
+          controller.signal,
+        )
+        await this.runs.markSandboxReady(input.runId, sandboxId)
+        await persistAndPublish(projector.sandboxStatus({ status: 'ready', sandboxId }))
+      } catch (error) {
+        await persistAndPublish(projector.sandboxStatus({ status: 'failed' }))
+        throw error
+      }
 
       const manuallyActivated: ActivatedSkill[] = []
       for (const skillName of [...new Set(input.selectedSkillNames)]) {

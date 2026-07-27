@@ -81,6 +81,13 @@ export class AgentRunProjector {
     return [this.emit({ type: 'run-status', status: 'running' })]
   }
 
+  sandboxStatus(
+    input: { status: 'creating' | 'failed' } | { status: 'ready'; sandboxId: string },
+  ): AgentStreamEvent[] {
+    if (this.finished) return []
+    return [this.emit({ type: 'sandbox-status', ...input })]
+  }
+
   ingest(event: AgentEvent): AgentStreamEvent[] {
     switch (event.type) {
       case 'turn_start':
