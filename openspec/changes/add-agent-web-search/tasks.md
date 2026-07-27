@@ -5,7 +5,7 @@
 
 ## 2. 双 Provider 搜索实现
 
-- [ ] 2.1 实现通用 MCP `tools/call` 客户端，覆盖 JSON/SSE、HTTP/JSON-RPC 错误、空响应、超时、取消和响应大小限制
+- [x] 2.1 实现通用 MCP `tools/call` 客户端，覆盖 JSON/SSE、HTTP/JSON-RPC 错误、空响应、超时、取消和响应大小限制
 - [ ] 2.2 实现 Exa/Parallel 请求映射与按 run ID 稳定的 `auto` 路由，覆盖固定 provider、可选鉴权和凭证不进入错误/audit
 - [ ] 2.3 实现并注册 `web_search` 工具，覆盖参数校验、不可信内容 envelope、30,000 字符截断、进度、摘要和规范化审计
 
