@@ -20,6 +20,7 @@
     "test:smoke:kimi": "tsx --env-file-if-exists=../../.env scripts/kimi-chat.smoke.ts",
     "test:smoke:qwen": "tsx --env-file-if-exists=../../.env scripts/qwen-chat.smoke.ts",
     "test:smoke:web-search": "tsx scripts/web-search.smoke.ts",
+    "test:smoke:mcp": "tsx scripts/agent-mcp.smoke.ts",
     "test:smoke:cogview": "tsx --env-file-if-exists=../../.env scripts/cogview-image.smoke.ts",
     "test:smoke:wanxiang": "tsx --env-file-if-exists=../../.env scripts/wanxiang-image.smoke.ts",
     "pretest:e2e": "DATABASE_URL=\"$TEST_DATABASE_URL\" corepack pnpm --workspace-root db:generate",

@@ -16,5 +16,5 @@
 
 ## 4. 验收与交付
 
-- [ ] 4.1 增加本地 Streamable HTTP fixture 的脱网 contract/integration 测试与显式 MCP smoke
+- [x] 4.1 增加本地 Streamable HTTP fixture 的脱网 contract/integration 测试与显式 MCP smoke
 - [ ] 4.2 更新 README、Swagger/配置说明，运行相关测试、typecheck、lint、build 和 OpenSpec strict validation
