@@ -86,6 +86,7 @@ export interface CreateOpenSandboxClientInput {
 }
 
 export interface OpenSandboxClient {
+  healthCheck(): Promise<void>
   create(input: CreateOpenSandboxClientInput): Promise<OpenSandboxInstance>
   connect(sandboxId: string): Promise<OpenSandboxInstance>
   listOwned(): Promise<OpenSandboxInstanceInfo[]>
@@ -127,6 +128,21 @@ export class OpenSandboxRuntime implements SandboxRuntimePort, OnModuleDestroy {
           useServerProxy: options.useServerProxy ?? true,
         }),
       )
+  }
+
+  async healthCheck(signal?: AbortSignal): Promise<void> {
+    throwIfAborted(signal)
+    let lastError: unknown
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      try {
+        await this.client.healthCheck()
+        throwIfAborted(signal)
+        return
+      } catch (error) {
+        lastError = error
+      }
+    }
+    throw normalizeUnavailable(lastError, 'OpenSandbox 健康检查失败')
   }
 
   async createSandbox(input: CreateSandboxInput): Promise<SandboxDescriptor> {
@@ -399,6 +415,25 @@ class SdkOpenSandboxClient implements OpenSandboxClient {
 
   constructor(private readonly connectionConfig: ConnectionConfig) {
     this.manager = SandboxManager.create({ connectionConfig })
+  }
+
+  async healthCheck(): Promise<void> {
+    const lifecycleUrl = this.connectionConfig.getBaseUrl()
+    const response = await this.connectionConfig.fetch(
+      `${lifecycleUrl.slice(0, -'/v1'.length)}/health`,
+    )
+    if (!response.ok) {
+      throw new Error(`OpenSandbox health returned HTTP ${response.status}`)
+    }
+    const payload: unknown = await response.json()
+    if (
+      typeof payload !== 'object' ||
+      payload === null ||
+      !('status' in payload) ||
+      payload.status !== 'healthy'
+    ) {
+      throw new Error('OpenSandbox health returned an unexpected payload')
+    }
   }
 
   async create(input: CreateOpenSandboxClientInput): Promise<OpenSandboxInstance> {

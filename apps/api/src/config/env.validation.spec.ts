@@ -37,6 +37,34 @@ describe('validateEnvironment', () => {
     expect(environment.OSS_TIMEOUT_MS).toBe(30_000)
     expect(environment.SKILL_UPLOAD_TTL_SECONDS).toBe(300)
     expect(environment.SKILL_STAGING_CLEANUP_BATCH).toBe(100)
+    expect(environment.SANDBOX_RUNTIME_DRIVER).toBe('fake')
+    expect(environment.OPEN_SANDBOX_PROTOCOL).toBe('http')
+    expect(environment.OPEN_SANDBOX_REQUEST_TIMEOUT_SECONDS).toBe(30)
+    expect(environment.OPEN_SANDBOX_READY_TIMEOUT_SECONDS).toBe(60)
+    expect(environment.OPEN_SANDBOX_USE_SERVER_PROXY).toBe(true)
+  })
+
+  it('requires private connection settings when OpenSandbox is selected', () => {
+    expect(() =>
+      validateEnvironment({
+        ...requiredEnvironment,
+        SANDBOX_RUNTIME_DRIVER: 'opensandbox',
+      }),
+    ).toThrow('OPEN_SANDBOX_DOMAIN')
+
+    expect(
+      validateEnvironment({
+        ...requiredEnvironment,
+        SANDBOX_RUNTIME_DRIVER: 'opensandbox',
+        OPEN_SANDBOX_DOMAIN: '172.16.1.20:8080',
+        OPEN_SANDBOX_API_KEY: 'sandbox-test-key',
+      }),
+    ).toMatchObject({
+      SANDBOX_RUNTIME_DRIVER: 'opensandbox',
+      OPEN_SANDBOX_DOMAIN: '172.16.1.20:8080',
+      OPEN_SANDBOX_API_KEY: 'sandbox-test-key',
+      OPEN_SANDBOX_USE_SERVER_PROXY: true,
+    })
   })
 
   it('requires complete server-only OSS configuration when the production adapter is selected', () => {

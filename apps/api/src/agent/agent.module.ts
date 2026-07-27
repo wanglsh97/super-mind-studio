@@ -22,7 +22,9 @@ import { AgentThreadRepository } from './agent-thread.repository'
 import { AgentPromptComposer } from './prompt/agent-prompt.composer'
 import { AgentExecutionSessionService } from './sandbox/agent-execution-session.service'
 import { FakeSandboxRuntime } from './sandbox/fake-sandbox-runtime'
+import { OpenSandboxRuntime } from './sandbox/open-sandbox-runtime'
 import { SANDBOX_RUNTIME_PORT } from './sandbox/sandbox-runtime.port'
+import type { SandboxRuntimePort } from './sandbox/sandbox-runtime.port'
 import { AGENT_SKILL_REGISTRY } from './skills/agent-skill.registry'
 import { AgentSkillRepository } from './skills/agent-skill.repository'
 import { AgentSkillService } from './skills/agent-skill.service'
@@ -61,6 +63,22 @@ function resolveAgentTools(sessions: AgentExecutionSessionService): readonly Age
   const webTool =
     process.env.AGENT_WEB_FETCH_FIXTURE === 'true' ? webFetchFixtureTool : webFetchTool
   return [webTool, ...createExecutableSkillTools(sessions)]
+}
+
+export function createSandboxRuntime(
+  config: ConfigService,
+  fake: FakeSandboxRuntime,
+): SandboxRuntimePort {
+  if (config.get<string>('SANDBOX_RUNTIME_DRIVER', 'fake') !== 'opensandbox') return fake
+  return new OpenSandboxRuntime({
+    domain: config.getOrThrow<string>('OPEN_SANDBOX_DOMAIN'),
+    protocol: config.get<'http' | 'https'>('OPEN_SANDBOX_PROTOCOL', 'http'),
+    apiKey: config.getOrThrow<string>('OPEN_SANDBOX_API_KEY'),
+    image: config.getOrThrow<string>('OPEN_SANDBOX_IMAGE'),
+    requestTimeoutSeconds: config.get<number>('OPEN_SANDBOX_REQUEST_TIMEOUT_SECONDS', 30),
+    readyTimeoutSeconds: config.get<number>('OPEN_SANDBOX_READY_TIMEOUT_SECONDS', 60),
+    useServerProxy: config.get<boolean>('OPEN_SANDBOX_USE_SERVER_PROXY', true),
+  })
 }
 
 /**
@@ -138,7 +156,11 @@ function resolveAgentTools(sessions: AgentExecutionSessionService): readonly Age
           ],
         }),
     },
-    { provide: SANDBOX_RUNTIME_PORT, useExisting: FakeSandboxRuntime },
+    {
+      provide: SANDBOX_RUNTIME_PORT,
+      inject: [ConfigService, FakeSandboxRuntime],
+      useFactory: createSandboxRuntime,
+    },
     AgentExecutionSessionService,
     EmptyAgentMcpRegistry,
     { provide: AGENT_MCP_REGISTRY, useExisting: EmptyAgentMcpRegistry },
@@ -163,6 +185,7 @@ function resolveAgentTools(sessions: AgentExecutionSessionService): readonly Age
     ExecutableSkillService,
     AgentExecutionSessionService,
     SkillUploadSessionService,
+    SANDBOX_RUNTIME_PORT,
   ],
 })
 export class AgentModule {}

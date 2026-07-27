@@ -89,6 +89,7 @@ export interface SandboxFileResult {
 }
 
 export interface SandboxRuntimePort {
+  healthCheck(signal?: AbortSignal): Promise<void>
   createSandbox(input: CreateSandboxInput): Promise<SandboxDescriptor>
   waitUntilReady(sandboxId: string, signal?: AbortSignal): Promise<SandboxDescriptor>
   runCommand(input: RunSandboxCommandInput): Promise<SandboxCommandResult>

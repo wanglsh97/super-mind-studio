@@ -75,6 +75,19 @@ const environmentSchema = z
     OSS_TIMEOUT_MS: z.coerce.number().int().min(1_000).max(120_000).default(30_000),
     SKILL_UPLOAD_TTL_SECONDS: z.coerce.number().int().min(60).max(900).default(300),
     SKILL_STAGING_CLEANUP_BATCH: z.coerce.number().int().min(1).max(500).default(100),
+    SANDBOX_RUNTIME_DRIVER: z.enum(['fake', 'opensandbox']).default('fake'),
+    OPEN_SANDBOX_DOMAIN: optionalSecret,
+    OPEN_SANDBOX_PROTOCOL: z.enum(['http', 'https']).default('http'),
+    OPEN_SANDBOX_API_KEY: optionalSecret,
+    OPEN_SANDBOX_IMAGE: z
+      .string()
+      .min(1)
+      .default(
+        'sandbox-registry.cn-zhangjiakou.cr.aliyuncs.com/opensandbox/code-interpreter:v1.1.0',
+      ),
+    OPEN_SANDBOX_REQUEST_TIMEOUT_SECONDS: z.coerce.number().int().min(1).max(300).default(30),
+    OPEN_SANDBOX_READY_TIMEOUT_SECONDS: z.coerce.number().int().min(1).max(120).default(60),
+    OPEN_SANDBOX_USE_SERVER_PROXY: booleanFromEnv.default(true),
     MOCK_PROVIDER_ENABLED: booleanFromEnv.default(true),
     QWEN_ENABLED: booleanFromEnv.default(false),
     GLM_ENABLED: booleanFromEnv.default(false),
@@ -148,6 +161,17 @@ const environmentSchema = z
             code: 'custom',
             path: [key],
             message: `使用 OSS 对象存储时必须配置 ${key}`,
+          })
+        }
+      }
+    }
+    if (env.SANDBOX_RUNTIME_DRIVER === 'opensandbox') {
+      for (const key of ['OPEN_SANDBOX_DOMAIN', 'OPEN_SANDBOX_API_KEY'] as const) {
+        if (!env[key]) {
+          context.addIssue({
+            code: 'custom',
+            path: [key],
+            message: `使用 OpenSandbox runtime 时必须配置 ${key}`,
           })
         }
       }

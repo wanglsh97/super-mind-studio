@@ -61,6 +61,10 @@ export class FakeSandboxRuntime implements SandboxRuntimePort {
     this.commands = new Map((options.commands ?? []).map((fixture) => [fixture.command, fixture]))
   }
 
+  async healthCheck(signal?: AbortSignal): Promise<void> {
+    throwIfAborted(signal)
+  }
+
   async createSandbox(input: CreateSandboxInput): Promise<SandboxDescriptor> {
     throwIfAborted(input.signal)
     const limits = { ...DEFAULT_SANDBOX_LIMITS, ...input.limits }

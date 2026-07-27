@@ -25,6 +25,7 @@ export class HealthController {
     return this.health.check([
       () => this.dependencies.postgresql(),
       () => this.dependencies.redis(),
+      () => this.dependencies.opensandbox(),
     ])
   }
 }

@@ -10,6 +10,8 @@ class StubOpenSandboxClient implements OpenSandboxClient {
   private readonly instances = new Map<string, StubOpenSandboxInstance>()
   private sequence = 0
 
+  async healthCheck(): Promise<void> {}
+
   async create(input: CreateOpenSandboxClientInput): Promise<OpenSandboxInstance> {
     const instance = new StubOpenSandboxInstance(`stub-${++this.sequence}`, input)
     this.instances.set(instance.id, instance)
@@ -118,6 +120,32 @@ sandboxRuntimeContract('OpenSandbox', () => {
 })
 
 describe('OpenSandboxRuntime adapter mapping', () => {
+  it('retries a failed health check exactly once', async () => {
+    const client = new StubOpenSandboxClient()
+    const healthCheck = jest
+      .spyOn(client, 'healthCheck')
+      .mockRejectedValueOnce(new Error('temporary network failure'))
+      .mockResolvedValueOnce()
+    const runtime = createRuntime(client)
+
+    await expect(runtime.healthCheck()).resolves.toBeUndefined()
+    expect(healthCheck).toHaveBeenCalledTimes(2)
+    await runtime.onModuleDestroy()
+  })
+
+  it('does not retry sandbox creation because it is not idempotent', async () => {
+    const client = new StubOpenSandboxClient()
+    const create = jest.spyOn(client, 'create').mockRejectedValue(new Error('network failure'))
+    const runtime = createRuntime(client)
+
+    await expect(runtime.createSandbox({ runId: 'run-create-failed' })).rejects.toMatchObject({
+      code: 'SANDBOX_UNAVAILABLE',
+      retryable: true,
+    })
+    expect(create).toHaveBeenCalledTimes(1)
+    await runtime.onModuleDestroy()
+  })
+
   it('maps accepted resource limits and runtime ownership metadata into SDK creation', async () => {
     const client = new StubOpenSandboxClient()
     const create = jest.spyOn(client, 'create')

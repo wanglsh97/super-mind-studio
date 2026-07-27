@@ -21,6 +21,7 @@ export function sandboxRuntimeContract(
     })
 
     it('supports lifecycle, command, file, usage and idempotent destroy', async () => {
+      await expect(harness.runtime.healthCheck()).resolves.toBeUndefined()
       const created = await harness.runtime.createSandbox({ runId: 'contract-run' })
       expect(created).toMatchObject({ runId: 'contract-run', status: 'creating' })
       await expect(harness.runtime.waitUntilReady(created.sandboxId)).resolves.toMatchObject({
