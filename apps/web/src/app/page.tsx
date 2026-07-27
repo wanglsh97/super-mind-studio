@@ -3,17 +3,6 @@ import Link from 'next/link'
 import { IntegrationGuide } from '../components/integration-guide'
 import { cn } from '../lib/cn'
 
-const capabilities = [
-  {
-    name: 'Agent',
-    label: '对话与多步任务',
-    description: '在持久会话中直接提问，也可以调用工具完成多步任务或比较模型答案。',
-    href: '/agent',
-    icon: AgentIcon,
-    accent: 'from-[#2764ff] to-[#8b7cff]',
-  },
-]
-
 const focusRing =
   'focus-visible:outline-3 focus-visible:outline-brand focus-visible:outline-offset-4'
 
@@ -123,7 +112,7 @@ export default function HomePage() {
             工作台。你专注表达目标，模型选择、流式传输和费用记录由网关安静处理。
           </p>
 
-          <div className="mt-10 flex flex-col gap-3 sm:flex-row">
+          <div className="mt-10">
             <Link
               href="/agent"
               className={cn(
@@ -136,16 +125,6 @@ export default function HomePage() {
                 ↗
               </span>
             </Link>
-            <a
-              href="#capabilities"
-              className={cn(
-                'liquid-glass-soft inline-flex min-h-14 items-center justify-center gap-4 rounded-2xl px-6 text-sm font-bold text-ink-secondary transition-transform hover:-translate-y-0.5',
-                focusRing,
-              )}
-            >
-              浏览能力
-              <span aria-hidden="true">↓</span>
-            </a>
           </div>
 
           <div className="mt-12 flex flex-wrap gap-x-6 gap-y-3 text-xs text-ink-muted">
@@ -159,64 +138,6 @@ export default function HomePage() {
         </div>
 
         <GatewayPrism />
-      </section>
-
-      <section
-        id="capabilities"
-        className="relative mx-auto max-w-[82rem] px-5 py-24 sm:px-8 lg:px-12 lg:py-32"
-      >
-        <div className="grid items-end gap-6 lg:grid-cols-[1fr_0.8fr]">
-          <div>
-            <p className="liquid-label">One workspace</p>
-            <h2 className="mt-5 max-w-3xl font-display text-[clamp(2.5rem,5vw,4.8rem)] leading-[1.02] font-semibold tracking-[-0.055em]">
-              一个 Agent，
-              <br />
-              承接每一种任务。
-            </h2>
-          </div>
-          <p className="max-w-md pb-1 text-sm leading-7 text-ink-muted lg:justify-self-end">
-            对话、工具调用、Skill 和模型比较都在同一个工作台内持续推进。
-          </p>
-        </div>
-
-        <div className="mt-14 grid max-w-2xl gap-4">
-          {capabilities.map((capability) => {
-            const Icon = capability.icon
-            return (
-              <Link
-                key={capability.name}
-                href={capability.href}
-                className={cn(
-                  'liquid-glass group flex min-h-80 flex-col justify-between overflow-hidden rounded-[2rem] p-6 transition-[transform,box-shadow] hover:-translate-y-1 hover:shadow-[0_30px_80px_rgb(44_74_120/0.16)] sm:p-7',
-                  focusRing,
-                )}
-              >
-                <div className="relative z-1 flex items-start justify-between">
-                  <span
-                    className={cn(
-                      'grid size-12 place-items-center rounded-2xl bg-linear-to-br text-white shadow-lg',
-                      capability.accent,
-                    )}
-                  >
-                    <Icon />
-                  </span>
-                  <span className="grid size-10 place-items-center rounded-full border border-white/80 bg-white/50 text-ink-muted transition-transform group-hover:rotate-45">
-                    ↗
-                  </span>
-                </div>
-                <div className="relative z-1">
-                  <p className="liquid-label">{capability.name}</p>
-                  <h3 className="mt-3 text-2xl font-semibold tracking-[-0.03em]">
-                    {capability.label}
-                  </h3>
-                  <p className="mt-4 max-w-72 text-sm leading-7 text-ink-muted">
-                    {capability.description}
-                  </p>
-                </div>
-              </Link>
-            )
-          })}
-        </div>
       </section>
 
       <IntegrationGuide />
@@ -247,22 +168,5 @@ export default function HomePage() {
         <span>Ideas, amplified.</span>
       </footer>
     </main>
-  )
-}
-
-function AgentIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      className="size-5 fill-none stroke-current stroke-[1.8]"
-      aria-hidden="true"
-    >
-      <path
-        d="M5 18.5 3.5 21l3.8-1.2A8.5 8.5 0 1 0 5 18.5Z"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path d="M8 10h8M8 14h5" strokeLinecap="round" />
-    </svg>
   )
 }
