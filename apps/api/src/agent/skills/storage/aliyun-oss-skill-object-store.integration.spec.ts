@@ -2,7 +2,6 @@ import { createHash } from 'node:crypto'
 
 import { AliyunOssSkillObjectStore } from './aliyun-oss-skill-object-store'
 import { LocalOssCompatibleFixture } from './local-oss-compatible.fixture'
-import type { SkillPackageProjectionReader } from './skill-package-projection.reader'
 
 describe('AliyunOssSkillObjectStore local compatible integration', () => {
   let fixture: LocalOssCompatibleFixture
@@ -11,7 +10,7 @@ describe('AliyunOssSkillObjectStore local compatible integration', () => {
   beforeEach(async () => {
     fixture = new LocalOssCompatibleFixture('skills')
     await fixture.start()
-    store = new AliyunOssSkillObjectStore(fixture.client(), 'skills', emptyProjections())
+    store = new AliyunOssSkillObjectStore(fixture.client(), 'skills')
   })
 
   afterEach(async () => {
@@ -87,10 +86,6 @@ describe('AliyunOssSkillObjectStore local compatible integration', () => {
     await expect(store.statObject(objectKey)).resolves.toBeNull()
   })
 })
-
-function emptyProjections(): SkillPackageProjectionReader {
-  return { findByObjectKey: async () => null }
-}
 
 function digest(value: Uint8Array): string {
   return createHash('sha256').update(value).digest('hex')

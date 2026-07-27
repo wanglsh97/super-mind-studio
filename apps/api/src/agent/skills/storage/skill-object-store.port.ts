@@ -28,6 +28,12 @@ export interface StoredUserFile {
   bytes: Uint8Array
 }
 
+export interface SkillPackageDownload {
+  metadata: SkillStoredObjectMetadata & { kind: 'skill-package' }
+  url: string
+  expiresAt: string
+}
+
 export interface WriteUserFileInput {
   objectKey: string
   direction: 'input' | 'output'
@@ -40,11 +46,15 @@ export interface WriteUserFileInput {
 /**
  * Skill 与 Agent 文件使用的私有对象存储边界。
  *
- * 生产 Adapter 可以在内部组合 OSS 对象与持久化的检查结果，但不得向调用方暴露
- * OSS 凭证、签名 URL 或厂商响应类型。
+ * 生产 Adapter 以 OSS 对象为包内容真源。它只可向 Run 安装链路返回短时、单对象、
+ * 只读下载 URL，不得暴露 OSS 管理凭证、持久化该 URL 或泄漏厂商响应类型。
  */
 export interface SkillObjectStorePort {
   statObject(objectKey: string, signal?: AbortSignal): Promise<SkillStoredObjectMetadata | null>
+  createSkillPackageDownload(
+    objectKey: string,
+    signal?: AbortSignal,
+  ): Promise<SkillPackageDownload | null>
   loadSkillPackage(objectKey: string, signal?: AbortSignal): Promise<StoredSkillPackage | null>
   loadUserFile(objectKey: string, signal?: AbortSignal): Promise<StoredUserFile | null>
   writeUserFile(input: WriteUserFileInput): Promise<StoredUserFile>

@@ -1,4 +1,9 @@
-import type { AgentExecutionError, AgentSandboxLimitReason, AgentShellOutput } from '@supermind/sdk'
+import type {
+  AgentExecutionError,
+  AgentSandboxLimitReason,
+  AgentShellOutput,
+  AgentSkillFileEntry,
+} from '@supermind/sdk'
 
 export const SANDBOX_RUNTIME_PORT = Symbol('SANDBOX_RUNTIME_PORT')
 
@@ -88,11 +93,28 @@ export interface SandboxFileResult {
   bytes: Uint8Array
 }
 
+export interface InstallSandboxSkillPackageInput {
+  sandboxId: string
+  skillName: string
+  downloadUrl: string
+  expectedSha256: string
+  expectedSizeBytes: number
+  signal?: AbortSignal
+}
+
+export interface InstalledSandboxSkillPackage {
+  rootPath: string
+  packageSha256: string
+  skillMarkdown: string
+  files: AgentSkillFileEntry[]
+}
+
 export interface SandboxRuntimePort {
   healthCheck(signal?: AbortSignal): Promise<void>
   createSandbox(input: CreateSandboxInput): Promise<SandboxDescriptor>
   waitUntilReady(sandboxId: string, signal?: AbortSignal): Promise<SandboxDescriptor>
   runCommand(input: RunSandboxCommandInput): Promise<SandboxCommandResult>
+  installSkillPackage(input: InstallSandboxSkillPackageInput): Promise<InstalledSandboxSkillPackage>
   writeFile(input: WriteSandboxFileInput): Promise<SandboxFileResult>
   readFile(sandboxId: string, path: string, signal?: AbortSignal): Promise<SandboxFileResult | null>
   getUsage(sandboxId: string, signal?: AbortSignal): Promise<SandboxUsage>

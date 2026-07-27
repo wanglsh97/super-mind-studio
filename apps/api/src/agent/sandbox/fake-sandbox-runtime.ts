@@ -10,6 +10,8 @@ import type {
 import {
   DEFAULT_SANDBOX_LIMITS,
   type CreateSandboxInput,
+  type InstalledSandboxSkillPackage,
+  type InstallSandboxSkillPackageInput,
   type RunSandboxCommandInput,
   type SandboxCommandResult,
   type SandboxDescriptor,
@@ -19,6 +21,8 @@ import {
   type SandboxUsage,
   type WriteSandboxFileInput,
 } from './sandbox-runtime.port'
+import { readSkillPackageFiles } from '../skills/package/skill-package-files'
+import { SkillPackageReader } from '../skills/package/skill-package-reader'
 
 export interface FakeSandboxCommandFixture {
   command: string
@@ -197,6 +201,43 @@ export class FakeSandboxRuntime implements SandboxRuntimePort {
     }
   }
 
+  async installSkillPackage(
+    input: InstallSandboxSkillPackageInput,
+  ): Promise<InstalledSandboxSkillPackage> {
+    throwIfAborted(input.signal)
+    const state = this.requireReadySandbox(input.sandboxId)
+    assertSkillName(input.skillName)
+    const response = await fetch(input.downloadUrl, {
+      ...(input.signal === undefined ? {} : { signal: input.signal }),
+    })
+    if (!response.ok) {
+      throw executionError('SKILL_PACKAGE_UNAVAILABLE', 'Skill 资源包下载失败', true)
+    }
+    const archive = new Uint8Array(await response.arrayBuffer())
+    assertDownloadedPackage(archive, input.expectedSizeBytes, input.expectedSha256)
+    const projection = await new SkillPackageReader().read(archive)
+    const packageFiles = await readSkillPackageFiles(archive)
+    const rootPath = `/workspace/skills/${input.skillName}`
+    const totalBytes =
+      archive.byteLength + packageFiles.reduce((sum, file) => sum + file.bytes.byteLength, 0)
+    if (state.usage.diskBytes + totalBytes > state.limits.diskBytes) {
+      throw executionError('FILE_SIZE_LIMIT', 'Sandbox 磁盘空间不足', false, {
+        limitBytes: state.limits.diskBytes,
+      })
+    }
+    state.files.set(`${rootPath}/package.zip`, copyBytes(archive))
+    for (const file of packageFiles) {
+      state.files.set(`${rootPath}/${file.path}`, copyBytes(file.bytes))
+    }
+    state.usage.diskBytes += totalBytes
+    return {
+      rootPath,
+      packageSha256: input.expectedSha256,
+      skillMarkdown: projection.skillMarkdown,
+      files: projection.files.map((file) => ({ ...file })),
+    }
+  }
+
   async writeFile(input: WriteSandboxFileInput): Promise<SandboxFileResult> {
     throwIfAborted(input.signal)
     const state = this.requireReadySandbox(input.sandboxId)
@@ -351,6 +392,25 @@ function assertWorkspacePath(path: string): void {
 
 function copyBytes(value: Uint8Array): Uint8Array {
   return Uint8Array.from(value)
+}
+
+function assertSkillName(value: string): void {
+  if (!/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(value)) {
+    throw executionError('FILE_ACCESS_DENIED', 'Skill 名称不能映射到 Sandbox 路径', false)
+  }
+}
+
+function assertDownloadedPackage(
+  archive: Uint8Array,
+  expectedSizeBytes: number,
+  expectedSha256: string,
+): void {
+  if (
+    archive.byteLength !== expectedSizeBytes ||
+    createHash('sha256').update(archive).digest('hex') !== expectedSha256
+  ) {
+    throw executionError('SKILL_PACKAGE_INTEGRITY_FAILED', 'Skill 资源包完整性校验失败', false)
+  }
 }
 
 function byteLength(value: string): number {

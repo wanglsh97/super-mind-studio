@@ -2,7 +2,7 @@
 
 ### Requirement: Published Skill packages are the runtime catalog
 
-The Skill registry SHALL resolve only `published` database records and their current private OSS objects. It SHALL validate ownership state, package availability and observed SHA-256 before activation. It MUST NOT fall back to an unregistered local directory or stale package when the current object cannot be loaded.
+The Skill registry SHALL resolve only `published` database metadata records and their current private OSS objects. PostgreSQL SHALL store bounded identity, lifecycle, object key, size and hash metadata, but MUST NOT store ZIP or package file bodies or act as the runtime content source. The registry SHALL validate ownership state, package availability and observed SHA-256 before activation. It MUST NOT fall back to a database content projection, unregistered local directory or stale package when the current object cannot be loaded.
 
 #### Scenario: A published package cannot be loaded
 
@@ -12,7 +12,7 @@ The Skill registry SHALL resolve only `published` database records and their cur
 
 ### Requirement: Added Skills can be selected manually or by the model
 
-At Run creation, a user MAY explicitly select any published Skill they have added, causing it to activate before the first model invocation. The Agent Composer SHALL open a searchable Skill list when the user types `/`, and SHALL show each selected Skill as a removable selection inside the Composer instead of using a separate Run Skills panel. Otherwise the model SHALL receive the names and descriptions of the user's added published Skills and MAY call `activate_skill`. Activation SHALL load the complete `SKILL.md`, mount the current package into the Run sandbox and make Shell/file tools available for subsequent turns.
+At Run creation, a user MAY explicitly select any published Skill they have added, causing every selected Skill to download from private OSS and activate in the Run sandbox before the first model invocation. The Agent Composer SHALL open a searchable Skill list when the user types `/`, and SHALL show each selected Skill as a removable selection inside the Composer instead of using a separate Run Skills panel. Otherwise the model SHALL receive the names and descriptions of the user's added published Skills and MAY call `activate_skill`. Activation SHALL use a short-lived read-only URL scoped to the current object, verify size and SHA-256, load the complete `SKILL.md` from the downloaded package, mount all package files into the Run sandbox and make Shell/file tools available for subsequent turns. The signed URL MUST NOT be persisted or logged.
 
 #### Scenario: A user manually selects a Skill
 

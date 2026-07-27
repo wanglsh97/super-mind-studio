@@ -1,26 +1,25 @@
 import { AgentExecutionSessionService } from '../sandbox/agent-execution-session.service'
 import { FakeSandboxRuntime } from '../sandbox/fake-sandbox-runtime'
 import type { ExecutableSkillService } from '../skills/executable-skill.service'
+import {
+  MOCK_EXECUTABLE_SKILL_DOWNLOAD,
+  MOCK_EXECUTABLE_SKILL_SHA256,
+} from '../skills/executable-skill.fixture'
 import { AgentToolRegistry } from './agent-tool.registry'
 import { createExecutableSkillTools } from './executable-skill.tools'
 
-const activatedSkill = {
+const preparedSkill = {
   manifest: {
     skillId: 'skill-1',
     name: 'mock-data-cleaner',
-    packageSha256: 'a'.repeat(64),
+    packageSha256: MOCK_EXECUTABLE_SKILL_SHA256,
   },
-  skillMarkdown: '# Mock Data Cleaner',
-  files: [
-    { path: 'SKILL.md', type: 'file' as const, size: 19 },
-    { path: 'scripts/clean.mjs', type: 'file' as const, size: 20 },
-  ],
-  archive: new TextEncoder().encode('fixture-package'),
+  download: MOCK_EXECUTABLE_SKILL_DOWNLOAD,
 }
 
 function setup() {
   const skills = {
-    activateManually: jest.fn(async (_userId: string, names: readonly string[]) => {
+    prepareActivation: jest.fn(async (_userId: string, names: readonly string[]) => {
       if (names[0] !== 'mock-data-cleaner' && names[0] !== 'second-skill') {
         throw Object.assign(new Error('Skill 未添加'), {
           code: 'SKILL_NOT_ADDED',
@@ -29,11 +28,11 @@ function setup() {
       }
       return [
         names[0] === 'mock-data-cleaner'
-          ? activatedSkill
+          ? preparedSkill
           : {
-              ...activatedSkill,
+              ...preparedSkill,
               manifest: {
-                ...activatedSkill.manifest,
+                ...preparedSkill.manifest,
                 skillId: 'skill-2',
                 name: 'second-skill',
               },
@@ -83,13 +82,13 @@ describe('executable Skill tools', () => {
       audit: {
         skillId: 'skill-1',
         skillName: 'mock-data-cleaner',
-        packageSha256: 'a'.repeat(64),
+        packageSha256: MOCK_EXECUTABLE_SKILL_SHA256,
         alreadyActive: false,
       },
     })
     expect(activation.content).toContain('# Mock Data Cleaner')
     expect(activation.content).toContain('<active_skill name="mock-data-cleaner"')
-    expect(activation.content).toContain(`package_sha256="${'a'.repeat(64)}"`)
+    expect(activation.content).toContain(`package_sha256="${MOCK_EXECUTABLE_SKILL_SHA256}"`)
     expect(activation.content).toContain('registered tool permissions, or hard resource budgets')
     expect(registry.list().map((tool) => tool.name)).toEqual([
       'activate_skill',
@@ -107,7 +106,7 @@ describe('executable Skill tools', () => {
       sandboxId: activation.audit?.sandboxId,
       alreadyActive: true,
     })
-    expect(skills.activateManually).toHaveBeenCalledTimes(1)
+    expect(skills.prepareActivation).toHaveBeenCalledTimes(1)
 
     const second = await registry.execute(
       'activate_skill',
@@ -123,7 +122,7 @@ describe('executable Skill tools', () => {
         alreadyActive: false,
       },
     })
-    expect(skills.activateManually).toHaveBeenCalledTimes(2)
+    expect(skills.prepareActivation).toHaveBeenCalledTimes(2)
 
     const shell = await registry.execute(
       'shell',
@@ -175,7 +174,7 @@ describe('executable Skill tools', () => {
       isError: true,
       audit: { code: 'AGENT_TOOL_INVALID_ARGS' },
     })
-    expect(skills.activateManually).toHaveBeenCalledTimes(1)
+    expect(skills.prepareActivation).toHaveBeenCalledTimes(1)
   })
 
   it('requires a bound Run/user scope and prevents cross-user session reuse', async () => {

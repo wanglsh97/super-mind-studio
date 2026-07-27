@@ -1,19 +1,22 @@
 import { createHash } from 'node:crypto'
 
 import { AliyunOssSkillObjectStore, type OssClientPort } from './aliyun-oss-skill-object-store'
-import type { SkillPackageProjectionReader } from './skill-package-projection.reader'
+import {
+  MOCK_EXECUTABLE_SKILL_PACKAGE,
+  MOCK_EXECUTABLE_SKILL_SHA256,
+} from '../executable-skill.fixture'
 
 const updatedAt = 'Wed, 23 Jul 2026 12:00:00 GMT'
 
 describe('AliyunOssSkillObjectStore', () => {
   it('refuses a non-private bucket before serving objects', async () => {
     const { client } = fakeClient({ acl: 'public-read' })
-    const store = new AliyunOssSkillObjectStore(client, 'skills', projectionReader())
+    const store = new AliyunOssSkillObjectStore(client, 'skills')
     await expect(store.onModuleInit()).rejects.toThrow('必须为 private')
   })
 
-  it('loads private Skill packages through OSS plus the persisted safe projection', async () => {
-    const archive = Buffer.from('skill-package')
+  it('loads and inspects private Skill packages directly from OSS', async () => {
+    const archive = Buffer.from(MOCK_EXECUTABLE_SKILL_PACKAGE.archive)
     const hash = digest(archive)
     const { client, calls } = fakeClient({
       objects: {
@@ -23,14 +26,7 @@ describe('AliyunOssSkillObjectStore', () => {
         },
       },
     })
-    const store = new AliyunOssSkillObjectStore(
-      client,
-      'skills',
-      projectionReader({
-        skillMarkdown: '# Cleaner',
-        files: [{ path: 'SKILL.md', type: 'file', size: 9 }],
-      }),
-    )
+    const store = new AliyunOssSkillObjectStore(client, 'skills')
 
     await expect(store.onModuleInit()).resolves.toBeUndefined()
     await expect(store.loadSkillPackage('skills/cleaner/package.zip')).resolves.toMatchObject({
@@ -39,8 +35,11 @@ describe('AliyunOssSkillObjectStore', () => {
         sizeBytes: archive.byteLength,
         sha256: hash,
       },
-      skillMarkdown: '# Cleaner',
-      files: [{ path: 'SKILL.md', type: 'file', size: 9 }],
+      skillMarkdown: expect.stringContaining('# Mock Data Cleaner'),
+      files: expect.arrayContaining([
+        expect.objectContaining({ path: 'SKILL.md', type: 'file' }),
+        expect.objectContaining({ path: 'scripts/clean.mjs', type: 'file' }),
+      ]),
     })
     expect(calls).toContain('acl:skills')
     expect(calls).toContain('get:skills/cleaner/package.zip')
@@ -48,7 +47,7 @@ describe('AliyunOssSkillObjectStore', () => {
 
   it('writes private user objects, reads defensive bytes and deletes idempotently', async () => {
     const fixture = fakeClient()
-    const store = new AliyunOssSkillObjectStore(fixture.client, 'skills', projectionReader())
+    const store = new AliyunOssSkillObjectStore(fixture.client, 'skills')
     const bytes = new TextEncoder().encode('a,b\n1,2\n')
 
     const written = await store.writeUserFile({
@@ -81,7 +80,7 @@ describe('AliyunOssSkillObjectStore', () => {
 
   it('propagates aborts without exposing credentials or vendor responses', async () => {
     const { client } = fakeClient()
-    const store = new AliyunOssSkillObjectStore(client, 'skills', projectionReader())
+    const store = new AliyunOssSkillObjectStore(client, 'skills')
     const controller = new AbortController()
     const reason = new Error('cancelled')
     controller.abort(reason)
@@ -90,7 +89,7 @@ describe('AliyunOssSkillObjectStore', () => {
 
   it('signs one private PUT object with V4-bound headers', async () => {
     const fixture = fakeClient()
-    const store = new AliyunOssSkillObjectStore(fixture.client, 'skills', projectionReader())
+    const store = new AliyunOssSkillObjectStore(fixture.client, 'skills')
     const signed = await store.signSkillUpload({
       objectKey: 'skill-staging/user-1/session-1/package.zip',
       contentType: 'application/zip',
@@ -118,6 +117,39 @@ describe('AliyunOssSkillObjectStore', () => {
         'x-oss-meta-sha256',
         'x-oss-object-acl',
       ],
+    })
+  })
+
+  it('creates a short-lived private GET URL for one validated Skill package', async () => {
+    const fixture = fakeClient({
+      objects: {
+        'skills/cleaner/package.zip': {
+          bytes: Buffer.from(MOCK_EXECUTABLE_SKILL_PACKAGE.archive),
+          headers: headers(
+            'skill-package',
+            MOCK_EXECUTABLE_SKILL_PACKAGE.archive.byteLength,
+            MOCK_EXECUTABLE_SKILL_SHA256,
+            'application/zip',
+          ),
+        },
+      },
+    })
+    const store = new AliyunOssSkillObjectStore(fixture.client, 'skills')
+
+    await expect(
+      store.createSkillPackageDownload('skills/cleaner/package.zip'),
+    ).resolves.toMatchObject({
+      url: 'https://private-oss.invalid/signed-get',
+      metadata: {
+        kind: 'skill-package',
+        sha256: MOCK_EXECUTABLE_SKILL_SHA256,
+      },
+    })
+    expect(fixture.signature).toEqual({
+      method: 'GET',
+      expires: 60,
+      objectName: 'skills/cleaner/package.zip',
+      additionalHeaders: [],
     })
   })
 })
@@ -193,7 +225,7 @@ function fakeClient(
       },
       async signatureUrlV4(method, expires, _request, objectName, additionalHeaders) {
         result.signature = { method, expires, objectName, additionalHeaders }
-        return 'https://private-oss.invalid/signed-put'
+        return `https://private-oss.invalid/signed-${method.toLowerCase()}`
       },
     },
   }
@@ -219,12 +251,6 @@ function headers(
     'x-oss-meta-kind': kind,
     'x-oss-meta-sha256': sha256,
   }
-}
-
-function projectionReader(
-  value: Awaited<ReturnType<SkillPackageProjectionReader['findByObjectKey']>> = null,
-): SkillPackageProjectionReader {
-  return { findByObjectKey: async () => value }
 }
 
 function digest(value: Uint8Array): string {

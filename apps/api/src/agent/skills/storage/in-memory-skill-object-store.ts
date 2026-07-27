@@ -4,6 +4,7 @@ import type { AgentSkillFileEntry } from '@supermind/sdk'
 
 import type {
   SkillObjectStorePort,
+  SkillPackageDownload,
   SkillStoredObjectMetadata,
   StoredSkillPackage,
   StoredUserFile,
@@ -64,6 +65,20 @@ export class InMemorySkillObjectStore implements SkillObjectStorePort {
     throwIfAborted(signal)
     const object = this.objects.get(objectKey)
     return isSkillPackage(object) ? clonePackage(object) : null
+  }
+
+  async createSkillPackageDownload(
+    objectKey: string,
+    signal?: AbortSignal,
+  ): Promise<SkillPackageDownload | null> {
+    throwIfAborted(signal)
+    const object = this.objects.get(objectKey)
+    if (!isSkillPackage(object)) return null
+    return {
+      metadata: { ...object.metadata },
+      url: `data:application/zip;base64,${Buffer.from(object.archive).toString('base64')}`,
+      expiresAt: new Date(this.now().getTime() + 60_000).toISOString(),
+    }
   }
 
   async loadUserFile(objectKey: string, signal?: AbortSignal): Promise<StoredUserFile | null> {

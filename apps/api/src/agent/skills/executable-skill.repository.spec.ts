@@ -52,7 +52,10 @@ describe('ExecutableSkillRepository', () => {
       expect.objectContaining({
         where: { name: 'mock-data-cleaner' },
         create: expect.objectContaining({ status: 'PUBLISHED' }),
-        update: {},
+        update: expect.objectContaining({
+          packageObjectKey: 'skills/mock-data-cleaner/package.zip',
+          packageSha256: expect.stringMatching(/^[a-f0-9]{64}$/),
+        }),
       }),
     )
   })

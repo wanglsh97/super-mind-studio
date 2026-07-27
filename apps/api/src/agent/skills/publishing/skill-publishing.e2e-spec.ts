@@ -189,7 +189,7 @@ describe('Skill publishing claim PostgreSQL E2E', () => {
       status: 'DELISTED',
     })
     await expect(executableSkills.listCandidates(user.id)).resolves.toEqual([])
-    await expect(executableSkills.activateManually(user.id, [skill.name])).rejects.toMatchObject({
+    await expect(executableSkills.prepareActivation(user.id, [skill.name])).rejects.toMatchObject({
       code: 'SKILL_NOT_ADDED',
     })
     await expect(

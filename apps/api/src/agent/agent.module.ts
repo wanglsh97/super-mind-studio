@@ -44,7 +44,6 @@ import {
   AliyunOssSkillObjectStore,
   createAliyunOssClient,
 } from './skills/storage/aliyun-oss-skill-object-store'
-import { PrismaSkillPackageProjectionReader } from './skills/storage/skill-package-projection.reader'
 import { SKILL_OBJECT_STORE_PORT } from './skills/storage/skill-object-store.port'
 import { AGENT_TOOLS, AgentToolRegistry } from './tools/agent-tool.registry'
 import { createExecutableSkillTools } from './tools/executable-skill.tools'
@@ -135,29 +134,28 @@ export function createSandboxRuntime(
     SkillMarketService,
     SkillPublishingRepository,
     SkillPublishingService,
-    PrismaSkillPackageProjectionReader,
     {
       provide: SKILL_OBJECT_STORE_PORT,
-      inject: [ConfigService, PrismaSkillPackageProjectionReader],
-      useFactory: (config: ConfigService, projections: PrismaSkillPackageProjectionReader) => {
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => {
         if (config.get<string>('SKILL_OBJECT_STORE_DRIVER') !== 'oss') {
           return new InMemorySkillObjectStore({
             skillPackages: [MOCK_EXECUTABLE_SKILL_PACKAGE],
           })
         }
         const { client, bucket } = createAliyunOssClient(config)
-        return new AliyunOssSkillObjectStore(client, bucket, projections)
+        return new AliyunOssSkillObjectStore(client, bucket)
       },
     },
     {
       provide: SKILL_UPLOAD_SIGNER_PORT,
-      inject: [ConfigService, PrismaSkillPackageProjectionReader],
-      useFactory: (config: ConfigService, projections: PrismaSkillPackageProjectionReader) => {
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => {
         if (config.get<string>('SKILL_OBJECT_STORE_DRIVER') !== 'oss') {
           return new InMemorySkillUploadSigner()
         }
         const { client, bucket } = createAliyunOssClient(config)
-        return new AliyunOssSkillObjectStore(client, bucket, projections)
+        return new AliyunOssSkillObjectStore(client, bucket)
       },
     },
     SkillUploadSessionRepository,

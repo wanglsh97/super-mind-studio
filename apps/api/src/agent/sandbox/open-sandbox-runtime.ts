@@ -14,6 +14,8 @@ import type { OnModuleDestroy } from '@nestjs/common'
 import {
   DEFAULT_SANDBOX_LIMITS,
   type CreateSandboxInput,
+  type InstalledSandboxSkillPackage,
+  type InstallSandboxSkillPackageInput,
   type RunSandboxCommandInput,
   type SandboxCommandResult,
   type SandboxDescriptor,
@@ -23,6 +25,8 @@ import {
   type SandboxUsage,
   type WriteSandboxFileInput,
 } from './sandbox-runtime.port'
+import { readSkillPackageFiles } from '../skills/package/skill-package-files'
+import { SkillPackageReader } from '../skills/package/skill-package-reader'
 
 const MIB = 1024 * 1024
 // Keep the legacy owner key so deployments can still discover and clean up pre-rebrand sandboxes.
@@ -277,6 +281,82 @@ export class OpenSandboxRuntime implements SandboxRuntimePort, OnModuleDestroy {
       throw normalizeUnavailable(error, '执行 Sandbox 命令失败')
     } finally {
       if (currentCommandId) state.activeCommandIds.delete(currentCommandId)
+    }
+  }
+
+  async installSkillPackage(
+    input: InstallSandboxSkillPackageInput,
+  ): Promise<InstalledSandboxSkillPackage> {
+    throwIfAborted(input.signal)
+    assertSkillName(input.skillName)
+    assertExpectedPackage(input.expectedSizeBytes, input.expectedSha256)
+    const state = await this.requireReadyState(input.sandboxId)
+    const rootPath = `/workspace/skills/${input.skillName}`
+    const packagePath = `${rootPath}/package.zip`
+    await state.instance.ensureDirectory(rootPath)
+
+    let commandId = ''
+    try {
+      const execution = await state.instance.runCommand({
+        command: createPrivateDownloadCommand({
+          url: input.downloadUrl,
+          path: packagePath,
+          expectedSizeBytes: input.expectedSizeBytes,
+          expectedSha256: input.expectedSha256,
+        }),
+        workingDirectory: rootPath,
+        timeoutSeconds: Math.max(1, Math.ceil(state.limits.commandTimeoutMs / 1_000)),
+        ...(input.signal === undefined ? {} : { signal: input.signal }),
+        onInit: (id) => {
+          commandId = id
+          state.activeCommandIds.add(id)
+        },
+        onStdout: () => undefined,
+        onStderr: () => undefined,
+      })
+      if (execution.exitCode !== 0) {
+        if (execution.exitCode === 42) {
+          throw executionError(
+            'SKILL_PACKAGE_INTEGRITY_FAILED',
+            'Skill 资源包完整性校验失败',
+            false,
+          )
+        }
+        throw executionError('SKILL_PACKAGE_UNAVAILABLE', 'Sandbox 下载 Skill 资源包失败', true)
+      }
+    } catch (error) {
+      if (input.signal?.aborted) throw abortReason(input.signal)
+      if (isAgentExecutionError(error)) throw error
+      throw executionError('SKILL_PACKAGE_UNAVAILABLE', 'Sandbox 下载 Skill 资源包失败', true)
+    } finally {
+      if (commandId) state.activeCommandIds.delete(commandId)
+    }
+
+    const archive = await state.instance.readFile(packagePath)
+    if (!archive) {
+      throw executionError('SKILL_PACKAGE_UNAVAILABLE', 'Sandbox 中没有已下载的 Skill 包', true)
+    }
+    assertDownloadedPackage(archive, input.expectedSizeBytes, input.expectedSha256)
+    const projection = await new SkillPackageReader().read(archive)
+    const packageFiles = await readSkillPackageFiles(archive)
+    const totalBytes =
+      archive.byteLength + packageFiles.reduce((sum, file) => sum + file.bytes.byteLength, 0)
+    if (state.usage.diskBytes + totalBytes > state.limits.diskBytes) {
+      throw executionError('FILE_SIZE_LIMIT', 'Sandbox 磁盘空间不足', false, {
+        limitBytes: state.limits.diskBytes,
+      })
+    }
+    for (const file of packageFiles) {
+      const path = `${rootPath}/${file.path}`
+      await state.instance.ensureDirectory(posix.dirname(path))
+      await state.instance.writeFile(path, file.bytes)
+    }
+    state.usage.diskBytes += totalBytes
+    return {
+      rootPath,
+      packageSha256: input.expectedSha256,
+      skillMarkdown: projection.skillMarkdown,
+      files: projection.files.map((file) => ({ ...file })),
     }
   }
 
@@ -767,6 +847,64 @@ function assertWorkspacePath(path: string): void {
   ) {
     throw executionError('FILE_ACCESS_DENIED', `文件路径不在 Sandbox workspace 内: ${path}`, false)
   }
+}
+
+function assertSkillName(value: string): void {
+  if (!/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(value)) {
+    throw executionError('FILE_ACCESS_DENIED', 'Skill 名称不能映射到 Sandbox 路径', false)
+  }
+}
+
+function assertExpectedPackage(expectedSizeBytes: number, expectedSha256: string): void {
+  if (
+    !Number.isSafeInteger(expectedSizeBytes) ||
+    expectedSizeBytes < 1 ||
+    !/^[a-f0-9]{64}$/.test(expectedSha256)
+  ) {
+    throw executionError('SKILL_PACKAGE_INTEGRITY_FAILED', 'Skill 资源包元数据无效', false)
+  }
+}
+
+function assertDownloadedPackage(
+  archive: Uint8Array,
+  expectedSizeBytes: number,
+  expectedSha256: string,
+): void {
+  if (
+    archive.byteLength !== expectedSizeBytes ||
+    createHash('sha256').update(archive).digest('hex') !== expectedSha256
+  ) {
+    throw executionError('SKILL_PACKAGE_INTEGRITY_FAILED', 'Skill 资源包完整性校验失败', false)
+  }
+}
+
+function createPrivateDownloadCommand(input: {
+  url: string
+  path: string
+  expectedSizeBytes: number
+  expectedSha256: string
+}): string {
+  const script = [
+    'import base64, hashlib, sys, urllib.request',
+    `url = base64.b64decode("${Buffer.from(input.url).toString('base64')}").decode("utf-8")`,
+    `path = base64.b64decode("${Buffer.from(input.path).toString('base64')}").decode("utf-8")`,
+    'try:',
+    '  digest = hashlib.sha256()',
+    '  size = 0',
+    '  with urllib.request.urlopen(url, timeout=30) as response, open(path, "wb") as output:',
+    '    while True:',
+    '      chunk = response.read(1024 * 1024)',
+    '      if not chunk: break',
+    '      output.write(chunk)',
+    '      digest.update(chunk)',
+    '      size += len(chunk)',
+    'except Exception:',
+    '  sys.exit(41)',
+    `if size != ${input.expectedSizeBytes} or digest.hexdigest() != "${input.expectedSha256}":`,
+    '  sys.exit(42)',
+  ].join('\n')
+  const encoded = Buffer.from(script).toString('base64')
+  return `python3 -c "import base64;exec(base64.b64decode('${encoded}'))"`
 }
 
 function throwIfAborted(signal?: AbortSignal): void {

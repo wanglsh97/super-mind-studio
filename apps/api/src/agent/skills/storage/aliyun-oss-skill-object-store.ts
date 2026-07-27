@@ -1,21 +1,19 @@
 import { createHash } from 'node:crypto'
 
-import { Inject, Injectable, OnModuleInit } from '@nestjs/common'
+import { Injectable, OnModuleInit } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import OSS from 'ali-oss'
 
 import type {
   SkillObjectStorePort,
+  SkillPackageDownload,
   SkillStoredObjectKind,
   SkillStoredObjectMetadata,
   StoredSkillPackage,
   StoredUserFile,
   WriteUserFileInput,
 } from './skill-object-store.port'
-import {
-  PrismaSkillPackageProjectionReader,
-  type SkillPackageProjectionReader,
-} from './skill-package-projection.reader'
+import { SkillPackageReader } from '../package/skill-package-reader'
 import type {
   SignedSkillUpload,
   SignSkillUploadInput,
@@ -39,7 +37,7 @@ export interface OssClientPort {
   ): Promise<unknown>
   delete(name: string): Promise<unknown>
   signatureUrlV4(
-    method: 'PUT',
+    method: 'GET' | 'PUT',
     expires: number,
     request: { headers: Record<string, string> },
     objectName: string,
@@ -54,8 +52,7 @@ export class AliyunOssSkillObjectStore
   constructor(
     private readonly client: OssClientPort,
     private readonly bucket: string,
-    @Inject(PrismaSkillPackageProjectionReader)
-    private readonly projections: SkillPackageProjectionReader,
+    private readonly packageReader = new SkillPackageReader(),
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -98,14 +95,31 @@ export class AliyunOssSkillObjectStore
     }
   }
 
+  async createSkillPackageDownload(
+    objectKey: string,
+    signal?: AbortSignal,
+  ): Promise<SkillPackageDownload | null> {
+    const metadata = await this.statObject(objectKey, signal)
+    if (!metadata || metadata.kind !== 'skill-package') return null
+    const expiresInSeconds = 60
+    const url = await withAbort(
+      this.client.signatureUrlV4('GET', expiresInSeconds, { headers: {} }, objectKey, []),
+      signal,
+    )
+    return {
+      metadata: { ...metadata, kind: 'skill-package' },
+      url,
+      expiresAt: new Date(Date.now() + expiresInSeconds * 1_000).toISOString(),
+    }
+  }
+
   async loadSkillPackage(
     objectKey: string,
     signal?: AbortSignal,
   ): Promise<StoredSkillPackage | null> {
     const loaded = await this.loadBytes(objectKey, signal)
     if (!loaded || loaded.metadata.kind !== 'skill-package') return null
-    const projection = await withAbort(this.projections.findByObjectKey(objectKey), signal)
-    if (!projection) return null
+    const projection = await withAbort(this.packageReader.read(loaded.bytes), signal)
     return {
       metadata: { ...loaded.metadata, kind: 'skill-package' },
       archive: loaded.bytes,

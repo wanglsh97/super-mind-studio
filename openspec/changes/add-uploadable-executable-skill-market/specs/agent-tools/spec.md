@@ -14,7 +14,7 @@ The Agent runtime SHALL resolve every model tool call through a server-owned Too
 
 - **GIVEN** the model calls `activate_skill` for a name the user has not added
 - **WHEN** the registry authorizes the call
-- **THEN** no package is downloaded, no sandbox is created for that call, and a normalized failed tool result is returned
+- **THEN** no package is downloaded, the existing Run sandbox remains unchanged, and a normalized failed tool result is returned
 
 ### Requirement: Tool execution is visible and auditable
 
@@ -35,4 +35,3 @@ The Agent composition layer SHALL continue to isolate Skill and MCP integrations
 - **GIVEN** the Skill repository, OSS adapter and Sandbox runtime are configured
 - **WHEN** the Agent composes a Run for a user with added Skills
 - **THEN** it resolves candidates through the Skill port without scanning local directories or changing the MCP registry
-

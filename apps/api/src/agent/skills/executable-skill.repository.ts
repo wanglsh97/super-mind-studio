@@ -1,7 +1,11 @@
 import { Inject, Injectable } from '@nestjs/common'
 
 import { PrismaService } from '../../database/prisma.service'
-import { MOCK_EXECUTABLE_SKILL, MOCK_EXECUTABLE_SKILL_SHA256 } from './executable-skill.fixture'
+import {
+  MOCK_EXECUTABLE_SKILL,
+  MOCK_EXECUTABLE_SKILL_PACKAGE,
+  MOCK_EXECUTABLE_SKILL_SHA256,
+} from './executable-skill.fixture'
 
 export interface ExecutableSkillRecord {
   id: string
@@ -68,7 +72,14 @@ export class ExecutableSkillRepository implements ExecutableSkillRepositoryPort 
           publishedAt: new Date(0),
           packageUpdatedAt: new Date(0),
         },
-        update: {},
+        update: {
+          packageObjectKey: MOCK_EXECUTABLE_SKILL.objectKey,
+          packageSha256: MOCK_EXECUTABLE_SKILL_SHA256,
+          packageSizeBytes: BigInt(MOCK_EXECUTABLE_SKILL_PACKAGE.archive.byteLength),
+          skillMarkdown: MOCK_EXECUTABLE_SKILL.skillMarkdown,
+          fileTree: MOCK_EXECUTABLE_SKILL_PACKAGE.files,
+          packageUpdatedAt: new Date(0),
+        },
         select: SKILL_SELECT,
       })
     })
@@ -182,9 +193,7 @@ function isSerializationConflict(error: unknown): boolean {
   )
 }
 
-const MOCK_EXECUTABLE_SKILL_PACKAGE_SIZE = new TextEncoder().encode(
-  'deterministic-mock-skill-package-v1',
-).byteLength
+const MOCK_EXECUTABLE_SKILL_PACKAGE_SIZE = MOCK_EXECUTABLE_SKILL_PACKAGE.archive.byteLength
 
 export class AgentSkillAddLimitError extends Error {
   constructor(readonly limit: number) {

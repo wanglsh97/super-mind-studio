@@ -110,51 +110,60 @@ describe('ExecutableSkillService', () => {
     await expect(service.listCandidates('user-1')).resolves.toEqual([])
   })
 
-  it('manually activates an added Skill once and records the observed current package hash', async () => {
+  it('prepares an added Skill with a scoped current-package download and observed hash', async () => {
     const { service } = setup()
     await service.add('user-1', 'mock-data-cleaner')
 
-    const activated = await service.activateManually('user-1', [
+    const prepared = await service.prepareActivation('user-1', [
       'mock-data-cleaner',
       'mock-data-cleaner',
     ])
 
-    expect(activated).toHaveLength(1)
-    expect(activated[0]).toMatchObject({
+    expect(prepared).toHaveLength(1)
+    expect(prepared[0]).toMatchObject({
       manifest: {
         skillId: MOCK_EXECUTABLE_SKILL.id,
         name: 'mock-data-cleaner',
         packageSha256: MOCK_EXECUTABLE_SKILL_SHA256,
       },
-      skillMarkdown: MOCK_EXECUTABLE_SKILL.skillMarkdown,
+      download: {
+        metadata: {
+          objectKey: MOCK_EXECUTABLE_SKILL.objectKey,
+          sha256: MOCK_EXECUTABLE_SKILL_SHA256,
+        },
+        url: expect.stringMatching(/^data:application\/zip;base64,/),
+      },
     })
-    expect(activated[0]?.files.map((file) => file.path)).toContain('scripts/clean.mjs')
   })
 
   it('rejects unavailable, not-added and hash-mismatched packages without fallback', async () => {
     const missingStore = new InMemorySkillObjectStore()
     const missing = setup(new FakeExecutableSkillRepository(), missingStore).service
     await missing.add('user-1', 'mock-data-cleaner')
-    await expect(missing.activateManually('user-1', ['mock-data-cleaner'])).rejects.toMatchObject({
+    await expect(missing.prepareActivation('user-1', ['mock-data-cleaner'])).rejects.toMatchObject({
       code: 'SKILL_PACKAGE_UNAVAILABLE',
     })
 
     const notAdded = setup().service
-    await expect(notAdded.activateManually('user-1', ['mock-data-cleaner'])).rejects.toBeInstanceOf(
-      ExecutableSkillError,
+    await expect(
+      notAdded.prepareActivation('user-1', ['mock-data-cleaner']),
+    ).rejects.toBeInstanceOf(ExecutableSkillError)
+    await expect(notAdded.prepareActivation('user-1', ['mock-data-cleaner'])).rejects.toMatchObject(
+      {
+        code: 'SKILL_NOT_ADDED',
+      },
     )
-    await expect(notAdded.activateManually('user-1', ['mock-data-cleaner'])).rejects.toMatchObject({
-      code: 'SKILL_NOT_ADDED',
-    })
 
     const wrongHashRepository = new FakeExecutableSkillRepository([
       mockSkillRecord({ packageSha256: 'f'.repeat(64) }),
     ])
     const mismatch = setup(wrongHashRepository).service
     await mismatch.add('user-1', 'mock-data-cleaner')
-    await expect(mismatch.activateManually('user-1', ['mock-data-cleaner'])).rejects.toMatchObject({
-      code: 'SKILL_PACKAGE_INTEGRITY_FAILED',
-    })
+    await expect(mismatch.prepareActivation('user-1', ['mock-data-cleaner'])).rejects.toMatchObject(
+      {
+        code: 'SKILL_PACKAGE_INTEGRITY_FAILED',
+      },
+    )
   })
 
   it('enforces the 50-Skill added limit while keeping repeat adds idempotent', async () => {

@@ -45,7 +45,7 @@ Suggested entities:
 | `UserFile` | Owner, Run, input/output direction, file metadata, hash, object key and deletion/cleanup state |
 | `AgentRun` additions | sandbox ID, active Skill manifest, file references, sandbox usage and terminal limit reason |
 
-Skill and file objects use a private OSS bucket. NestJS signs narrow upload/download operations and never returns OSS management credentials. PostgreSQL never stores ZIP or user-file bytes.
+Skill and file objects use a private OSS bucket. NestJS signs narrow upload/download operations and never returns OSS management credentials. PostgreSQL never stores ZIP, package file bodies or user-file bytes. Sanitized `SKILL.md` and file-tree data, when retained for market preview, are bounded derived projections only and MUST NOT be a runtime package dependency; the current OSS object is the only package-byte truth.
 
 ### Decision 3: The browser packages a selected folder and uploads directly through scoped OSS credentials
 
@@ -65,13 +65,13 @@ Client-side folder preparation and server-side package inspection enforce the ac
 
 ### Decision 5: Added Skills are candidates; activation is a runtime transition
 
-The initial model context receives a bounded catalog of at most 50 added published Skill names and descriptions plus the `activate_skill` tool. Manual selection is integrated into the Agent Composer: typing `/` opens a searchable list of added published Skills, and the selected Skills remain visible as removable tags inside the Composer. A manually selected Skill activates before the first main model invocation. Model activation validates user add state and current publication, downloads the current object, observes its SHA-256, mounts the package and adds the complete escaped `SKILL.md` to subsequent context.
+The initial model context receives a bounded catalog of at most 50 added published Skill names and descriptions plus the `activate_skill` tool. Manual selection is integrated into the Agent Composer: typing `/` opens a searchable list of added published Skills, and the selected Skills remain visible as removable tags inside the Composer. A manually selected Skill activates before the first main model invocation. Activation validates user add state and current publication, creates a short-lived read-only URL for the exact private OSS object, downloads it into the Run sandbox, verifies size and SHA-256, installs the package under `/workspace/skills/<name>` and adds the complete escaped `SKILL.md` read from that package to subsequent context. The URL is never persisted or logged.
 
 A Skill activates at most once per Run. There is no separate active-Skill count; context and Run budgets are authoritative. The manifest records the observed package hash because no retained revision is available after overwrite.
 
 ### Decision 6: OpenSandbox implements a vendor-neutral execution port
 
-`SandboxRuntimePort` owns create, wait-ready, upload/mount, command, file, cancel, metrics and destroy contracts. The first adapter uses the OpenSandbox TypeScript SDK. NestJS and SDK public types do not expose OpenSandbox-specific response objects.
+`SandboxRuntimePort` owns create, wait-ready, scoped package download/install, command, file, cancel, metrics and destroy contracts. The first adapter uses the OpenSandbox TypeScript SDK. NestJS and SDK public types do not expose OpenSandbox-specific response objects. Package bytes flow from private OSS to the Run sandbox and remain ephemeral; NestJS may inspect bytes in deterministic adapters or verification paths but does not persist them in PostgreSQL.
 
 Deployment uses a dedicated Alibaba Cloud ECS execution node:
 
@@ -87,7 +87,7 @@ OpenSandbox is selected over E2B and Daytona after research: it is Apache-2.0, s
 
 ### Decision 7: Sandbox lifetime is one Agent Run
 
-The first activated Skill, Shell call or Run-file operation lazily creates one sandbox. All active Skills share `/workspace/skills/<name>`, input files use `/workspace/input`, writable work uses `/workspace/work`, and explicit exports use `/workspace/output`. The sandbox is destroyed on every terminal Run path; cleanup is idempotent and a reconciliation check removes leaked expired sandboxes without introducing BullMQ.
+Every Agent Run creates and waits for exactly one sandbox immediately after the Run starts, including Runs with no selected Skill. Before the first model invocation, all manually selected active Skills are downloaded from private OSS into that sandbox. Later model-selected Skills install into the same sandbox. All active Skills use `/workspace/skills/<name>`, input files use `/workspace/input`, writable work uses `/workspace/work`, and explicit exports use `/workspace/output`. The sandbox is destroyed on every terminal Run path; cleanup is idempotent and a reconciliation check removes leaked expired sandboxes without introducing BullMQ.
 
 The existing Agent Run resource and cursor SSE remain authoritative. Browser disconnect does not cancel execution because NestJS talks directly to OpenSandbox. API restart still interrupts in-process Runs under existing semantics and cleanup later removes their sandboxes.
 

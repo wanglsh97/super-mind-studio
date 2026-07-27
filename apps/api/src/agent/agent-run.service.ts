@@ -127,6 +127,7 @@ export class AgentRunService {
     try {
       await this.runs.markStarted(input.runId)
       await persistAndPublish(projector.start())
+      await this.executionSessions.startRun(input.runId, input.userId, controller.signal)
 
       const manuallyActivated: ActivatedSkill[] = []
       for (const skillName of [...new Set(input.selectedSkillNames)]) {

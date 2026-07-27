@@ -12,7 +12,13 @@ NestJS SHALL execute Skill Shell and file operations only through a `SandboxRunt
 
 ### Requirement: One ephemeral Linux sandbox is shared within an Agent Run
 
-Each Agent Run SHALL lazily create at most one sandbox. All Skills, input files, commands and generated files in that Run SHALL share its temporary workspace. The sandbox SHALL be destroyed after the Run succeeds, fails, is cancelled, reaches a limit or is interrupted, and background processes SHALL be terminated during cleanup.
+Each Agent Run SHALL create and wait for exactly one sandbox when execution starts. All Skills, input files, commands and generated files in that Run SHALL share its temporary workspace. The sandbox SHALL be destroyed after the Run succeeds, fails, is cancelled, reaches a limit or is interrupted, and background processes SHALL be terminated during cleanup.
+
+#### Scenario: A Run starts without a selected Skill
+
+- **GIVEN** a valid Agent Run has no manually selected Skill
+- **WHEN** execution starts
+- **THEN** the platform creates one ready Run-owned sandbox before the first model invocation
 
 #### Scenario: Two Skills run in one Agent Run
 
@@ -25,6 +31,22 @@ Each Agent Run SHALL lazily create at most one sandbox. All Skills, input files,
 - **GIVEN** a Shell command is active
 - **WHEN** the Run owner cancels the Run
 - **THEN** cancellation propagates best effort to the command, no later command starts, and sandbox destruction is attempted idempotently
+
+### Requirement: Active Skill packages download from private OSS into the Run sandbox
+
+Before the first model invocation, the platform SHALL install every manually selected active Skill into the Run sandbox. Later model activations SHALL use the same installation flow. NestJS SHALL issue only a short-lived read-only URL scoped to the current private OSS object; the sandbox SHALL download the package, verify expected byte size and SHA-256, and extract it under `/workspace/skills/<name>`. Package files SHALL remain ephemeral and MUST NOT be persisted to PostgreSQL. Signed URLs MUST NOT enter Agent events, database records or application logs.
+
+#### Scenario: A selected package is installed before inference
+
+- **GIVEN** a Run has two manually selected published Skills
+- **WHEN** its sandbox becomes ready
+- **THEN** both current OSS packages are integrity-checked and installed in the same sandbox before the first model request
+
+#### Scenario: A downloaded package fails integrity verification
+
+- **GIVEN** OSS returns bytes whose size or SHA-256 differs from the published metadata
+- **WHEN** the sandbox installs the Skill
+- **THEN** activation fails with a normalized integrity error, the package is not made active, and no database content projection is used as fallback
 
 ### Requirement: Sandbox resource budgets are enforced outside the model
 
@@ -67,4 +89,3 @@ The Agent event stream SHALL expose sandbox creation, readiness, command start, 
 - **GIVEN** a command completed while the event connection was unavailable
 - **WHEN** the owner reconnects with the last sequence
 - **THEN** persisted sandbox and command events restore the same tool state without re-executing the command
-

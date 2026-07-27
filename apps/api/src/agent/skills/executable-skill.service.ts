@@ -3,6 +3,7 @@ import type { AgentExecutionErrorCode, AgentSkillFileEntry } from '@supermind/sd
 
 import {
   SKILL_OBJECT_STORE_PORT,
+  type SkillPackageDownload,
   type SkillObjectStorePort,
 } from './storage/skill-object-store.port'
 import type { AgentSkillRegistry } from './agent-skill.registry'
@@ -24,7 +25,11 @@ export interface ActivatedSkill {
   manifest: ActiveSkillManifestEntry
   skillMarkdown: string
   files: AgentSkillFileEntry[]
-  archive: Uint8Array
+}
+
+export interface PreparedSkillActivation {
+  manifest: ActiveSkillManifestEntry
+  download: SkillPackageDownload
 }
 
 @Injectable()
@@ -56,40 +61,43 @@ export class ExecutableSkillService implements AgentSkillRegistry {
     return this.repository.listAddedPublished(userId)
   }
 
-  async activateManually(
+  async prepareActivation(
     userId: string,
     names: readonly string[],
     signal?: AbortSignal,
-  ): Promise<ActivatedSkill[]> {
-    const activated: ActivatedSkill[] = []
+  ): Promise<PreparedSkillActivation[]> {
+    const prepared: PreparedSkillActivation[] = []
     for (const name of [...new Set(names)]) {
       const skill = await this.repository.findAddedPublishedByName(userId, name)
       if (!skill) {
         throw new ExecutableSkillError('SKILL_NOT_ADDED', `Skill ${name} 未添加、已下架或不存在`)
       }
-      activated.push(await this.loadCurrentPackage(skill, signal))
+      prepared.push(await this.prepareCurrentPackage(skill, signal))
     }
-    return activated
+    return prepared
   }
 
-  private async loadCurrentPackage(
+  private async prepareCurrentPackage(
     skill: ExecutableSkillRecord,
     signal?: AbortSignal,
-  ): Promise<ActivatedSkill> {
+  ): Promise<PreparedSkillActivation> {
     if (!skill.packageObjectKey || !skill.packageSha256) {
       throw new ExecutableSkillError(
         'SKILL_PACKAGE_UNAVAILABLE',
         `Skill ${skill.name} 没有可用资源包`,
       )
     }
-    const stored = await this.objectStore.loadSkillPackage(skill.packageObjectKey, signal)
-    if (!stored) {
+    const download = await this.objectStore.createSkillPackageDownload(
+      skill.packageObjectKey,
+      signal,
+    )
+    if (!download) {
       throw new ExecutableSkillError(
         'SKILL_PACKAGE_UNAVAILABLE',
         `Skill ${skill.name} 资源包不可用`,
       )
     }
-    if (stored.metadata.sha256 !== skill.packageSha256) {
+    if (download.metadata.sha256 !== skill.packageSha256) {
       throw new ExecutableSkillError(
         'SKILL_PACKAGE_INTEGRITY_FAILED',
         `Skill ${skill.name} 资源包完整性校验失败`,
@@ -99,11 +107,9 @@ export class ExecutableSkillService implements AgentSkillRegistry {
       manifest: {
         skillId: skill.id,
         name: skill.name,
-        packageSha256: stored.metadata.sha256,
+        packageSha256: download.metadata.sha256,
       },
-      skillMarkdown: stored.skillMarkdown,
-      files: stored.files.map((file) => ({ ...file })),
-      archive: Uint8Array.from(stored.archive),
+      download,
     }
   }
 }

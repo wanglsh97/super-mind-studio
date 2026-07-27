@@ -24,6 +24,13 @@ export class AgentExecutionSessionService {
     @Inject(SANDBOX_RUNTIME_PORT) private readonly sandboxes: SandboxRuntimePort,
   ) {}
 
+  async startRun(runId: string, userId: string, signal?: AbortSignal): Promise<string> {
+    const existing = this.sessions.get(runId)
+    this.assertOwner(existing, userId)
+    if (existing) return existing.sandboxId
+    return (await this.createSession(runId, userId, signal)).sandboxId
+  }
+
   async activateSkill(
     runId: string,
     userId: string,
@@ -37,22 +44,22 @@ export class AgentExecutionSessionService {
       return { sandboxId: existing.sandboxId, skill: active, alreadyActive: true }
     }
 
-    const [skill] = await this.skills.activateManually(userId, [name], signal)
-    if (!skill) throw new Error(`Skill activation returned no package: ${name}`)
+    const [prepared] = await this.skills.prepareActivation(userId, [name], signal)
+    if (!prepared) throw new Error(`Skill activation returned no package: ${name}`)
     const session = existing ?? (await this.createSession(runId, userId, signal))
-    const base = `/workspace/skills/${name}`
-    await this.sandboxes.writeFile({
+    const installed = await this.sandboxes.installSkillPackage({
       sandboxId: session.sandboxId,
-      path: `${base}/package.zip`,
-      bytes: skill.archive,
+      skillName: prepared.manifest.name,
+      downloadUrl: prepared.download.url,
+      expectedSha256: prepared.manifest.packageSha256,
+      expectedSizeBytes: prepared.download.metadata.sizeBytes,
       ...(signal === undefined ? {} : { signal }),
     })
-    await this.sandboxes.writeFile({
-      sandboxId: session.sandboxId,
-      path: `${base}/SKILL.md`,
-      bytes: new TextEncoder().encode(skill.skillMarkdown),
-      ...(signal === undefined ? {} : { signal }),
-    })
+    const skill: ActivatedSkill = {
+      manifest: prepared.manifest,
+      skillMarkdown: installed.skillMarkdown,
+      files: installed.files.map((file) => ({ ...file })),
+    }
     session.activeSkills.set(name, skill)
     return { sandboxId: session.sandboxId, skill, alreadyActive: false }
   }
