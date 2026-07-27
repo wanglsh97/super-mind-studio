@@ -34,7 +34,7 @@ pnpm dev
 - Swagger UI：http://localhost:3001/api-docs
 - OpenAPI JSON：http://localhost:3001/api-docs/openapi.json
 
-首页、登录页、模型列表和 health 保持公开。以下用户能力要求 `aigateway_user_session` HttpOnly Cookie，Cookie 只能由 GitHub callback 创建：
+登录页、模型列表和 health 保持公开。根路径 `/` 直接承载 Agent，要求 `aigateway_user_session` HttpOnly Cookie；该 Cookie 只能由 GitHub callback 创建。以下用户能力同样要求该 Session：
 
 - `POST /api/v1/chat/completions`
 - `POST /api/v1/images/generations` 及任务状态/下载
@@ -43,7 +43,7 @@ pnpm dev
 
 ## 用户对话入口
 
-`/agent` 是普通对话和工具型多步任务的统一入口，会话与运行事件持久化到 PostgreSQL。旧 `/chat` 不再加载独立的浏览器内存聊天应用，访问时会兼容跳转到 `/agent`。
+根路径 `/` 是普通对话和工具型多步任务的统一入口，会话与运行事件持久化到 PostgreSQL。登录成功后直接进入 `/`；营销 Hero 首页与 `/agent` 路由均已移除，`/agent` 不做兼容跳转。旧 `/chat` 不再加载独立的浏览器内存聊天应用，访问时会兼容跳转到 `/`。
 
 多模型对比暂时保留在 `/chat/compare`，可从 Agent Composer 进入；每个模型仍使用独立 Chat SSE 请求和取消状态。底层 `POST /api/v1/chat/completions` 与 `@supermind/sdk` Chat client 继续保留，供模型对比、Prompt 优化及其他内部场景复用。
 
@@ -100,7 +100,7 @@ V1 只支持 Streamable HTTP、静态工具白名单以及 `read`/`external_send
 
 项目提供 Web/API 多阶段镜像、单机生产 Compose、Nginx SSE 代理、日志轮转、PostgreSQL 备份恢复和人工发布脚本。部署前请完整阅读 [ECS 单机部署与回滚手册](docs/deployment/ecs.md)。
 
-首次 ECS 上线必须使用 Mock-only 模型配置，并使用独立的生产 GitHub OAuth App。生产 callback 只支持 HTTPS 域名；公网 IP 只能用于首页和 health 等公开入口验收，不能作为生产登录入口。生产环境变量只保存在服务器的 `.env.production`，不要复制本机 `.env` 或提交真实密钥。
+首次 ECS 上线必须使用 Mock-only 模型配置，并使用独立的生产 GitHub OAuth App。生产 callback 只支持 HTTPS 域名；公网 IP 只能用于 health 等公开入口验收，不能作为生产登录入口。生产环境变量只保存在服务器的 `.env.production`，不要复制本机 `.env` 或提交真实密钥。
 
 ## 常用命令
 
@@ -158,7 +158,7 @@ KIMI_BASE_URL=https://api.moonshot.cn/v1
 pnpm test:smoke:kimi
 ```
 
-浏览器手工验收时运行 `pnpm dev`，先通过 GitHub 登录，再访问同源 `/agent` 发起普通对话；Agent 的内部模型调用应能在 `RequestLog` 中查到 `SUCCEEDED` 记录、必填 `userId` 及其一对一 `BillingRecord`。访问 `/chat` 应直接跳转到 `/agent`。API 的注入点使用显式 token，使 `tsx watch` 开发态与 TypeScript 生产构建保持一致。
+浏览器手工验收时运行 `pnpm dev`，通过 GitHub 登录后直接在同源 `/` 发起普通对话；Agent 的内部模型调用应能在 `RequestLog` 中查到 `SUCCEEDED` 记录、必填 `userId` 及其一对一 `BillingRecord`。访问 `/chat` 应直接跳转到 `/`，访问 `/agent` 应返回 404。API 的注入点使用显式 token，使 `tsx watch` 开发态与 TypeScript 生产构建保持一致。
 
 重置测试数据库前必须显式提供数据库名包含 `_test` 或 `test_` 的 `DATABASE_URL`：
 

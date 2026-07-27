@@ -25,4 +25,4 @@
 
 - [x] 5.1 更新 proposal、design、web-agent 和 user-workspace-routing，明确 `/` 直接承载 Agent、`/agent` 无兼容跳转，并通过 strict validation
 - [x] 5.2 将 Agent 页面迁移到 `/`，删除 Hero 与 `/agent` 路由，更新 Chat 兼容跳转、导航、thread URL、登录回跳和模型对比返回入口
-- [ ] 5.3 同步 README、PRD、技术方案，运行 Web test、typecheck、lint、build、dev 路由冒烟和 OpenSpec strict validation
+- [x] 5.3 同步 README、PRD、技术方案，运行 Web test、typecheck、lint、build、dev 路由冒烟和 OpenSpec strict validation
