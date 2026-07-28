@@ -1,13 +1,14 @@
 import { ConfigService } from '@nestjs/config'
 
 import type { PrismaService } from '../database/prisma.service'
+import { UserService } from '../user/user.service'
 import { UserSessionService } from './user-session.service'
 
 const user = {
   id: '00000000-0000-4000-8000-000000000101',
-  githubId: '12345678',
-  githubUsername: 'octocat',
-  displayName: 'The Octocat',
+  authProvider: 'GITHUB' as const,
+  providerUserId: '12345678',
+  userName: 'octocat',
   avatarUrl: 'https://avatars.githubusercontent.com/u/12345678?v=4',
   email: null,
 }
@@ -15,18 +16,18 @@ const user = {
 describe('UserSessionService', () => {
   it('upserts a user and stores only a token hash with fixed 30-day expiry', async () => {
     const transaction = {
-      user: { upsert: jest.fn().mockResolvedValue(user) },
       userSession: { create: jest.fn().mockResolvedValue({}) },
     }
     const prisma = createPrismaMock(transaction)
-    const service = createService(prisma)
+    const resolveIdentity = jest.fn().mockResolvedValue(user)
+    const service = createService(prisma, { resolveIdentity })
     const now = new Date('2026-07-19T00:00:00.000Z')
 
     const created = await service.create(
       {
-        githubId: user.githubId,
-        githubUsername: user.githubUsername,
-        displayName: user.displayName,
+        authProvider: user.authProvider,
+        providerUserId: user.providerUserId,
+        userName: user.userName,
         avatarUrl: user.avatarUrl,
         email: null,
       },
@@ -36,6 +37,17 @@ describe('UserSessionService', () => {
     expect(created.expiresAt).toEqual(new Date('2026-08-18T00:00:00.000Z'))
     expect(created.token).toMatch(/^[A-Za-z0-9_-]{43}$/)
     expect(created.user).not.toHaveProperty('email')
+    expect(created.user).toEqual({
+      id: user.id,
+      authProvider: 'GITHUB',
+      userName: 'octocat',
+      avatarUrl: user.avatarUrl,
+    })
+    expect(resolveIdentity).toHaveBeenCalledWith(
+      expect.objectContaining({ authProvider: 'GITHUB', providerUserId: '12345678' }),
+      now,
+      transaction,
+    )
     expect(transaction.userSession.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         userId: user.id,
@@ -48,10 +60,11 @@ describe('UserSessionService', () => {
 
   it('allows multiple independent sessions for the same user', async () => {
     const transaction = {
-      user: { upsert: jest.fn().mockResolvedValue(user) },
       userSession: { create: jest.fn().mockResolvedValue({}) },
     }
-    const service = createService(createPrismaMock(transaction))
+    const service = createService(createPrismaMock(transaction), {
+      resolveIdentity: jest.fn().mockResolvedValue(user),
+    })
 
     const first = await service.create(user, new Date('2026-07-19T00:00:00.000Z'))
     const second = await service.create(user, new Date('2026-07-19T00:01:00.000Z'))
@@ -95,9 +108,13 @@ describe('UserSessionService', () => {
   })
 })
 
-function createService(prisma: PrismaService): UserSessionService {
+function createService(
+  prisma: PrismaService,
+  users: Pick<UserService, 'resolveIdentity'> = { resolveIdentity: jest.fn() },
+): UserSessionService {
   return new UserSessionService(
     prisma,
+    users as UserService,
     new ConfigService({
       USER_SESSION_SECRET: 'fixture-user-session-secret-with-at-least-32-characters',
       USER_SESSION_TTL_SECONDS: 2_592_000,

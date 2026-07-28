@@ -4,15 +4,10 @@ import { Inject, Injectable, UnauthorizedException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 
 import { PrismaService } from '../database/prisma.service'
-import type { GitHubIdentity } from './github-oauth.client'
+import { toAuthenticatedUser, UserService } from '../user/user.service'
+import type { AuthIdentityInput, AuthenticatedUser } from '../user/user.types'
 
-export interface AuthenticatedUser {
-  id: string
-  githubId: string
-  githubUsername: string
-  displayName: string | null
-  avatarUrl: string | null
-}
+export type { AuthenticatedUser } from '../user/user.types'
 
 export interface UserSessionResult {
   token: string
@@ -27,36 +22,20 @@ export class UserSessionService {
 
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(UserService) private readonly users: UserService,
     @Inject(ConfigService) config: ConfigService,
   ) {
     this.secret = config.getOrThrow<string>('USER_SESSION_SECRET')
     this.ttlSeconds = config.getOrThrow<number>('USER_SESSION_TTL_SECONDS')
   }
 
-  async create(identity: GitHubIdentity, now = new Date()): Promise<UserSessionResult> {
+  async create(identity: AuthIdentityInput, now = new Date()): Promise<UserSessionResult> {
     const token = randomBytes(32).toString('base64url')
     const tokenHash = this.hashToken(token)
     const expiresAt = new Date(now.getTime() + this.ttlSeconds * 1_000)
 
     const user = await this.prisma.$transaction(async (transaction) => {
-      const persistedUser = await transaction.user.upsert({
-        where: { githubId: identity.githubId },
-        create: {
-          githubId: identity.githubId,
-          githubUsername: identity.githubUsername,
-          displayName: identity.displayName,
-          avatarUrl: identity.avatarUrl,
-          email: identity.email,
-          lastLoginAt: now,
-        },
-        update: {
-          githubUsername: identity.githubUsername,
-          displayName: identity.displayName,
-          avatarUrl: identity.avatarUrl,
-          email: identity.email,
-          lastLoginAt: now,
-        },
-      })
+      const persistedUser = await this.users.resolveIdentity(identity, now, transaction)
       await transaction.userSession.create({
         data: { userId: persistedUser.id, tokenHash, expiresAt, lastSeenAt: now },
       })
@@ -98,23 +77,6 @@ export class UserSessionService {
 
   private hashToken(token: string): string {
     return createHmac('sha256', this.secret).update(token).digest('hex')
-  }
-}
-
-function toAuthenticatedUser(user: {
-  id: string
-  githubId: string
-  githubUsername: string
-  displayName: string | null
-  avatarUrl: string | null
-  email: string | null
-}): AuthenticatedUser {
-  return {
-    id: user.id,
-    githubId: user.githubId,
-    githubUsername: user.githubUsername,
-    displayName: user.displayName,
-    avatarUrl: user.avatarUrl,
   }
 }
 

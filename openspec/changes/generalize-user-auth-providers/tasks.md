@@ -8,7 +8,7 @@
 
 ## 2. API 登录与 Session
 
-- [ ] 2.1 重构 GitHub OAuth client 输出通用身份输入，移除 Session Service 对 GitHub 类型和字段的依赖
+- [x] 2.1 重构 GitHub OAuth client 输出通用身份输入，移除 Session Service 对 GitHub 类型和字段的依赖
 - [ ] 2.2 将匿名登录改为无请求体的一次性服务端随机 User，删除设备指纹、localStorage 身份和环境开关
 - [ ] 2.3 实现 Google OAuth client、Provider-bound state、authorize/callback 路由和错误归一化，覆盖缺失/未验证邮箱与禁用 Provider
 - [ ] 2.4 扩展配置校验和环境样例：Google 独立启用、启用时凭证必填、禁用时应用可启动

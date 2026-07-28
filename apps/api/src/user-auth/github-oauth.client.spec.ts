@@ -26,9 +26,9 @@ describe('GitHubOAuthClient', () => {
     await expect(
       new GitHubOAuthClient(options, http).authenticate('fixture-code'),
     ).resolves.toEqual({
-      githubId: '12345678',
-      githubUsername: 'octocat',
-      displayName: 'The Octocat',
+      authProvider: 'GITHUB',
+      providerUserId: '12345678',
+      userName: 'octocat',
       avatarUrl: 'https://avatars.githubusercontent.com/u/12345678?v=4',
       email: 'octocat@github.example',
     })
@@ -53,7 +53,8 @@ describe('GitHubOAuthClient', () => {
     ])
 
     await expect(new GitHubOAuthClient(options, http).authenticate('code')).resolves.toMatchObject({
-      githubId: '1',
+      authProvider: 'GITHUB',
+      providerUserId: '1',
       email: null,
     })
   })

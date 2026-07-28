@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common'
 import { ConfigModule, ConfigService } from '@nestjs/config'
 
+import { UserModule } from '../user/user.module'
 import { GitHubOAuthClient } from './github-oauth.client'
 import { OAuthStateService } from './oauth-state.service'
 import { GITHUB_OAUTH_CLIENT } from './user-auth.constants'
@@ -9,7 +10,7 @@ import { UserSessionService } from './user-session.service'
 import { UserSessionGuard } from './user-session.guard'
 
 @Module({
-  imports: [ConfigModule],
+  imports: [ConfigModule, UserModule],
   controllers: [UserAuthController],
   providers: [
     UserSessionService,

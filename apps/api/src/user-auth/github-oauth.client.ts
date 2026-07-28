@@ -1,16 +1,10 @@
+import type { AuthIdentityInput } from '../user/user.types'
+
 export interface GitHubOAuthClientOptions {
   clientId: string
   clientSecret: string
   callbackUrl: string
   timeoutMs: number
-}
-
-export interface GitHubIdentity {
-  githubId: string
-  githubUsername: string
-  displayName: string | null
-  avatarUrl: string | null
-  email: string | null
 }
 
 export type GitHubHttpClient = (input: string | URL, init?: RequestInit) => Promise<Response>
@@ -35,7 +29,7 @@ export class GitHubOAuthClient {
     private readonly httpClient: GitHubHttpClient = fetch,
   ) {}
 
-  async authenticate(code: string): Promise<GitHubIdentity> {
+  async authenticate(code: string): Promise<AuthIdentityInput> {
     const accessToken = await this.exchangeCode(code)
     const [profile, email] = await Promise.all([
       this.fetchProfile(accessToken),
@@ -43,9 +37,9 @@ export class GitHubOAuthClient {
     ])
 
     return {
-      githubId: String(profile.id),
-      githubUsername: profile.login,
-      displayName: profile.name,
+      authProvider: 'GITHUB',
+      providerUserId: String(profile.id),
+      userName: profile.login,
       avatarUrl: normalizeGitHubAvatarUrl(profile.avatar_url),
       email,
     }

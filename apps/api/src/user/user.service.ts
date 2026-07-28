@@ -1,16 +1,20 @@
 import { Inject, Injectable } from '@nestjs/common'
 
 import { PrismaService } from '../database/prisma.service'
-import type { User } from '../generated/prisma/client'
+import type { Prisma, User } from '../generated/prisma/client'
 import type { AuthIdentityInput, AuthenticatedUser } from './user.types'
 
 @Injectable()
 export class UserService {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
-  async resolveIdentity(identity: AuthIdentityInput, now = new Date()): Promise<User> {
+  async resolveIdentity(
+    identity: AuthIdentityInput,
+    now = new Date(),
+    database: PrismaService | Prisma.TransactionClient = this.prisma,
+  ): Promise<User> {
     if (identity.authProvider === 'ANONYMOUS') {
-      return this.prisma.user.create({
+      return database.user.create({
         data: {
           ...identity,
           lastLoginAt: now,
@@ -18,7 +22,7 @@ export class UserService {
       })
     }
 
-    return this.prisma.user.upsert({
+    return database.user.upsert({
       where: {
         authProvider_providerUserId: {
           authProvider: identity.authProvider,
