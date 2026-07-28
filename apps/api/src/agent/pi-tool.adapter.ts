@@ -22,7 +22,8 @@ export interface PiToolExecutionScope {
  * - JSON Schema 参数作为 Pi 工具 schema（Pi 与 registry 双层校验）。
  * - 实际执行走 registry.execute：未知工具拒绝；无效参数返回失败结果、不触发出站。
  * - 成功结果映射为 Pi tool result（text content + details 携带 summary/audit）。
- * - 失败按 Pi 约定抛错；details 通过错误对象透传以便上层持久化审计。
+ * - 失败按 Pi 约定抛错，并把规范化错误码写入可读文本；Pi 会把自定义错误 details
+ *   收敛为空对象，Projector 再从该文本恢复错误码用于审计。
  */
 export function toPiAgentTool(
   definition: AgentToolDefinition,
@@ -45,9 +46,10 @@ export function toPiAgentTool(
         ...(scope === undefined ? {} : scope),
       })
       if (result.isError) {
+        const code = typeof result.audit?.code === 'string' ? result.audit.code : 'AGENT_TOOL_ERROR'
         throw new AgentToolExecutionError({
-          code: typeof result.audit?.code === 'string' ? result.audit.code : 'AGENT_TOOL_ERROR',
-          message: result.summary,
+          code,
+          message: `[${code}] ${result.content}`,
           summary: result.summary,
           ...(result.audit === undefined ? {} : { audit: result.audit }),
         })

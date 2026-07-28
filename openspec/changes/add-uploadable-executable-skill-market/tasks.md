@@ -57,6 +57,7 @@
   - [x] 5.5.2 将 Sandbox 生命周期迁移为 Thread 级复用，增加 `SANDBOX_TIMEOUT_SECONDS=3600`，在 Run 终态保留、Thread 删除或空闲/硬超时后销毁，并按 Run 重置激活与资源计数
   - [x] 5.5.3 删除应用内 Fake Sandbox Runtime 和运行时选择开关，本地与生产 API 均强制配置真实 OpenSandbox Server；单元测试只替换 OpenSandbox SDK client
 - [x] 5.6 实现 autonomous Shell 工具、cwd、60 秒命令超时、20 次调用限制、AbortSignal 和后台进程终态清理
+  - [x] 5.6.1 修复基础 Shell/read_file/write_file 被错误绑定到 Skill 激活状态的问题；无 active Skill 的 ready Run 也可使用 Thread workspace
 - [ ] 5.7 实现单次 1 MiB、Run 总计 5 MiB 工具输出截断及 100 MiB 出口流量终止，并将 limit reason 返回模型与 UI
 - [ ] 5.8 持久化 Skill 激活、sandbox 生命周期、命令、退出状态、耗时、截断和错误审计，敏感签名 URL 不进入 Pino
 - [ ] 5.9 完善 `/agent` 自动/手动 Skill UX、当前激活 Skill、Shell 日志与 Run 限制展示，确认调用不会弹出审批

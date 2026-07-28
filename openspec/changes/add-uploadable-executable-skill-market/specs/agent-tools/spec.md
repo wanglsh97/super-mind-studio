@@ -2,11 +2,11 @@
 
 ### Requirement: Agent tools are registered through a server allowlist
 
-The Agent runtime SHALL resolve every model tool call through a server-owned Tool registry. `activate_skill`, Shell, Skill file and `export_file` tools SHALL define stable names, English descriptions, JSON Schema parameters, abort handling and serializable results. The registry SHALL authorize `activate_skill` against the current user's added published Skills, SHALL route Shell/file execution through `SandboxRuntimePort`, and SHALL allow `export_file` to persist only files under `/workspace/output` owned by the current Run. Model-supplied names or parameters MUST NOT select an unregistered tool, another user's Skill, an arbitrary OSS object or execution outside the current Thread sandbox.
+The Agent runtime SHALL resolve every model tool call through a server-owned Tool registry. `activate_skill`, Shell, Skill file and `export_file` tools SHALL define stable names, English descriptions, JSON Schema parameters, abort handling and serializable results. The registry SHALL authorize `activate_skill` against the current user's added published Skills, SHALL route Shell/file execution through `SandboxRuntimePort`, and SHALL allow `export_file` to persist only files under `/workspace/output` owned by the current Run. Shell and base file tools SHALL remain available in the current Run sandbox even when no Skill is active; Skill activation adds instructions and package resources but MUST NOT gate the sandbox's base workspace capability. Model-supplied names or parameters MUST NOT select an unregistered tool, another user's Skill, an arbitrary OSS object or execution outside the current Thread sandbox.
 
-#### Scenario: A valid Shell call is routed to the sandbox
+#### Scenario: A valid base workspace call is routed without an active Skill
 
-- **GIVEN** a published added Skill is active and Shell arguments pass schema validation
+- **GIVEN** the current Run sandbox is ready, no Skill is active, and Shell or file arguments pass schema validation
 - **WHEN** the Pi harness prepares the tool call
 - **THEN** the registry delegates it to the current Thread sandbox under the current Run budget and persists its lifecycle and bounded result
 
@@ -18,7 +18,7 @@ The Agent runtime SHALL resolve every model tool call through a server-owned Too
 
 ### Requirement: Tool execution is visible and auditable
 
-The Agent event stream SHALL expose tool start, bounded progress, success, failure, cancellation and result summary. Skill activation audit SHALL include Skill ID, name and observed package SHA-256. Shell audit SHALL include sandbox ID, command, working directory, exit status, duration, truncation, resource-limit reason and bounded stdout/stderr metadata. File audit SHALL include logical file ID, direction, size and hash while excluding signed URLs and credentials.
+The Agent event stream SHALL expose tool start, bounded progress, success, failure, cancellation and result summary. Failed tool results SHALL preserve a normalized error code and actionable error message after the Pi runtime converts a thrown tool error into its result message. Skill activation audit SHALL include Skill ID, name and observed package SHA-256. Shell audit SHALL include sandbox ID, command, working directory, exit status, duration, truncation, resource-limit reason and bounded stdout/stderr metadata. File audit SHALL include logical file ID, direction, size and hash while excluding signed URLs and credentials.
 
 Persisted `write_file` arguments MUST omit file content and retain only bounded metadata. A successful `export_file` result SHALL emit a replayable `file-operation` event containing the stable file ID, output path, size and SHA-256.
 

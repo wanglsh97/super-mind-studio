@@ -55,7 +55,14 @@ describe('AgentRunRepository', () => {
     const updateMany = jest.fn()
     const update = jest.fn().mockResolvedValue({})
     const prisma = {
-      agentRun: { findMany, update, updateMany, create: jest.fn(), findFirst: jest.fn(), count: jest.fn() },
+      agentRun: {
+        findMany,
+        update,
+        updateMany,
+        create: jest.fn(),
+        findFirst: jest.fn(),
+        count: jest.fn(),
+      },
       agentEvent: { createMany },
     } as unknown as PrismaService
     const repository = new AgentRunRepository(prisma)
@@ -84,5 +91,41 @@ describe('AgentRunRepository', () => {
         }),
       }),
     )
+  })
+
+  it('persists normalized tool error fields alongside the bounded audit', async () => {
+    const upsert = jest.fn().mockResolvedValue({ id: 'record-1' })
+    const updateMany = jest.fn()
+    const prisma = {
+      agentToolCall: { upsert },
+      userFile: { updateMany },
+    } as unknown as PrismaService
+    const repository = new AgentRunRepository(prisma)
+
+    await repository.saveToolCalls('run-1', [
+      {
+        toolCallId: 'call-1',
+        toolName: 'write_file',
+        args: { path: '/workspace/output/logo.svg', content: '[omitted 6 bytes]' },
+        status: 'failed',
+        summary: 'Run Sandbox 尚未创建',
+        audit: { code: 'SANDBOX_UNAVAILABLE' },
+        isError: true,
+      },
+    ])
+
+    expect(upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({
+          errorCode: 'SANDBOX_UNAVAILABLE',
+          errorMessage: 'Run Sandbox 尚未创建',
+        }),
+        update: expect.objectContaining({
+          errorCode: 'SANDBOX_UNAVAILABLE',
+          errorMessage: 'Run Sandbox 尚未创建',
+        }),
+      }),
+    )
+    expect(updateMany).not.toHaveBeenCalled()
   })
 })

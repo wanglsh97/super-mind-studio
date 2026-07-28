@@ -109,7 +109,7 @@ export class AgentExecutionSessionService {
     userId: string,
     input: { command: string; workingDirectory: string; signal?: AbortSignal },
   ): Promise<SandboxCommandResult> {
-    const session = this.requireActiveSession(runId, userId)
+    const session = this.requireRunSession(runId, userId)
     return this.sandboxes.runCommand({
       sandboxId: session.thread.sandboxId,
       command: input.command,
@@ -124,7 +124,7 @@ export class AgentExecutionSessionService {
     path: string,
     signal?: AbortSignal,
   ): Promise<SandboxFileResult | null> {
-    const session = this.requireActiveSession(runId, userId)
+    const session = this.requireRunSession(runId, userId)
     return this.sandboxes.readFile(session.thread.sandboxId, path, signal)
   }
 
@@ -134,7 +134,7 @@ export class AgentExecutionSessionService {
     path: string,
     signal?: AbortSignal,
   ): Promise<SandboxFileResult | null> {
-    const session = this.requireActiveSession(runId, userId)
+    const session = this.requireRunSession(runId, userId)
     return this.sandboxes.readOutputFile(session.thread.sandboxId, path, signal)
   }
 
@@ -145,7 +145,7 @@ export class AgentExecutionSessionService {
     bytes: Uint8Array,
     signal?: AbortSignal,
   ): Promise<SandboxFileResult> {
-    const session = this.requireActiveSession(runId, userId)
+    const session = this.requireRunSession(runId, userId)
     return this.sandboxes.writeFile({
       sandboxId: session.thread.sandboxId,
       path,
@@ -334,14 +334,6 @@ export class AgentExecutionSessionService {
     const session = this.runSessions.get(runId)
     this.assertOwner(session, userId)
     if (!session) throw new Error('Run Sandbox 尚未创建')
-    return session
-  }
-
-  private requireActiveSession(runId: string, userId: string): RunExecutionSession {
-    const session = this.requireRunSession(runId, userId)
-    if (session.activeSkills.size === 0) {
-      throw new Error('Shell 和文件工具只能在 Skill 激活后使用')
-    }
     return session
   }
 

@@ -71,29 +71,26 @@ function setup(
 }
 
 describe('AgentExecutionSessionService Thread sandbox lifecycle', () => {
-  it('reuses one Thread sandbox across Runs while resetting activation authorization', async () => {
+  it('keeps base file tools available while resetting per-Run Skill activation', async () => {
     const { service, sandboxes, skills } = setup()
     const createSandbox = jest.spyOn(sandboxes, 'createSandbox')
 
     const firstSandbox = await service.startRun('run-1', 'thread-1', 'user-1')
-    await service.activateSkill('run-1', 'user-1', 'test-skill')
     await service.writeFile(
       'run-1',
       'user-1',
       '/workspace/work/shared.txt',
       new TextEncoder().encode('thread-workspace'),
     )
+    await service.activateSkill('run-1', 'user-1', 'test-skill')
     await service.finishRun('run-1')
 
     const secondSandbox = await service.startRun('run-2', 'thread-1', 'user-1')
     expect(secondSandbox).toBe(firstSandbox)
-    await expect(service.readFile('run-2', 'user-1', '/workspace/work/shared.txt')).rejects.toThrow(
-      '只能在 Skill 激活后使用',
-    )
-    await service.activateSkill('run-2', 'user-1', 'test-skill')
     await expect(
       service.readFile('run-2', 'user-1', '/workspace/work/shared.txt'),
     ).resolves.toMatchObject({ path: '/workspace/work/shared.txt' })
+    await service.activateSkill('run-2', 'user-1', 'test-skill')
     expect(createSandbox).toHaveBeenCalledTimes(1)
     expect(createSandbox).toHaveBeenCalledWith(
       expect.objectContaining({

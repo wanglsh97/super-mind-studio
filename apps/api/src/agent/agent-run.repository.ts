@@ -158,6 +158,9 @@ export class AgentRunRepository {
         status: TOOL_CALL_STATUS_MAP[record.status],
         summary: record.summary,
         audit: (record.audit ?? Prisma.JsonNull) as Prisma.InputJsonValue,
+        errorCode:
+          record.isError && typeof record.audit?.code === 'string' ? record.audit.code : null,
+        errorMessage: record.isError ? record.summary : null,
         completedAt: new Date(),
       }
       const saved = await this.prisma.agentToolCall.upsert({

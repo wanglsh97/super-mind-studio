@@ -294,6 +294,45 @@ describe('AgentRunProjector', () => {
     })
   })
 
+  it('recovers a normalized error code after Pi converts a thrown tool error to text', () => {
+    const projector = new AgentRunProjector(runId, idFactory())
+    const events = drive(projector, [
+      {
+        type: 'tool_execution_start',
+        toolCallId: 'call-write',
+        toolName: 'write_file',
+        args: { path: '/workspace/output/logo.svg', content: '<svg/>' },
+      },
+      {
+        type: 'tool_execution_end',
+        toolCallId: 'call-write',
+        toolName: 'write_file',
+        result: {
+          content: [
+            {
+              type: 'text',
+              text: '[SANDBOX_UNAVAILABLE] OpenSandbox 文件接口暂时不可用',
+            },
+          ],
+          details: {},
+        },
+        isError: true,
+      },
+    ])
+
+    expect(events.at(-1)).toMatchObject({
+      type: 'tool-result',
+      status: 'failed',
+      summary: 'OpenSandbox 文件接口暂时不可用',
+      audit: { code: 'SANDBOX_UNAVAILABLE' },
+    })
+    expect(projector.toolCallRecords()[0]).toMatchObject({
+      isError: true,
+      summary: 'OpenSandbox 文件接口暂时不可用',
+      audit: { code: 'SANDBOX_UNAVAILABLE' },
+    })
+  })
+
   it('emits a normalized error event and failed terminal', () => {
     const projector = new AgentRunProjector(runId, idFactory())
     projector.start()

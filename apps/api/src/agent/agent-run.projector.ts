@@ -433,13 +433,26 @@ function extractToolResult(result: unknown): {
 } {
   const record = asRecord(result)
   const details = asRecord(record.details)
+  const content = textFromContent(record.content)
+  const normalizedError = parseNormalizedToolError(content)
   const summary =
-    typeof details.summary === 'string' ? details.summary : textFromContent(record.content)
+    typeof details.summary === 'string' ? details.summary : (normalizedError?.message ?? content)
   const audit = asRecord(details.audit)
   return {
     summary: summary && summary.length > 0 ? summary : null,
-    audit: Object.keys(audit).length > 0 ? audit : null,
+    audit:
+      Object.keys(audit).length > 0
+        ? audit
+        : normalizedError === null
+          ? null
+          : { code: normalizedError.code },
   }
+}
+
+function parseNormalizedToolError(value: string): { code: string; message: string } | null {
+  const match = /^\[([A-Z][A-Z0-9_]{1,63})\]\s+([\s\S]+)$/.exec(value)
+  if (!match?.[1] || !match[2]) return null
+  return { code: match[1], message: match[2] }
 }
 
 function textFromContent(content: unknown): string {
