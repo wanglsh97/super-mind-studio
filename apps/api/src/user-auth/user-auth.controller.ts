@@ -1,4 +1,5 @@
 import {
+  ConflictException,
   Inject,
   Controller,
   Get,
@@ -11,6 +12,7 @@ import {
 import { ConfigService } from '@nestjs/config'
 import {
   ApiCookieAuth,
+  ApiConflictResponse,
   ApiCreatedResponse,
   ApiFoundResponse,
   ApiOkResponse,
@@ -78,12 +80,15 @@ export class UserAuthController {
     enum: ['/', '/chat/compare'],
   })
   @ApiFoundResponse({ description: '跳转到 GitHub authorize URL，并写入一次性 state Cookie' })
+  @ApiConflictResponse({ description: '已有有效用户 Session，必须先退出' })
   @ApiServiceUnavailableResponse({ description: 'GitHub OAuth 尚未配置' })
-  beginGitHubLogin(
+  async beginGitHubLogin(
     @Query('returnTo') returnTo: string | undefined,
+    @Req() request: Request,
     @Res() response: Response,
-  ): void {
+  ): Promise<void> {
     this.assertProviderEnabled('GitHub', this.githubEnabled, this.githubClientId)
+    await this.assertLoggedOut(request)
     const created = this.oauthState.create('GITHUB', returnTo)
     response.cookie(
       GITHUB_OAUTH_STATE_COOKIE,
@@ -118,6 +123,7 @@ export class UserAuthController {
         response.redirect(302, this.loginErrorUrl('authorization_rejected', returnTo))
         return
       }
+      await this.assertLoggedOut(request)
       const identity = await this.github.authenticate(code)
       const session = await this.sessions.create(identity)
       response.cookie(USER_SESSION_COOKIE, session.token, this.sessionCookieOptions())
@@ -135,12 +141,15 @@ export class UserAuthController {
     enum: ['/', '/chat/compare'],
   })
   @ApiFoundResponse({ description: '跳转到 Google authorize URL，并写入一次性 state Cookie' })
+  @ApiConflictResponse({ description: '已有有效用户 Session，必须先退出' })
   @ApiServiceUnavailableResponse({ description: 'Google OAuth 尚未配置' })
-  beginGoogleLogin(
+  async beginGoogleLogin(
     @Query('returnTo') returnTo: string | undefined,
+    @Req() request: Request,
     @Res() response: Response,
-  ): void {
+  ): Promise<void> {
     this.assertProviderEnabled('Google', this.googleEnabled, this.googleClientId)
+    await this.assertLoggedOut(request)
     const created = this.oauthState.create('GOOGLE', returnTo)
     response.cookie(
       GOOGLE_OAUTH_STATE_COOKIE,
@@ -177,6 +186,7 @@ export class UserAuthController {
         response.redirect(302, this.loginErrorUrl('authorization_rejected', returnTo))
         return
       }
+      await this.assertLoggedOut(request)
       const identity = await this.google.authenticate(code)
       const session = await this.sessions.create(identity)
       response.cookie(USER_SESSION_COOKIE, session.token, this.sessionCookieOptions())
@@ -207,10 +217,13 @@ export class UserAuthController {
       },
     },
   })
+  @ApiConflictResponse({ description: '已有有效用户 Session，必须先退出' })
   async anonymousLogin(
     @Query('returnTo') returnTo: string | undefined,
+    @Req() request: Request,
     @Res({ passthrough: true }) response: Response,
   ) {
+    await this.assertLoggedOut(request)
     const identity = createAnonymousIdentity()
     const session = await this.sessions.create(identity)
     response.cookie(USER_SESSION_COOKIE, session.token, this.sessionCookieOptions())
@@ -253,6 +266,16 @@ export class UserAuthController {
     await this.sessions.revoke(readCookie(request, USER_SESSION_COOKIE))
     response.clearCookie(USER_SESSION_COOKIE, this.sessionCookieOptions(false))
     return { success: true }
+  }
+
+  private async assertLoggedOut(request: Request): Promise<void> {
+    if (await this.sessions.hasActiveSession(readCookie(request, USER_SESSION_COOKIE))) {
+      throw new ConflictException({
+        code: 'ALREADY_AUTHENTICATED',
+        message: '请先退出当前账号再切换登录方式',
+        retryable: false,
+      })
+    }
   }
 
   private stateCookieOptions(provider: OAuthProvider, includeMaxAge = true): CookieOptions {

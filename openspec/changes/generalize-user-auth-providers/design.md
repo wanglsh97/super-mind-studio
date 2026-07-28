@@ -87,8 +87,8 @@ interface AuthenticatedUser {
 
 ### Anonymous
 
-`POST /api/v1/auth/anonymous` 不接收身份请求体。每次请求生成新的 Provider ID，创建新 User 和 UserSession，
-并覆盖当前 Session Cookie。服务端不读取设备指纹，Web 不保存匿名身份。退出、Cookie 丢失或固定 Session
+`POST /api/v1/auth/anonymous` 不接收身份请求体。每次成功请求生成新的 Provider ID，创建新 User 和
+UserSession，并写入 Session Cookie；若当前已有有效 Session 则要求先退出。服务端不读取设备指纹，Web 不保存匿名身份。退出、Cookie 丢失或固定 Session
 过期后，原匿名 User 不可恢复；其数据按现有永久保留规则继续存在。
 
 ### OAuth
@@ -102,8 +102,9 @@ Google 请求最小 `openid profile email` scope，以 `sub` 为唯一身份。�
 
 ### Session
 
-三种登录共用现有 Session Cookie、数据库哈希 token 和 30 天固定有效期。每次登录创建新 Session 并覆盖
-Cookie，不主动撤销此前 Session；退出只撤销当前 Cookie 指向的 Session。其他设备 Session 不受影响。
+三种登录共用现有 Session Cookie、数据库哈希 token 和 30 天固定有效期。已有有效 Session 的浏览器必须
+先退出，才可发起或完成另一种登录；服务端不会用新身份静默覆盖当前 Cookie。每次成功登录创建新 Session，
+退出只撤销当前 Cookie 指向的 Session，其他设备 Session 不受影响。
 
 ## Provider Configuration
 

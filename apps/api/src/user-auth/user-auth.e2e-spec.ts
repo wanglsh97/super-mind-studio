@@ -150,6 +150,36 @@ describe('GitHub user authentication E2E', () => {
     expect(users[0]?.providerUserId).not.toBe(users[1]?.providerUserId)
   })
 
+  it('requires the current browser to log out before switching login methods', async () => {
+    const existing = await app.get(UserSessionService).create({
+      authProvider: 'ANONYMOUS',
+      providerUserId: 'existing-anonymous-user',
+      userName: 'Anonymous User',
+      avatarUrl: null,
+      email: null,
+    })
+    const cookie = `aigateway_user_session=${existing.token}`
+
+    const github = await fetch(`${baseUrl}/api/v1/auth/github?returnTo=%2F`, {
+      headers: { cookie },
+      redirect: 'manual',
+    })
+    const google = await fetch(`${baseUrl}/api/v1/auth/google?returnTo=%2F`, {
+      headers: { cookie },
+      redirect: 'manual',
+    })
+    const anonymous = await fetch(`${baseUrl}/api/v1/auth/anonymous`, {
+      method: 'POST',
+      headers: { cookie },
+    })
+
+    expect(github.status).toBe(409)
+    expect(google.status).toBe(409)
+    expect(anonymous.status).toBe(409)
+    await expect(prisma.user.count()).resolves.toBe(1)
+    await expect(prisma.userSession.count()).resolves.toBe(1)
+  })
+
   it('keeps GitHub and Google Users separate when their verified email matches', async () => {
     await completeFixtureOAuth(baseUrl, 'github')
     const googleCallback = await completeFixtureOAuth(baseUrl, 'google')

@@ -74,14 +74,15 @@ credentials SHALL fail configuration validation.
 
 ### Requirement: Application sessions are shared across login providers
 All login methods SHALL use the same database UserSession and HttpOnly Cookie contract with fixed 30-day expiry.
-Successful login SHALL create a new Session and overwrite the browser Cookie without proactively revoking an older
-Session. Logout SHALL revoke only the Session referenced by the current Cookie.
+Successful login SHALL create a new Session. A browser with an active UserSession SHALL be required to log out before
+starting or completing another login. Logout SHALL revoke only the Session referenced by the current Cookie.
 
-#### Scenario: Browser replaces an existing login
+#### Scenario: Browser attempts to switch identity without logout
 - **GIVEN** a browser already has a valid UserSession
-- **WHEN** another login method succeeds
-- **THEN** the browser Cookie points to the newly created Session
-- **AND** the prior Session record remains valid until revoked or expired
+- **WHEN** it starts or completes another OAuth login, or requests anonymous login
+- **THEN** the API rejects the replacement login
+- **AND** the existing UserSession remains the browser's current identity
+- **AND** the User must log out before choosing another login method
 
 ### Requirement: Administrator logs use generic user identity
 Authenticated administrator request-log APIs SHALL expose generic user summaries and support filtering by auth

@@ -45,12 +45,13 @@ function setup(overrides: Record<string, string | number | boolean> = {}) {
     authProvider: 'GITHUB',
     userName: 'octocat',
   })
+  const hasActiveSession = jest.fn().mockResolvedValue(false)
   const revoke = jest.fn().mockResolvedValue(undefined)
   const controller = new UserAuthController(
     { authenticate } as unknown as GitHubOAuthClient,
     { authenticate: authenticateGoogle } as unknown as GoogleOAuthClient,
     state,
-    { create, read, revoke } as unknown as UserSessionService,
+    { create, hasActiveSession, read, revoke } as unknown as UserSessionService,
     new ConfigService({
       GITHUB_OAUTH_ENABLED: true,
       GITHUB_CLIENT_ID: 'fixture-client-id',
@@ -64,7 +65,7 @@ function setup(overrides: Record<string, string | number | boolean> = {}) {
       ...overrides,
     }),
   )
-  return { authenticate, authenticateGoogle, controller, create, read, revoke }
+  return { authenticate, authenticateGoogle, controller, create, hasActiveSession, read, revoke }
 }
 
 function responseDouble() {
@@ -75,12 +76,16 @@ function responseDouble() {
   } as unknown as Response
 }
 
+function loggedOutRequest() {
+  return { cookies: {} } as unknown as Request
+}
+
 describe('UserAuthController', () => {
-  it('starts GitHub authorization with state, email scope, and a safe return path', () => {
+  it('starts GitHub authorization with state, email scope, and a safe return path', async () => {
     const { controller } = setup()
     const response = responseDouble()
 
-    controller.beginGitHubLogin('/', response)
+    await controller.beginGitHubLogin('/', loggedOutRequest(), response)
 
     expect(response.cookie).toHaveBeenCalledWith(
       GITHUB_OAUTH_STATE_COOKIE,
@@ -97,7 +102,7 @@ describe('UserAuthController', () => {
   it('consumes state, creates a database session, and redirects on successful callback', async () => {
     const { authenticate, controller, create } = setup()
     const beginResponse = responseDouble()
-    controller.beginGitHubLogin('/', beginResponse)
+    await controller.beginGitHubLogin('/', loggedOutRequest(), beginResponse)
     const stateCookie = (beginResponse.cookie as jest.Mock).mock.calls[0]?.[1] as string
     const authorizeUrl = new URL((beginResponse.redirect as jest.Mock).mock.calls[0]?.[1] as string)
     const response = responseDouble()
@@ -147,7 +152,7 @@ describe('UserAuthController', () => {
     const { authenticateGoogle, controller, create } = setup()
     const beginResponse = responseDouble()
 
-    controller.beginGoogleLogin('/chat/compare', beginResponse)
+    await controller.beginGoogleLogin('/chat/compare', loggedOutRequest(), beginResponse)
 
     expect(beginResponse.cookie).toHaveBeenCalledWith(
       GOOGLE_OAUTH_STATE_COOKIE,
@@ -181,10 +186,12 @@ describe('UserAuthController', () => {
     expect(response.redirect).toHaveBeenCalledWith(302, 'http://localhost:3000/chat/compare')
   })
 
-  it('returns a normalized disabled-provider error', () => {
+  it('returns a normalized disabled-provider error', async () => {
     const { controller } = setup({ GOOGLE_OAUTH_ENABLED: false })
 
-    expect(() => controller.beginGoogleLogin('/', responseDouble())).toThrow(
+    await expect(
+      controller.beginGoogleLogin('/', loggedOutRequest(), responseDouble()),
+    ).rejects.toEqual(
       expect.objectContaining({
         response: expect.objectContaining({
           code: 'AUTH_PROVIDER_DISABLED',
@@ -215,7 +222,9 @@ describe('UserAuthController', () => {
     const { controller, create } = setup()
     const response = responseDouble()
 
-    await expect(controller.anonymousLogin('/', response)).resolves.toMatchObject({
+    await expect(
+      controller.anonymousLogin('/', loggedOutRequest(), response),
+    ).resolves.toMatchObject({
       user: { authProvider: 'ANONYMOUS', userName: 'Anonymous User' },
       returnTo: '/',
     })
@@ -239,10 +248,29 @@ describe('UserAuthController', () => {
     const { controller, create } = setup()
     const response = responseDouble()
 
-    await controller.anonymousLogin('/', response)
-    await controller.anonymousLogin('/', response)
+    await controller.anonymousLogin('/', loggedOutRequest(), response)
+    await controller.anonymousLogin('/', loggedOutRequest(), response)
 
     const identities = create.mock.calls.map(([identity]) => identity.providerUserId)
     expect(identities[0]).not.toBe(identities[1])
+  })
+
+  it('requires logout before starting or replacing a login', async () => {
+    const { controller, create, hasActiveSession } = setup()
+    hasActiveSession.mockResolvedValue(true)
+    const request = {
+      cookies: { [USER_SESSION_COOKIE]: 'active-session-token' },
+    } as unknown as Request
+
+    await expect(controller.beginGitHubLogin('/', request, responseDouble())).rejects.toMatchObject({
+      status: 409,
+    })
+    await expect(controller.beginGoogleLogin('/', request, responseDouble())).rejects.toMatchObject({
+      status: 409,
+    })
+    await expect(controller.anonymousLogin('/', request, responseDouble())).rejects.toMatchObject({
+      status: 409,
+    })
+    expect(create).not.toHaveBeenCalled()
   })
 })

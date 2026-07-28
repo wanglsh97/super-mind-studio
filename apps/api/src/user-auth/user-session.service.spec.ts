@@ -106,6 +106,27 @@ describe('UserSessionService', () => {
       where: { tokenHash: expect.stringMatching(/^[a-f0-9]{64}$/) },
     })
   })
+
+  it('detects active sessions and removes expired sessions before login switching', async () => {
+    const deleteMany = jest.fn().mockResolvedValue({ count: 1 })
+    const findUnique = jest
+      .fn()
+      .mockResolvedValueOnce({
+        id: 'active-session',
+        expiresAt: new Date('2026-08-01T00:00:00.000Z'),
+      })
+      .mockResolvedValueOnce({
+        id: 'expired-session',
+        expiresAt: new Date('2026-07-01T00:00:00.000Z'),
+      })
+    const prisma = { userSession: { deleteMany, findUnique } } as unknown as PrismaService
+    const service = createService(prisma)
+    const now = new Date('2026-07-19T00:00:00.000Z')
+
+    await expect(service.hasActiveSession('active-token', now)).resolves.toBe(true)
+    await expect(service.hasActiveSession('expired-token', now)).resolves.toBe(false)
+    expect(deleteMany).toHaveBeenCalledWith({ where: { id: 'expired-session' } })
+  })
 })
 
 function createService(

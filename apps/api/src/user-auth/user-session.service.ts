@@ -65,6 +65,20 @@ export class UserSessionService {
     return toAuthenticatedUser(session.user)
   }
 
+  async hasActiveSession(token: string | undefined, now = new Date()): Promise<boolean> {
+    if (!token) return false
+    const session = await this.prisma.userSession.findUnique({
+      where: { tokenHash: this.hashToken(token) },
+      select: { id: true, expiresAt: true },
+    })
+    if (!session) return false
+    if (session.expiresAt <= now) {
+      await this.prisma.userSession.deleteMany({ where: { id: session.id } })
+      return false
+    }
+    return true
+  }
+
   async revoke(token: string | undefined): Promise<void> {
     if (!token) return
     await this.prisma.userSession.deleteMany({ where: { tokenHash: this.hashToken(token) } })
