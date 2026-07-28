@@ -515,18 +515,28 @@ function AgentEnvironmentPanel({
       : hasLoaded
         ? 'bg-ink-subtle/45'
         : 'bg-brand animate-status-breathe'
+  const [isCollapsed, setIsCollapsed] = useState(false)
 
   return (
     <aside
       aria-live="polite"
       aria-label={`运行环境：${overallLabel}`}
-      className="fixed top-4 right-4 z-30"
+      className={cn(
+        'liquid-glass fixed top-4 right-4 z-30 overflow-hidden border-line/80 shadow-[0_24px_70px_rgb(41_54_88/0.18)] transition-[width,border-radius] duration-200 motion-reduce:transition-none',
+        isCollapsed ? 'w-44 rounded-[1rem]' : 'w-[22rem] rounded-[1.35rem] p-2',
+      )}
     >
-      <details className="group relative">
-        <summary className="liquid-glass-soft flex min-w-48 cursor-pointer list-none items-center gap-3 rounded-[1rem] border-line/75 px-3 py-2.5 shadow-[0_12px_32px_rgb(44_62_92/0.10)] transition hover:border-brand/30 hover:bg-surface-card focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand [&::-webkit-details-marker]:hidden">
+      {isCollapsed ? (
+        <button
+          type="button"
+          className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left transition hover:bg-surface-card/70 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand"
+          aria-label="展开运行环境"
+          aria-expanded="false"
+          onClick={() => setIsCollapsed(false)}
+        >
           <span
             aria-hidden="true"
-            className="relative grid size-9 shrink-0 place-items-center rounded-xl border border-line bg-surface-inset/75 text-ink-muted"
+            className="relative grid size-8 shrink-0 place-items-center rounded-[0.7rem] bg-surface-inset text-ink-muted"
           >
             <EnvironmentIcon />
             <span
@@ -537,24 +547,19 @@ function AgentEnvironmentPanel({
             />
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block font-mono text-[0.52rem] font-bold tracking-[0.16em] text-ink-subtle">
-              ENVIRONMENT
-            </span>
-            <span className="mt-0.5 block text-xs font-bold text-ink">{overallLabel}</span>
-            <span className="mt-0.5 block text-[0.58rem] text-ink-subtle">
-              Sandbox · MCP · Skill · Context
-            </span>
+            <span className="block text-xs font-bold text-ink">运行环境</span>
+            <span className="mt-0.5 block text-[0.6rem] text-ink-subtle">{overallLabel}</span>
           </span>
           <svg
             aria-hidden="true"
             viewBox="0 0 20 20"
-            className="size-4 shrink-0 fill-none stroke-current stroke-[1.7] text-ink-subtle transition-transform group-open:rotate-180"
+            className="size-4 shrink-0 -rotate-90 fill-none stroke-current stroke-[1.7] text-ink-subtle"
           >
             <path d="m6 8 4 4 4-4" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
-        </summary>
-
-        <div className="liquid-glass absolute top-[calc(100%+0.6rem)] right-0 w-[22rem] overflow-hidden rounded-[1.35rem] border-line/80 p-2 shadow-[0_24px_70px_rgb(41_54_88/0.18)]">
+        </button>
+      ) : (
+        <>
           <header className="flex items-start justify-between gap-4 px-3 pt-2.5 pb-3">
             <div>
               <p className="font-mono text-[0.58rem] font-bold tracking-[0.18em] text-brand">
@@ -563,18 +568,35 @@ function AgentEnvironmentPanel({
               <h2 className="mt-1 text-base font-bold text-ink">运行环境</h2>
               <p className="mt-1 text-xs text-ink-muted">当前会话可用的工具、资源与上下文。</p>
             </div>
-            <span
-              className={cn(
-                'mt-1 rounded-full px-2 py-1 text-[0.62rem] font-bold',
-                hasFailure
-                  ? 'bg-danger/10 text-danger'
-                  : isReady
-                    ? 'bg-success/10 text-success'
-                    : 'bg-brand/10 text-brand',
-              )}
-            >
-              {overallLabel}
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span
+                className={cn(
+                  'rounded-full px-2 py-1 text-[0.62rem] font-bold',
+                  hasFailure
+                    ? 'bg-danger/10 text-danger'
+                    : isReady
+                      ? 'bg-success/10 text-success'
+                      : 'bg-brand/10 text-brand',
+                )}
+              >
+                {overallLabel}
+              </span>
+              <button
+                type="button"
+                className="grid size-7 place-items-center rounded-lg text-ink-subtle transition hover:bg-surface-inset hover:text-ink focus-visible:outline-2 focus-visible:outline-brand"
+                aria-label="折叠运行环境"
+                aria-expanded="true"
+                onClick={() => setIsCollapsed(true)}
+              >
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 20 20"
+                  className="size-4 fill-none stroke-current stroke-[1.7]"
+                >
+                  <path d="m6 8 4 4 4-4" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            </div>
           </header>
 
           <div className="overflow-hidden rounded-[1rem] border border-line/75 bg-surface-card/70">
@@ -712,8 +734,8 @@ function AgentEnvironmentPanel({
               ) : null}
             </EnvironmentRow>
           </div>
-        </div>
-      </details>
+        </>
+      )}
     </aside>
   )
 }
