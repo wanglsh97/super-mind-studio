@@ -16,7 +16,7 @@ async function bootstrap() {
 
   if (config.get<boolean>('ADMIN_FIXED_CREDENTIALS_ENABLED', true)) {
     new Logger('Security').warn(
-      '固定管理员凭证 root/123456 仅限开发联调；生产环境必须禁用并在公开管理入口前升级认证',
+      '固定管理员凭证 root/123456 已启用；公网环境存在高风险，仅应在明确接受风险时使用',
     )
   }
 

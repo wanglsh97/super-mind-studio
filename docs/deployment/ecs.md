@@ -9,8 +9,10 @@
 - Compose 的 Nginx 同时提供公网 IP 的 HTTP 入口和域名 HTTPS 入口；域名 HTTP 会重定向到 HTTPS。浏览器看到的入口、`WEB_ORIGIN` 以及 GitHub/Google callback 必须使用同一个 HTTPS 域名。
 - 公网 IP 只能验收首页、Swagger 和 health 等公开入口，不能作为生产 OAuth callback 或用户能力入口。Chat、文生图和 Prompt 优化均要求有效用户 Session；一次性匿名登录也会创建独立 User。
 - V1 尚未实现全站成本硬顶和独立内容审核。首次部署必须使用 Mock-only；真实 Key 只在基础链路验收后逐个启用。
-- 固定管理员账号只允许开发联调；管理员认证升级前不得把管理入口视为可安全公开的生产能力。
-- 生产配置必须保持 `ADMIN_FIXED_CREDENTIALS_ENABLED=false`。API 会拒绝以固定凭证启动生产配置；正式开放管理员入口前，必须在后续 change 中接入密码哈希账号体系或外部身份认证并替换此硬门槛。
+- 生产模板默认关闭固定管理员账号。若按已确认的临时决策设置 `ADMIN_FIXED_CREDENTIALS_ENABLED=true`，
+  线上将直接接受 `root/123456`；该凭据公开且易猜测，不能把管理入口视为安全的公网认证能力。
+- 管理员登录仍有默认 5 次/IP/分钟限流、短期 Secure/HttpOnly Cookie 和审计，但这些措施不能阻止分布式猜测，
+  也不能降低凭据泄漏后的后台数据读取与修改风险。
 
 ## 2. ECS 初始化
 
@@ -64,7 +66,9 @@ nano .env.production
 - `GOOGLE_CLIENT_ID`、`GOOGLE_CLIENT_SECRET`：只使用独立的生产 OAuth Client，不能复用开发 Client。
 - `GOOGLE_CALLBACK_URL`：必须精确为 `https://<DOMAIN>/api/v1/auth/google/callback`，并在 Google Cloud Console 中配置同一个 redirect URI。
 - `USER_SESSION_SECRET`：至少 32 个随机字符；`USER_SESSION_TTL_SECONDS` 必须保持 `2592000`。
-- `ADMIN_SESSION_SECRET`：与用户 Session Secret 不同的随机值。固定管理员登录在生产保持关闭。
+- `ADMIN_SESSION_SECRET`：与用户 Session Secret 不同的随机值。
+- `ADMIN_FIXED_CREDENTIALS_ENABLED`：模板默认 `false`；只有在明确接受固定 `root/123456` 公网风险时才设为
+  `true`。恢复为 `false` 并重新部署即可关闭管理员登录。
 - `SMOKE_MODEL_ALIAS`：首次保持 `qwen`，同时保持 Qwen 禁用，使该 alias 回退到 Mock Adapter。
 
 首次部署保持：

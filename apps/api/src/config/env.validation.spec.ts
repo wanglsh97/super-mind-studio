@@ -37,9 +37,6 @@ describe('validateEnvironment', () => {
     expect(environment.PROVIDER_MAX_CONNECTIONS).toBe(20)
     expect(environment.ADMIN_SESSION_TTL_SECONDS).toBe(900)
     expect(environment.ADMIN_FIXED_CREDENTIALS_ENABLED).toBe(true)
-    expect(environment.ADMIN_PASSWORD_AUTH_ENABLED).toBe(false)
-    expect(environment.ADMIN_USERNAME).toBeUndefined()
-    expect(environment.ADMIN_PASSWORD_HASH).toBeUndefined()
     expect(environment.SKILL_OBJECT_STORE_DRIVER).toBe('memory')
     expect(environment.OSS_INTERNAL).toBe(false)
     expect(environment.OSS_TIMEOUT_MS).toBe(30_000)
@@ -322,7 +319,7 @@ describe('validateEnvironment', () => {
     ).toThrow('USER_SESSION_TTL_SECONDS')
   })
 
-  it('blocks fixed development credentials in production', () => {
+  it('allows fixed administrator credentials to be explicitly enabled in production', () => {
     expect(() =>
       validateEnvironment({
         ...requiredEnvironment,
@@ -333,72 +330,9 @@ describe('validateEnvironment', () => {
         GITHUB_CALLBACK_URL: 'https://example.com/api/v1/auth/github/callback',
         USER_SESSION_SECRET: 'production-user-session-secret-with-32-characters',
         ADMIN_SESSION_SECRET: 'production-session-secret-with-32-characters',
-      }),
-    ).toThrow('ADMIN_FIXED_CREDENTIALS_ENABLED')
-
-    expect(() =>
-      validateEnvironment({
-        ...requiredEnvironment,
-        NODE_ENV: 'production',
-        GITHUB_OAUTH_ENABLED: 'true',
-        GITHUB_CLIENT_ID: 'github-client-id',
-        GITHUB_CLIENT_SECRET: 'github-client-secret',
-        GITHUB_CALLBACK_URL: 'https://example.com/api/v1/auth/github/callback',
-        USER_SESSION_SECRET: 'production-user-session-secret-with-32-characters',
-        ADMIN_SESSION_SECRET: 'production-session-secret-with-32-characters',
-        ADMIN_FIXED_CREDENTIALS_ENABLED: 'false',
-      }),
-    ).not.toThrow()
-  })
-
-  it('accepts complete scrypt administrator credentials in production', () => {
-    const hash = `scrypt-v1$${'ab'.repeat(16)}$${'cd'.repeat(64)}`
-
-    expect(() =>
-      validateEnvironment({
-        ...requiredEnvironment,
-        NODE_ENV: 'production',
-        USER_SESSION_SECRET: 'production-user-session-secret-with-32-characters',
-        ADMIN_SESSION_SECRET: 'production-session-secret-with-32-characters',
-        ADMIN_FIXED_CREDENTIALS_ENABLED: 'false',
-        ADMIN_PASSWORD_AUTH_ENABLED: 'true',
-        ADMIN_USERNAME: 'root',
-        ADMIN_PASSWORD_HASH: hash,
-      }),
-    ).not.toThrow()
-  })
-
-  it('rejects incomplete, malformed or conflicting administrator password configuration', () => {
-    const hash = `scrypt-v1$${'ab'.repeat(16)}$${'cd'.repeat(64)}`
-
-    for (const input of [
-      {
-        ADMIN_FIXED_CREDENTIALS_ENABLED: 'false',
-        ADMIN_PASSWORD_AUTH_ENABLED: 'true',
-        ADMIN_PASSWORD_HASH: hash,
-      },
-      {
-        ADMIN_FIXED_CREDENTIALS_ENABLED: 'false',
-        ADMIN_PASSWORD_AUTH_ENABLED: 'true',
-        ADMIN_USERNAME: 'root',
-      },
-      {
-        ADMIN_FIXED_CREDENTIALS_ENABLED: 'false',
-        ADMIN_PASSWORD_AUTH_ENABLED: 'true',
-        ADMIN_USERNAME: 'root',
-        ADMIN_PASSWORD_HASH: 'not-a-scrypt-hash',
-      },
-      {
         ADMIN_FIXED_CREDENTIALS_ENABLED: 'true',
-        ADMIN_PASSWORD_AUTH_ENABLED: 'true',
-        ADMIN_USERNAME: 'root',
-        ADMIN_PASSWORD_HASH: hash,
-      },
-    ]) {
-      expect(() => validateEnvironment({ ...requiredEnvironment, ...input })).toThrow(
-        '环境变量校验失败',
-      )
-    }
+      }),
+    ).not.toThrow()
   })
 
   it('allows production to run with anonymous login while OAuth providers are disabled', () => {

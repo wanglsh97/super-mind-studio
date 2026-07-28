@@ -20,22 +20,6 @@ const adminSessionSecret = z.preprocess(
   z.string().min(32),
 )
 
-const optionalAdminUsername = z.preprocess(
-  (value) => (value === '' ? undefined : value),
-  z.string().trim().min(1).max(64).optional(),
-)
-
-const optionalAdminPasswordHash = z.preprocess(
-  (value) => (value === '' ? undefined : value),
-  z
-    .string()
-    .regex(
-      /^scrypt-v1\$[0-9a-f]{32}\$[0-9a-f]{128}$/,
-      'ADMIN_PASSWORD_HASH 必须是合法的 scrypt-v1 哈希',
-    )
-    .optional(),
-)
-
 const userSessionSecret = z.preprocess(
   (value) =>
     value === undefined || value === '' ? 'development-only-user-session-secret-change-me' : value,
@@ -176,9 +160,6 @@ const environmentSchema = z
       .default(10_000_000),
     ADMIN_LOGIN_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().positive().default(5),
     ADMIN_FIXED_CREDENTIALS_ENABLED: booleanFromEnv.default(true),
-    ADMIN_PASSWORD_AUTH_ENABLED: booleanFromEnv.default(false),
-    ADMIN_USERNAME: optionalAdminUsername,
-    ADMIN_PASSWORD_HASH: optionalAdminPasswordHash,
     ADMIN_SESSION_SECRET: adminSessionSecret,
     ADMIN_SESSION_TTL_SECONDS: z.coerce.number().int().min(60).max(86_400).default(900),
     CHAT_MAX_TOKENS: z.coerce.number().int().min(1).max(4096).default(4096),
@@ -305,34 +286,6 @@ const environmentSchema = z
         code: 'custom',
         path: ['ADMIN_SESSION_SECRET'],
         message: '生产环境必须配置独立的管理员会话密钥',
-      })
-    }
-    if (env.NODE_ENV === 'production' && env.ADMIN_FIXED_CREDENTIALS_ENABLED) {
-      context.addIssue({
-        code: 'custom',
-        path: ['ADMIN_FIXED_CREDENTIALS_ENABLED'],
-        message: '生产环境禁止启用固定 root/123456 凭证；升级认证前必须关闭管理员登录',
-      })
-    }
-    if (env.ADMIN_FIXED_CREDENTIALS_ENABLED && env.ADMIN_PASSWORD_AUTH_ENABLED) {
-      context.addIssue({
-        code: 'custom',
-        path: ['ADMIN_PASSWORD_AUTH_ENABLED'],
-        message: '固定开发凭据与生产密码凭据不能同时启用',
-      })
-    }
-    if (env.ADMIN_PASSWORD_AUTH_ENABLED && !env.ADMIN_USERNAME) {
-      context.addIssue({
-        code: 'custom',
-        path: ['ADMIN_USERNAME'],
-        message: '启用管理员密码认证时必须配置 ADMIN_USERNAME',
-      })
-    }
-    if (env.ADMIN_PASSWORD_AUTH_ENABLED && !env.ADMIN_PASSWORD_HASH) {
-      context.addIssue({
-        code: 'custom',
-        path: ['ADMIN_PASSWORD_HASH'],
-        message: '启用管理员密码认证时必须配置 ADMIN_PASSWORD_HASH',
       })
     }
     const providers = [
