@@ -110,11 +110,17 @@ enum ObjectCleanupStatus {
   SUCCEEDED
 }
 
+enum AuthProvider {
+  ANONYMOUS
+  GITHUB
+  GOOGLE
+}
+
 model User {
   id             String                @id @default(uuid()) @db.Uuid
-  githubId       String                @unique @db.VarChar(32)
-  githubUsername String                @db.VarChar(39)
-  displayName    String?               @db.VarChar(255)
+  authProvider   AuthProvider
+  providerUserId String                @db.VarChar(255)
+  userName       String                @db.VarChar(255)
   avatarUrl      String?               @db.VarChar(2048)
   email          String?               @db.VarChar(320)
   lastLoginAt    DateTime              @db.Timestamptz(3)
@@ -130,7 +136,8 @@ model User {
   files          UserFile[]
   skillUploads   SkillUploadSession[]
 
-  @@index([githubUsername])
+  @@unique([authProvider, providerUserId])
+  @@index([userName])
   @@index([createdAt])
 }
 
