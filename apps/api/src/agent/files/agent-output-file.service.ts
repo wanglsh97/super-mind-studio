@@ -141,9 +141,10 @@ export class AgentOutputFileService {
 export function normalizeOutputPath(requestedPath: string): string {
   const trimmed = requestedPath.trim()
   if (!trimmed) throw new AgentOutputFileError('OUTPUT_FILE_INVALID', '产物路径不能为空')
+  const relativePath = trimmed.startsWith('output/') ? trimmed.slice('output/'.length) : trimmed
   const candidate = trimmed.startsWith('/')
-    ? posix.normalize(trimmed)
-    : posix.join(OUTPUT_ROOT, trimmed)
+    ? posix.resolve(trimmed)
+    : posix.resolve(OUTPUT_ROOT, relativePath)
   if (candidate === OUTPUT_ROOT || !candidate.startsWith(`${OUTPUT_ROOT}/`)) {
     throw new AgentOutputFileError('OUTPUT_FILE_INVALID', `只能导出 ${OUTPUT_ROOT} 目录下的文件`)
   }

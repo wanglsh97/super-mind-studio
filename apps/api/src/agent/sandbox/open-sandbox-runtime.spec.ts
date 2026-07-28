@@ -251,6 +251,39 @@ describe('OpenSandboxRuntime adapter mapping', () => {
     await runtime.onModuleDestroy()
   })
 
+  it('normalizes workspace-relative command and file paths without allowing traversal', async () => {
+    const client = new StubOpenSandboxClient()
+    const runtime = createRuntime(client)
+    const sandbox = await runtime.createSandbox({ runId: 'run-relative-paths' })
+    await runtime.waitUntilReady(sandbox.sandboxId)
+    const instance = (await client.connect(sandbox.sandboxId)) as StubOpenSandboxInstance
+    const runCommand = jest.spyOn(instance, 'runCommand')
+
+    await runtime.runCommand({
+      sandboxId: sandbox.sandboxId,
+      command: 'pwd',
+      workingDirectory: 'work/nested',
+    })
+    await expect(
+      runtime.writeFile({
+        sandboxId: sandbox.sandboxId,
+        path: 'output/result.txt',
+        bytes: new TextEncoder().encode('result'),
+      }),
+    ).resolves.toMatchObject({ path: '/workspace/output/result.txt' })
+    await expect(runtime.readFile(sandbox.sandboxId, 'output/result.txt')).resolves.toMatchObject({
+      path: '/workspace/output/result.txt',
+      sizeBytes: 6,
+    })
+    expect(runCommand).toHaveBeenCalledWith(
+      expect.objectContaining({ workingDirectory: '/workspace/work/nested' }),
+    )
+    await expect(runtime.readFile(sandbox.sandboxId, '../etc/passwd')).rejects.toMatchObject({
+      code: 'FILE_ACCESS_DENIED',
+    })
+    await runtime.onModuleDestroy()
+  })
+
   it('reads a regular file only after its real path is verified inside /workspace/output', async () => {
     const client = new StubOpenSandboxClient()
     const runtime = createRuntime(client)

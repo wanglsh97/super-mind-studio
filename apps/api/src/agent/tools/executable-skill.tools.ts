@@ -33,7 +33,15 @@ const READ_FILE_PARAMETERS = {
   type: 'object',
   additionalProperties: false,
   required: ['path'],
-  properties: { path: { type: 'string', minLength: 1, maxLength: 1_024 } },
+  properties: {
+    path: {
+      type: 'string',
+      minLength: 1,
+      maxLength: 1_024,
+      description:
+        'A path inside /workspace. Both /workspace/output/file.svg and output/file.svg are accepted.',
+    },
+  },
 } as const
 
 const WRITE_FILE_PARAMETERS = {
@@ -41,7 +49,13 @@ const WRITE_FILE_PARAMETERS = {
   additionalProperties: false,
   required: ['path', 'content'],
   properties: {
-    path: { type: 'string', minLength: 1, maxLength: 1_024 },
+    path: {
+      type: 'string',
+      minLength: 1,
+      maxLength: 1_024,
+      description:
+        'A path inside /workspace. Both /workspace/work/file.txt and work/file.txt are accepted.',
+    },
     content: { type: 'string', maxLength: 1_048_576 },
   },
 } as const
@@ -55,7 +69,8 @@ const EXPORT_FILE_PARAMETERS = {
       type: 'string',
       minLength: 1,
       maxLength: 1_024,
-      description: 'A file path under /workspace/output.',
+      description:
+        'A file path under /workspace/output. Absolute, output/file.svg, and file.svg forms are accepted.',
     },
   },
 } as const
@@ -168,7 +183,8 @@ function createReadFileTool(
 ): AgentToolDefinition<{ path: string }> {
   return {
     name: 'read_file',
-    description: 'Read one file from the current Run sandbox workspace as UTF-8 text.',
+    description:
+      'Read one UTF-8 text file from the current Run sandbox workspace. Paths may be absolute under /workspace or relative to /workspace.',
     label: '读取文件',
     riskLevel: 'read',
     approvalPolicy: 'none',
@@ -197,7 +213,8 @@ function createWriteFileTool(
 ): AgentToolDefinition<{ path: string; content: string }> {
   return {
     name: 'write_file',
-    description: 'Write UTF-8 text to one file in the current Run sandbox workspace.',
+    description:
+      'Write UTF-8 text to one file in the current Run sandbox workspace. Paths may be absolute under /workspace or relative to /workspace.',
     label: '写入文件',
     riskLevel: 'write',
     approvalPolicy: 'none',

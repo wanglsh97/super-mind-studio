@@ -210,7 +210,7 @@ export class OpenSandboxRuntime implements SandboxRuntimePort, OnModuleDestroy {
   async runCommand(input: RunSandboxCommandInput): Promise<SandboxCommandResult> {
     throwIfAborted(input.signal)
     const state = await this.requireReadyState(input.sandboxId)
-    assertWorkspacePath(input.workingDirectory)
+    const workingDirectory = normalizeWorkspacePath(input.workingDirectory)
     if (state.usage.shellCalls >= state.limits.shellCallLimit) {
       return limitResult('shell_calls', 'SHELL_CALL_LIMIT', 'Shell 调用次数已达上限')
     }
@@ -231,10 +231,10 @@ export class OpenSandboxRuntime implements SandboxRuntimePort, OnModuleDestroy {
     let currentCommandId = ''
 
     try {
-      await state.instance.ensureDirectory(input.workingDirectory)
+      await state.instance.ensureDirectory(workingDirectory)
       const execution = await state.instance.runCommand({
         command: input.command,
-        workingDirectory: input.workingDirectory,
+        workingDirectory,
         timeoutSeconds: Math.max(1, Math.ceil(timeoutMs / 1_000)),
         ...(input.signal === undefined ? {} : { signal: input.signal }),
         onInit: (commandId) => {
@@ -364,10 +364,10 @@ export class OpenSandboxRuntime implements SandboxRuntimePort, OnModuleDestroy {
   async writeFile(input: WriteSandboxFileInput): Promise<SandboxFileResult> {
     throwIfAborted(input.signal)
     const state = await this.requireReadyState(input.sandboxId)
-    assertWorkspacePath(input.path)
+    const path = normalizeWorkspacePath(input.path)
     let previous: Uint8Array | null
     try {
-      previous = await state.instance.readFile(input.path)
+      previous = await state.instance.readFile(path)
     } catch (error) {
       if (!isNotFoundError(error)) throw error
       previous = null
@@ -380,10 +380,10 @@ export class OpenSandboxRuntime implements SandboxRuntimePort, OnModuleDestroy {
       })
     }
     const bytes = Uint8Array.from(input.bytes)
-    await state.instance.ensureDirectory(posix.dirname(input.path))
-    await state.instance.writeFile(input.path, bytes)
+    await state.instance.ensureDirectory(posix.dirname(path))
+    await state.instance.writeFile(path, bytes)
     state.usage.diskBytes = nextDiskBytes
-    return fileResult(input.path, bytes)
+    return fileResult(path, bytes)
   }
 
   async readFile(
@@ -393,9 +393,9 @@ export class OpenSandboxRuntime implements SandboxRuntimePort, OnModuleDestroy {
   ): Promise<SandboxFileResult | null> {
     throwIfAborted(signal)
     const state = await this.requireReadyState(sandboxId)
-    assertWorkspacePath(path)
-    const bytes = await state.instance.readFile(path)
-    return bytes ? fileResult(path, bytes) : null
+    const normalizedPath = normalizeWorkspacePath(path)
+    const bytes = await state.instance.readFile(normalizedPath)
+    return bytes ? fileResult(normalizedPath, bytes) : null
   }
 
   async readOutputFile(
@@ -405,8 +405,8 @@ export class OpenSandboxRuntime implements SandboxRuntimePort, OnModuleDestroy {
   ): Promise<SandboxFileResult | null> {
     throwIfAborted(signal)
     const state = await this.requireReadyState(sandboxId)
-    assertOutputPath(path)
-    const candidate = shellQuote(path)
+    const normalizedPath = assertOutputPath(path)
+    const candidate = shellQuote(normalizedPath)
     const checked = await state.instance.runCommand({
       command: [
         `candidate=${candidate}`,
@@ -890,21 +890,24 @@ function validateLimits(limits: SandboxLimits): void {
   }
 }
 
-function assertWorkspacePath(path: string): void {
-  if (
-    (path !== '/workspace' && !path.startsWith('/workspace/')) ||
-    path.includes('/../') ||
-    path.endsWith('/..')
-  ) {
+function normalizeWorkspacePath(path: string): string {
+  const trimmed = path.trim()
+  if (!trimmed || trimmed.includes('\0')) {
+    throw executionError('FILE_ACCESS_DENIED', 'Sandbox workspace 路径无效', false)
+  }
+  const normalized = posix.resolve('/workspace', trimmed)
+  if (normalized !== '/workspace' && !normalized.startsWith('/workspace/')) {
     throw executionError('FILE_ACCESS_DENIED', `文件路径不在 Sandbox workspace 内: ${path}`, false)
   }
+  return normalized
 }
 
-function assertOutputPath(path: string): void {
-  assertWorkspacePath(path)
-  if (!path.startsWith('/workspace/output/')) {
+function assertOutputPath(path: string): string {
+  const normalized = normalizeWorkspacePath(path)
+  if (!normalized.startsWith('/workspace/output/')) {
     throw executionError('FILE_ACCESS_DENIED', '只能读取 /workspace/output 下的显式产物', false)
   }
+  return normalized
 }
 
 function shellQuote(value: string): string {

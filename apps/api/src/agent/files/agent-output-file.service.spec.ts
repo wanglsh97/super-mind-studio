@@ -133,6 +133,7 @@ describe('AgentOutputFileService', () => {
 describe('normalizeOutputPath', () => {
   it.each([
     ['logo.svg', '/workspace/output/logo.svg'],
+    ['output/logo.svg', '/workspace/output/logo.svg'],
     ['/workspace/output/nested/logo.svg', '/workspace/output/nested/logo.svg'],
   ])('normalizes %s', (input, expected) => {
     expect(normalizeOutputPath(input)).toBe(expected)
