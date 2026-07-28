@@ -77,6 +77,12 @@ Agent Thread 在第一次 Run 时按需创建一个隔离沙箱，同一 Thread 
 
 `/api/v1/admin/*` 使用另一枚 `aigateway_admin_session` Cookie，与用户 Session 完全隔离。Swagger 只描述 Cookie 认证边界，不展示或接收 OAuth code、Provider access token、Client Secret 或原始 Session token。
 
+## Agent 跨会话并发
+
+同一用户可以在不同 Thread 中并发运行 Agent，同一 Thread 始终最多一个 active run。默认每用户最多同时运行 2 个，可通过 `AGENT_MAX_CONCURRENT_RUNS_PER_USER` 设置为 1–5；设为 1 可立即降级为串行模式。Web 只禁用当前运行中 Thread 的输入，其他 Thread 继续可用，并在侧栏标记后台任务。
+
+并发上限在 PostgreSQL 事务中原子检查，Redis Thread 锁不可用时 fail closed。每个 Run 的事件、取消、Sandbox、usage 和费用仍按 runId/threadId 隔离。
+
 ## Agent 网页搜索
 
 Agent 提供统一的 `web_search` 工具，服务端参考 OpenCode 通过远程 MCP 对接 Exa 与 Parallel，模型和浏览器不会看到两家的内部工具名或凭证。默认 `AGENT_WEB_SEARCH_PROVIDER=auto` 会按 Agent run ID 稳定选择一家；排障时可固定为 `exa` 或 `parallel`，设置 `AGENT_WEB_SEARCH_ENABLED=false` 可从工具清单中关闭搜索。

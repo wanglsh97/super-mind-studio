@@ -367,7 +367,7 @@ describe('AgentService', () => {
   })
 
   it('passes manually selected global Skill names into the asynchronous Run executor', async () => {
-    const { service, models, threads, runs, messages, runService } = setup()
+    const { service, models, threads, runs, runService } = setup()
     ;(threads.findSummaryForOwner as jest.Mock).mockResolvedValue(threadRow())
     ;(models.resolve as jest.Mock).mockReturnValue({
       id: 'qwen3.7-plus',

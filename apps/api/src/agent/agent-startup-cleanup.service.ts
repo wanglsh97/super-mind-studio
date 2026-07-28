@@ -9,7 +9,7 @@ import { SANDBOX_RUNTIME_PORT, type SandboxRuntimePort } from './sandbox/sandbox
 
 /**
  * API 启动清理：将进程外遗留的 running/cancelling run 标为 interrupted，
- * 并清除用户级 Redis active-run 锁。不重放模型调用或工具。
+ * 并清除 Thread 级 Redis active-run 锁。不重放模型调用或工具。
  */
 @Injectable()
 export class AgentStartupCleanupService implements OnModuleInit {
@@ -74,6 +74,6 @@ export class AgentStartupCleanupService implements OnModuleInit {
 }
 
 /** 测试辅助：构造与生产相同的锁 key，避免散落字面量。 */
-export function activeRunLockKeyForTests(userId: string): string {
-  return agentActiveRunLockKey(userId)
+export function activeRunLockKeyForTests(threadId: string): string {
+  return agentActiveRunLockKey(threadId)
 }
