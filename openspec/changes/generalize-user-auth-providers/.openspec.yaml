@@ -1,0 +1,3 @@
+schema: spec-driven
+created: 2026-07-27
+goal: 将 GitHub 专属用户模型重构为通用 User，并统一支持一次性匿名登录、GitHub OAuth 和 Google OAuth。
