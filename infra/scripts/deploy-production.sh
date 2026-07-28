@@ -38,6 +38,32 @@ smoke_model_alias="$(env_value SMOKE_MODEL_ALIAS)" || {
   echo 'SMOKE_MODEL_ALIAS 必须在生产环境文件中出现且只能出现一次。' >&2
   exit 1
 }
+skill_object_store_driver="$(env_value SKILL_OBJECT_STORE_DRIVER)" || {
+  echo 'SKILL_OBJECT_STORE_DRIVER 必须在生产环境文件中出现且只能出现一次。' >&2
+  exit 1
+}
+oss_region="$(env_value OSS_REGION)" || {
+  echo 'OSS_REGION 必须在生产环境文件中出现且只能出现一次。' >&2
+  exit 1
+}
+oss_endpoint="$(env_value OSS_ENDPOINT)" || {
+  echo 'OSS_ENDPOINT 必须在生产环境文件中出现且只能出现一次。' >&2
+  exit 1
+}
+oss_internal="$(env_value OSS_INTERNAL)" || {
+  echo 'OSS_INTERNAL 必须在生产环境文件中出现且只能出现一次。' >&2
+  exit 1
+}
+for required_oss_secret in OSS_BUCKET OSS_ACCESS_KEY_ID OSS_ACCESS_KEY_SECRET; do
+  required_oss_value="$(env_value "$required_oss_secret")" || {
+    echo "$required_oss_secret 必须在生产环境文件中出现且只能出现一次。" >&2
+    exit 1
+  }
+  if [ -z "$required_oss_value" ]; then
+    echo "$required_oss_secret 不能为空。" >&2
+    exit 1
+  fi
+done
 
 case "$app_version" in
   '' | *[!0-9a-f]*)
@@ -66,6 +92,28 @@ case "$smoke_model_alias" in
     exit 1
     ;;
 esac
+if [ "$skill_object_store_driver" != 'oss' ]; then
+  echo '生产环境 SKILL_OBJECT_STORE_DRIVER 必须为 oss。' >&2
+  exit 1
+fi
+case "$oss_region" in
+  oss-*) ;;
+  *)
+    echo 'OSS_REGION 必须使用 OSS Region ID，例如 oss-cn-hangzhou。' >&2
+    exit 1
+    ;;
+esac
+case "$oss_endpoint" in
+  https://*) ;;
+  *)
+    echo 'OSS_ENDPOINT 必须是浏览器可访问的公网 HTTPS Endpoint。' >&2
+    exit 1
+    ;;
+esac
+if [ "$oss_internal" != 'false' ]; then
+  echo '浏览器直传 Skill 包要求 OSS_INTERNAL=false。' >&2
+  exit 1
+fi
 
 cd "$ROOT_DIR"
 
