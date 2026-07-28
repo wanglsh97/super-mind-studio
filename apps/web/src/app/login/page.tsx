@@ -9,10 +9,7 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <main
-          data-login-shell
-          className="grid min-h-screen min-w-[1366px] place-items-center px-5 text-sm text-ink-muted"
-        >
+        <main className="grid min-h-screen place-items-center px-5 text-sm text-ink-muted">
           正在准备登录…
         </main>
       }

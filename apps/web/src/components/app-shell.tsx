@@ -30,7 +30,7 @@ const shellIconButtonClass =
 
 export function AppShell({ children }: Readonly<{ children: ReactNode }>) {
   const pathname = usePathname()
-  if (pathname.startsWith('/admin') || pathname.startsWith('/login')) return children
+  if (pathname.startsWith('/admin')) return children
   return <UserWorkspace>{children}</UserWorkspace>
 }
 
