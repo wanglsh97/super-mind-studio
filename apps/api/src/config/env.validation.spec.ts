@@ -60,7 +60,7 @@ describe('validateEnvironment', () => {
     expect(environment.AGENT_MCP_MAX_TOOLS_PER_SERVER).toBe(50)
     expect(environment.AGENT_MCP_MAX_RESPONSE_BYTES).toBe(1_048_576)
     expect(environment.AGENT_MCP_MAX_OUTPUT_CHARS).toBe(20_000)
-    expect(environment.AGENT_MAX_CONCURRENT_RUNS_PER_USER).toBe(2)
+    expect(environment.AGENT_MAX_CONCURRENT_RUNS_PER_USER).toBe(3)
   })
 
   it('accepts a fixed anonymous web-search provider without API keys', () => {

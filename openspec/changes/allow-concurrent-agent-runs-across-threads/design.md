@@ -36,7 +36,7 @@ Run 与 user message。数据库状态是并发数量真源；Redis Thread 锁�
 
 ### Decision 2: Concurrency is bounded and configurable
 
-新增 `AGENT_MAX_CONCURRENT_RUNS_PER_USER`，默认 2，允许 1–5。值为 1 可作为即时降级和回滚手段。
+新增 `AGENT_MAX_CONCURRENT_RUNS_PER_USER`，默认 3，允许 1–5。值为 1 可作为即时降级和回滚手段。
 超过上限返回明确的冲突错误和当前 active run 摘要，不调用模型、工具或 Sandbox。
 
 该上限不替代每个 run 的既有预算。Provider 限流、单机容量和费用仍需通过现有 RequestLog、

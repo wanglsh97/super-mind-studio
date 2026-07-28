@@ -3,7 +3,7 @@
 ### Requirement: Users can run Agents concurrently across different threads
 
 The server SHALL allow one authenticated user to have active Agent runs in different threads up to a
-configured per-user limit. The default limit SHALL be two and the accepted configuration range SHALL
+configured per-user limit. The default limit SHALL be three and the accepted configuration range SHALL
 be one through five. Each thread MUST still have at most one active run. Admission MUST be atomic
 across concurrent requests, PostgreSQL active run state SHALL remain the source of truth, and Redis
 failure MUST fail closed before provider, tool, or Sandbox work begins.

@@ -79,7 +79,7 @@ Agent Thread 在第一次 Run 时按需创建一个隔离沙箱，同一 Thread 
 
 ## Agent 跨会话并发
 
-同一用户可以在不同 Thread 中并发运行 Agent，同一 Thread 始终最多一个 active run。默认每用户最多同时运行 2 个，可通过 `AGENT_MAX_CONCURRENT_RUNS_PER_USER` 设置为 1–5；设为 1 可立即降级为串行模式。Web 只禁用当前运行中 Thread 的输入，其他 Thread 继续可用，并在侧栏标记后台任务。
+同一用户可以在不同 Thread 中并发运行 Agent，同一 Thread 始终最多一个 active run。默认每用户最多同时运行 3 个，可通过 `AGENT_MAX_CONCURRENT_RUNS_PER_USER` 设置为 1–5；设为 1 可立即降级为串行模式。Web 只禁用当前运行中 Thread 的输入，其他 Thread 继续可用，并在侧栏标记后台任务。
 
 并发上限在 PostgreSQL 事务中原子检查，Redis Thread 锁不可用时 fail closed。每个 Run 的事件、取消、Sandbox、usage 和费用仍按 runId/threadId 隔离。
 

@@ -7,7 +7,7 @@ runId/threadId 隔离，可以在不开放同一会话并发写入的前提下�
 ## What Changes
 
 - 将单用户全局一个 active run 改为：不同 Thread 可并发、同一 Thread 最多一个 active run。
-- 增加服务端可配置的单用户并发上限，默认 2、最大 5；Redis 不可用时继续 fail closed。
+- 增加服务端可配置的单用户并发上限，默认 3、最大 5；Redis 不可用时继续 fail closed。
 - 使用 PostgreSQL 原子准入串行化同一用户的创建竞态，并以数据库 active run 状态作为真源。
 - Thread 列表 API/SDK 返回当前用户的 active run 集合，而不是单个全局 active run。
 - Web 按 Thread 跟踪运行状态，只禁用当前运行中 Thread 的 Composer；其他 Thread 可提交新任务。

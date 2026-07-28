@@ -184,7 +184,7 @@ export class AgentService {
         threadId,
         userId: user.id,
         input,
-        maxConcurrentRuns: this.config.get<number>('AGENT_MAX_CONCURRENT_RUNS_PER_USER', 2),
+        maxConcurrentRuns: this.config.get<number>('AGENT_MAX_CONCURRENT_RUNS_PER_USER', 3),
         ...(thread.title === AGENT_DEFAULT_THREAD_TITLE
           ? { derivedTitle: deriveAgentThreadTitle(input) }
           : {}),
