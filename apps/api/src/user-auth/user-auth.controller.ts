@@ -59,9 +59,13 @@ export class UserAuthController {
     this.googleEnabled = config.get<boolean>('GOOGLE_OAUTH_ENABLED', false)
     this.production = config.get<string>('NODE_ENV') === 'production'
     this.githubClientId = config.get<string>('GITHUB_CLIENT_ID')
-    this.githubCallbackUrl = config.getOrThrow<string>('GITHUB_CALLBACK_URL')
+    this.githubCallbackUrl =
+      config.get<string>('GITHUB_CALLBACK_URL') ??
+      'http://localhost:3001/api/v1/auth/github/callback'
     this.googleClientId = config.get<string>('GOOGLE_CLIENT_ID')
-    this.googleCallbackUrl = config.getOrThrow<string>('GOOGLE_CALLBACK_URL')
+    this.googleCallbackUrl =
+      config.get<string>('GOOGLE_CALLBACK_URL') ??
+      'http://localhost:3001/api/v1/auth/google/callback'
     this.webOrigin = config.getOrThrow<string>('WEB_ORIGIN')
     this.sessionTtlSeconds = config.getOrThrow<number>('USER_SESSION_TTL_SECONDS')
   }

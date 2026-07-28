@@ -23,8 +23,10 @@ import { UserSessionGuard } from './user-session.guard'
         new GitHubOAuthClient({
           clientId: config.get<string>('GITHUB_CLIENT_ID') ?? 'disabled',
           clientSecret: config.get<string>('GITHUB_CLIENT_SECRET') ?? 'disabled',
-          callbackUrl: config.getOrThrow<string>('GITHUB_CALLBACK_URL'),
-          timeoutMs: config.getOrThrow<number>('GITHUB_OAUTH_HTTP_TIMEOUT_MS'),
+          callbackUrl:
+            config.get<string>('GITHUB_CALLBACK_URL') ??
+            'http://localhost:3001/api/v1/auth/github/callback',
+          timeoutMs: config.get<number>('GITHUB_OAUTH_HTTP_TIMEOUT_MS') ?? 10_000,
         }),
     },
     {
@@ -34,8 +36,10 @@ import { UserSessionGuard } from './user-session.guard'
         new GoogleOAuthClient({
           clientId: config.get<string>('GOOGLE_CLIENT_ID') ?? 'disabled',
           clientSecret: config.get<string>('GOOGLE_CLIENT_SECRET') ?? 'disabled',
-          callbackUrl: config.getOrThrow<string>('GOOGLE_CALLBACK_URL'),
-          timeoutMs: config.getOrThrow<number>('GOOGLE_OAUTH_HTTP_TIMEOUT_MS'),
+          callbackUrl:
+            config.get<string>('GOOGLE_CALLBACK_URL') ??
+            'http://localhost:3001/api/v1/auth/google/callback',
+          timeoutMs: config.get<number>('GOOGLE_OAUTH_HTTP_TIMEOUT_MS') ?? 10_000,
         }),
     },
     {
