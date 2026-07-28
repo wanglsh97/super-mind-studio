@@ -22,8 +22,9 @@ import {
 } from '@nestjs/swagger'
 import type { CookieOptions, Request, Response } from 'express'
 
+import { createAnonymousIdentity } from './anonymous-identity'
 import { GitHubOAuthClient } from './github-oauth.client'
-import { OAuthStateService } from './oauth-state.service'
+import { OAuthStateService, sanitizeReturnTo } from './oauth-state.service'
 import { GITHUB_OAUTH_CLIENT, OAUTH_STATE_COOKIE, USER_SESSION_COOKIE } from './user-auth.constants'
 import { UserSessionService } from './user-session.service'
 
@@ -106,6 +107,37 @@ export class UserAuthController {
     }
   }
 
+  @Post('anonymous')
+  @ApiOperation({ summary: '创建一次性匿名用户 Session' })
+  @ApiQuery({
+    name: 'returnTo',
+    required: false,
+    enum: ['/', '/chat/compare'],
+  })
+  @ApiCreatedResponse({
+    description: '创建本地 Session，并写入用户 Cookie',
+    schema: {
+      type: 'object',
+      required: ['user', 'returnTo'],
+      properties: {
+        user: {
+          type: 'object',
+          required: ['id', 'authProvider', 'userName', 'avatarUrl'],
+        },
+        returnTo: { type: 'string' },
+      },
+    },
+  })
+  async anonymousLogin(
+    @Query('returnTo') returnTo: string | undefined,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const identity = createAnonymousIdentity()
+    const session = await this.sessions.create(identity)
+    response.cookie(USER_SESSION_COOKIE, session.token, this.sessionCookieOptions())
+    return { user: session.user, returnTo: sanitizeReturnTo(returnTo) }
+  }
+
   @Get('session')
   @ApiOperation({ summary: '恢复当前用户 Session' })
   @ApiCookieAuth(USER_SESSION_COOKIE)
@@ -117,12 +149,11 @@ export class UserAuthController {
       properties: {
         user: {
           type: 'object',
-          required: ['id', 'githubId', 'githubUsername', 'displayName', 'avatarUrl'],
+          required: ['id', 'authProvider', 'userName', 'avatarUrl'],
           properties: {
             id: { type: 'string', format: 'uuid' },
-            githubId: { type: 'string' },
-            githubUsername: { type: 'string' },
-            displayName: { type: 'string', nullable: true },
+            authProvider: { type: 'string', enum: ['ANONYMOUS', 'GITHUB', 'GOOGLE'] },
+            userName: { type: 'string' },
             avatarUrl: { type: 'string', format: 'uri', nullable: true },
           },
         },

@@ -7,24 +7,29 @@ import { OAUTH_STATE_COOKIE, USER_SESSION_COOKIE } from './user-auth.constants'
 import { UserAuthController } from './user-auth.controller'
 import type { UserSessionService } from './user-session.service'
 
-function setup() {
+function setup(overrides: Record<string, string | number | boolean> = {}) {
   const state = new OAuthStateService('fixture-user-session-secret-with-at-least-32-characters')
   const authenticate = jest.fn().mockResolvedValue({
-    githubId: '12345678',
-    githubUsername: 'octocat',
-    displayName: 'The Octocat',
+    authProvider: 'GITHUB',
+    providerUserId: '12345678',
+    userName: 'octocat',
     avatarUrl: null,
     email: null,
   })
-  const create = jest.fn().mockResolvedValue({
+  const create = jest.fn(async (identity: { authProvider: string; userName: string }) => ({
     token: 'session-token',
     expiresAt: new Date('2026-08-18T00:00:00.000Z'),
-    user: { id: 'user-id', githubId: '12345678', githubUsername: 'octocat' },
-  })
+    user: {
+      id: 'user-id',
+      authProvider: identity.authProvider,
+      userName: identity.userName,
+      avatarUrl: null,
+    },
+  }))
   const read = jest.fn().mockResolvedValue({
     id: 'user-id',
-    githubId: '12345678',
-    githubUsername: 'octocat',
+    authProvider: 'GITHUB',
+    userName: 'octocat',
   })
   const revoke = jest.fn().mockResolvedValue(undefined)
   const controller = new UserAuthController(
@@ -38,6 +43,7 @@ function setup() {
       WEB_ORIGIN: 'http://localhost:3000',
       USER_SESSION_TTL_SECONDS: 2_592_000,
       NODE_ENV: 'test',
+      ...overrides,
     }),
   )
   return { authenticate, controller, create, read, revoke }
@@ -125,7 +131,7 @@ describe('UserAuthController', () => {
     const response = responseDouble()
 
     await expect(controller.readSession(request)).resolves.toMatchObject({
-      user: { githubUsername: 'octocat' },
+      user: { userName: 'octocat' },
     })
     await expect(controller.logout(request, response)).resolves.toEqual({ success: true })
     expect(read).toHaveBeenCalledWith('current-token')
@@ -134,5 +140,40 @@ describe('UserAuthController', () => {
       USER_SESSION_COOKIE,
       expect.not.objectContaining({ maxAge: expect.anything() }),
     )
+  })
+
+  it('creates a session for a new one-time anonymous identity', async () => {
+    const { controller, create } = setup()
+    const response = responseDouble()
+
+    await expect(controller.anonymousLogin('/', response)).resolves.toMatchObject({
+      user: { authProvider: 'ANONYMOUS', userName: 'Anonymous User' },
+      returnTo: '/',
+    })
+    expect(create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        authProvider: 'ANONYMOUS',
+        providerUserId: expect.stringMatching(/^[0-9a-f-]{36}$/),
+        userName: 'Anonymous User',
+        email: null,
+        avatarUrl: null,
+      }),
+    )
+    expect(response.cookie).toHaveBeenCalledWith(
+      USER_SESSION_COOKIE,
+      'session-token',
+      expect.objectContaining({ httpOnly: true, path: '/api/v1' }),
+    )
+  })
+
+  it('creates distinct identities for repeated anonymous login calls', async () => {
+    const { controller, create } = setup()
+    const response = responseDouble()
+
+    await controller.anonymousLogin('/', response)
+    await controller.anonymousLogin('/', response)
+
+    const identities = create.mock.calls.map(([identity]) => identity.providerUserId)
+    expect(identities[0]).not.toBe(identities[1])
   })
 })
