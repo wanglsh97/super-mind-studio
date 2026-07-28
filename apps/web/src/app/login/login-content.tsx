@@ -8,6 +8,8 @@ import { useUserSession } from '../../components/user-session-provider'
 import { cn } from '../../lib/cn'
 import {
   githubLoginUrl,
+  googleLoginUrl,
+  loginAnonymously,
   sanitizeUserReturnTo,
   userLoginErrorMessage,
 } from '../../lib/user-auth-client'
@@ -19,13 +21,29 @@ export function LoginContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const session = useUserSession()
-  const [leaving, setLeaving] = useState(false)
+  const [leaving, setLeaving] = useState<'github' | 'google' | null>(null)
+  const [anonymousBusy, setAnonymousBusy] = useState(false)
+  const [anonymousError, setAnonymousError] = useState('')
   const returnTo = sanitizeUserReturnTo(searchParams.get('returnTo'))
   const errorMessage = userLoginErrorMessage(searchParams.get('error'))
 
   useEffect(() => {
     if (session.status === 'authenticated') router.replace(returnTo)
   }, [returnTo, router, session.status])
+
+  async function continueAnonymously() {
+    if (anonymousBusy || leaving !== null) return
+    setAnonymousBusy(true)
+    setAnonymousError('')
+    try {
+      const result = await loginAnonymously(returnTo)
+      await session.refresh()
+      router.replace(result.returnTo)
+    } catch (cause) {
+      setAnonymousError(cause instanceof Error ? cause.message : 'Anonymous sign-in failed')
+      setAnonymousBusy(false)
+    }
+  }
 
   return (
     <main className="relative grid min-h-screen place-items-center overflow-hidden px-6 py-12 md:px-10">
@@ -38,22 +56,12 @@ export function LoginContent() {
           <div className="absolute top-4 right-4 z-1 font-mono text-[0.5rem] tracking-widest text-ink-subtle">
             ACCESS / 01
           </div>
-          <div className="liquid-glass-soft grid size-16 place-items-center rounded-[1.25rem] border-brand/20 bg-brand/10 shadow-[inset_0_1px_0_rgb(255_255_255/0.82),0_10px_28px_rgb(39_100_255/0.16)] dark:border-brand/25 dark:bg-brand/14">
+          <div className="liquid-glass-soft mx-auto grid size-16 place-items-center rounded-[1.25rem] border-brand/20 bg-brand/10 shadow-[inset_0_1px_0_rgb(255_255_255/0.82),0_10px_28px_rgb(39_100_255/0.16)] dark:border-brand/25 dark:bg-brand/14">
             <BrandMark className="size-[3.65rem] object-contain" alt="Super Mind Studio" />
           </div>
-          <p className="mt-8 font-mono text-[0.62rem] font-bold tracking-[0.13em] text-brand">
+          <p className="mt-8 text-center font-mono text-[0.62rem] font-bold tracking-[0.13em] text-brand">
             USER SIGN IN
           </p>
-          <h2
-            id="login-title"
-            className="mt-3 text-[clamp(2rem,3vw,2.8rem)] leading-tight tracking-tight text-ink"
-          >
-            Continue with GitHub
-          </h2>
-          <p className="mt-4 text-sm leading-relaxed text-ink-muted">
-            Sign in once. Continue in your Agent workspace.
-          </p>
-
           {errorMessage && (
             <div
               role="alert"
@@ -65,11 +73,11 @@ export function LoginContent() {
 
           <a
             href={githubLoginUrl(returnTo)}
-            aria-disabled={leaving}
-            onClick={() => setLeaving(true)}
+            aria-disabled={leaving !== null || anonymousBusy}
+            onClick={() => setLeaving('github')}
             className={cn(
               'liquid-button relative z-1 mt-8 flex min-h-14 items-center justify-center gap-3 rounded-2xl px-5 text-sm font-bold transition-[transform,box-shadow] hover:-translate-y-0.5',
-              leaving && 'pointer-events-none opacity-60',
+              (leaving !== null || anonymousBusy) && 'pointer-events-none opacity-60',
               focusRing,
             )}
           >
@@ -86,7 +94,7 @@ export function LoginContent() {
               />
             </svg>
             <span>
-              {leaving
+              {leaving === 'github'
                 ? 'OPENING GITHUB…'
                 : errorMessage
                   ? 'TRY GITHUB AGAIN'
@@ -94,12 +102,69 @@ export function LoginContent() {
             </span>
           </a>
 
-          <div className="mt-4 flex justify-between gap-4 font-mono text-[0.48rem] tracking-wide text-[#8f849f] max-sm:flex-col max-sm:gap-1.5">
-            <span>SECURE OAUTH</span>
-            <span>NO PASSWORD STORED</span>
+          <a
+            href={googleLoginUrl(returnTo)}
+            aria-disabled={leaving !== null || anonymousBusy}
+            onClick={() => setLeaving('google')}
+            className={cn(
+              'relative z-1 mt-3 flex min-h-14 items-center justify-center gap-3 rounded-2xl border border-line bg-surface px-5 text-sm font-bold text-ink transition-[transform,border-color,box-shadow] hover:-translate-y-0.5 hover:border-brand/35 hover:shadow-[0_12px_30px_rgb(39_100_255/0.10)] dark:bg-surface-raised',
+              (leaving !== null || anonymousBusy) && 'pointer-events-none opacity-60',
+              focusRing,
+            )}
+          >
+            <GoogleIcon />
+            <span>{leaving === 'google' ? 'OPENING GOOGLE…' : 'CONTINUE WITH GOOGLE'}</span>
+          </a>
+
+          <div className="mt-4 flex items-center justify-between gap-4 max-sm:flex-col max-sm:items-start max-sm:gap-2">
+            <span className="font-mono text-[0.48rem] tracking-wide text-ink-subtle">
+              SECURE OAUTH
+            </span>
+            <button
+              type="button"
+              disabled={anonymousBusy || leaving !== null}
+              onClick={() => void continueAnonymously()}
+              className={cn(
+                'font-mono text-[0.48rem] tracking-wide text-ink-subtle transition-colors duration-150',
+                'cursor-pointer hover:text-ink-muted',
+                'disabled:pointer-events-none disabled:opacity-45',
+                'motion-reduce:transition-none',
+                focusRing,
+              )}
+            >
+              {anonymousBusy ? 'Signing in…' : 'anonymously login'}
+            </button>
           </div>
+          {anonymousError ? (
+            <p role="alert" className="mt-2 text-right text-[0.65rem] text-danger max-sm:text-left">
+              {anonymousError}
+            </p>
+          ) : null}
         </section>
       </div>
     </main>
+  )
+}
+
+function GoogleIcon() {
+  return (
+    <svg className="size-[1.125rem] shrink-0" viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        fill="#4285F4"
+        d="M21.6 12.23c0-.71-.06-1.4-.18-2.07H12v3.92h5.38a4.6 4.6 0 0 1-2 3.02v2.54h3.24c1.9-1.75 2.98-4.33 2.98-7.41Z"
+      />
+      <path
+        fill="#34A853"
+        d="M12 22c2.7 0 4.97-.9 6.62-2.36l-3.24-2.54c-.9.6-2.05.96-3.38.96-2.6 0-4.81-1.76-5.6-4.13H3.06v2.62A10 10 0 0 0 12 22Z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M6.4 13.93A6 6 0 0 1 6.09 12c0-.67.12-1.32.31-1.93V7.45H3.06A10 10 0 0 0 2 12c0 1.63.39 3.18 1.06 4.55l3.34-2.62Z"
+      />
+      <path
+        fill="#EA4335"
+        d="M12 5.94c1.47 0 2.79.51 3.83 1.5l2.87-2.88A9.64 9.64 0 0 0 12 2a10 10 0 0 0-8.94 5.45l3.34 2.62C7.19 7.7 9.4 5.94 12 5.94Z"
+      />
+    </svg>
   )
 }
