@@ -31,7 +31,15 @@ describe('resolveAgentTools', () => {
   it('registers one provider-neutral web_search tool by default', () => {
     const tools = resolveAgentTools(new ConfigService(), sessions, outputs)
     expect(tools.map((tool) => tool.name)).toEqual(
-      expect.arrayContaining(['web_fetch', 'web_search']),
+      expect.arrayContaining([
+        'activate_skill',
+        'web_fetch',
+        'web_search',
+        'shell',
+        'read_file',
+        'write_file',
+        'export_file',
+      ]),
     )
     expect(tools.find((tool) => tool.name === 'web_search')).toMatchObject({
       riskLevel: 'external_send',

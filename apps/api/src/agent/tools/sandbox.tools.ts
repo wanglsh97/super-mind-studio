@@ -1,23 +1,7 @@
-import type { AgentExecutionError } from '@supermind/sdk'
-
 import type { AgentExecutionSessionService } from '../sandbox/agent-execution-session.service'
 import type { AgentOutputFileService } from '../files/agent-output-file.service'
-import { renderActiveSkillPrompt } from '../skills/active-skill-prompt'
-import type { AgentToolContext, AgentToolDefinition, AgentToolResult } from './agent-tool'
-
-const ACTIVATE_SKILL_PARAMETERS = {
-  type: 'object',
-  additionalProperties: false,
-  required: ['name'],
-  properties: {
-    name: {
-      type: 'string',
-      minLength: 1,
-      maxLength: 64,
-      pattern: '^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$',
-    },
-  },
-} as const
+import type { AgentToolDefinition } from './agent-tool'
+import { createToolErrorResult, requireRunScope } from './run-scoped-tool.helpers'
 
 const SHELL_PARAMETERS = {
   type: 'object',
@@ -75,60 +59,16 @@ const EXPORT_FILE_PARAMETERS = {
   },
 } as const
 
-export function createExecutableSkillTools(
+export function createSandboxTools(
   sessions: AgentExecutionSessionService,
   outputs: AgentOutputFileService,
 ): readonly AgentToolDefinition[] {
   return [
-    createActivateSkillTool(sessions),
     createShellTool(sessions),
     createReadFileTool(sessions),
     createWriteFileTool(sessions),
     createExportFileTool(outputs),
   ]
-}
-
-function createActivateSkillTool(
-  sessions: AgentExecutionSessionService,
-): AgentToolDefinition<{ name: string }> {
-  return {
-    name: 'activate_skill',
-    description:
-      'Activate one Skill already added by the current user. Loads its current reviewed instructions and package into this Run sandbox.',
-    label: '激活 Skill',
-    riskLevel: 'read',
-    approvalPolicy: 'none',
-    parameters: ACTIVATE_SKILL_PARAMETERS,
-    async execute(args, context) {
-      const scope = executionScope(context)
-      try {
-        const result = await sessions.activateSkill(
-          scope.runId,
-          scope.userId,
-          args.name,
-          context.signal,
-        )
-        return {
-          content: renderActiveSkillPrompt({
-            name: result.skill.manifest.name,
-            packageSha256: result.skill.manifest.packageSha256,
-            skillMarkdown: result.skill.skillMarkdown,
-          }),
-          summary: result.alreadyActive ? `Skill ${args.name} 已激活` : `已激活 Skill ${args.name}`,
-          isError: false,
-          audit: {
-            sandboxId: result.sandboxId,
-            skillId: result.skill.manifest.skillId,
-            skillName: result.skill.manifest.name,
-            packageSha256: result.skill.manifest.packageSha256,
-            alreadyActive: result.alreadyActive,
-          },
-        }
-      } catch (error) {
-        return errorResult(error, `Skill ${args.name} 激活失败`)
-      }
-    },
-  }
 }
 
 function createShellTool(
@@ -137,13 +77,13 @@ function createShellTool(
   return {
     name: 'shell',
     description:
-      'Run one command autonomously in the current Run Linux sandbox after a Skill is active. Commands are constrained by fixed time, resource, traffic and output budgets.',
+      'Run one command autonomously in the current Thread Linux sandbox. Commands are constrained by fixed time, resource, traffic and output budgets.',
     label: 'Shell',
     riskLevel: 'destructive',
     approvalPolicy: 'none',
     parameters: SHELL_PARAMETERS,
     async execute(args, context) {
-      const scope = executionScope(context)
+      const scope = requireRunScope(context)
       try {
         const result = await sessions.runShell(scope.runId, scope.userId, {
           command: args.command,
@@ -172,7 +112,7 @@ function createShellTool(
           },
         }
       } catch (error) {
-        return errorResult(error, 'Shell 执行失败')
+        return createToolErrorResult(error, 'Shell 执行失败')
       }
     },
   }
@@ -184,17 +124,20 @@ function createReadFileTool(
   return {
     name: 'read_file',
     description:
-      'Read one UTF-8 text file from the current Run sandbox workspace. Paths may be absolute under /workspace or relative to /workspace.',
+      'Read one UTF-8 text file from the current Thread sandbox workspace. Paths may be absolute under /workspace or relative to /workspace.',
     label: '读取文件',
     riskLevel: 'read',
     approvalPolicy: 'none',
     parameters: READ_FILE_PARAMETERS,
     async execute(args, context) {
-      const scope = executionScope(context)
+      const scope = requireRunScope(context)
       try {
         const file = await sessions.readFile(scope.runId, scope.userId, args.path, context.signal)
         if (!file)
-          return errorResult({ code: 'FILE_NOT_FOUND', message: '文件不存在' }, '读取文件失败')
+          return createToolErrorResult(
+            { code: 'FILE_NOT_FOUND', message: '文件不存在' },
+            '读取文件失败',
+          )
         return {
           content: new TextDecoder().decode(file.bytes),
           summary: `已读取 ${args.path}`,
@@ -202,7 +145,7 @@ function createReadFileTool(
           audit: { path: file.path, size: file.sizeBytes, sha256: file.sha256 },
         }
       } catch (error) {
-        return errorResult(error, '读取文件失败')
+        return createToolErrorResult(error, '读取文件失败')
       }
     },
   }
@@ -214,13 +157,13 @@ function createWriteFileTool(
   return {
     name: 'write_file',
     description:
-      'Write UTF-8 text to one file in the current Run sandbox workspace. Paths may be absolute under /workspace or relative to /workspace.',
+      'Write UTF-8 text to one file in the current Thread sandbox workspace. Paths may be absolute under /workspace or relative to /workspace.',
     label: '写入文件',
     riskLevel: 'write',
     approvalPolicy: 'none',
     parameters: WRITE_FILE_PARAMETERS,
     async execute(args, context) {
-      const scope = executionScope(context)
+      const scope = requireRunScope(context)
       try {
         const file = await sessions.writeFile(
           scope.runId,
@@ -236,7 +179,7 @@ function createWriteFileTool(
           audit: { path: file.path, size: file.sizeBytes, sha256: file.sha256 },
         }
       } catch (error) {
-        return errorResult(error, '写入文件失败')
+        return createToolErrorResult(error, '写入文件失败')
       }
     },
   }
@@ -254,7 +197,7 @@ function createExportFileTool(
     approvalPolicy: 'none',
     parameters: EXPORT_FILE_PARAMETERS,
     async execute(args, context) {
-      const scope = executionScope(context)
+      const scope = requireRunScope(context)
       try {
         const file = await outputs.export(scope.runId, scope.userId, args.path, context.signal)
         return {
@@ -273,45 +216,8 @@ function createExportFileTool(
           },
         }
       } catch (error) {
-        return errorResult(error, '导出产物失败')
+        return createToolErrorResult(error, '导出产物失败')
       }
     },
-  }
-}
-
-function executionScope(context: AgentToolContext): { runId: string; userId: string } {
-  if (!context.runId || !context.userId) throw new Error('Run-scoped tool context is missing')
-  return { runId: context.runId, userId: context.userId }
-}
-
-function errorResult(error: unknown, summary: string): AgentToolResult {
-  const normalized = normalizeError(error)
-  return {
-    content: normalized.message,
-    summary,
-    isError: true,
-    audit: { code: normalized.code, retryable: normalized.retryable },
-  }
-}
-
-function normalizeError(error: unknown): AgentExecutionError {
-  if (
-    typeof error === 'object' &&
-    error !== null &&
-    'code' in error &&
-    'message' in error &&
-    typeof error.code === 'string' &&
-    typeof error.message === 'string'
-  ) {
-    return {
-      code: error.code as AgentExecutionError['code'],
-      message: error.message,
-      retryable: 'retryable' in error && error.retryable === true,
-    }
-  }
-  return {
-    code: 'SANDBOX_UNAVAILABLE',
-    message: error instanceof Error ? error.message : 'Sandbox 工具执行失败',
-    retryable: false,
   }
 }

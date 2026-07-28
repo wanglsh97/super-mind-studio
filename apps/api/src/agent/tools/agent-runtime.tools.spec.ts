@@ -9,7 +9,8 @@ import {
   MOCK_EXECUTABLE_SKILL_SHA256,
 } from '../skills/executable-skill.fixture'
 import { AgentToolRegistry } from './agent-tool.registry'
-import { createExecutableSkillTools } from './executable-skill.tools'
+import { createSandboxTools } from './sandbox.tools'
+import { createSkillActivationTool } from './skill-activation.tool'
 
 const preparedSkill = {
   manifest: {
@@ -67,7 +68,10 @@ function setup() {
       downloadUrl: '/api/v1/agent/files/00000000-0000-4000-8000-000000000001/content?download=1',
     })),
   } as unknown as AgentOutputFileService
-  const registry = new AgentToolRegistry(createExecutableSkillTools(sessions, outputs))
+  const registry = new AgentToolRegistry([
+    createSkillActivationTool(sessions),
+    ...createSandboxTools(sessions, outputs),
+  ])
   const context = {
     runId: 'run-1',
     userId: 'user-1',
@@ -77,8 +81,8 @@ function setup() {
   return { context, registry, sandbox, sessions, skills, outputs }
 }
 
-describe('executable Skill tools', () => {
-  it('routes activation, Shell and file calls through one Run sandbox with auditable results', async () => {
+describe('Agent runtime tools', () => {
+  it('keeps Skill activation and general Sandbox tools at the same registry level', async () => {
     const { context, registry, sessions, skills } = setup()
     await sessions.startRun(context.runId, 'thread-1', context.userId)
 

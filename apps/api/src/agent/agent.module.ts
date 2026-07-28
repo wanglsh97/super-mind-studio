@@ -47,7 +47,8 @@ import {
 } from './skills/storage/aliyun-oss-skill-object-store'
 import { SKILL_OBJECT_STORE_PORT } from './skills/storage/skill-object-store.port'
 import { AGENT_TOOLS, AgentToolRegistry } from './tools/agent-tool.registry'
-import { createExecutableSkillTools } from './tools/executable-skill.tools'
+import { createSandboxTools } from './tools/sandbox.tools'
+import { createSkillActivationTool } from './tools/skill-activation.tool'
 import { InMemorySkillUploadSigner } from './skills/upload/in-memory-skill-upload-signer'
 import { SKILL_UPLOAD_SIGNER_PORT } from './skills/upload/skill-upload-signer.port'
 import { SkillUploadSessionRepository } from './skills/upload/skill-upload-session.repository'
@@ -83,7 +84,7 @@ export function resolveAgentTools(
       }),
     )
   }
-  return [...tools, ...createExecutableSkillTools(sessions, outputs)]
+  return [...tools, createSkillActivationTool(sessions), ...createSandboxTools(sessions, outputs)]
 }
 
 export function createSandboxRuntime(config: ConfigService): SandboxRuntimePort {
