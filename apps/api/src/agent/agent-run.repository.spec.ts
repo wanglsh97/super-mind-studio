@@ -1,5 +1,9 @@
 import type { PrismaService } from '../database/prisma.service'
-import { AgentRunRepository } from './agent-run.repository'
+import {
+  AgentRunRepository,
+  AgentThreadActiveRunError,
+  AgentUserConcurrencyLimitError,
+} from './agent-run.repository'
 
 function setup() {
   const create = jest.fn()
@@ -42,6 +46,96 @@ describe('AgentRunRepository', () => {
     expect(count).toHaveBeenCalledWith({
       where: { userId: 'user-a', status: { in: ['RUNNING', 'CANCELLING'] } },
     })
+  })
+
+  it('atomically admits a second run for the user in a different Thread', async () => {
+    const run = { id: 'run-b', threadId: 'thread-b', userId: 'user-a' }
+    const executeRaw = jest.fn().mockResolvedValue(1)
+    const runFindFirst = jest.fn().mockResolvedValue(null)
+    const runCount = jest.fn().mockResolvedValue(1)
+    const runCreate = jest.fn().mockResolvedValue(run)
+    const messageFindFirst = jest.fn().mockResolvedValue({ sequence: 4 })
+    const messageCreate = jest.fn().mockResolvedValue({})
+    const threadUpdateMany = jest.fn().mockResolvedValue({ count: 1 })
+    const tx = {
+      $executeRaw: executeRaw,
+      agentRun: { findFirst: runFindFirst, count: runCount, create: runCreate },
+      agentMessage: { findFirst: messageFindFirst, create: messageCreate },
+      agentThread: { updateMany: threadUpdateMany },
+    }
+    const prisma = {
+      $transaction: jest.fn(async (operation: (client: typeof tx) => unknown) => operation(tx)),
+    } as unknown as PrismaService
+    const repository = new AgentRunRepository(prisma)
+
+    await expect(
+      repository.admit({
+        threadId: 'thread-b',
+        userId: 'user-a',
+        input: 'parallel task',
+        maxConcurrentRuns: 2,
+        derivedTitle: 'parallel task',
+      }),
+    ).resolves.toBe(run)
+    expect(runCount).toHaveBeenCalledWith({
+      where: { userId: 'user-a', status: { in: ['RUNNING', 'CANCELLING'] } },
+    })
+    expect(messageCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ threadId: 'thread-b', runId: 'run-b', sequence: 5 }),
+      }),
+    )
+  })
+
+  it('rejects atomic admission when the target Thread already has an active run', async () => {
+    const tx = {
+      $executeRaw: jest.fn().mockResolvedValue(1),
+      agentRun: {
+        findFirst: jest.fn().mockResolvedValue({ id: 'run-existing' }),
+        count: jest.fn(),
+      },
+    }
+    const prisma = {
+      $transaction: jest.fn(async (operation: (client: typeof tx) => unknown) => operation(tx)),
+    } as unknown as PrismaService
+    const repository = new AgentRunRepository(prisma)
+
+    await expect(
+      repository.admit({
+        threadId: 'thread-a',
+        userId: 'user-a',
+        input: 'duplicate',
+        maxConcurrentRuns: 2,
+      }),
+    ).rejects.toMatchObject<Partial<AgentThreadActiveRunError>>({
+      activeRunId: 'run-existing',
+    })
+    expect(tx.agentRun.count).not.toHaveBeenCalled()
+  })
+
+  it('rejects atomic admission when the user concurrency limit is reached', async () => {
+    const tx = {
+      $executeRaw: jest.fn().mockResolvedValue(1),
+      agentRun: {
+        findFirst: jest.fn().mockResolvedValue(null),
+        count: jest.fn().mockResolvedValue(2),
+        create: jest.fn(),
+      },
+    }
+    const prisma = {
+      $transaction: jest.fn(async (operation: (client: typeof tx) => unknown) => operation(tx)),
+    } as unknown as PrismaService
+    const repository = new AgentRunRepository(prisma)
+
+    await expect(
+      repository.admit({
+        threadId: 'thread-c',
+        userId: 'user-a',
+        input: 'over limit',
+        maxConcurrentRuns: 2,
+      }),
+    ).rejects.toMatchObject<Partial<AgentUserConcurrencyLimitError>>({ limit: 2 })
+    expect(tx.agentRun.create).not.toHaveBeenCalled()
   })
 
   it('interrupts abandoned runs with a terminal event and no provider replay', async () => {

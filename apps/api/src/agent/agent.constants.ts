@@ -15,6 +15,6 @@ export const AGENT_THREAD_LIST_MAX_PAGE_SIZE = 100
  */
 export const AGENT_ACTIVE_RUN_LOCK_TTL_SECONDS = 180
 
-export function agentActiveRunLockKey(userId: string): string {
-  return `agent:active-run:${userId}`
+export function agentActiveRunLockKey(threadId: string): string {
+  return `agent:active-run:thread:${threadId}`
 }

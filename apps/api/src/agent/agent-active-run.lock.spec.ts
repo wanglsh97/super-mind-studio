@@ -13,15 +13,15 @@ describe('AgentActiveRunLock', () => {
       deleteIfValueEquals,
     } as unknown as RedisService)
 
-    await expect(lock.tryAcquire('user-a', 'token-1')).resolves.toBe(true)
+    await expect(lock.tryAcquire('thread-a', 'token-1')).resolves.toBe(true)
     expect(trySetNxEx).toHaveBeenCalledWith(
-      agentActiveRunLockKey('user-a'),
+      agentActiveRunLockKey('thread-a'),
       'token-1',
       AGENT_ACTIVE_RUN_LOCK_TTL_SECONDS,
     )
 
-    await lock.release('user-a', 'token-1')
-    expect(deleteIfValueEquals).toHaveBeenCalledWith(agentActiveRunLockKey('user-a'), 'token-1')
+    await lock.release('thread-a', 'token-1')
+    expect(deleteIfValueEquals).toHaveBeenCalledWith(agentActiveRunLockKey('thread-a'), 'token-1')
   })
 
   it('reports contention when the key already exists', async () => {
@@ -29,7 +29,7 @@ describe('AgentActiveRunLock', () => {
       trySetNxEx: jest.fn().mockResolvedValue(false),
     } as unknown as RedisService)
 
-    await expect(lock.tryAcquire('user-a', 'token-2')).resolves.toBe(false)
+    await expect(lock.tryAcquire('thread-a', 'token-2')).resolves.toBe(false)
   })
 
   it('fails closed with 503 when Redis is unavailable on acquire', async () => {
@@ -37,29 +37,49 @@ describe('AgentActiveRunLock', () => {
       trySetNxEx: jest.fn().mockRejectedValue(new Error('redis down')),
     } as unknown as RedisService)
 
-    await expect(lock.tryAcquire('user-a', 'token-3')).rejects.toMatchObject({
+    await expect(lock.tryAcquire('thread-a', 'token-3')).rejects.toMatchObject({
       status: HttpStatus.SERVICE_UNAVAILABLE,
     })
-    await expect(lock.tryAcquire('user-a', 'token-3')).rejects.toBeInstanceOf(HttpException)
+    await expect(lock.tryAcquire('thread-a', 'token-3')).rejects.toBeInstanceOf(HttpException)
   })
 
-  it('scopes lock keys per user so concurrent users do not contend', async () => {
+  it('scopes lock keys per thread so different threads do not contend', async () => {
     const trySetNxEx = jest.fn().mockResolvedValue(true)
     const lock = new AgentActiveRunLock({ trySetNxEx } as unknown as RedisService)
-    await lock.tryAcquire('user-a', 't1')
-    await lock.tryAcquire('user-b', 't2')
-    expect(trySetNxEx).toHaveBeenNthCalledWith(1, agentActiveRunLockKey('user-a'), 't1', expect.any(Number))
-    expect(trySetNxEx).toHaveBeenNthCalledWith(2, agentActiveRunLockKey('user-b'), 't2', expect.any(Number))
+    await lock.tryAcquire('thread-a', 't1')
+    await lock.tryAcquire('thread-b', 't2')
+    expect(trySetNxEx).toHaveBeenNthCalledWith(
+      1,
+      agentActiveRunLockKey('thread-a'),
+      't1',
+      expect.any(Number),
+    )
+    expect(trySetNxEx).toHaveBeenNthCalledWith(
+      2,
+      agentActiveRunLockKey('thread-b'),
+      't2',
+      expect.any(Number),
+    )
   })
 
   it('builds a conflict that identifies the existing active run', () => {
     const lock = new AgentActiveRunLock({} as RedisService)
-    const error = lock.conflict('run-existing')
+    const error = lock.threadConflict('run-existing')
     expect(error).toBeInstanceOf(ConflictException)
     expect(error.getResponse()).toEqual(
       expect.objectContaining({
-        message: '已有进行中的 Agent 运行，请等待其结束',
-        details: { code: 'AGENT_ACTIVE_RUN', activeRunId: 'run-existing' },
+        message: '当前会话已有进行中的 Agent 运行，请等待其结束',
+        details: { code: 'AGENT_THREAD_ACTIVE_RUN', activeRunId: 'run-existing' },
+      }),
+    )
+  })
+
+  it('builds a user concurrency-limit conflict', () => {
+    const lock = new AgentActiveRunLock({} as RedisService)
+    const error = lock.userLimit(2)
+    expect(error.getResponse()).toEqual(
+      expect.objectContaining({
+        details: { code: 'AGENT_USER_CONCURRENCY_LIMIT', limit: 2 },
       }),
     )
   })

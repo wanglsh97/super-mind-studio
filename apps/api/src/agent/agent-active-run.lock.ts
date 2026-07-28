@@ -8,13 +8,10 @@ import {
 } from '@nestjs/common'
 
 import { RedisService } from '../redis/redis.service'
-import {
-  AGENT_ACTIVE_RUN_LOCK_TTL_SECONDS,
-  agentActiveRunLockKey,
-} from './agent.constants'
+import { AGENT_ACTIVE_RUN_LOCK_TTL_SECONDS, agentActiveRunLockKey } from './agent.constants'
 
 /**
- * 单用户全局 active Agent run 的 Redis 原子锁。
+ * 单 Thread active Agent run 的 Redis 原子锁。
  *
  * PostgreSQL 的 active run 查询仍是真源；本锁用于跨请求快速互斥。
  * Redis 不可用时 fail closed，不得绕过约束创建付费 run。
@@ -29,36 +26,46 @@ export class AgentActiveRunLock {
    * 尝试获取用户级锁。成功返回 true；键已被占用返回 false。
    * Redis 异常抛出 503。
    */
-  async tryAcquire(userId: string, token: string): Promise<boolean> {
+  async tryAcquire(threadId: string, token: string): Promise<boolean> {
     try {
       return await this.redis.trySetNxEx(
-        agentActiveRunLockKey(userId),
+        agentActiveRunLockKey(threadId),
         token,
         AGENT_ACTIVE_RUN_LOCK_TTL_SECONDS,
       )
     } catch (error) {
-      this.logger.error({ error, userId }, 'Redis Agent active-run lock acquire failed closed')
+      this.logger.error({ error, threadId }, 'Redis Agent active-run lock acquire failed closed')
       throw new HttpException('Agent 并发锁服务暂时不可用', HttpStatus.SERVICE_UNAVAILABLE)
     }
   }
 
-  async release(userId: string, token: string): Promise<void> {
+  async release(threadId: string, token: string): Promise<void> {
     try {
-      await this.redis.deleteIfValueEquals(agentActiveRunLockKey(userId), token)
+      await this.redis.deleteIfValueEquals(agentActiveRunLockKey(threadId), token)
     } catch (error) {
       // 释放失败不阻断终态；TTL 与启动清理会回收过期锁。
-      this.logger.warn({ error, userId }, 'Redis Agent active-run lock release failed')
+      this.logger.warn({ error, threadId }, 'Redis Agent active-run lock release failed')
     }
   }
 
-  /** 锁已被占用时的统一冲突响应，可选附带已有 runId。 */
-  conflict(existingRunId?: string): ConflictException {
+  /** 同一 Thread 已有 active run 时的统一冲突响应。 */
+  threadConflict(existingRunId?: string): ConflictException {
     return new ConflictException({
-      message: '已有进行中的 Agent 运行，请等待其结束',
-      details: existingRunId === undefined ? { code: 'AGENT_ACTIVE_RUN' } : {
-        code: 'AGENT_ACTIVE_RUN',
-        activeRunId: existingRunId,
-      },
+      message: '当前会话已有进行中的 Agent 运行，请等待其结束',
+      details:
+        existingRunId === undefined
+          ? { code: 'AGENT_ACTIVE_RUN' }
+          : {
+              code: 'AGENT_THREAD_ACTIVE_RUN',
+              activeRunId: existingRunId,
+            },
+    })
+  }
+
+  userLimit(limit: number): ConflictException {
+    return new ConflictException({
+      message: `已达到同时运行 ${limit} 个 Agent 的上限`,
+      details: { code: 'AGENT_USER_CONCURRENCY_LIMIT', limit },
     })
   }
 }

@@ -6,11 +6,12 @@ import {
 } from '@nestjs/common'
 
 import type { ChatModelCatalog } from '../chat/chat-model-catalog'
+import type { ConfigService } from '@nestjs/config'
 import type { AuthenticatedUser } from '../user-auth/user-session.service'
 import type { AgentActiveRunLock } from './agent-active-run.lock'
 import type { AgentContextSummaryRepository } from './context/agent-context-summary.repository'
 import type { AgentMessageRepository } from './agent-message.repository'
-import type { AgentRunRepository } from './agent-run.repository'
+import { AgentUserConcurrencyLimitError, type AgentRunRepository } from './agent-run.repository'
 import type { AgentRunService } from './agent-run.service'
 import type { AgentThreadRepository } from './agent-thread.repository'
 import type { AgentExecutionSessionService } from './sandbox/agent-execution-session.service'
@@ -33,6 +34,7 @@ function setup() {
   } as unknown as jest.Mocked<AgentThreadRepository>
   const runs = {
     create: jest.fn(),
+    admit: jest.fn(),
     findForOwner: jest.fn(),
     findActiveForThread: jest.fn(),
     findActiveForUser: jest.fn().mockResolvedValue(null),
@@ -54,14 +56,21 @@ function setup() {
   const activeRunLock = {
     tryAcquire: jest.fn().mockResolvedValue(true),
     release: jest.fn().mockResolvedValue(undefined),
-    conflict: jest.fn(
+    threadConflict: jest.fn(
       (activeRunId?: string) =>
         new ConflictException({
           message: '已有进行中的 Agent 运行，请等待其结束',
           details:
             activeRunId === undefined
               ? { code: 'AGENT_ACTIVE_RUN' }
-              : { code: 'AGENT_ACTIVE_RUN', activeRunId },
+              : { code: 'AGENT_THREAD_ACTIVE_RUN', activeRunId },
+        }),
+    ),
+    userLimit: jest.fn(
+      (limit: number) =>
+        new ConflictException({
+          message: `已达到同时运行 ${limit} 个 Agent 的上限`,
+          details: { code: 'AGENT_USER_CONCURRENCY_LIMIT', limit },
         }),
     ),
   } as unknown as jest.Mocked<AgentActiveRunLock>
@@ -71,6 +80,9 @@ function setup() {
   const executionSessions = {
     destroyThread: jest.fn().mockResolvedValue(undefined),
   } as unknown as jest.Mocked<AgentExecutionSessionService>
+  const config = {
+    get: jest.fn((_key: string, fallback: unknown) => fallback),
+  } as unknown as ConfigService
   const service = new AgentService(
     threads,
     runs,
@@ -80,6 +92,7 @@ function setup() {
     activeRunLock,
     contextSummaries,
     executionSessions,
+    config,
   )
   return {
     threads,
@@ -222,22 +235,25 @@ describe('AgentService', () => {
     await expect(service.getThread(user, 'thread-x')).rejects.toBeInstanceOf(NotFoundException)
   })
 
-  it('rejects a second concurrent run for the same user across threads', async () => {
+  it('rejects a second concurrent run in the same thread', async () => {
     const { service, threads, runs, models, activeRunLock, runService } = setup()
-    ;(threads.findSummaryForOwner as jest.Mock).mockResolvedValue(threadRow({ id: 'thread-b' }))
+    ;(threads.findSummaryForOwner as jest.Mock).mockResolvedValue(threadRow({ id: 'thread-a' }))
     ;(models.resolve as jest.Mock).mockReturnValue({
       id: 'qwen3.7-plus',
       provider: 'qwen',
       upstreamModelId: 'x',
       displayName: 'Q',
     })
-    ;(runs.findActiveForUser as jest.Mock).mockResolvedValue({ id: 'run-a', threadId: 'thread-a' })
-    await expect(service.createRun(user, 'thread-b', '你好')).rejects.toBeInstanceOf(
+    ;(runs.findActiveForThread as jest.Mock).mockResolvedValue({
+      id: 'run-a',
+      threadId: 'thread-a',
+    })
+    await expect(service.createRun(user, 'thread-a', '你好')).rejects.toBeInstanceOf(
       ConflictException,
     )
-    expect(activeRunLock.conflict).toHaveBeenCalledWith('run-a')
+    expect(activeRunLock.threadConflict).toHaveBeenCalledWith('run-a')
     expect(activeRunLock.tryAcquire).not.toHaveBeenCalled()
-    expect(runs.create).not.toHaveBeenCalled()
+    expect(runs.admit).not.toHaveBeenCalled()
     expect(runService.execute).not.toHaveBeenCalled()
   })
 
@@ -251,12 +267,12 @@ describe('AgentService', () => {
       displayName: 'Q',
     })
     ;(activeRunLock.tryAcquire as jest.Mock).mockResolvedValue(false)
-    ;(runs.findActiveForUser as jest.Mock)
+    ;(runs.findActiveForThread as jest.Mock)
       .mockResolvedValueOnce(null)
       .mockResolvedValueOnce({ id: 'run-locked' })
     await expect(service.createRun(user, 'thread-1', 'x')).rejects.toBeInstanceOf(ConflictException)
-    expect(activeRunLock.conflict).toHaveBeenCalledWith('run-locked')
-    expect(runs.create).not.toHaveBeenCalled()
+    expect(activeRunLock.threadConflict).toHaveBeenCalledWith('run-locked')
+    expect(runs.admit).not.toHaveBeenCalled()
   })
 
   it('fails closed when Redis lock acquire throws', async () => {
@@ -272,11 +288,11 @@ describe('AgentService', () => {
       new HttpException('Agent 并发锁服务暂时不可用', 503),
     )
     await expect(service.createRun(user, 'thread-1', 'x')).rejects.toBeInstanceOf(HttpException)
-    expect(runs.create).not.toHaveBeenCalled()
+    expect(runs.admit).not.toHaveBeenCalled()
   })
 
-  it('creates a run, persists the user message and kicks execution with lock token', async () => {
-    const { service, threads, runs, messages, runService, models, activeRunLock } = setup()
+  it('atomically admits a run and kicks execution with a Thread lock token', async () => {
+    const { service, threads, runs, runService, models, activeRunLock } = setup()
     ;(threads.findSummaryForOwner as jest.Mock).mockResolvedValue(threadRow())
     ;(models.resolve as jest.Mock).mockReturnValue({
       id: 'qwen3.7-plus',
@@ -284,7 +300,7 @@ describe('AgentService', () => {
       upstreamModelId: 'x',
       displayName: 'Q',
     })
-    ;(runs.create as jest.Mock).mockResolvedValue({
+    ;(runs.admit as jest.Mock).mockResolvedValue({
       id: 'run-1',
       threadId: 'thread-1',
       status: 'RUNNING',
@@ -305,11 +321,14 @@ describe('AgentService', () => {
     const summary = await service.createRun(user, 'thread-1', '总结 https://a.test')
     expect(summary.id).toBe('run-1')
     expect(summary.status).toBe('running')
-    expect(activeRunLock.tryAcquire).toHaveBeenCalledWith('user-a', expect.any(String))
-    expect(messages.appendUserMessage).toHaveBeenCalledWith(
-      'thread-1',
-      'run-1',
-      '总结 https://a.test',
+    expect(activeRunLock.tryAcquire).toHaveBeenCalledWith('thread-1', expect.any(String))
+    expect(runs.admit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        threadId: 'thread-1',
+        userId: 'user-a',
+        input: '总结 https://a.test',
+        maxConcurrentRuns: 2,
+      }),
     )
     expect(runService.execute).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -331,7 +350,7 @@ describe('AgentService', () => {
       provider: 'qwen',
       contextWindowTokens: 128_000,
     })
-    ;(runs.create as jest.Mock).mockResolvedValue({
+    ;(runs.admit as jest.Mock).mockResolvedValue({
       id: 'run-skill',
       threadId: 'thread-1',
       userId: 'user-a',
@@ -364,13 +383,29 @@ describe('AgentService', () => {
       startedAt: null,
       completedAt: null,
     })
-    ;(messages.appendUserMessage as jest.Mock).mockResolvedValue(undefined)
-
     await service.createRun(user, 'thread-1', '清洗数据', [{ name: 'mock-data-cleaner' }])
 
     expect(runService.execute).toHaveBeenCalledWith(
       expect.objectContaining({ selectedSkillNames: ['mock-data-cleaner'] }),
     )
+  })
+
+  it('maps an atomic user-limit rejection and releases the Thread lock', async () => {
+    const { service, threads, runs, models, activeRunLock, runService } = setup()
+    ;(threads.findSummaryForOwner as jest.Mock).mockResolvedValue(threadRow({ id: 'thread-b' }))
+    ;(models.resolve as jest.Mock).mockReturnValue({
+      id: 'qwen3.7-plus',
+      provider: 'qwen',
+      contextWindowTokens: 128_000,
+    })
+    ;(runs.admit as jest.Mock).mockRejectedValue(new AgentUserConcurrencyLimitError(2))
+
+    await expect(service.createRun(user, 'thread-b', '并行任务')).rejects.toBeInstanceOf(
+      ConflictException,
+    )
+    expect(activeRunLock.userLimit).toHaveBeenCalledWith(2)
+    expect(activeRunLock.release).toHaveBeenCalledWith('thread-b', expect.any(String))
+    expect(runService.execute).not.toHaveBeenCalled()
   })
 
   it('refuses to delete a thread with an active run', async () => {
@@ -403,7 +438,7 @@ describe('AgentService', () => {
   })
 
   it('createRun always uses the thread-bound modelId rather than a client-supplied model', async () => {
-    const { service, threads, runs, messages, models, runService } = setup()
+    const { service, threads, runs, models, runService } = setup()
     ;(threads.findSummaryForOwner as jest.Mock).mockResolvedValue(
       threadRow({ modelId: 'glm-5.2', provider: 'glm', title: '已绑定' }),
     )
@@ -413,7 +448,7 @@ describe('AgentService', () => {
       upstreamModelId: 'glm-5.2',
       displayName: 'GLM',
     })
-    ;(runs.create as jest.Mock).mockResolvedValue({
+    ;(runs.admit as jest.Mock).mockResolvedValue({
       id: 'run-1',
       threadId: 'thread-1',
       status: 'RUNNING',
@@ -435,7 +470,9 @@ describe('AgentService', () => {
     expect(runService.execute).toHaveBeenCalledWith(
       expect.objectContaining({ modelId: 'glm-5.2', provider: 'glm' }),
     )
-    expect(messages.appendUserMessage).toHaveBeenCalled()
+    expect(runs.admit).toHaveBeenCalledWith(
+      expect.objectContaining({ threadId: 'thread-1', userId: 'user-a' }),
+    )
   })
 
   it('deletes an owned thread when no run is active', async () => {

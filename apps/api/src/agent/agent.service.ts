@@ -12,6 +12,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
 import { randomUUID } from 'node:crypto'
 
 import { ChatModelCatalog } from '../chat/chat-model-catalog'
@@ -25,7 +26,11 @@ import {
   AGENT_THREAD_LIST_DEFAULT_PAGE_SIZE,
 } from './agent.constants'
 import { AgentMessageRepository } from './agent-message.repository'
-import { AgentRunRepository } from './agent-run.repository'
+import {
+  AgentRunRepository,
+  AgentThreadActiveRunError,
+  AgentUserConcurrencyLimitError,
+} from './agent-run.repository'
 import { AgentRunService } from './agent-run.service'
 import { deriveAgentThreadTitle } from './agent-title'
 import { AgentThreadRepository } from './agent-thread.repository'
@@ -53,6 +58,7 @@ export class AgentService {
     private readonly contextSummaries: AgentContextSummaryRepository,
     @Inject(AgentExecutionSessionService)
     private readonly executionSessions: AgentExecutionSessionService,
+    @Inject(ConfigService) private readonly config: ConfigService,
   ) {}
 
   async createThread(
@@ -161,28 +167,28 @@ export class AgentService {
       throw new BadRequestException(`会话绑定的模型 "${thread.modelId}" 当前不可用`)
     }
 
-    // PostgreSQL 真源：已有 active run 则拒绝（跨 thread 全局）。
-    const existing = await this.runs.findActiveForUser(user.id)
-    if (existing) throw this.activeRunLock.conflict(existing.id)
+    // 同一 Thread 仍严格互斥；不同 Thread 可在用户上限内并行。
+    const existing = await this.runs.findActiveForThread(threadId)
+    if (existing) throw this.activeRunLock.threadConflict(existing.id)
 
-    // Redis 原子锁：快速互斥；不可用时 fail closed。
+    // Redis Thread 原子锁：快速互斥；不可用时 fail closed。
     const lockToken = randomUUID()
-    const acquired = await this.activeRunLock.tryAcquire(user.id, lockToken)
+    const acquired = await this.activeRunLock.tryAcquire(threadId, lockToken)
     if (!acquired) {
-      const raced = await this.runs.findActiveForUser(user.id)
-      throw this.activeRunLock.conflict(raced?.id)
+      const raced = await this.runs.findActiveForThread(threadId)
+      throw this.activeRunLock.threadConflict(raced?.id)
     }
 
     try {
-      // 持锁后再核一次，避免与锁过期窗口竞态。
-      const stillActive = await this.runs.findActiveForUser(user.id)
-      if (stillActive) throw this.activeRunLock.conflict(stillActive.id)
-
-      const run = await this.runs.create({ threadId, userId: user.id, input })
-      await this.messages.appendUserMessage(threadId, run.id, input)
-      if (thread.title === AGENT_DEFAULT_THREAD_TITLE) {
-        await this.threads.renameForOwner(threadId, user.id, deriveAgentThreadTitle(input))
-      }
+      const run = await this.runs.admit({
+        threadId,
+        userId: user.id,
+        input,
+        maxConcurrentRuns: this.config.get<number>('AGENT_MAX_CONCURRENT_RUNS_PER_USER', 2),
+        ...(thread.title === AGENT_DEFAULT_THREAD_TITLE
+          ? { derivedTitle: deriveAgentThreadTitle(input) }
+          : {}),
+      })
 
       void this.runService
         .execute({
@@ -200,7 +206,13 @@ export class AgentService {
 
       return toRunSummary(run)
     } catch (error) {
-      await this.activeRunLock.release(user.id, lockToken)
+      await this.activeRunLock.release(threadId, lockToken)
+      if (error instanceof AgentThreadActiveRunError) {
+        throw this.activeRunLock.threadConflict(error.activeRunId)
+      }
+      if (error instanceof AgentUserConcurrencyLimitError) {
+        throw this.activeRunLock.userLimit(error.limit)
+      }
       throw error
     }
   }

@@ -10,6 +10,7 @@ import type {
 } from '../generated/prisma/client'
 import { PrismaService } from '../database/prisma.service'
 import type { ProjectedToolCall } from './agent-run.projector'
+import { AGENT_DEFAULT_THREAD_TITLE } from './agent.constants'
 import type { AgentPromptManifest } from './prompt/agent-prompt.composer'
 
 const TOOL_CALL_STATUS_MAP: Record<ProjectedToolCall['status'], AgentToolCallStatus> = {
@@ -23,6 +24,25 @@ export interface CreateAgentRunInput {
   threadId: string
   userId: string
   input: string
+}
+
+export interface AdmitAgentRunInput extends CreateAgentRunInput {
+  maxConcurrentRuns: number
+  derivedTitle?: string
+}
+
+export class AgentThreadActiveRunError extends Error {
+  constructor(readonly activeRunId: string) {
+    super('Thread already has an active Agent run')
+    this.name = 'AgentThreadActiveRunError'
+  }
+}
+
+export class AgentUserConcurrencyLimitError extends Error {
+  constructor(readonly limit: number) {
+    super(`User reached the active Agent run limit of ${limit}`)
+    this.name = 'AgentUserConcurrencyLimitError'
+  }
 }
 
 export interface FinalizeAgentRunInput {
@@ -67,6 +87,71 @@ export class AgentRunRepository {
     })
   }
 
+  /**
+   * 原子准入并创建 Run + user message。
+   *
+   * user advisory transaction lock serializes admissions across different Threads, while the
+   * caller-held Redis Thread lock rejects duplicate work quickly and fails closed if Redis is down.
+   */
+  async admit(input: AdmitAgentRunInput): Promise<AgentRun> {
+    return this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${input.userId}, 0))`
+
+      const threadActive = await tx.agentRun.findFirst({
+        where: {
+          threadId: input.threadId,
+          status: { in: [...ACTIVE_AGENT_RUN_STATUSES] },
+        },
+        orderBy: { createdAt: 'desc' },
+        select: { id: true },
+      })
+      if (threadActive) throw new AgentThreadActiveRunError(threadActive.id)
+
+      const activeCount = await tx.agentRun.count({
+        where: {
+          userId: input.userId,
+          status: { in: [...ACTIVE_AGENT_RUN_STATUSES] },
+        },
+      })
+      if (activeCount >= input.maxConcurrentRuns) {
+        throw new AgentUserConcurrencyLimitError(input.maxConcurrentRuns)
+      }
+
+      const run = await tx.agentRun.create({
+        data: {
+          threadId: input.threadId,
+          userId: input.userId,
+          input: input.input,
+        },
+      })
+      const lastMessage = await tx.agentMessage.findFirst({
+        where: { threadId: input.threadId },
+        orderBy: { sequence: 'desc' },
+        select: { sequence: true },
+      })
+      await tx.agentMessage.create({
+        data: {
+          threadId: input.threadId,
+          runId: run.id,
+          role: 'USER',
+          sequence: (lastMessage?.sequence ?? -1) + 1,
+          parts: [{ type: 'text', text: input.input }] as unknown as Prisma.InputJsonValue,
+        },
+      })
+      if (input.derivedTitle) {
+        await tx.agentThread.updateMany({
+          where: {
+            id: input.threadId,
+            userId: input.userId,
+            title: AGENT_DEFAULT_THREAD_TITLE,
+          },
+          data: { title: input.derivedTitle },
+        })
+      }
+      return run
+    })
+  }
+
   async findForOwner(runId: string, userId: string): Promise<AgentRun | null> {
     return this.prisma.agentRun.findFirst({ where: { id: runId, userId } })
   }
@@ -84,6 +169,13 @@ export class AgentRunRepository {
 
   async findActiveForUser(userId: string): Promise<AgentRun | null> {
     return this.prisma.agentRun.findFirst({
+      where: { userId, status: { in: [...ACTIVE_AGENT_RUN_STATUSES] } },
+      orderBy: { createdAt: 'desc' },
+    })
+  }
+
+  async listActiveForUser(userId: string): Promise<AgentRun[]> {
+    return this.prisma.agentRun.findMany({
       where: { userId, status: { in: [...ACTIVE_AGENT_RUN_STATUSES] } },
       orderBy: { createdAt: 'desc' },
     })

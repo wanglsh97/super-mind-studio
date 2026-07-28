@@ -425,7 +425,7 @@ export class AgentRunService {
       })
       this.activeRuns.delete(input.runId)
       this.bus.close(input.runId)
-      await this.activeRunLock.release(input.userId, input.activeRunLockToken)
+      await this.activeRunLock.release(input.threadId, input.activeRunLockToken)
     }
   }
 

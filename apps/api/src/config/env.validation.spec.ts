@@ -18,8 +18,6 @@ describe('validateEnvironment', () => {
     expect(environment.DEEPSEEK_BASE_URL).toBe('https://api.deepseek.com')
     expect(environment.KIMI_ENABLED).toBe(false)
     expect(environment.KIMI_BASE_URL).toBe('https://api.moonshot.cn/v1')
-    expect(environment.WANXIANG_BASE_URL).toBe('https://dashscope.aliyuncs.com/api/v1')
-    expect(environment.COGVIEW_BASE_URL).toBe('https://open.bigmodel.cn/api/paas/v4')
     expect(environment.API_PORT).toBe(3001)
     expect(environment.TRUSTED_PROXY_HOPS).toBe(1)
     expect(environment.GITHUB_OAUTH_ENABLED).toBe(false)
@@ -62,6 +60,7 @@ describe('validateEnvironment', () => {
     expect(environment.AGENT_MCP_MAX_TOOLS_PER_SERVER).toBe(50)
     expect(environment.AGENT_MCP_MAX_RESPONSE_BYTES).toBe(1_048_576)
     expect(environment.AGENT_MCP_MAX_OUTPUT_CHARS).toBe(20_000)
+    expect(environment.AGENT_MAX_CONCURRENT_RUNS_PER_USER).toBe(2)
   })
 
   it('accepts a fixed anonymous web-search provider without API keys', () => {
@@ -87,6 +86,21 @@ describe('validateEnvironment', () => {
         AGENT_WEB_SEARCH_TIMEOUT_MS: '999',
         AGENT_WEB_SEARCH_MAX_RESPONSE_BYTES: '512',
         AGENT_WEB_SEARCH_MAX_OUTPUT_CHARS: '999',
+      }),
+    ).toThrow('环境变量校验失败')
+  })
+
+  it('accepts only bounded per-user Agent concurrency', () => {
+    expect(
+      validateEnvironment({
+        ...requiredEnvironment,
+        AGENT_MAX_CONCURRENT_RUNS_PER_USER: '5',
+      }).AGENT_MAX_CONCURRENT_RUNS_PER_USER,
+    ).toBe(5)
+    expect(() =>
+      validateEnvironment({
+        ...requiredEnvironment,
+        AGENT_MAX_CONCURRENT_RUNS_PER_USER: '6',
       }),
     ).toThrow('环境变量校验失败')
   })
@@ -255,7 +269,7 @@ describe('validateEnvironment', () => {
     ).not.toThrow()
   })
 
-  it.each(['QWEN', 'GLM', 'DEEPSEEK', 'KIMI', 'WANXIANG', 'COGVIEW'] as const)(
+  it.each(['QWEN', 'GLM', 'DEEPSEEK', 'KIMI'] as const)(
     'allows the %s alias to be enabled independently',
     (alias) => {
       const environment = validateEnvironment({
@@ -266,14 +280,7 @@ describe('validateEnvironment', () => {
       })
 
       expect(environment[`${alias}_ENABLED`]).toBe(true)
-      for (const otherAlias of [
-        'QWEN',
-        'GLM',
-        'DEEPSEEK',
-        'KIMI',
-        'WANXIANG',
-        'COGVIEW',
-      ] as const) {
+      for (const otherAlias of ['QWEN', 'GLM', 'DEEPSEEK', 'KIMI'] as const) {
         if (otherAlias !== alias) expect(environment[`${otherAlias}_ENABLED`]).toBe(false)
       }
     },

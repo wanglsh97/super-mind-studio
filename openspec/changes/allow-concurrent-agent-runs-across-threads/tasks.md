@@ -1,7 +1,7 @@
 ## 1. 规格与准入契约
 
 - [x] 1.1 新增跨 Thread 并发 proposal、design、capability specs 和任务，通过 OpenSpec strict validation
-- [ ] 1.2 增加单用户并发上限配置、Thread 粒度 Redis 锁和 PostgreSQL 原子准入，覆盖不同 Thread 成功、同 Thread 拒绝、上限和 Redis fail-closed
+- [x] 1.2 增加单用户并发上限配置、Thread 粒度 Redis 锁和 PostgreSQL 原子准入，覆盖不同 Thread 成功、同 Thread 拒绝、上限和 Redis fail-closed
 
 ## 2. SDK 与 Web 多运行状态
 
