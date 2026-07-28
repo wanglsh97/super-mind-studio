@@ -22,7 +22,7 @@ import {
   useAuiState,
   useLocalRuntime,
 } from '@assistant-ui/react'
-import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import { Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 
 import { useAgentActiveThreadId, useAgentWorkspace } from '../components/agent-workspace-provider'
 import { AgentSkillSlashPicker } from '../components/agent-skill-slash-picker'
@@ -293,7 +293,16 @@ function AgentConsole() {
       <ExportFileToolUI />
       <AgentPageShell>
         <AgentConsolePanel label="智能体">
-          <SandboxStatusModule telemetry={sandboxTelemetry} />
+          <AgentEnvironmentPanel
+            sandbox={sandboxTelemetry}
+            mcpServers={mcpServers}
+            mcpLoadState={mcpLoadState}
+            skillCandidates={skillCandidates}
+            selectedSkillNames={selectedSkillNames}
+            skillLoadState={skillLoadState}
+            contextBudget={contextBudget}
+            contextSummary={contextSummary}
+          />
           <AgentThreadRoot>
             <AgentThreadViewport>
               <ThreadPrimitive.Empty>
@@ -353,8 +362,6 @@ function AgentConsole() {
             </AgentThreadViewport>
             <AgentScrollToBottom />
             <AgentComposerDock>
-              <AgentMcpStatusPanel statuses={mcpServers} loadState={mcpLoadState} />
-              <AgentContextBudgetBadge budget={contextBudget} summary={contextSummary} />
               {userActiveRun && userActiveRun.threadId !== activeThreadId ? (
                 <AgentActiveRunHint message="另一会话正在运行，请等待结束后再提交" />
               ) : null}
@@ -457,47 +464,346 @@ const SANDBOX_STATUS_COPY: Record<
   },
 }
 
-function SandboxStatusModule({ telemetry }: { telemetry: SandboxTelemetry }) {
-  const copy = SANDBOX_STATUS_COPY[telemetry.status]
-  const sandboxId = 'sandboxId' in telemetry ? telemetry.sandboxId : undefined
+function AgentEnvironmentPanel({
+  sandbox,
+  mcpServers,
+  mcpLoadState,
+  skillCandidates,
+  selectedSkillNames,
+  skillLoadState,
+  contextBudget,
+  contextSummary,
+}: {
+  sandbox: SandboxTelemetry
+  mcpServers: AgentMcpServerStatus[]
+  mcpLoadState: 'loading' | 'ready' | 'failed'
+  skillCandidates: AgentSkillCandidate[]
+  selectedSkillNames: string[]
+  skillLoadState: 'loading' | 'ready' | 'failed'
+  contextBudget: AgentContextBudgetState | null
+  contextSummary: AgentContextSummary | null
+}) {
+  const sandboxCopy = SANDBOX_STATUS_COPY[sandbox.status]
+  const sandboxId = 'sandboxId' in sandbox ? sandbox.sandboxId : undefined
   const shortId = sandboxId
     ? sandboxId.length > 16
       ? `${sandboxId.slice(0, 7)}…${sandboxId.slice(-5)}`
       : sandboxId
     : null
+  const mcpSummary = summarizeAgentMcpStatuses(mcpServers)
+  const contextPercentage = contextBudget
+    ? Math.min(
+        999,
+        Math.round((contextBudget.usedTokens / Math.max(1, contextBudget.usableTokens)) * 100),
+      )
+    : null
+  const hasFailure =
+    sandbox.status === 'failed' || mcpLoadState === 'failed' || skillLoadState === 'failed'
+  const hasLoaded = mcpLoadState === 'ready' && skillLoadState === 'ready'
+  const isReady = (sandbox.status === 'standby' || sandbox.status === 'ready') && hasLoaded
+  const overallLabel = hasFailure
+    ? '部分异常'
+    : isReady
+      ? '环境就绪'
+      : hasLoaded
+        ? '环境待命'
+        : '状态检查中'
+  const overallDot = hasFailure
+    ? 'bg-danger'
+    : isReady
+      ? 'bg-success'
+      : hasLoaded
+        ? 'bg-ink-subtle/45'
+        : 'bg-brand animate-status-breathe'
 
   return (
     <aside
       aria-live="polite"
-      aria-label={`沙箱容器状态：${copy.label}`}
-      className="liquid-glass-soft fixed top-4 right-4 z-30 flex min-w-44 items-center gap-3 rounded-[1rem] border-line/75 px-3 py-2.5 shadow-[0_12px_32px_rgb(44_62_92/0.10)]"
-      title={shortId ? `Sandbox ID: ${sandboxId}` : copy.note}
+      aria-label={`运行环境：${overallLabel}`}
+      className="fixed top-4 right-4 z-30"
+    >
+      <details className="group relative">
+        <summary className="liquid-glass-soft flex min-w-48 cursor-pointer list-none items-center gap-3 rounded-[1rem] border-line/75 px-3 py-2.5 shadow-[0_12px_32px_rgb(44_62_92/0.10)] transition hover:border-brand/30 hover:bg-surface-card focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand [&::-webkit-details-marker]:hidden">
+          <span
+            aria-hidden="true"
+            className="relative grid size-9 shrink-0 place-items-center rounded-xl border border-line bg-surface-inset/75 text-ink-muted"
+          >
+            <EnvironmentIcon />
+            <span
+              className={cn(
+                'absolute -right-0.5 -bottom-0.5 size-2.5 rounded-full border-2 border-surface-card',
+                overallDot,
+              )}
+            />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block font-mono text-[0.52rem] font-bold tracking-[0.16em] text-ink-subtle">
+              ENVIRONMENT
+            </span>
+            <span className="mt-0.5 block text-xs font-bold text-ink">{overallLabel}</span>
+            <span className="mt-0.5 block text-[0.58rem] text-ink-subtle">
+              Sandbox · MCP · Skill · Context
+            </span>
+          </span>
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 20 20"
+            className="size-4 shrink-0 fill-none stroke-current stroke-[1.7] text-ink-subtle transition-transform group-open:rotate-180"
+          >
+            <path d="m6 8 4 4 4-4" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </summary>
+
+        <div className="liquid-glass absolute top-[calc(100%+0.6rem)] right-0 w-[22rem] overflow-hidden rounded-[1.35rem] border-line/80 p-2 shadow-[0_24px_70px_rgb(41_54_88/0.18)]">
+          <header className="flex items-start justify-between gap-4 px-3 pt-2.5 pb-3">
+            <div>
+              <p className="font-mono text-[0.58rem] font-bold tracking-[0.18em] text-brand">
+                RUNTIME TELEMETRY
+              </p>
+              <h2 className="mt-1 text-base font-bold text-ink">运行环境</h2>
+              <p className="mt-1 text-xs text-ink-muted">当前会话可用的工具、资源与上下文。</p>
+            </div>
+            <span
+              className={cn(
+                'mt-1 rounded-full px-2 py-1 text-[0.62rem] font-bold',
+                hasFailure
+                  ? 'bg-danger/10 text-danger'
+                  : isReady
+                    ? 'bg-success/10 text-success'
+                    : 'bg-brand/10 text-brand',
+              )}
+            >
+              {overallLabel}
+            </span>
+          </header>
+
+          <div className="overflow-hidden rounded-[1rem] border border-line/75 bg-surface-card/70">
+            <EnvironmentRow
+              icon={<SandboxIcon />}
+              label="Sandbox"
+              value={sandboxCopy.label}
+              valueClassName={sandboxCopy.tone}
+              detail={shortId ?? sandboxCopy.note}
+              dotClassName={sandboxCopy.dot}
+              title={sandboxId ? `Sandbox ID: ${sandboxId}` : sandboxCopy.note}
+            />
+            <EnvironmentRow
+              icon={<McpIcon />}
+              label="MCP"
+              value={
+                mcpLoadState === 'loading'
+                  ? '检查中'
+                  : mcpLoadState === 'failed'
+                    ? '状态不可用'
+                    : mcpSummary.serverCount === 0
+                      ? '未配置'
+                      : `${mcpSummary.readyCount}/${mcpSummary.serverCount} 就绪`
+              }
+              valueClassName={mcpLoadState === 'failed' ? 'text-danger' : 'text-ink'}
+              detail={
+                mcpLoadState === 'ready'
+                  ? `${mcpSummary.registeredToolCount} 个工具`
+                  : '平台服务连接状态'
+              }
+              dotClassName={
+                mcpLoadState === 'failed'
+                  ? 'bg-danger'
+                  : mcpLoadState === 'ready'
+                    ? 'bg-success'
+                    : 'bg-brand animate-status-breathe'
+              }
+            >
+              {mcpLoadState === 'ready' && mcpServers.length === 0 ? (
+                <p className="mt-2 text-[0.68rem] text-ink-subtle">未配置平台 MCP Server。</p>
+              ) : null}
+              {mcpServers.length > 0 ? (
+                <ul className="mt-2 space-y-1.5 border-t border-line/70 pt-2">
+                  {mcpServers.map((server) => (
+                    <li key={server.id} className="flex items-center justify-between gap-3 text-xs">
+                      <span className="truncate font-semibold text-ink">{server.name}</span>
+                      <span className="shrink-0 font-mono text-[0.62rem] text-ink-subtle">
+                        {server.registeredToolCount}/{server.allowedToolCount} tools
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </EnvironmentRow>
+            <EnvironmentRow
+              icon={<SkillIcon />}
+              label="Skills"
+              value={
+                skillLoadState === 'loading'
+                  ? '加载中'
+                  : skillLoadState === 'failed'
+                    ? '加载失败'
+                    : `${selectedSkillNames.length} 个已选择`
+              }
+              valueClassName={skillLoadState === 'failed' ? 'text-danger' : 'text-ink'}
+              detail={
+                skillLoadState === 'ready' ? `${skillCandidates.length} 个可用` : '等待技能目录'
+              }
+              dotClassName={
+                skillLoadState === 'failed'
+                  ? 'bg-danger'
+                  : skillLoadState === 'ready'
+                    ? 'bg-success'
+                    : 'bg-brand animate-status-breathe'
+              }
+            >
+              {selectedSkillNames.length > 0 ? (
+                <div className="mt-2 flex flex-wrap gap-1.5 border-t border-line/70 pt-2">
+                  {selectedSkillNames.map((name) => (
+                    <span
+                      key={name}
+                      className="rounded-full border border-brand/15 bg-brand/7 px-2 py-1 font-mono text-[0.62rem] text-brand"
+                    >
+                      {name}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+            </EnvironmentRow>
+            <EnvironmentRow
+              icon={<ContextIcon />}
+              label="Context"
+              value={
+                contextPercentage === null
+                  ? contextSummary
+                    ? '摘要可用'
+                    : '等待运行'
+                  : `${contextBudget?.estimated ? '约 ' : ''}${contextPercentage}%`
+              }
+              valueClassName={
+                contextBudget?.level === 'forced'
+                  ? 'text-danger'
+                  : contextBudget?.level === 'moderate'
+                    ? 'text-brand'
+                    : 'text-ink'
+              }
+              detail={
+                contextBudget
+                  ? `${contextBudget.usedTokens.toLocaleString()} / ${contextBudget.usableTokens.toLocaleString()} tokens`
+                  : contextSummary
+                    ? `摘要 r${contextSummary.revision}`
+                    : '首轮响应后显示占用'
+              }
+              dotClassName={
+                contextBudget?.level === 'forced'
+                  ? 'bg-danger'
+                  : contextBudget
+                    ? 'bg-brand'
+                    : 'bg-ink-subtle/45'
+              }
+            >
+              {contextPercentage !== null ? (
+                <div
+                  className="mt-2 h-1.5 overflow-hidden rounded-full bg-surface-inset"
+                  aria-label={`上下文占用 ${contextPercentage}%`}
+                >
+                  <span
+                    className={cn(
+                      'block h-full rounded-full',
+                      contextBudget?.level === 'forced' ? 'bg-danger' : 'bg-brand',
+                    )}
+                    style={{ width: `${Math.min(100, contextPercentage)}%` }}
+                  />
+                </div>
+              ) : null}
+            </EnvironmentRow>
+          </div>
+        </div>
+      </details>
+    </aside>
+  )
+}
+
+function EnvironmentRow({
+  icon,
+  label,
+  value,
+  detail,
+  dotClassName,
+  valueClassName,
+  title,
+  children,
+}: {
+  icon: ReactNode
+  label: string
+  value: string
+  detail: string
+  dotClassName: string
+  valueClassName?: string
+  title?: string
+  children?: ReactNode
+}) {
+  return (
+    <section
+      className="grid grid-cols-[2.25rem_1fr_auto] gap-x-3 border-b border-line/70 px-3 py-3 last:border-b-0"
+      title={title}
     >
       <span
         aria-hidden="true"
-        className="relative grid size-9 shrink-0 place-items-center rounded-xl border border-line bg-surface-inset/75 text-ink-muted"
+        className="row-span-2 grid size-9 place-items-center rounded-xl bg-surface-inset text-ink-muted"
       >
-        <svg viewBox="0 0 24 24" className="size-[1.15rem] fill-none stroke-current stroke-[1.6]">
-          <path d="m4.5 7.5 7.5-4 7.5 4-7.5 4-7.5-4Z" strokeLinejoin="round" />
-          <path d="M4.5 7.5v8.7l7.5 4.3 7.5-4.3V7.5M12 11.5v9" strokeLinejoin="round" />
-        </svg>
-        <span
-          className={cn(
-            'absolute -right-0.5 -bottom-0.5 size-2.5 rounded-full border-2 border-surface-card',
-            copy.dot,
-          )}
-        />
+        {icon}
       </span>
-      <span className="min-w-0">
-        <span className="block font-mono text-[0.52rem] font-bold tracking-[0.16em] text-ink-subtle">
-          SANDBOX
-        </span>
-        <span className={cn('mt-0.5 block text-xs font-bold', copy.tone)}>{copy.label}</span>
-        <span className="mt-0.5 block max-w-28 truncate font-mono text-[0.54rem] text-ink-subtle">
-          {shortId ?? copy.note}
-        </span>
+      <span className="self-end font-mono text-[0.56rem] font-bold tracking-[0.13em] text-ink-subtle uppercase">
+        {label}
       </span>
-    </aside>
+      <span className="flex items-center gap-1.5 self-end">
+        <span className={cn('size-1.5 rounded-full', dotClassName)} />
+        <span className={cn('text-xs font-bold', valueClassName)}>{value}</span>
+      </span>
+      <span className="truncate text-[0.68rem] text-ink-subtle">{detail}</span>
+      {children ? <div className="col-span-2 col-start-2">{children}</div> : null}
+    </section>
+  )
+}
+
+function EnvironmentIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="size-[1.15rem] fill-none stroke-current stroke-[1.6]">
+      <path d="M5 6.5h14v11H5z" strokeLinejoin="round" />
+      <path d="M8 10h3M8 13.5h5M16 10h.01" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function SandboxIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="size-[1.05rem] fill-none stroke-current stroke-[1.6]">
+      <path d="m4.5 7.5 7.5-4 7.5 4-7.5 4-7.5-4Z" strokeLinejoin="round" />
+      <path d="M4.5 7.5v8.7l7.5 4.3 7.5-4.3V7.5M12 11.5v9" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function McpIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="size-[1.05rem] fill-none stroke-current stroke-[1.7]">
+      <circle cx="7" cy="7" r="2.5" />
+      <circle cx="17" cy="7" r="2.5" />
+      <circle cx="12" cy="17" r="2.5" />
+      <path d="m9 8.5 2 6M15 8.5l-2 6" />
+    </svg>
+  )
+}
+
+function SkillIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="size-[1.05rem] fill-none stroke-current stroke-[1.7]">
+      <path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3Z" />
+      <path d="m18.5 16 .8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8.8-2.2Z" />
+    </svg>
+  )
+}
+
+function ContextIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="size-[1.05rem] fill-none stroke-current stroke-[1.7]">
+      <path d="M5 6h14M5 10h10M5 14h12M5 18h7" strokeLinecap="round" />
+    </svg>
   )
 }
 
@@ -651,35 +957,6 @@ function ThreadHydrator({
   if (interruptedNotice) return <AgentInterruptedBanner message={interruptedNotice} />
   if (resumeNotice) return <AgentInterruptedBanner message={resumeNotice} />
   return null
-}
-
-function AgentContextBudgetBadge({
-  budget,
-  summary,
-}: {
-  budget: AgentContextBudgetState | null
-  summary: AgentContextSummary | null
-}) {
-  if (!budget && !summary) return null
-  const percentage = budget
-    ? Math.min(999, Math.round((budget.usedTokens / Math.max(1, budget.usableTokens)) * 100))
-    : null
-  return (
-    <details className="mx-1 rounded-xl border border-line/80 bg-surface-inset/60 px-3 py-2 text-xs text-ink-muted">
-      <summary className="cursor-pointer select-none font-semibold text-ink">
-        {percentage === null
-          ? '上下文摘要可用'
-          : `上下文 ${budget?.estimated ? '约 ' : ''}${percentage}% · ${budget?.level}`}
-      </summary>
-      {budget ? (
-        <p className="mt-2 tabular-nums">
-          {budget.usedTokens.toLocaleString()} / {budget.usableTokens.toLocaleString()} 可用 Token
-          （模型窗口 {budget.contextWindowTokens.toLocaleString()}）
-        </p>
-      ) : null}
-      {summary ? <AgentSummaryDetail summary={summary} /> : null}
-    </details>
-  )
 }
 
 function AgentContextTimeline({
@@ -1012,54 +1289,6 @@ function SandboxToolActivityCard({
         {result?.summary ? <p className="text-xs text-ink-muted">{result.summary}</p> : null}
       </div>
     </div>
-  )
-}
-
-function AgentMcpStatusPanel({
-  statuses,
-  loadState,
-}: {
-  statuses: AgentMcpServerStatus[]
-  loadState: 'loading' | 'ready' | 'failed'
-}) {
-  const summary = summarizeAgentMcpStatuses(statuses)
-  return (
-    <details className="mx-1 rounded-xl border border-line/80 bg-surface-inset/60 px-3 py-2 text-xs text-ink-muted">
-      <summary className="cursor-pointer font-semibold text-ink">
-        MCP Servers ·{' '}
-        {loadState === 'loading'
-          ? '检查中'
-          : loadState === 'failed'
-            ? '状态不可用'
-            : `${summary.readyCount}/${summary.serverCount} ready · ${summary.registeredToolCount} tools`}
-      </summary>
-      {loadState === 'ready' && statuses.length === 0 ? (
-        <p className="mt-2 text-ink-subtle">未配置平台 MCP Server。</p>
-      ) : null}
-      {statuses.length > 0 ? (
-        <ul className="mt-2 space-y-1.5">
-          {statuses.map((server) => (
-            <li key={server.id} className="flex flex-wrap items-center gap-2">
-              <span className="font-semibold text-ink">{server.name}</span>
-              <span
-                className={cn(
-                  'rounded-full px-2 py-0.5 text-[0.68rem] font-bold',
-                  server.status === 'ready'
-                    ? 'bg-[#dff2e6] text-[#2f7a4d] dark:bg-[#193426]'
-                    : 'bg-[#f6dddd] text-[#a63d3d] dark:bg-[#3d2222]',
-                )}
-              >
-                {server.status}
-              </span>
-              <span className="font-mono text-[0.68rem] text-ink-subtle">
-                {server.registeredToolCount}/{server.allowedToolCount} tools
-                {server.errorCode ? ` · ${server.errorCode}` : ''}
-              </span>
-            </li>
-          ))}
-        </ul>
-      ) : null}
-    </details>
   )
 }
 

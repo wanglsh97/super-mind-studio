@@ -171,3 +171,4 @@
 - [x] 3.32 将产品品牌统一为 Super Mind Studio，将 workspace SDK scope 迁移为 `@supermind/sdk`，并保留 AI Gateway 作为底层技术模块
 - [x] 3.33 为 assistant-ui 消息 Markdown 增加 fenced SVG 安全预览，流式未闭合时保留源码并阻止脚本、外部资源和原始 HTML
 - [x] 3.34 修复 LocalRuntime 流式生成与会话历史同步竞态，运行期间禁止重置消息仓库并在结束后重新水合
+- [x] 3.35 将 MCP 状态从 Composer 迁入右上角运行环境浮层，统一展示 Sandbox、MCP、Skills 与上下文占用
