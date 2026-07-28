@@ -13,12 +13,16 @@ services:
     restart: unless-stopped
     ports:
       - '${HTTP_PORT:-80}:80'
+      - '${HTTPS_PORT:-443}:443'
     environment:
       DOMAIN: '${DOMAIN:?DOMAIN is required}'
       PUBLIC_IP: '${PUBLIC_IP:?PUBLIC_IP is required}'
       NGINX_ENVSUBST_FILTER: '^(DOMAIN|PUBLIC_IP)$'
     volumes:
       - ../nginx/default.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - ../nginx/app-locations.conf:/etc/nginx/includes/app-locations.conf:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /var/www/certbot:/var/www/certbot:ro
     depends_on:
       api:
         condition: service_healthy

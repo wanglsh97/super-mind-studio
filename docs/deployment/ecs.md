@@ -5,8 +5,8 @@
 ## 1. 上线边界
 
 - Nginx 是唯一公网入口；不要在安全组开放 `3000`、`3001`、`5432`、`6379`。
-- 安全组可向公网开放 `80`；`22` 只允许可信管理 IP。配置 HTTPS 后再开放 `443`。
-- 当前 Compose 的 Nginx 只监听 HTTP。生产 OAuth 上线前，必须在可信负载均衡/CDN 终止 TLS，或为 Nginx 配置证书与 443；浏览器看到的入口、`WEB_ORIGIN` 以及 GitHub/Google callback 必须使用同一个 HTTPS 域名。
+- 安全组只向公网开放 `80`、`443`；`22` 只允许可信管理 IP。
+- Compose 的 Nginx 同时提供公网 IP 的 HTTP 入口和域名 HTTPS 入口；域名 HTTP 会重定向到 HTTPS。浏览器看到的入口、`WEB_ORIGIN` 以及 GitHub/Google callback 必须使用同一个 HTTPS 域名。
 - 公网 IP 只能验收首页、Swagger 和 health 等公开入口，不能作为生产 OAuth callback 或用户能力入口。Chat、文生图和 Prompt 优化均要求有效用户 Session；一次性匿名登录也会创建独立 User。
 - V1 尚未实现全站成本硬顶和独立内容审核。首次部署必须使用 Mock-only；真实 Key 只在基础链路验收后逐个启用。
 - 固定管理员账号只允许开发联调；管理员认证升级前不得把管理入口视为可安全公开的生产能力。
@@ -56,7 +56,7 @@ nano .env.production
 至少修改：
 
 - `APP_VERSION`：当前 `git rev-parse HEAD` 的结果。
-- `DOMAIN`、`PUBLIC_IP`、`WEB_ORIGIN`。
+- `DOMAIN`、`PUBLIC_IP`、`HTTP_PORT=80`、`HTTPS_PORT=443`、`WEB_ORIGIN`。
 - `POSTGRES_PASSWORD`：长随机密码。
 - `DATABASE_URL`：使用 Compose 服务名 `postgres`；其中密码必须进行 URL 编码。
 - `GITHUB_CLIENT_ID`、`GITHUB_CLIENT_SECRET`：只使用独立的生产 OAuth App，不能复用开发 App。
@@ -85,7 +85,25 @@ GitHub 和 Google OAuth 可独立启用：启用对应 provider 时设置 `GITHU
 
 不要把 `.env.production`、API Key、数据库密码、Cookie secret、证书私钥或数据库备份提交到 Git。
 
-## 5. 首次发布
+## 5. 签发 HTTPS 证书
+
+确认域名 A 记录和 ECS 安全组的 `80/443` 已生效后，在首次启动 TLS 版 Nginx 前签发证书：
+
+```bash
+sudo mkdir -p /var/www/certbot
+sudo certbot certonly --standalone -d <域名>
+```
+
+首次签发时 `80` 端口不能被其他进程占用。发布后，Nginx 会通过 `/var/www/certbot` 提供 ACME HTTP-01 challenge。将该证书的 Certbot renewal authenticator 改为 webroot，并执行一次 dry-run，确保续期不需要停止 Nginx：
+
+```bash
+sudo certbot reconfigure --cert-name <域名> --webroot-path /var/www/certbot
+sudo certbot renew --dry-run
+```
+
+证书只读挂载到 Nginx；续期成功后执行 `docker compose ... exec -T nginx nginx -s reload` 让新证书生效。
+
+## 6. 首次发布
 
 ```bash
 ENV_FILE="$PWD/.env.production" ./infra/scripts/deploy-production.sh
@@ -103,7 +121,7 @@ ENV_FILE="$PWD/.env.production" ./infra/scripts/deploy-production.sh
 
 任何一步失败都会返回非零状态。脚本不会自动删除卷、恢复数据库或切换 Git 版本。
 
-## 6. 发布验收
+## 7. 发布验收
 
 定义 Compose 命令：
 
@@ -161,7 +179,7 @@ docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" exec -T postgres sh -ec
 '
 ```
 
-## 7. 启用 Kimi
+## 8. 启用 Kimi
 
 Mock 完整验收后，在 `.env.production` 中配置：
 
@@ -185,7 +203,7 @@ unset SMOKE_USER_SESSION_TOKEN
 
 输出必须包含正文、usage 和唯一 `data: [DONE]`。不要在命令行参数、日志或聊天中直接填写 Key。
 
-## 8. 日志与诊断
+## 9. 日志与诊断
 
 ```bash
 docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" logs --tail=200 nginx web api
@@ -194,7 +212,7 @@ docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" logs --tail=200 migrate
 
 所有容器使用 `json-file` 日志驱动，单文件上限 `10m`、最多保留 5 个压缩分片。不要把 `docker compose logs` 的完整输出发布到公开 Issue，其中可能包含完整 Prompt。
 
-## 9. 手工备份与保留
+## 10. 手工备份与保留
 
 已有 PostgreSQL 的环境部署通用 User migration 前，即使发布脚本稍后还会自动备份，也必须先手工创建一个明确的认证迁移前恢复点，并记录其路径、应用 commit 和当前 migration 列表。该 migration 会按已接受的方案清空旧 User 及级联业务数据；全新且尚未创建数据库的首次部署没有可备份数据，可以跳过：
 
@@ -216,7 +234,7 @@ docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" exec -T postgres sh -ec
 - 另一故障域中的加密副本，例如开启服务端加密和访问控制的 OSS 私有 Bucket。
 - 每月抽取一个备份在隔离环境完成实际恢复演练；只通过 `pg_restore --list` 不等于恢复演练。
 
-## 10. 应用版本回滚
+## 11. 应用版本回滚
 
 如果新版本冒烟失败且数据库迁移向后兼容：
 
@@ -238,7 +256,7 @@ docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" exec -T postgres sh -ec
 
 不存在自动 down migration，也不得通过手工删除用户外键来伪造回滚。
 
-## 11. 数据库恢复
+## 12. 数据库恢复
 
 仅在迁移不兼容或数据损坏时恢复数据库。先确认备份文件和目标应用版本匹配：
 
@@ -257,7 +275,7 @@ ENV_FILE="$ENV_FILE" \
 3. 执行 `deploy-production.sh`。
 4. 完成全部发布验收后才恢复对外服务。
 
-## 12. 停止与重启
+## 13. 停止与重启
 
 停止应用但保留 PostgreSQL 数据卷：
 
