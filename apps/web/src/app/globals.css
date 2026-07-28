@@ -154,11 +154,6 @@
     text-rendering: optimizeLegibility;
   }
 
-  html:has([data-login-shell]),
-  body:has([data-login-shell]) {
-    min-width: 0;
-  }
-
   .dark body {
     background:
       radial-gradient(circle at 82% 5%, rgb(78 127 255 / 0.12), transparent 28rem),

@@ -30,7 +30,7 @@ const shellIconButtonClass =
 
 export function AppShell({ children }: Readonly<{ children: ReactNode }>) {
   const pathname = usePathname()
-  if (pathname.startsWith('/admin')) return children
+  if (pathname.startsWith('/admin') || pathname.startsWith('/login')) return children
   return <UserWorkspace>{children}</UserWorkspace>
 }
 
@@ -74,13 +74,7 @@ function UserWorkspace({ children }: Readonly<{ children: ReactNode }>) {
   }
 
   return (
-    <div
-      data-login-shell={pathname.startsWith('/login') ? '' : undefined}
-      className={cn(
-        'relative min-h-screen',
-        pathname.startsWith('/login') ? 'min-w-0' : 'min-w-[1366px]',
-      )}
-    >
+    <div className="relative min-h-screen min-w-[1366px]">
       <aside
         className={cn(
           'liquid-glass fixed inset-y-0 left-0 z-[60] flex flex-col rounded-r-[2rem] border-y-0 border-l-0 p-4 transition-[width,transform] duration-200',
