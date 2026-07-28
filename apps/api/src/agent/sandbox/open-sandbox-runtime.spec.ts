@@ -294,12 +294,16 @@ describe('OpenSandboxRuntime adapter mapping', () => {
       '/workspace/output/logo.svg',
       new TextEncoder().encode('<svg aria-label="logo"/>'),
     )
-    jest.spyOn(instance, 'runCommand').mockResolvedValueOnce({
-      id: 'verify-output',
-      exitCode: 0,
-      durationMs: 1,
-      stdout: '/workspace/output/logo.svg',
-      stderr: '',
+    jest.spyOn(instance, 'runCommand').mockImplementationOnce(async (input) => {
+      input.onStdout('/workspace/output/logo.svg')
+      return {
+        id: 'verify-output',
+        exitCode: 0,
+        durationMs: 1,
+        // OpenSandbox uses skipAccumulation; internal callers must consume the stream callback.
+        stdout: '',
+        stderr: '',
+      }
     })
 
     await expect(

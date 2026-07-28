@@ -407,6 +407,7 @@ export class OpenSandboxRuntime implements SandboxRuntimePort, OnModuleDestroy {
     const state = await this.requireReadyState(sandboxId)
     const normalizedPath = assertOutputPath(path)
     const candidate = shellQuote(normalizedPath)
+    let streamedStdout = ''
     const checked = await state.instance.runCommand({
       command: [
         `candidate=${candidate}`,
@@ -419,7 +420,9 @@ export class OpenSandboxRuntime implements SandboxRuntimePort, OnModuleDestroy {
       timeoutSeconds: Math.max(1, Math.ceil(state.limits.commandTimeoutMs / 1_000)),
       ...(signal === undefined ? {} : { signal }),
       onInit: () => undefined,
-      onStdout: () => undefined,
+      onStdout: (content) => {
+        streamedStdout += content
+      },
       onStderr: () => undefined,
     })
     if (checked.exitCode === 44) return null
@@ -430,7 +433,7 @@ export class OpenSandboxRuntime implements SandboxRuntimePort, OnModuleDestroy {
         false,
       )
     }
-    const resolved = checked.stdout.trim()
+    const resolved = (checked.stdout || streamedStdout).trim()
     assertOutputPath(resolved)
     const bytes = await state.instance.readFile(resolved)
     return bytes ? fileResult(resolved, bytes) : null

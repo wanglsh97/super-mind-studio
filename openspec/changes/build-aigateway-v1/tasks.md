@@ -85,6 +85,7 @@
 - [x] 1.62 新增可配置 Chat 模型目录，将公开模型实例 ID、社区名称、厂商 Adapter 与上游模型 ID 解耦，并兼容现有单模型环境变量
 - [x] 1.63 将 Chat 模型目录迁入代码仓库并移除运行时环境覆盖，模型变更必须经过代码评审与发布
 - [x] 1.64 兼容 Agent Sandbox 的 workspace 相对路径，统一规范化 read/write/shell/output 路径并保持目录越界防护
+- [x] 1.65 修复 OpenSandbox 显式产物 realpath 校验的流式 stdout 收集，确保 export_file 可持久化并在聊天中展示文件卡片
 
 ## 2. 管理员中后台
 
