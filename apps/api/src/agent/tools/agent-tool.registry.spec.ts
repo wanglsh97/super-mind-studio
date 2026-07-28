@@ -12,8 +12,8 @@ import {
   createWebFetchErrorResult,
   createWebFetchSuccessResult,
   sanitizeWebFetchAudit,
-} from './web-fetch.contract'
-import { webFetchFixtureTool } from './web-fetch-fixture.tool'
+} from './web-fetch/contract'
+import { webFetchFixtureTool } from './web-fetch/fixture.tool'
 
 function fakeTool(name: string, execute?: AgentToolDefinition['execute']): AgentToolDefinition {
   return {
@@ -23,9 +23,7 @@ function fakeTool(name: string, execute?: AgentToolDefinition['execute']): Agent
     riskLevel: 'read',
     approvalPolicy: 'none',
     parameters: { type: 'object', additionalProperties: true },
-    execute:
-      execute ??
-      (async () => ({ content: '', summary: '', isError: false })),
+    execute: execute ?? (async () => ({ content: '', summary: '', isError: false })),
   }
 }
 
@@ -169,9 +167,9 @@ describe('webFetchFixtureTool', () => {
       name: 'AgentToolExecutionError',
       code: 'WEB_FETCH_INVALID_ARGS',
     })
-    await expect(
-      webFetchFixtureTool.execute({ url: 'not a url' }, context),
-    ).rejects.toMatchObject({ code: 'WEB_FETCH_INVALID_URL' })
+    await expect(webFetchFixtureTool.execute({ url: 'not a url' }, context)).rejects.toMatchObject({
+      code: 'WEB_FETCH_INVALID_URL',
+    })
     await expect(
       webFetchFixtureTool.execute({ url: 'ftp://example.com' }, context),
     ).rejects.toMatchObject({ code: 'WEB_FETCH_UNSUPPORTED_PROTOCOL' })

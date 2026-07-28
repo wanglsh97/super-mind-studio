@@ -9,8 +9,11 @@ import {
   MOCK_EXECUTABLE_SKILL_SHA256,
 } from '../skills/executable-skill.fixture'
 import { AgentToolRegistry } from './agent-tool.registry'
-import { createSandboxTools } from './sandbox.tools'
-import { createSkillActivationTool } from './skill-activation.tool'
+import { createExportFileTool } from './export-file.tool'
+import { createReadFileTool } from './read-file.tool'
+import { createShellTool } from './shell.tool'
+import { createActivateSkillTool } from './activate-skill.tool'
+import { createWriteFileTool } from './write-file.tool'
 
 const preparedSkill = {
   manifest: {
@@ -69,8 +72,11 @@ function setup() {
     })),
   } as unknown as AgentOutputFileService
   const registry = new AgentToolRegistry([
-    createSkillActivationTool(sessions),
-    ...createSandboxTools(sessions, outputs),
+    createActivateSkillTool(sessions),
+    createShellTool(sessions),
+    createReadFileTool(sessions),
+    createWriteFileTool(sessions),
+    createExportFileTool(outputs),
   ])
   const context = {
     runId: 'run-1',

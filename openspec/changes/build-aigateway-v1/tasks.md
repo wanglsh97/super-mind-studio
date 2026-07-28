@@ -87,6 +87,7 @@
 - [x] 1.64 兼容 Agent Sandbox 的 workspace 相对路径，统一规范化 read/write/shell/output 路径并保持目录越界防护
 - [x] 1.65 修复 OpenSandbox 显式产物 realpath 校验的流式 stdout 收集，确保 export_file 可持久化并在聊天中展示文件卡片
 - [x] 1.66 将 shell、read_file、write_file、export_file 重组为通用 Sandbox tools，与 Skill activation tool 保持平级注册和独立模块边界
+- [x] 1.67 按工具复杂度整理 Agent tools 目录：单文件工具平铺，多文件 web-fetch/web-search 工具归入同名目录
 
 ## 2. 管理员中后台
 

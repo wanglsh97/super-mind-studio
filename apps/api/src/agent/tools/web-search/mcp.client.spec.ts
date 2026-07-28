@@ -1,8 +1,4 @@
-import {
-  WebSearchMcpError,
-  callWebSearchMcp,
-  parseWebSearchMcpResponse,
-} from './web-search-mcp.client'
+import { WebSearchMcpError, callWebSearchMcp, parseWebSearchMcpResponse } from './mcp.client'
 
 const jsonResult = (text: string) =>
   JSON.stringify({

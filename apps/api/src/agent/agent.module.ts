@@ -47,8 +47,11 @@ import {
 } from './skills/storage/aliyun-oss-skill-object-store'
 import { SKILL_OBJECT_STORE_PORT } from './skills/storage/skill-object-store.port'
 import { AGENT_TOOLS, AgentToolRegistry } from './tools/agent-tool.registry'
-import { createSandboxTools } from './tools/sandbox.tools'
-import { createSkillActivationTool } from './tools/skill-activation.tool'
+import { createExportFileTool } from './tools/export-file.tool'
+import { createReadFileTool } from './tools/read-file.tool'
+import { createShellTool } from './tools/shell.tool'
+import { createActivateSkillTool } from './tools/activate-skill.tool'
+import { createWriteFileTool } from './tools/write-file.tool'
 import { InMemorySkillUploadSigner } from './skills/upload/in-memory-skill-upload-signer'
 import { SKILL_UPLOAD_SIGNER_PORT } from './skills/upload/skill-upload-signer.port'
 import { SkillUploadSessionRepository } from './skills/upload/skill-upload-session.repository'
@@ -57,9 +60,9 @@ import {
   SkillUploadSessionService,
 } from './skills/upload/skill-upload-session.service'
 import type { AgentToolDefinition } from './tools/agent-tool'
-import { webFetchFixtureTool } from './tools/web-fetch-fixture.tool'
-import { webFetchTool } from './tools/web-fetch.tool'
-import { createWebSearchTool } from './tools/web-search.tool'
+import { webFetchFixtureTool } from './tools/web-fetch/fixture.tool'
+import { webFetchTool } from './tools/web-fetch/tool'
+import { createWebSearchTool } from './tools/web-search/tool'
 
 export function resolveAgentTools(
   config: ConfigService,
@@ -84,7 +87,14 @@ export function resolveAgentTools(
       }),
     )
   }
-  return [...tools, createSkillActivationTool(sessions), ...createSandboxTools(sessions, outputs)]
+  return [
+    ...tools,
+    createActivateSkillTool(sessions),
+    createShellTool(sessions),
+    createReadFileTool(sessions),
+    createWriteFileTool(sessions),
+    createExportFileTool(outputs),
+  ]
 }
 
 export function createSandboxRuntime(config: ConfigService): SandboxRuntimePort {

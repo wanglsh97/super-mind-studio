@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 
-import { callWebSearchMcp } from './web-search-mcp.client'
+import { callWebSearchMcp } from './mcp.client'
 
 export const EXA_WEB_SEARCH_MCP_URL = 'https://mcp.exa.ai/mcp'
 export const PARALLEL_WEB_SEARCH_MCP_URL = 'https://search.parallel.ai/mcp'

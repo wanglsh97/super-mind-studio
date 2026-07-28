@@ -1,6 +1,6 @@
-import type { AgentToolContext, AgentToolDefinition, AgentToolResult } from './agent-tool'
-import { callWebSearchProvider, type WebSearchProviderMode } from './web-search.providers'
-import { WebSearchMcpError } from './web-search-mcp.client'
+import type { AgentToolContext, AgentToolDefinition, AgentToolResult } from '../agent-tool'
+import { callWebSearchProvider, type WebSearchProviderMode } from './providers'
+import { WebSearchMcpError } from './mcp.client'
 
 export const WEB_SEARCH_TOOL_NAME = 'web_search' as const
 

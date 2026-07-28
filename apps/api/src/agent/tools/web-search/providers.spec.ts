@@ -4,7 +4,7 @@ import {
   callWebSearchProvider,
   selectWebSearchProvider,
   type WebSearchProvider,
-} from './web-search.providers'
+} from './providers'
 
 const mcpResult = (text = 'result') =>
   new Response(

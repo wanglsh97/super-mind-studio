@@ -1,6 +1,6 @@
 import { isIPv4, isIPv6 } from 'node:net'
 
-import { expandIpv6, isIpv4Literal } from './web-fetch-url'
+import { expandIpv6, isIpv4Literal } from './url'
 
 export type AddressClass =
   | 'public'

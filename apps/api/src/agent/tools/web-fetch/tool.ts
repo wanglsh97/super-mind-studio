@@ -1,15 +1,15 @@
-import type { AgentToolContext, AgentToolDefinition, AgentToolResult } from './agent-tool'
-import { AgentToolExecutionError } from './agent-tool'
+import type { AgentToolContext, AgentToolDefinition, AgentToolResult } from '../agent-tool'
+import { AgentToolExecutionError } from '../agent-tool'
 import {
   WEB_FETCH_TOOL_NAME,
   WEB_FETCH_TOOL_PARAMETERS,
   createWebFetchErrorResult,
   createWebFetchSuccessResult,
   type WebFetchErrorCode,
-} from './web-fetch.contract'
-import { extractWebFetchContent } from './web-fetch-extract'
-import { fetchValidatedUrl, type WebFetchHttpDeps } from './web-fetch-http'
-import { normalizeWebFetchUrl } from './web-fetch-url'
+} from './contract'
+import { extractWebFetchContent } from './extract'
+import { fetchValidatedUrl, type WebFetchHttpDeps } from './http'
+import { normalizeWebFetchUrl } from './url'
 
 /**
  * 生产级 `web_fetch`：真实 HTTP(S) 抓取 + SSRF 防护 + 正文抽取。

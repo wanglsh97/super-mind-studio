@@ -1,11 +1,11 @@
-import type { AgentToolContext, AgentToolDefinition, AgentToolResult } from './agent-tool'
-import { AgentToolExecutionError } from './agent-tool'
+import type { AgentToolContext, AgentToolDefinition, AgentToolResult } from '../agent-tool'
+import { AgentToolExecutionError } from '../agent-tool'
 import {
   WEB_FETCH_TOOL_NAME,
   WEB_FETCH_TOOL_PARAMETERS,
   createWebFetchSuccessResult,
-} from './web-fetch.contract'
-import { normalizeWebFetchUrl } from './web-fetch-url'
+} from './contract'
+import { normalizeWebFetchUrl } from './url'
 
 /**
  * 确定性 `web_fetch` fixture 工具。
@@ -75,5 +75,5 @@ function sleep(ms: number, signal: AbortSignal): Promise<void> {
   })
 }
 
-/** @deprecated 使用 web-fetch.contract 中的常量；保留别名避免外部旧引用断裂。 */
+/** @deprecated 使用 contract.ts 中的常量；保留别名避免外部旧引用断裂。 */
 export { WEB_FETCH_TOOL_NAME, WEB_FETCH_TOOL_PARAMETERS }

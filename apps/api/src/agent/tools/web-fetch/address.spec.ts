@@ -1,4 +1,4 @@
-import { classifyIpAddress, isPublicIpAddress } from './web-fetch-address'
+import { classifyIpAddress, isPublicIpAddress } from './address'
 
 describe('classifyIpAddress', () => {
   it('accepts public addresses', () => {

@@ -1,7 +1,7 @@
-import { AgentToolExecutionError } from './agent-tool'
-import { fetchValidatedUrl } from './web-fetch-http'
-import { createWebFetchTool } from './web-fetch.tool'
-import { normalizeWebFetchUrl } from './web-fetch-url'
+import { AgentToolExecutionError } from '../agent-tool'
+import { fetchValidatedUrl } from './http'
+import { createWebFetchTool } from './tool'
+import { normalizeWebFetchUrl } from './url'
 
 describe('fetchValidatedUrl SSRF guards', () => {
   it('blocks redirect from public host to private IP before connecting', async () => {

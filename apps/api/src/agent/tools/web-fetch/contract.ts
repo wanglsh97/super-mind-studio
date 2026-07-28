@@ -1,4 +1,4 @@
-import type { AgentToolResult } from './agent-tool'
+import type { AgentToolResult } from '../agent-tool'
 
 /**
  * `web_fetch` 公共契约（JSON Schema、审计字段、错误码、结果形状）。

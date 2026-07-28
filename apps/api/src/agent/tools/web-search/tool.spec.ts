@@ -1,5 +1,5 @@
-import { AgentToolRegistry } from './agent-tool.registry'
-import { createWebSearchTool } from './web-search.tool'
+import { AgentToolRegistry } from '../agent-tool.registry'
+import { createWebSearchTool } from './tool'
 
 const mcpResult = (text: string) =>
   new Response(

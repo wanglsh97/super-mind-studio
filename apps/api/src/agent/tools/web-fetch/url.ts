@@ -1,4 +1,4 @@
-import { AgentToolExecutionError } from './agent-tool'
+import { AgentToolExecutionError } from '../agent-tool'
 
 export interface NormalizedWebFetchUrl {
   /** 规范化后的绝对 URL（无 hash，保留 pathname/search）。 */
@@ -54,7 +54,10 @@ export function normalizeWebFetchUrl(raw: string): NormalizedWebFetchUrl {
       code: 'WEB_FETCH_BLOCKED_TARGET',
       message: 'web_fetch 拒绝带内嵌凭证的 URL',
       summary: '拒绝内嵌凭证',
-      audit: { requestedUrl: redactCredentials(trimmed), errorCode: 'WEB_FETCH_EMBEDDED_CREDENTIALS' },
+      audit: {
+        requestedUrl: redactCredentials(trimmed),
+        errorCode: 'WEB_FETCH_EMBEDDED_CREDENTIALS',
+      },
     })
   }
 
@@ -129,7 +132,8 @@ export function isIpv4Literal(hostname: string): boolean {
  * 接受 URL hostname 中的 IPv6 字面量（可带或不带方括号；`new URL` 的 hostname 不含括号）。
  */
 export function isIpv6Literal(hostname: string): boolean {
-  const value = hostname.startsWith('[') && hostname.endsWith(']') ? hostname.slice(1, -1) : hostname
+  const value =
+    hostname.startsWith('[') && hostname.endsWith(']') ? hostname.slice(1, -1) : hostname
   if (!value.includes(':')) return false
   try {
     expandIpv6(value)
@@ -166,10 +170,7 @@ export function expandIpv6(raw: string): string {
     if (v4.length !== 4 || v4.some((n) => !Number.isInteger(n) || n < 0 || n > 255)) {
       throw new Error('invalid ipv4-mapped')
     }
-    const mapped = [
-      ((v4[0]! << 8) | v4[1]!).toString(16),
-      ((v4[2]! << 8) | v4[3]!).toString(16),
-    ]
+    const mapped = [((v4[0]! << 8) | v4[1]!).toString(16), ((v4[2]! << 8) | v4[3]!).toString(16)]
     if (sides.length === 2) {
       tail = [...tail.slice(0, -1), ...mapped]
     } else {

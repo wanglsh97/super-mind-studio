@@ -3,7 +3,7 @@ import type { AgentMemoryProvider } from '../memory/agent-memory.provider'
 import type { AgentSkillRegistry } from '../skills/agent-skill.registry'
 import type { AgentToolDefinition } from '../tools/agent-tool'
 import { AgentToolRegistry } from '../tools/agent-tool.registry'
-import { createWebSearchTool } from '../tools/web-search.tool'
+import { createWebSearchTool } from '../tools/web-search/tool'
 import {
   AGENT_PROMPT_PROFILE_VERSION,
   AgentPromptComposer,

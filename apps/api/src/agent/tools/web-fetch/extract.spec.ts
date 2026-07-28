@@ -1,8 +1,4 @@
-import {
-  extractWebFetchContent,
-  isAllowedContentType,
-  isDeniedContentType,
-} from './web-fetch-extract'
+import { extractWebFetchContent, isAllowedContentType, isDeniedContentType } from './extract'
 
 describe('web-fetch content extraction', () => {
   it('extracts title and text from HTML without scripts', () => {

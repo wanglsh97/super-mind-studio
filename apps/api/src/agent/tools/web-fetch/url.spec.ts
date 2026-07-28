@@ -1,12 +1,7 @@
 import assert from 'node:assert/strict'
 
-import { AgentToolExecutionError } from './agent-tool'
-import {
-  expandIpv6,
-  isIpv4Literal,
-  isIpv6Literal,
-  normalizeWebFetchUrl,
-} from './web-fetch-url'
+import { AgentToolExecutionError } from '../agent-tool'
+import { expandIpv6, isIpv4Literal, isIpv6Literal, normalizeWebFetchUrl } from './url'
 
 describe('normalizeWebFetchUrl', () => {
   it('normalizes http(s) URLs and strips hash', () => {

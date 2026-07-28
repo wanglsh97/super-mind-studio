@@ -1,7 +1,7 @@
 import { Resolver } from 'node:dns/promises'
 
-import { AgentToolExecutionError } from './agent-tool'
-import { assertPublicIpAddress, classifyIpAddress, type AddressClass } from './web-fetch-address'
+import { AgentToolExecutionError } from '../agent-tool'
+import { assertPublicIpAddress, classifyIpAddress, type AddressClass } from './address'
 
 export interface ResolvedHostAddresses {
   hostname: string

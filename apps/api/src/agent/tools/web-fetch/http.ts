@@ -1,9 +1,9 @@
 import { Client } from 'undici'
 
-import { AgentToolExecutionError } from './agent-tool'
-import { pickPinnedAddress, resolveAndValidateHost, type HostResolver } from './web-fetch-dns'
-import { isAllowedContentType, isDeniedContentType } from './web-fetch-extract'
-import { normalizeWebFetchUrl, type NormalizedWebFetchUrl } from './web-fetch-url'
+import { AgentToolExecutionError } from '../agent-tool'
+import { pickPinnedAddress, resolveAndValidateHost, type HostResolver } from './dns'
+import { isAllowedContentType, isDeniedContentType } from './extract'
+import { normalizeWebFetchUrl, type NormalizedWebFetchUrl } from './url'
 
 export const WEB_FETCH_MAX_REDIRECTS = 5
 export const WEB_FETCH_MAX_BYTES = 2 * 1024 * 1024

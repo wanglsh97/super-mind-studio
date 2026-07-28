@@ -17,7 +17,7 @@ const ACTIVATE_SKILL_PARAMETERS = {
   },
 } as const
 
-export function createSkillActivationTool(
+export function createActivateSkillTool(
   sessions: AgentExecutionSessionService,
 ): AgentToolDefinition<{ name: string }> {
   return {
