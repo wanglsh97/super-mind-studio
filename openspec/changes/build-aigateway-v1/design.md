@@ -1,6 +1,6 @@
 ## Context
 
-Super Mind Studio 定位为 AI 灵感创作平台，由两个认证边界组成：GitHub 用户登录后使用 Chat、文生图、Prompt 优化、Agent 和 Skill；固定管理员通过独立 Session 进入 `/admin` 查看运行情况、完整请求详情并维护白名单业务数据。AI Gateway 是底层技术模块。V1 的价值不是一次性覆盖所有模型，而是证明统一协议、SDK dogfooding、请求可观测和单机交付形成闭环。
+Super Mind Studio 定位为 AI 灵感创作平台，由两个认证边界组成：匿名、GitHub 或 Google 用户登录后使用 Chat、文生图、Prompt 优化、Agent 和 Skill；固定管理员通过独立 Session 进入 `/admin` 查看运行情况、完整请求详情并维护白名单业务数据。AI Gateway 是底层技术模块。V1 的价值不是一次性覆盖所有模型，而是证明统一协议、SDK dogfooding、请求可观测和单机交付形成闭环。
 
 已确认约束：
 
@@ -9,9 +9,9 @@ Super Mind Studio 定位为 AI 灵感创作平台，由两个认证边界组成�
 - Web 仅依赖一个内部包 `@supermind/sdk`；模型厂商差异全部收敛在 API 的 Adapter 层。
 - V1 接入 Qwen、GLM、DeepSeek、Wanxiang 和 CogView，但当前没有真实 API Key，因此 Mock 闭环不能依赖外部服务。
 - V1 不使用 BullMQ；日志和计费同步直写 PostgreSQL；Redis 仅保存可重建的限流和健康状态。
-- V1 完整保存 Prompt；用户端只使用 GitHub OAuth，管理员开发账号固定为 `root/123456`。成本硬顶、内容审核、正式管理员认证和 Prompt 数据治理明确推迟。
+- V1 完整保存 Prompt；用户端支持一次性匿名、GitHub OAuth 和 Google OAuth，三种身份永不合并；管理员开发账号固定为 `root/123456`。成本硬顶、内容审核、正式管理员认证和 Prompt 数据治理明确推迟。
 
-主要使用者是 GitHub 登录用户、项目管理员和维护 ECS 的开发者。设计需要让三者共用同一套部署，同时严格隔离用户数据和管理数据。
+主要使用者是登录用户、项目管理员和维护 ECS 的开发者。设计需要让三者共用同一套部署，同时严格隔离用户数据和管理数据。
 
 ## Goals / Non-Goals
 
@@ -294,7 +294,7 @@ Chat 客户端提交公开模型实例 ID，而不是厂商 alias。服务端 `M
 
 1. **API 网关服务建设**：包含工程骨架、统一 SDK/协议、四张数据库表、Redis 限流、Mock/真实 Adapter、Chat SSE、Image 任务、Prompt 优化、日志计费、测试和 ECS 部署基础。
 2. **管理员中后台**：包含固定管理员认证、Dashboard、请求日志、完整 Prompt 详情、数据库白名单编辑/删除和不可变审计日志。
-3. **用户端网页**：包含公开首页/登录页、GitHub 登录保护的 Chat 单模型/对比、文生图、Prompt 优化、PC-only 桌面布局和主题。用户端最低支持 1366px 布局宽度，不提供移动端导航或窄屏重排。
+3. **用户端网页**：包含公开首页/登录页、通用 User Session 保护的 Chat 单模型/对比、文生图、Prompt 优化、PC-only 桌面布局和主题。用户端最低支持 1366px 布局宽度，不提供移动端导航或窄屏重排。
 
 三个板块是任务归类，不代表必须把一个板块全部做完才开始下一个。实际实施仍按以下波次推进：
 

@@ -180,9 +180,9 @@ V1 为联调和诊断在 PostgreSQL 与 Pino 中保存完整 Prompt，暂不自�
 
 ## 11. 用户端网页规则
 
-- 用户端使用 GitHub OAuth 强制登录；首页、登录页、模型列表和 health 可公开访问，`/chat`、`/image`、`/prompt` 及对应付费 API 必须校验用户 Session。
+- 用户端支持一次性匿名、GitHub OAuth 和 Google OAuth 三种登录；三种 provider 身份永不自动合并，即使邮箱相同也各自创建 User。首页、登录页、模型列表和 health 可公开访问，`/chat`、`/image`、`/prompt` 及对应付费 API 必须校验用户 Session。
 - NestJS API 是用户认证真源，客户端不得传入或声明 `userId`；RequestLog 和 ImageGenerationTask 必须关联当前登录用户。
-- 管理员认证暂时保持独立固定账号，不与 GitHub 用户 Session 混用。
+- 管理员认证暂时保持独立固定账号，不与用户 Session 混用。
 - 页面必须提供明确的 loading、streaming、success、empty、cancelled 和 error 状态。
 - Chat Markdown 必须消毒，禁止原始 HTML 和危险链接协议。
 - 多模型对比的内容、usage、费用、错误和取消状态相互独立。

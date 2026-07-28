@@ -1,6 +1,6 @@
 # Super Mind Studio
 
-Super Mind Studio 是一个面向灵感探索与任务执行的 AI Agent 工作空间。用户通过 GitHub 登录后可以在 Agent 中进行普通对话或多步任务，并使用多模型对比与 Skill；管理员中后台负责模型调用、费用、日志和业务数据治理。底层 AI Gateway 仍统一提供 Chat、Image 与 Prompt 能力及厂商适配，当前工程优先使用 Mock Adapter 串通完整链路。
+Super Mind Studio 是一个面向灵感探索与任务执行的 AI Agent 工作空间。用户可通过一次性匿名、GitHub OAuth 或 Google OAuth 登录，在 Agent 中进行普通对话或多步任务，并使用多模型对比与 Skill；管理员中后台负责模型调用、费用、日志和业务数据治理。底层 AI Gateway 仍统一提供 Chat、Image 与 Prompt 能力及厂商适配，当前工程优先使用 Mock Adapter 串通完整链路。
 
 ## 环境要求
 
@@ -14,16 +14,19 @@ Super Mind Studio 是一个面向灵感探索与任务执行的 AI Agent 工作�
 corepack enable
 pnpm install
 cp .env.example .env
-# 在 GitHub 创建仅供本地开发使用的 OAuth App，再填写下列三项
+# 匿名登录始终可用；需要 OAuth 时创建本地 Client 并填写对应配置
 # GITHUB_OAUTH_ENABLED=true
 # GITHUB_CLIENT_ID=...
 # GITHUB_CLIENT_SECRET=...
+# GOOGLE_OAUTH_ENABLED=true
+# GOOGLE_CLIENT_ID=...
+# GOOGLE_CLIENT_SECRET=...
 pnpm infra:up
 pnpm db:migrate:deploy
 pnpm dev
 ```
 
-本地 OAuth App 的 callback 必须精确配置为 `http://localhost:3001/api/v1/auth/github/callback`。邮箱只在 GitHub 返回已验证主邮箱时保存，缺少邮箱不影响登录；用户端 Session API 不返回邮箱。`USER_SESSION_TTL_SECONDS` 固定为 `2592000`（30 天），不要提交 Client Secret 或 Session Secret。
+本地 callback 必须分别精确配置为 `http://localhost:3001/api/v1/auth/github/callback` 和 `http://localhost:3001/api/v1/auth/google/callback`。GitHub 只保存已验证主邮箱；Google 只在 `email_verified=true` 时保存邮箱，缺少邮箱不影响登录。身份唯一性只使用 `(authProvider, providerUserId)`，绝不按邮箱合并。用户端 Session API 不返回 Provider ID 或邮箱。`USER_SESSION_TTL_SECONDS` 固定为 `2592000`（30 天），不要提交 Client Secret、OAuth token 或 Session Secret。
 
 默认地址：
 
@@ -34,7 +37,7 @@ pnpm dev
 - Swagger UI：http://localhost:3001/api-docs
 - OpenAPI JSON：http://localhost:3001/api-docs/openapi.json
 
-登录页、模型列表和 health 保持公开。根路径 `/` 直接承载 Agent，要求 `aigateway_user_session` HttpOnly Cookie；该 Cookie 只能由 GitHub callback 创建。以下用户能力同样要求该 Session：
+登录页、模型列表和 health 保持公开。根路径 `/` 直接承载 Agent，要求 `aigateway_user_session` HttpOnly Cookie；该 Cookie 可由匿名、GitHub 或 Google 登录创建。匿名登录每次创建新的不可恢复 User，但拥有与 OAuth 用户相同的功能和永久数据保留行为。以下用户能力同样要求该 Session：
 
 - `POST /api/v1/chat/completions`
 - `POST /api/v1/images/generations` 及任务状态/下载
@@ -55,7 +58,7 @@ C 端 `/api` 展示页也已移除并直接返回 404。该页面删除不影响
 
 登录后访问 `/skills` 可以安装、启用、停用或卸载平台维护的 Skill。Skill 内容来自 API 仓库内经过审核的清单，服务启动时会校验 ID、版本、字段长度和工具引用；系统不会扫描本地目录、下载远程包、执行 Skill 代码或把 Skill 当成新的工具权限。
 
-安装状态按 GitHub 用户保存在 `UserAgentSkill`。启用状态从下一次 Agent 模型调用开始生效，`AgentPromptComposer` 会按用户加载已启用 Skill，并把 `skillId@version` 写入当次 prompt manifest。浏览器只接收展示元数据，不接收模型指令正文。
+安装状态按平台 User UUID 保存在 `UserAgentSkill`。启用状态从下一次 Agent 模型调用开始生效，`AgentPromptComposer` 会按用户加载已启用 Skill，并把 `skillId@version` 写入当次 prompt manifest。浏览器只接收展示元数据，不接收模型指令正文。
 
 相关 API：
 
@@ -72,7 +75,7 @@ Agent Thread 在第一次 Run 时按需创建一个隔离沙箱，同一 Thread 
 
 本地开发与生产环境都只使用真实 OpenSandbox Server，不提供进程内 Sandbox fallback。API 启动前必须配置 `OPEN_SANDBOX_DOMAIN`、`OPEN_SANDBOX_API_KEY`，并按需配置协议、镜像、请求/就绪超时和 server proxy；缺少连接配置时 API 会直接拒绝启动。
 
-`/api/v1/admin/*` 使用另一枚 `aigateway_admin_session` Cookie，与 GitHub 用户 Session 完全隔离。Swagger 只描述 Cookie 认证边界，不展示或接收 OAuth code、GitHub access token、Client Secret 或原始 Session token。
+`/api/v1/admin/*` 使用另一枚 `aigateway_admin_session` Cookie，与用户 Session 完全隔离。Swagger 只描述 Cookie 认证边界，不展示或接收 OAuth code、Provider access token、Client Secret 或原始 Session token。
 
 ## Agent 网页搜索
 
@@ -110,7 +113,7 @@ V1 只支持 Streamable HTTP、静态工具白名单以及 `read`/`external_send
 
 项目提供 Web/API 多阶段镜像、单机生产 Compose、Nginx SSE 代理、日志轮转、PostgreSQL 备份恢复和人工发布脚本。部署前请完整阅读 [ECS 单机部署与回滚手册](docs/deployment/ecs.md)。
 
-首次 ECS 上线必须使用 Mock-only 模型配置，并使用独立的生产 GitHub OAuth App。生产 callback 只支持 HTTPS 域名；公网 IP 只能用于 health 等公开入口验收，不能作为生产登录入口。生产环境变量只保存在服务器的 `.env.production`，不要复制本机 `.env` 或提交真实密钥。
+首次 ECS 上线必须使用 Mock-only 模型配置。匿名登录始终可用；启用 GitHub 或 Google 时必须使用独立的生产 OAuth Client，且 callback 只支持 HTTPS 域名。公网 IP 只能用于 health 等公开入口验收，不能作为 OAuth callback。生产环境变量只保存在服务器的 `.env.production`，不要复制本机 `.env` 或提交真实密钥。
 
 ## 常用命令
 
@@ -168,7 +171,7 @@ KIMI_BASE_URL=https://api.moonshot.cn/v1
 pnpm test:smoke:kimi
 ```
 
-浏览器手工验收时运行 `pnpm dev`，通过 GitHub 登录后直接在同源 `/` 发起普通对话；Agent 的内部模型调用应能在 `RequestLog` 中查到 `SUCCEEDED` 记录、必填 `userId` 及其一对一 `BillingRecord`。访问 `/chat` 应直接跳转到 `/`，访问 `/agent` 应返回 404。API 的注入点使用显式 token，使 `tsx watch` 开发态与 TypeScript 生产构建保持一致。
+浏览器手工验收时运行 `pnpm dev`，分别通过匿名、GitHub 和 Google 登录后在同源 `/` 发起普通对话；Agent 的内部模型调用应能在 `RequestLog` 中查到 `SUCCEEDED` 记录、必填 `userId` 及其一对一 `BillingRecord`。访问 `/chat` 应直接跳转到 `/`，访问 `/agent` 应返回 404。API 的注入点使用显式 token，使 `tsx watch` 开发态与 TypeScript 生产构建保持一致。
 
 重置测试数据库前必须显式提供数据库名包含 `_test` 或 `test_` 的 `DATABASE_URL`：
 

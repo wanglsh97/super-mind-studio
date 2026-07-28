@@ -6,8 +6,8 @@
 
 - Nginx 是唯一公网入口；不要在安全组开放 `3000`、`3001`、`5432`、`6379`。
 - 安全组可向公网开放 `80`；`22` 只允许可信管理 IP。配置 HTTPS 后再开放 `443`。
-- 当前 Compose 的 Nginx 只监听 HTTP。生产 GitHub OAuth 上线前，必须在可信负载均衡/CDN 终止 TLS，或为 Nginx 配置证书与 443；浏览器看到的入口、`WEB_ORIGIN` 和 GitHub callback 必须是同一个 HTTPS 域名。
-- 公网 IP 只能验收首页、Swagger 和 health 等公开入口，不能作为生产 GitHub OAuth callback 或用户能力入口。Chat、文生图和 Prompt 优化均要求 GitHub 用户 Session。
+- 当前 Compose 的 Nginx 只监听 HTTP。生产 OAuth 上线前，必须在可信负载均衡/CDN 终止 TLS，或为 Nginx 配置证书与 443；浏览器看到的入口、`WEB_ORIGIN` 以及 GitHub/Google callback 必须使用同一个 HTTPS 域名。
+- 公网 IP 只能验收首页、Swagger 和 health 等公开入口，不能作为生产 OAuth callback 或用户能力入口。Chat、文生图和 Prompt 优化均要求有效用户 Session；一次性匿名登录也会创建独立 User。
 - V1 尚未实现全站成本硬顶和独立内容审核。首次部署必须使用 Mock-only；真实 Key 只在基础链路验收后逐个启用。
 - 固定管理员账号只允许开发联调；管理员认证升级前不得把管理入口视为可安全公开的生产能力。
 - 生产配置必须保持 `ADMIN_FIXED_CREDENTIALS_ENABLED=false`。API 会拒绝以固定凭证启动生产配置；正式开放管理员入口前，必须在后续 change 中接入密码哈希账号体系或外部身份认证并替换此硬门槛。
@@ -61,6 +61,8 @@ nano .env.production
 - `DATABASE_URL`：使用 Compose 服务名 `postgres`；其中密码必须进行 URL 编码。
 - `GITHUB_CLIENT_ID`、`GITHUB_CLIENT_SECRET`：只使用独立的生产 OAuth App，不能复用开发 App。
 - `GITHUB_CALLBACK_URL`：必须精确为 `https://<DOMAIN>/api/v1/auth/github/callback`，并在 GitHub OAuth App 中配置同一个 callback。
+- `GOOGLE_CLIENT_ID`、`GOOGLE_CLIENT_SECRET`：只使用独立的生产 OAuth Client，不能复用开发 Client。
+- `GOOGLE_CALLBACK_URL`：必须精确为 `https://<DOMAIN>/api/v1/auth/google/callback`，并在 Google Cloud Console 中配置同一个 redirect URI。
 - `USER_SESSION_SECRET`：至少 32 个随机字符；`USER_SESSION_TTL_SECONDS` 必须保持 `2592000`。
 - `ADMIN_SESSION_SECRET`：与用户 Session Secret 不同的随机值。固定管理员登录在生产保持关闭。
 - `SMOKE_MODEL_ALIAS`：首次保持 `qwen`，同时保持 Qwen 禁用，使该 alias 回退到 Mock Adapter。
@@ -79,7 +81,7 @@ ADMIN_FIXED_CREDENTIALS_ENABLED=false
 AGENT_MCP_SERVERS_JSON=[]
 ```
 
-生产必须设置 `GITHUB_OAUTH_ENABLED=true`。Compose 会把 GitHub OAuth 和两类 Session 配置显式注入 API；缺少任一必填值时应在启动前失败。OAuth App 的主页 URL 使用 `https://<DOMAIN>`，不要填写公网 IP，也不要把 Client Secret 复制到命令输出、日志或工单。
+GitHub 和 Google OAuth 可独立启用：启用对应 provider 时设置 `GITHUB_OAUTH_ENABLED=true` 或 `GOOGLE_OAUTH_ENABLED=true`，并完整配置该 provider 的 Client ID、Client Secret 和 callback。一次性匿名登录始终可用；生产与 dev 使用相同身份逻辑。Compose 会把 OAuth 和两类 Session 配置显式注入 API；已启用 provider 缺少任一必填值时应在启动前失败。OAuth 应用主页使用 `https://<DOMAIN>`，不要填写公网 IP，也不要把 Client Secret 复制到命令输出、日志或工单。
 
 首次部署保持 MCP 关闭。启用前应审核 Server 身份、工具语义、数据出境和外部副作用，并把精确工具白名单写入 `AGENT_MCP_SERVERS_JSON`。生产 endpoint 必须使用 HTTPS；Bearer token 通过配置中的 `tokenEnv` 引用，不能嵌入 JSON。模板与 Compose 默认提供 `AGENT_MCP_TOKEN` 槽位；如需多个独立 token，先在 `infra/compose/compose.prod.yml` 的 API `environment` 中逐项增加对应变量，再在 JSON 中引用。不要使用 `env_file` 把整份生产配置无差别注入 API。
 
@@ -120,7 +122,7 @@ curl --fail http://127.0.0.1/health/live
 curl --fail http://127.0.0.1/health/ready
 ```
 
-使用门禁脚本同时验证公网 IP 和域名。脚本会先确认生产环境仍是 Mock-only，再验证公开入口和未登录 Chat `401`，不会绕过 GitHub 登录或产生模型调用：
+使用门禁脚本同时验证公网 IP 和域名。脚本会先确认生产环境仍是 Mock-only，再验证公开入口和未登录 Chat `401`，不会绕过用户登录或产生模型调用：
 
 ```bash
 PUBLIC_IP_BASE_URL="http://<公网IP>" \
@@ -129,7 +131,7 @@ ENV_FILE="$ENV_FILE" \
 ./infra/scripts/smoke-public-entrypoints.sh
 ```
 
-完成 HTTPS 和生产 GitHub OAuth 登录后，只在受控终端临时读取当前浏览器的 `aigateway_user_session` Cookie，用隐藏输入运行一次登录态 SSE 冒烟。不要把 Cookie 写进 `.env.production`、Shell 历史、日志或聊天；命令结束后立即清除变量：
+完成 HTTPS 和至少一种生产登录方式验收后，只在受控终端临时读取当前浏览器的 `aigateway_user_session` Cookie，用隐藏输入运行一次登录态 SSE 冒烟。不要把 Cookie 写进 `.env.production`、Shell 历史、日志或聊天；命令结束后立即清除变量：
 
 ```bash
 read -r -s SMOKE_USER_SESSION_TOKEN
@@ -174,7 +176,7 @@ KIMI_BASE_URL=https://api.moonshot.cn/v1
 
 模型 ID 与社区展示名统一维护在 `apps/api/src/chat/chat-models.config.ts`，不能通过 ECS 环境变量覆盖。
 
-保持 `SMOKE_MODEL_ALIAS` 指向一个未启用的文本 alias，使发布脚本仍走确定性 Mock。然后重新运行发布脚本，在浏览器登录后通过页面执行一次最多 16 Token 的受限真实请求，并在管理员请求日志中核对 GitHub 用户归属。命令行调用若没有用户 Session 会按设计返回 `401`；如需复验 SSE，使用上一节的隐藏 Cookie 输入方式，不要把 Cookie 或 Key 写在命令行：
+保持 `SMOKE_MODEL_ALIAS` 指向一个未启用的文本 alias，使发布脚本仍走确定性 Mock。然后重新运行发布脚本，在浏览器登录后通过页面执行一次最多 16 Token 的受限真实请求，并在管理员请求日志中核对通用 User 归属及 `authProvider`。命令行调用若没有用户 Session 会按设计返回 `401`；如需复验 SSE，使用上一节的隐藏 Cookie 输入方式，不要把 Cookie 或 Key 写在命令行：
 
 ```bash
 read -r -s SMOKE_USER_SESSION_TOKEN
@@ -196,7 +198,7 @@ docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" logs --tail=200 migrate
 
 ## 9. 手工备份与保留
 
-已有 PostgreSQL 的环境部署 GitHub 用户认证 migration 前，即使发布脚本稍后还会自动备份，也必须先手工创建一个明确的认证迁移前恢复点，并记录其路径、应用 commit 和当前 migration 列表。全新且尚未创建数据库的首次部署没有可备份数据，可以跳过：
+已有 PostgreSQL 的环境部署通用 User migration 前，即使发布脚本稍后还会自动备份，也必须先手工创建一个明确的认证迁移前恢复点，并记录其路径、应用 commit 和当前 migration 列表。该 migration 会按已接受的方案清空旧 User 及级联业务数据；全新且尚未创建数据库的首次部署没有可备份数据，可以跳过：
 
 ```bash
 ENV_FILE="$ENV_FILE" ./infra/scripts/postgres-backup.sh
@@ -208,7 +210,7 @@ docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" exec -T postgres sh -ec
 
 备份默认保存在仓库根目录 `backups/`，目录权限为 `0700`，归档权限为 `0600`。脚本使用 `pg_restore --list` 验证归档后才原子改名。Redis 仅保存可重建限流状态，不备份。
 
-`add_github_user_auth` 将请求日志和图片任务改为必填用户关系，不会按 IP 猜测历史用户。只有在确认现存匿名记录均为可丢弃开发/测试数据后，才可运行 `infra/scripts/prepare-user-auth-migration.sh`；生产数据需要保留时必须停止发布并另行设计显式迁移，不能直接清理。
+`generalize_user_auth_providers` 会用 provider-neutral 字段替换 GitHub 专属字段，并清空现有 User 及其级联业务数据，不尝试兼容或推断历史身份。执行 migration 前必须确认现有数据可丢弃并已创建恢复点；若生产数据需要保留，必须停止发布并另行设计显式迁移。
 
 生产至少保留：
 
@@ -228,7 +230,7 @@ docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" exec -T postgres sh -ec
 
 不要使用 `git reset --hard` 清理服务器；部署脚本会拒绝脏工作区，应先人工确认变更来源。
 
-GitHub 用户认证 migration 与旧匿名写入逻辑不向后兼容，不能只切回旧镜像。若必须回到认证上线前版本：
+通用 User migration 与旧 GitHub 专属结构不向后兼容，不能只切回旧镜像。若必须回到认证上线前版本：
 
 1. 立即停止 Nginx/API，阻止继续写入带用户归属的新请求。
 2. 为当前失败状态再做一次备份，保留故障调查和人工数据提取能力。
