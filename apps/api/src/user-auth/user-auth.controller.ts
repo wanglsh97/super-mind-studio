@@ -24,30 +24,44 @@ import type { CookieOptions, Request, Response } from 'express'
 
 import { createAnonymousIdentity } from './anonymous-identity'
 import { GitHubOAuthClient } from './github-oauth.client'
-import { OAuthStateService, sanitizeReturnTo } from './oauth-state.service'
-import { GITHUB_OAUTH_CLIENT, OAUTH_STATE_COOKIE, USER_SESSION_COOKIE } from './user-auth.constants'
+import { GoogleOAuthClient } from './google-oauth.client'
+import { type OAuthProvider, OAuthStateService, sanitizeReturnTo } from './oauth-state.service'
+import {
+  GITHUB_OAUTH_CLIENT,
+  GITHUB_OAUTH_STATE_COOKIE,
+  GOOGLE_OAUTH_CLIENT,
+  GOOGLE_OAUTH_STATE_COOKIE,
+  USER_SESSION_COOKIE,
+} from './user-auth.constants'
 import { UserSessionService } from './user-session.service'
 
 @ApiTags('User authentication')
 @Controller('auth')
 export class UserAuthController {
-  private readonly enabled: boolean
+  private readonly githubEnabled: boolean
+  private readonly googleEnabled: boolean
   private readonly production: boolean
-  private readonly clientId: string | undefined
-  private readonly callbackUrl: string
+  private readonly githubClientId: string | undefined
+  private readonly githubCallbackUrl: string
+  private readonly googleClientId: string | undefined
+  private readonly googleCallbackUrl: string
   private readonly webOrigin: string
   private readonly sessionTtlSeconds: number
 
   constructor(
     @Inject(GITHUB_OAUTH_CLIENT) private readonly github: GitHubOAuthClient,
+    @Inject(GOOGLE_OAUTH_CLIENT) private readonly google: GoogleOAuthClient,
     @Inject(OAuthStateService) private readonly oauthState: OAuthStateService,
     @Inject(UserSessionService) private readonly sessions: UserSessionService,
     @Inject(ConfigService) config: ConfigService,
   ) {
-    this.enabled = config.get<boolean>('GITHUB_OAUTH_ENABLED', false)
+    this.githubEnabled = config.get<boolean>('GITHUB_OAUTH_ENABLED', false)
+    this.googleEnabled = config.get<boolean>('GOOGLE_OAUTH_ENABLED', false)
     this.production = config.get<string>('NODE_ENV') === 'production'
-    this.clientId = config.get<string>('GITHUB_CLIENT_ID')
-    this.callbackUrl = config.getOrThrow<string>('GITHUB_CALLBACK_URL')
+    this.githubClientId = config.get<string>('GITHUB_CLIENT_ID')
+    this.githubCallbackUrl = config.getOrThrow<string>('GITHUB_CALLBACK_URL')
+    this.googleClientId = config.get<string>('GOOGLE_CLIENT_ID')
+    this.googleCallbackUrl = config.getOrThrow<string>('GOOGLE_CALLBACK_URL')
     this.webOrigin = config.getOrThrow<string>('WEB_ORIGIN')
     this.sessionTtlSeconds = config.getOrThrow<number>('USER_SESSION_TTL_SECONDS')
   }
@@ -65,15 +79,17 @@ export class UserAuthController {
     @Query('returnTo') returnTo: string | undefined,
     @Res() response: Response,
   ): void {
-    if (!this.enabled || !this.clientId) {
-      throw new ServiceUnavailableException('GitHub 登录尚未配置')
-    }
-    const created = this.oauthState.create(returnTo)
-    response.cookie(OAUTH_STATE_COOKIE, created.cookieValue, this.stateCookieOptions())
+    this.assertProviderEnabled('GitHub', this.githubEnabled, this.githubClientId)
+    const created = this.oauthState.create('GITHUB', returnTo)
+    response.cookie(
+      GITHUB_OAUTH_STATE_COOKIE,
+      created.cookieValue,
+      this.stateCookieOptions('GITHUB'),
+    )
 
     const authorizeUrl = new URL('https://github.com/login/oauth/authorize')
-    authorizeUrl.searchParams.set('client_id', this.clientId)
-    authorizeUrl.searchParams.set('redirect_uri', this.callbackUrl)
+    authorizeUrl.searchParams.set('client_id', this.githubClientId!)
+    authorizeUrl.searchParams.set('redirect_uri', this.githubCallbackUrl)
     authorizeUrl.searchParams.set('scope', 'read:user user:email')
     authorizeUrl.searchParams.set('state', created.state)
     response.redirect(302, authorizeUrl.toString())
@@ -89,16 +105,75 @@ export class UserAuthController {
     @Req() request: Request,
     @Res() response: Response,
   ): Promise<void> {
-    const stateCookie = readCookie(request, OAUTH_STATE_COOKIE)
-    response.clearCookie(OAUTH_STATE_COOKIE, this.stateCookieOptions(false))
+    const stateCookie = readCookie(request, GITHUB_OAUTH_STATE_COOKIE)
+    response.clearCookie(GITHUB_OAUTH_STATE_COOKIE, this.stateCookieOptions('GITHUB', false))
 
     try {
-      const returnTo = this.oauthState.verify(state, stateCookie)
+      const returnTo = this.oauthState.verify('GITHUB', state, stateCookie)
       if (providerError || !code) {
         response.redirect(302, this.loginErrorUrl('authorization_rejected', returnTo))
         return
       }
       const identity = await this.github.authenticate(code)
+      const session = await this.sessions.create(identity)
+      response.cookie(USER_SESSION_COOKIE, session.token, this.sessionCookieOptions())
+      response.redirect(302, new URL(returnTo, this.webOrigin).toString())
+    } catch {
+      response.redirect(302, this.loginErrorUrl('oauth_failed'))
+    }
+  }
+
+  @Get('google')
+  @ApiOperation({ summary: '发起 Google OAuth 登录' })
+  @ApiQuery({
+    name: 'returnTo',
+    required: false,
+    enum: ['/', '/chat/compare'],
+  })
+  @ApiFoundResponse({ description: '跳转到 Google authorize URL，并写入一次性 state Cookie' })
+  @ApiServiceUnavailableResponse({ description: 'Google OAuth 尚未配置' })
+  beginGoogleLogin(
+    @Query('returnTo') returnTo: string | undefined,
+    @Res() response: Response,
+  ): void {
+    this.assertProviderEnabled('Google', this.googleEnabled, this.googleClientId)
+    const created = this.oauthState.create('GOOGLE', returnTo)
+    response.cookie(
+      GOOGLE_OAUTH_STATE_COOKIE,
+      created.cookieValue,
+      this.stateCookieOptions('GOOGLE'),
+    )
+
+    const authorizeUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth')
+    authorizeUrl.searchParams.set('client_id', this.googleClientId!)
+    authorizeUrl.searchParams.set('redirect_uri', this.googleCallbackUrl)
+    authorizeUrl.searchParams.set('response_type', 'code')
+    authorizeUrl.searchParams.set('scope', 'openid profile email')
+    authorizeUrl.searchParams.set('state', created.state)
+    authorizeUrl.searchParams.set('prompt', 'select_account')
+    response.redirect(302, authorizeUrl.toString())
+  }
+
+  @Get('google/callback')
+  @ApiOperation({ summary: '接收 Google OAuth callback' })
+  @ApiFoundResponse({ description: '创建本地 Session 后跳回白名单页面，失败时跳回登录页' })
+  async completeGoogleLogin(
+    @Query('code') code: string | undefined,
+    @Query('state') state: string | undefined,
+    @Query('error') providerError: string | undefined,
+    @Req() request: Request,
+    @Res() response: Response,
+  ): Promise<void> {
+    const stateCookie = readCookie(request, GOOGLE_OAUTH_STATE_COOKIE)
+    response.clearCookie(GOOGLE_OAUTH_STATE_COOKIE, this.stateCookieOptions('GOOGLE', false))
+
+    try {
+      const returnTo = this.oauthState.verify('GOOGLE', state, stateCookie)
+      if (providerError || !code) {
+        response.redirect(302, this.loginErrorUrl('authorization_rejected', returnTo))
+        return
+      }
+      const identity = await this.google.authenticate(code)
       const session = await this.sessions.create(identity)
       response.cookie(USER_SESSION_COOKIE, session.token, this.sessionCookieOptions())
       response.redirect(302, new URL(returnTo, this.webOrigin).toString())
@@ -176,12 +251,12 @@ export class UserAuthController {
     return { success: true }
   }
 
-  private stateCookieOptions(includeMaxAge = true): CookieOptions {
+  private stateCookieOptions(provider: OAuthProvider, includeMaxAge = true): CookieOptions {
     return {
       httpOnly: true,
       sameSite: 'lax',
       secure: this.production,
-      path: '/api/v1/auth/github/callback',
+      path: `/api/v1/auth/${provider.toLowerCase()}/callback`,
       ...(includeMaxAge ? { maxAge: 10 * 60 * 1_000 } : {}),
     }
   }
@@ -201,6 +276,19 @@ export class UserAuthController {
     url.searchParams.set('error', error)
     url.searchParams.set('returnTo', returnTo)
     return url.toString()
+  }
+
+  private assertProviderEnabled(
+    name: 'GitHub' | 'Google',
+    enabled: boolean,
+    clientId: string | undefined,
+  ): asserts clientId is string {
+    if (enabled && clientId) return
+    throw new ServiceUnavailableException({
+      code: 'AUTH_PROVIDER_DISABLED',
+      message: `${name} 登录尚未配置`,
+      retryable: false,
+    })
   }
 }
 
