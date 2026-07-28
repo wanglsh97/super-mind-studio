@@ -71,6 +71,6 @@ export class RequestLogQueryDto {
 
   @IsOptional()
   @MaxLength(255)
-  @Matches(/^[^\u0000-\u001f\u007f]+$/)
+  @Matches(/^[^\p{Cc}]+$/u)
   declare providerUserId?: string
 }
