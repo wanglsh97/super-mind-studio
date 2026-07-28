@@ -132,6 +132,7 @@ model User {
   agentThreads   AgentThread[]
   agentRuns      AgentRun[]
   agentSkills    UserAgentSkill[]
+  mcpPreferences UserMcpServerPreference[]
   ownedSkills    Skill[]               @relation("SkillOwner")
   files          UserFile[]
   skillUploads   SkillUploadSession[]
@@ -139,6 +140,19 @@ model User {
   @@unique([authProvider, providerUserId])
   @@index([userName])
   @@index([createdAt])
+}
+
+model UserMcpServerPreference {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  serverId  String   @db.VarChar(64)
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, serverId])
+  @@index([userId, enabled])
 }
 
 model SkillUploadSession {

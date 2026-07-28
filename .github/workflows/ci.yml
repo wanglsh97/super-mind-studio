@@ -22,8 +22,6 @@ env:
   GLM_ENABLED: 'false'
   DEEPSEEK_ENABLED: 'false'
   KIMI_ENABLED: 'false'
-  WANXIANG_ENABLED: 'false'
-  COGVIEW_ENABLED: 'false'
 
 jobs:
   quality:
@@ -122,7 +120,7 @@ jobs:
       - name: Assert paid providers are isolated
         shell: bash
         run: |
-          if env | grep -Eq '^(QWEN|GLM|DEEPSEEK|KIMI|WANXIANG|COGVIEW)_API_KEY='; then
+          if env | grep -Eq '^(QWEN|GLM|DEEPSEEK|KIMI)_API_KEY='; then
             echo 'CI must not receive real provider credentials.' >&2
             exit 1
           fi
@@ -148,7 +146,7 @@ jobs:
             exit 1
           fi
 
-          if grep -REq '\$\{\{[[:space:]]*secrets\.(QWEN|GLM|DEEPSEEK|KIMI|WANXIANG|COGVIEW)_' .github/workflows; then
+          if grep -REq '\$\{\{[[:space:]]*secrets\.(QWEN|GLM|DEEPSEEK|KIMI)_' .github/workflows; then
             echo 'CI must not inject paid-provider secrets.' >&2
             exit 1
           fi

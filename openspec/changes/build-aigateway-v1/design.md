@@ -7,7 +7,7 @@ Super Mind Studio 定位为 AI 灵感创作平台，由两个认证边界组成�
 - 阿里云 ECS Ubuntu 4 核 8G 单机部署，Nginx 同时接受域名和公网 IP。
 - Node.js 24 LTS、TypeScript、pnpm monorepo、Next.js、NestJS、PostgreSQL、Prisma、Redis、Pino 和 Docker Compose。
 - Web 仅依赖一个内部包 `@supermind/sdk`；模型厂商差异全部收敛在 API 的 Adapter 层。
-- V1 接入 Qwen、GLM、DeepSeek、Wanxiang 和 CogView，但当前没有真实 API Key，因此 Mock 闭环不能依赖外部服务。
+- V1 文本能力接入 Qwen、GLM 和 DeepSeek；文生图仅保留确定性 Mock 闭环，不接入真实图片 Provider。
 - V1 不使用 BullMQ；日志和计费同步直写 PostgreSQL；Redis 仅保存可重建的限流和健康状态。
 - V1 完整保存 Prompt；用户端支持一次性匿名、GitHub OAuth 和 Google OAuth，三种身份永不合并；管理员开发账号固定为 `root/123456`。成本硬顶、内容审核、正式管理员认证和 Prompt 数据治理明确推迟。
 
@@ -44,8 +44,8 @@ flowchart LR
     N -->|"/api/v1, /api-docs, /health"| A["NestJS API"]
     A --> P[("PostgreSQL")]
     A --> R[("Redis")]
-    A --> Q["Qwen / Wanxiang"]
-    A --> Z["GLM / CogView"]
+    A --> Q["Qwen"]
+    A --> Z["GLM"]
     A --> D["DeepSeek"]
     A --> K["Mock Adapter"]
 ```
@@ -84,8 +84,6 @@ flowchart TB
     TR --> GA["GlmAdapter"]
     TR --> DA["DeepSeekAdapter"]
     TR --> MA["MockChatAdapter"]
-    IR --> WA["WanxiangAdapter"]
-    IR --> CA["CogViewAdapter"]
     IR --> MI["MockImageAdapter"]
     C --> RL["RequestLifecycleService"]
     O --> RL
@@ -244,7 +242,7 @@ Chat Adapter 暴露统一 async iterable 事件。Qwen、GLM、DeepSeek 可复�
 
 请求生命周期在 API 进程中同步创建和终结，图片状态由轮询请求驱动。这样能最快串通路径且减少 Worker/Redis 队列运维。代价是终结写失败没有持久化重放、无人轮询图片不会更新；等真实负载证明需要异步削峰、重试或后台刷新后再引入队列。
 
-Wanxiang 使用厂商异步 task ID 并由客户端查询驱动状态推进。CogView-4 当前官方 HTTP API 同步返回图片 URL；其 Adapter 在已经创建平台 pending 记录后调用上游，并把同步响应作为提交终态在同一请求内持久化。平台仍返回统一 `ImageGenerationTask`，API 重启后直接从 PostgreSQL 读取终态，不使用进程内结果缓存，也不以其他模型冒充 CogView。
+V1 文生图只使用确定性 `MockImageAdapter` 验证提交、轮询、持久化、终态和代理下载，不配置或调用真实图片 Provider。平台仍返回统一 `ImageGenerationTask`，API 重启后从 PostgreSQL 恢复任务状态，不依赖进程内结果缓存。
 
 ### Decision 6: Fetch stream rather than browser EventSource
 
@@ -301,7 +299,7 @@ Chat 客户端提交公开模型实例 ID，而不是厂商 alias。服务端 `M
 1. **Wave A — 最小闭环（最高优先）**：完成网关板块的 workspace、PostgreSQL/Redis、四表迁移、Mock Chat、RequestLog/BillingRecord 和 SDK SSE；同时完成用户端最小 Chat 页面。无 API Key 时即可验收 Web → SDK → API → Mock Adapter → SSE → PostgreSQL。
 2. **Wave B — 网关能力完善**：加入 Redis 限流、统一错误、usage/费用、首 delta failover，并按 Qwen → GLM → DeepSeek 逐个接入；每个 Adapter 独立通过 contract suite 和真实低额度冒烟。
 3. **Wave C — 管理员中后台闭环**：按认证 guard → 日志列表/详情 → Dashboard → 白名单表维护 → 原子审计实施，所有接口先验证未授权不可访问。
-4. **Wave D — 用户能力扩展**：完成 Chat 多模型对比；Image 先 Mock 提交/轮询/持久化/下载，再接 Wanxiang/CogView；Prompt 优化复用网关、计费和日志。
+4. **Wave D — 用户能力扩展**：完成 Chat 多模型对比；Image 保留 Mock 提交/轮询/持久化/下载闭环；Prompt 优化复用网关、计费和日志。
 5. **Wave E — 单机上线验收**：完成生产 Compose、Nginx SSE、日志轮转、备份恢复、IP/域名和人工发布/回滚 runbook，在 ECS 运行完整冒烟。
 
 Wave A 是第一个必须完成的演示基线。之后未完成页面或未购买 Key 的模型均通过 feature flag/disabled model state 隐藏，不影响已经串通的能力。
@@ -333,6 +331,5 @@ Wave A 是第一个必须完成的演示基线。之后未完成页面或未购�
 ## Open Questions
 
 - 三家国内厂商最终购买哪种账户、地域、模型 ID、额度和实时单价；这些不阻塞 M0–M1，但阻塞对应真实 Adapter 验收。
-- Wanxiang/CogView 结果 URL 的有效期、下载大小限制和允许的响应类型，需要在拿到真实账户后用 provider fixture 确认。
 - 已配置域名的实际 server name、ICP 备案状态和 HTTPS 证书方案，在 M7 部署联调时写入环境配置和 runbook。
 - 正式公开演示前，是先完成管理员认证升级与内容审核，还是临时关闭 `/admin` 公网入口和真实文生图；该发布决策不影响本次开发流程设计，但影响公网开放范围。

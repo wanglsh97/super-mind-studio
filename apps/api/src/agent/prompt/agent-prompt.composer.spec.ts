@@ -221,10 +221,16 @@ describe('AgentPromptComposer', () => {
   })
 })
 
-function mcpRegistry(servers: ReturnType<AgentMcpRegistry['listServers']> = []): AgentMcpRegistry {
+function mcpRegistry(
+  servers: Awaited<ReturnType<AgentMcpRegistry['listServers']>> = [],
+): AgentMcpRegistry {
   return {
-    listServers: () => servers,
+    listServers: async () => servers,
+    describeServers: () => servers,
     resolveTools: async () => [],
     listStatuses: async () => [],
+    setServerEnabled: async () => {
+      throw new Error('not used')
+    },
   }
 }

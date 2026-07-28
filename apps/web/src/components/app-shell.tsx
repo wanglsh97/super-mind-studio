@@ -158,6 +158,15 @@ function UserWorkspace({ children }: Readonly<{ children: ReactNode }>) {
                     <SparkIcon />
                     <span>技能中心</span>
                   </Link>
+                  <Link
+                    href="/mcp"
+                    role="menuitem"
+                    onClick={() => setUserMenuOpen(false)}
+                    className={menuItemClass}
+                  >
+                    <McpIcon />
+                    <span>MCP 设置</span>
+                  </Link>
                   <ThemeToggle variant="menu" />
                   <Link
                     href="/admin"
@@ -641,6 +650,15 @@ function SparkIcon() {
     <Icon>
       <path d="m12 3 1.2 3.8L17 8l-3.8 1.2L12 13l-1.2-3.8L7 8l3.8-1.2L12 3Z" />
       <path d="m18 14 .8 2.2L21 17l-2.2.8L18 20l-.8-2.2L15 17l2.2-.8L18 14ZM5 13l.7 1.8 1.8.7-1.8.7L5 18l-.7-1.8-1.8-.7 1.8-.7L5 13Z" />
+    </Icon>
+  )
+}
+function McpIcon() {
+  return (
+    <Icon>
+      <circle cx="6" cy="6" r="2" />
+      <circle cx="18" cy="18" r="2" />
+      <path d="M8 6h4a3 3 0 0 1 3 3v6M16 18h-4a3 3 0 0 1-3-3V9" />
     </Icon>
   )
 }

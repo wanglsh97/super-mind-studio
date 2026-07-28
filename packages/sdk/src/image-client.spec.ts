@@ -4,7 +4,7 @@ import { describe, it } from 'node:test'
 import { createAIGatewayClient } from './client.js'
 import { AIGatewayTimeoutError } from './errors.js'
 
-const pending = { taskId: 'task/1', model: 'wanxiang', status: 'pending', results: [] }
+const pending = { taskId: 'task/1', model: 'mock-image', status: 'pending', results: [] }
 
 describe('AIGatewayClient images', () => {
   it('creates and retrieves typed image tasks', async () => {
@@ -17,7 +17,7 @@ describe('AIGatewayClient images', () => {
       },
     })
 
-    await client.images.create({ model: 'wanxiang', prompt: '山水' })
+    await client.images.create({ model: 'mock-image', prompt: '山水' })
     await client.images.get('task/1')
     assert.equal(calls[0]?.url, 'http://gateway/api/v1/images/generations')
     assert.equal(calls[0]?.init?.method, 'POST')

@@ -29,6 +29,7 @@ describe('user auth login helpers', () => {
     }
     assert.equal(sanitizeUserReturnTo(null), '/')
     assert.equal(sanitizeUserReturnTo('/chat/compare'), '/chat/compare')
+    assert.equal(sanitizeUserReturnTo('/mcp'), '/mcp')
     assert.equal(githubLoginUrl('/chat/compare'), '/api/v1/auth/github?returnTo=%2Fchat%2Fcompare')
     assert.equal(googleLoginUrl('/chat/compare'), '/api/v1/auth/google?returnTo=%2Fchat%2Fcompare')
   })

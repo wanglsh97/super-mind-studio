@@ -6,6 +6,12 @@
   color: rgba(0, 0, 0, 0.88);
 }
 
+/* 控制台：锁定整页滚动，仅中间 content 区域滚动。 */
+.aigateway-admin-root:has(.aigateway-admin-console-layout) {
+  height: 100vh;
+  overflow: hidden;
+}
+
 .aigateway-admin-root,
 .aigateway-admin-root * {
   color-scheme: light;
@@ -28,19 +34,33 @@
 }
 
 .aigateway-admin-console-layout {
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   background: #f5f5f5;
+}
+
+.aigateway-admin-main {
+  min-width: 0;
+  height: 100vh;
+  overflow: hidden;
 }
 
 .aigateway-admin-sider {
   background: #fff !important;
   border-right: 1px solid rgba(5, 5, 5, 0.06);
   box-shadow: 2px 0 8px rgba(0, 0, 0, 0.02);
+  height: 100vh !important;
+  max-height: 100vh;
+  overflow: hidden;
+  position: sticky;
+  top: 0;
+  inset-inline-start: 0;
 }
 
 .aigateway-admin-sider .ant-layout-sider-children {
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .aigateway-admin-sider .ant-layout-sider-trigger {
@@ -97,6 +117,9 @@
 
 .aigateway-admin-menu {
   flex: 1;
+  min-height: 0;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
   padding: 12px 8px !important;
   border-inline-end: none !important;
   background: transparent !important;
@@ -130,11 +153,15 @@
   padding: 0 24px !important;
   height: 64px;
   line-height: 64px;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
   border-bottom: 1px solid rgba(5, 5, 5, 0.06);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .aigateway-admin-header-title {
@@ -157,19 +184,27 @@
   background: rgba(0, 0, 0, 0.04);
 }
 
+.aigateway-admin-console-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 16px;
+}
+
 .aigateway-admin-console-content {
-  margin: 16px;
   padding: 24px;
   background: #ffffff;
   border-radius: 12px;
   border: 1px solid rgba(5, 5, 5, 0.06);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
-  min-height: calc(100vh - 32px - 64px);
 }
 
 @media (max-width: 768px) {
+  .aigateway-admin-console-scroll {
+    padding: 12px;
+  }
+
   .aigateway-admin-console-content {
-    margin: 12px;
     padding: 16px;
     border-radius: 8px;
   }

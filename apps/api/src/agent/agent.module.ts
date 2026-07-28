@@ -14,6 +14,7 @@ import { AgentContextSummaryService } from './context/agent-context-summary.serv
 import { AgentController } from './agent.controller'
 import { AgentMessageRepository } from './agent-message.repository'
 import { AgentMcpSdkClient } from './mcp/agent-mcp.client'
+import { AgentMcpPreferenceRepository } from './mcp/agent-mcp-preference.repository'
 import { AGENT_MCP_REGISTRY, PlatformAgentMcpRegistry } from './mcp/agent-mcp.registry'
 import { AGENT_MEMORY_PROVIDER, EmptyAgentMemoryProvider } from './memory/agent-memory.provider'
 import { AgentRunEventBus } from './agent-run-event-bus'
@@ -179,6 +180,7 @@ export function createSandboxRuntime(config: ConfigService): SandboxRuntimePort 
     AgentOutputFileRepository,
     AgentOutputFileService,
     AgentMcpSdkClient,
+    AgentMcpPreferenceRepository,
     PlatformAgentMcpRegistry,
     { provide: AGENT_MCP_REGISTRY, useExisting: PlatformAgentMcpRegistry },
     EmptyAgentMemoryProvider,

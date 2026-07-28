@@ -17,8 +17,12 @@ describe('createAgentRunToolRegistry', () => {
   it('resolves MCP once and returns an immutable combined registry', async () => {
     const resolveTools = jest.fn(async () => [tool('mcp__docs__lookup')])
     const mcp: AgentMcpRegistry = {
-      listServers: () => [],
+      listServers: async () => [],
+      describeServers: () => [],
       listStatuses: async () => [],
+      setServerEnabled: async () => {
+        throw new Error('not used')
+      },
       resolveTools,
     }
     const input = {

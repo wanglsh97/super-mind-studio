@@ -65,14 +65,7 @@ export function LoginContent() {
                 选择登录方式
               </h1>
             </div>
-            <span className="rounded-full border border-brand/15 bg-brand/7 px-4 py-2 font-mono text-[0.58rem] tracking-[0.08em] text-brand">
-              功能一致
-            </span>
           </div>
-
-          <p className="mt-5 text-sm leading-6 text-ink-muted">
-            OAuth 仅用于确认身份，我们不会保存第三方访问令牌。
-          </p>
 
           {errorMessage ? (
             <div
@@ -164,7 +157,7 @@ export function LoginContent() {
                 {anonymousBusy ? '正在创建匿名身份…' : '匿名进入'}
               </strong>
               <span className="mt-1.5 block text-sm leading-5 text-ink-subtle">
-                无需授权；退出或会话到期后无法找回这次身份
+                临时账号；退出或会话到期后无法找回这次身份
               </span>
             </span>
             <ArrowIcon />
@@ -175,10 +168,6 @@ export function LoginContent() {
               {anonymousError}
             </p>
           ) : null}
-
-          <p className="mt-8 text-center text-xs leading-5 text-ink-subtle">
-            继续即表示你选择以该身份创建独立的工作区会话。
-          </p>
         </div>
       </section>
     </main>

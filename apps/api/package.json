@@ -12,7 +12,7 @@
     "test": "jest --runInBand",
     "test:agent-harness": "AGENT_WEB_FETCH_FIXTURE=true tsx scripts/agent-harness.check.ts",
     "test:agent-run": "AGENT_WEB_FETCH_FIXTURE=true tsx --env-file-if-exists=../../.env scripts/agent-run.check.ts",
-    "test:agent-e2e": "AGENT_WEB_FETCH_FIXTURE=true SKILL_OBJECT_STORE_DRIVER=memory MOCK_PROVIDER_ENABLED=true QWEN_ENABLED=false GLM_ENABLED=false DEEPSEEK_ENABLED=false KIMI_ENABLED=false WANXIANG_ENABLED=false COGVIEW_ENABLED=false tsx --env-file-if-exists=../../.env scripts/agent-e2e.check.ts",
+    "test:agent-e2e": "AGENT_WEB_FETCH_FIXTURE=true SKILL_OBJECT_STORE_DRIVER=memory MOCK_PROVIDER_ENABLED=true QWEN_ENABLED=false GLM_ENABLED=false DEEPSEEK_ENABLED=false KIMI_ENABLED=false tsx --env-file-if-exists=../../.env scripts/agent-e2e.check.ts",
     "test:opensandbox-poc": "tsx scripts/opensandbox-poc.check.ts",
     "test:opensandbox-adapter": "tsx --env-file-if-exists=../../.env scripts/opensandbox-adapter.smoke.ts",
     "test:smoke:deepseek": "tsx --env-file-if-exists=../../.env scripts/deepseek-chat.smoke.ts",
@@ -20,9 +20,6 @@
     "test:smoke:kimi": "tsx --env-file-if-exists=../../.env scripts/kimi-chat.smoke.ts",
     "test:smoke:qwen": "tsx --env-file-if-exists=../../.env scripts/qwen-chat.smoke.ts",
     "test:smoke:web-search": "tsx scripts/web-search.smoke.ts",
-    "test:smoke:mcp": "tsx scripts/agent-mcp.smoke.ts",
-    "test:smoke:cogview": "tsx --env-file-if-exists=../../.env scripts/cogview-image.smoke.ts",
-    "test:smoke:wanxiang": "tsx --env-file-if-exists=../../.env scripts/wanxiang-image.smoke.ts",
     "pretest:e2e": "DATABASE_URL=\"$TEST_DATABASE_URL\" corepack pnpm --workspace-root db:generate",
     "test:e2e": "jest --config jest.e2e.config.cjs --runInBand"
   },

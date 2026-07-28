@@ -1,7 +1,9 @@
 ## ADDED Requirements
 
 ### Requirement: Authenticated users can submit image generation jobs
-The Image page SHALL require a valid GitHub UserSession, then allow the user to enter a Chinese or English Prompt, select an enabled image alias (`wanxiang` or `cogview`), configure only supported generation options, and submit a job through `@supermind/sdk`.
+The Image API SHALL require a valid UserSession, accept a Chinese or English Prompt with the V1
+`mock-image` alias, and submit a deterministic Mock job through `@supermind/sdk`. V1 SHALL NOT
+connect to a paid image provider.
 
 #### Scenario: Image job is accepted
 - **GIVEN** a valid UserSession, a valid Prompt, an enabled image model, and an IP below its rate limit

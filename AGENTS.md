@@ -113,7 +113,7 @@ spec/                  # PRD 与技术选型文档
 ### 8.1 模型与 Adapter
 
 - 文本模型稳定别名为 `qwen`、`glm`、`deepseek`。
-- 文生图稳定别名为 `wanxiang`、`cogview`。
+- V1 文生图仅保留确定性 Mock 闭环，稳定别名为 `mock-image`，不接入真实图片 Provider。
 - 实际模型 ID、启用状态、API Key、价格和 fallback 通过环境变量或服务端配置提供。
 - 新增厂商必须实现统一 Adapter contract，不得让业务 Service 依赖厂商响应类型。
 - dev/test/CI 必须提供确定性 Mock Adapter，CI 不得依赖真实余额或外部网络。
@@ -195,7 +195,7 @@ V1 为联调和诊断在 PostgreSQL 与 Pino 中保存完整 Prompt，暂不自�
 开发时至少覆盖：
 
 - 单元测试：Adapter 协议转换、费用计算、限流、首 delta failover、状态机、管理员 guard 和字段白名单。
-- Contract test：Mock、Qwen、GLM、DeepSeek、Wanxiang、CogView 的统一 Adapter 行为。
+- Contract test：Mock、Qwen、GLM、DeepSeek 的统一 Adapter 行为。
 - 集成测试：PostgreSQL/Redis、请求生命周期、BillingRecord 一对一、管理员事务审计。
 - 流式 E2E：delta、usage、`[DONE]`、取消、首包前失败和流中失败。
 - 页面 E2E：Chat、对比、Image、Prompt、管理员未授权和完整 Prompt 访问边界。

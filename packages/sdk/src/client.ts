@@ -355,7 +355,7 @@ function parseImageTask(value: unknown, requestId: string): ImageTask {
     !task ||
     !taskId ||
     !model ||
-    !['wanxiang', 'cogview'].includes(model) ||
+    model !== 'mock-image' ||
     !status ||
     !['pending', 'running', 'succeeded', 'failed'].includes(status) ||
     !Array.isArray(task.results)
@@ -412,7 +412,7 @@ function parseModelSummary(value: unknown, requestId: string): ModelSummary {
     !model ||
     !id ||
     !alias ||
-    !['qwen', 'glm', 'deepseek', 'kimi', 'wanxiang', 'cogview'].includes(alias) ||
+    !['qwen', 'glm', 'deepseek', 'kimi', 'mock-image'].includes(alias) ||
     !displayName ||
     (model?.modelId !== undefined && !modelId) ||
     !Array.isArray(capabilities) ||

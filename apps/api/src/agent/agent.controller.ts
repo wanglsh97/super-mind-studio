@@ -8,6 +8,7 @@ import {
   HttpCode,
   HttpStatus,
   Inject,
+  NotFoundException,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -30,9 +31,14 @@ import { AgentRunRepository } from './agent-run.repository'
 import { AgentService } from './agent.service'
 import { AgentOutputFileError } from './files/agent-output-file.repository'
 import { AgentOutputFileService } from './files/agent-output-file.service'
-import { AGENT_MCP_REGISTRY, type AgentMcpRegistry } from './mcp/agent-mcp.registry'
+import {
+  AGENT_MCP_REGISTRY,
+  AgentMcpServerNotFoundError,
+  type AgentMcpRegistry,
+} from './mcp/agent-mcp.registry'
 import { CreateAgentRunDto } from './dto/create-agent-run.dto'
 import { CreateSkillUploadSessionDto } from './dto/skill-upload.dto'
+import { UpdateAgentMcpServerDto } from './dto/update-agent-mcp-server.dto'
 import {
   CreateAgentThreadDto,
   ListAgentThreadsQueryDto,
@@ -74,6 +80,7 @@ export class AgentController {
           'name',
           'version',
           'description',
+          'enabled',
           'status',
           'allowedToolCount',
           'discoveredToolCount',
@@ -85,7 +92,8 @@ export class AgentController {
           name: { type: 'string' },
           version: { type: 'string' },
           description: { type: 'string' },
-          status: { type: 'string', enum: ['configured', 'ready', 'error'] },
+          enabled: { type: 'boolean' },
+          status: { type: 'string', enum: ['configured', 'ready', 'error', 'disabled'] },
           allowedToolCount: { type: 'integer', minimum: 0 },
           discoveredToolCount: { type: 'integer', minimum: 0 },
           registeredToolCount: { type: 'integer', minimum: 0 },
@@ -94,8 +102,30 @@ export class AgentController {
       },
     },
   })
-  async listMcpServers() {
-    return this.mcp.listStatuses()
+  async listMcpServers(@CurrentUser() user: AuthenticatedUser) {
+    return this.mcp.listStatuses(user.id)
+  }
+
+  @Patch('mcp/servers/:serverId')
+  @ApiOperation({ summary: '为当前用户启用或禁用平台内置 MCP Server' })
+  @ApiOkResponse({ description: '返回更新后的脱敏 Server 状态' })
+  async updateMcpServer(
+    @Param('serverId') serverId: string,
+    @Body() body: UpdateAgentMcpServerDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    try {
+      return await this.mcp.setServerEnabled(user.id, serverId, body.enabled)
+    } catch (error) {
+      if (error instanceof AgentMcpServerNotFoundError) {
+        throw new NotFoundException({
+          code: 'MCP_SERVER_NOT_FOUND',
+          message: error.message,
+          retryable: false,
+        })
+      }
+      throw error
+    }
   }
 
   @Get('skills')

@@ -111,6 +111,7 @@ export type {
   CreateAgentRunRequest,
   CreateAgentThreadRequest,
   UpdateAgentThreadRequest,
+  UpdateAgentMcpServerRequest,
 } from './agent-types.js'
 export {
   AIGatewayError,

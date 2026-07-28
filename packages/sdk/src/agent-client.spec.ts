@@ -22,6 +22,7 @@ describe('AgentClient MCP status', () => {
             name: 'Docs',
             version: '1.0.0',
             description: 'Approved docs',
+            enabled: true,
             status: 'ready',
             allowedToolCount: 2,
             discoveredToolCount: 3,
@@ -41,6 +42,7 @@ describe('AgentClient MCP status', () => {
         name: 'Docs',
         version: '1.0.0',
         description: 'Approved docs',
+        enabled: true,
         status: 'ready',
         allowedToolCount: 2,
         discoveredToolCount: 3,
@@ -49,6 +51,39 @@ describe('AgentClient MCP status', () => {
       },
     ])
     assert.doesNotMatch(JSON.stringify(statuses), /url|token|auth/i)
+  })
+
+  it('updates only a built-in MCP Server enablement flag', async () => {
+    const calls: Array<{
+      url: string
+      method: string | undefined
+      body: BodyInit | null | undefined
+    }> = []
+    const client = createAIGatewayClient({
+      fetch: async (input, init) => {
+        calls.push({ url: String(input), method: init?.method, body: init?.body })
+        return Response.json({
+          id: 'context7',
+          name: 'Context7',
+          version: '3.2.5',
+          description: 'Library docs',
+          enabled: false,
+          status: 'disabled',
+          allowedToolCount: 2,
+          discoveredToolCount: 0,
+          registeredToolCount: 0,
+          errorCode: null,
+        })
+      },
+    })
+
+    const result = await client.agent.mcp.update('context/7', { enabled: false })
+
+    assert.equal(calls[0]?.url, '/api/v1/agent/mcp/servers/context%2F7')
+    assert.equal(calls[0]?.method, 'PATCH')
+    assert.equal(calls[0]?.body, JSON.stringify({ enabled: false }))
+    assert.equal(result.enabled, false)
+    assert.equal(result.status, 'disabled')
   })
 
   it('rejects malformed MCP Server status projections', async () => {

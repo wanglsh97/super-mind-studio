@@ -2,6 +2,7 @@ import { ConfigService } from '@nestjs/config'
 import { Test } from '@nestjs/testing'
 
 import { AgentMcpClientError, AgentMcpSdkClient } from './agent-mcp.client'
+import { AgentMcpPreferenceRepository } from './agent-mcp-preference.repository'
 import {
   agentMcpToolName,
   EmptyAgentMcpRegistry,
@@ -10,8 +11,8 @@ import {
 } from './agent-mcp.registry'
 
 describe('EmptyAgentMcpRegistry', () => {
-  it('returns no servers and performs no discovery', () => {
-    expect(new EmptyAgentMcpRegistry().listServers()).toEqual([])
+  it('returns no servers and performs no discovery', async () => {
+    await expect(new EmptyAgentMcpRegistry().listServers('user-1')).resolves.toEqual([])
   })
 })
 
@@ -27,10 +28,18 @@ describe('PlatformAgentMcpRegistry', () => {
 
   it('resolves its runtime dependencies through Nest without decorator metadata inference', async () => {
     const moduleRef = await Test.createTestingModule({
-      providers: [ConfigService, AgentMcpSdkClient, PlatformAgentMcpRegistry],
+      providers: [
+        ConfigService,
+        AgentMcpSdkClient,
+        {
+          provide: AgentMcpPreferenceRepository,
+          useValue: { listForUser: async () => new Map(), setEnabled: async () => undefined },
+        },
+        PlatformAgentMcpRegistry,
+      ],
     }).compile()
 
-    expect(moduleRef.get(PlatformAgentMcpRegistry).listServers()).toEqual([])
+    await expect(moduleRef.get(PlatformAgentMcpRegistry).listServers('user-1')).resolves.toEqual([])
     await moduleRef.close()
   })
 
@@ -119,7 +128,7 @@ describe('PlatformAgentMcpRegistry', () => {
     } as unknown as AgentMcpSdkClient
     const registry = createRegistry(server, client)
 
-    await expect(registry.listStatuses()).resolves.toEqual([
+    await expect(registry.listStatuses('user-1')).resolves.toEqual([
       expect.objectContaining({
         id: 'docs',
         status: 'error',
@@ -127,7 +136,59 @@ describe('PlatformAgentMcpRegistry', () => {
         registeredToolCount: 0,
       }),
     ])
-    expect(JSON.stringify(await registry.listStatuses())).not.toContain(server.url)
+    expect(JSON.stringify(await registry.listStatuses('user-1'))).not.toContain(server.url)
+  })
+
+  it('does not discover or expose a server disabled by the current user', async () => {
+    const client = {
+      discover: jest.fn(),
+    } as unknown as AgentMcpSdkClient
+    const registry = createRegistry(server, client, new Map([['docs', false]]))
+
+    await expect(registry.listStatuses('user-1')).resolves.toEqual([
+      expect.objectContaining({
+        id: 'docs',
+        enabled: false,
+        status: 'disabled',
+        discoveredToolCount: 0,
+        registeredToolCount: 0,
+      }),
+    ])
+    await expect(
+      registry.resolveTools({
+        runId: 'run-1',
+        userId: 'user-1',
+        signal: new AbortController().signal,
+      }),
+    ).resolves.toEqual([])
+    await expect(registry.listServers('user-1')).resolves.toEqual([])
+    expect(client.discover).not.toHaveBeenCalled()
+  })
+
+  it('persists a user switch and rejects unknown platform server IDs', async () => {
+    const setEnabled = jest.fn(async () => undefined)
+    const preferences = {
+      listForUser: async () => new Map<string, boolean>(),
+      setEnabled,
+    } as unknown as AgentMcpPreferenceRepository
+    const client = {
+      discover: jest.fn(async () => ({
+        serverName: 'remote-name',
+        serverVersion: '1.2.3',
+        tools: [],
+      })),
+    } as unknown as AgentMcpSdkClient
+    const registry = createRegistry(server, client, new Map(), preferences)
+
+    await expect(registry.setServerEnabled('user-1', 'docs', false)).resolves.toMatchObject({
+      id: 'docs',
+      enabled: false,
+      status: 'disabled',
+    })
+    expect(setEnabled).toHaveBeenCalledWith('user-1', 'docs', false)
+    await expect(registry.setServerEnabled('user-1', 'custom', true)).rejects.toMatchObject({
+      serverId: 'custom',
+    })
   })
 })
 
@@ -150,7 +211,12 @@ describe('MCP tool safety helpers', () => {
   })
 })
 
-function createRegistry(server: object, client: AgentMcpSdkClient): PlatformAgentMcpRegistry {
+function createRegistry(
+  server: object,
+  client: AgentMcpSdkClient,
+  userPreferences: ReadonlyMap<string, boolean> = new Map(),
+  preferenceRepository?: AgentMcpPreferenceRepository,
+): PlatformAgentMcpRegistry {
   return new PlatformAgentMcpRegistry(
     new ConfigService({
       AGENT_MCP_SERVERS_JSON: [server],
@@ -161,5 +227,10 @@ function createRegistry(server: object, client: AgentMcpSdkClient): PlatformAgen
       AGENT_MCP_MAX_OUTPUT_CHARS: 10_000,
     }),
     client,
+    preferenceRepository ??
+      ({
+        listForUser: async () => userPreferences,
+        setEnabled: async () => undefined,
+      } as unknown as AgentMcpPreferenceRepository),
   )
 }

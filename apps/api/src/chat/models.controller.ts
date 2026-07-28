@@ -1,4 +1,4 @@
-import type { ImageModelAlias, ModelSummary } from '@supermind/sdk'
+import type { ModelSummary } from '@supermind/sdk'
 import { Controller, Get, Inject } from '@nestjs/common'
 
 import { ImageAdapterRegistry } from '../image/adapters/image-adapter.registry'
@@ -39,31 +39,20 @@ export class ModelsController {
         }
       }),
     )
-    const imageAdapters = this.imageAdapters.list().filter((adapter) => adapter.id !== 'mock')
-    const imageModels: ModelSummary[] =
-      imageAdapters.length === 0 && this.imageAdapters.has('mock')
-        ? [
-            {
-              id: 'wanxiang',
-              alias: 'wanxiang',
-              modelId: 'mock-image',
-              capabilities: ['image'],
-              displayName: '通义万相（Mock）',
-              enabled: true,
-              configured: false,
-              health: 'unknown',
-            },
-          ]
-        : imageAdapters.map((adapter) => ({
-            id: adapter.id,
-            alias: adapter.id as ImageModelAlias,
-            modelId: adapter.resolvedModel,
+    const imageModels: ModelSummary[] = this.imageAdapters.has('mock')
+      ? [
+          {
+            id: 'mock-image',
+            alias: 'mock-image',
+            modelId: this.imageAdapters.get('mock').resolvedModel,
             capabilities: ['image'],
-            displayName: adapter.id === 'wanxiang' ? '通义万相' : '智谱 CogView',
+            displayName: 'Mock Image',
             enabled: true,
             configured: true,
             health: 'unknown',
-          }))
+          },
+        ]
+      : []
 
     return [...chatModels, ...imageModels]
   }

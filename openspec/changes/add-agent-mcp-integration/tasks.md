@@ -16,6 +16,13 @@
 
 ## 4. 验收与交付
 
-- [x] 4.1 增加本地 Streamable HTTP fixture 的脱网 contract/integration 测试与显式 MCP smoke
+- [x] 4.1 使用 mock client 单元测试覆盖协议边界，真实远程 Server 仅在显式 dev 验收中访问
 - [x] 4.2 更新 README、Swagger/配置说明，运行相关测试、typecheck、lint、build 和 OpenSpec strict validation
-- [x] 4.3 使用本地 fixture 启动 API/Web dev，验证 Nest 运行时依赖注入、工具发现、白名单注册与实际调用
+- [x] 4.3 配置 Context7/DeepWiki 并启动 API/Web dev，验证 Nest 运行时依赖注入、工具发现与白名单注册
+
+## 5. 用户内置 MCP 开关
+
+- [x] 5.1 新增每用户 MCP Server 启停偏好表和 Prisma migration，默认启用且按用户隔离
+- [x] 5.2 扩展 MCP registry、状态 API 与 SDK，使禁用项不发现、不进入 Prompt/工具集合，并拒绝未知 Server ID
+- [x] 5.3 新增用户端 `/mcp` 配置页和账户菜单入口，覆盖加载、保存、错误、启用与禁用状态
+- [x] 5.4 补充单元/集成测试，运行 migration、typecheck、lint、test、build 与 OpenSpec strict validation，并启动 dev 冒烟

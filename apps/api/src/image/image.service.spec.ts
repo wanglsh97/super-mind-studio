@@ -12,7 +12,7 @@ const baseTask = {
   taskId: '00000000-0000-4000-8000-000000000120',
   requestLogId: 'log-1',
   userId,
-  modelAlias: 'wanxiang',
+  modelAlias: 'mock-image',
   provider: 'mock',
   providerTaskId: 'provider-task-1',
   status: ImageTaskStatus.RUNNING,
@@ -140,7 +140,7 @@ describe('ImageService.recordSubmission', () => {
     const task = { ...baseTask, status: ImageTaskStatus.PENDING }
     const updated = {
       ...task,
-      providerTaskId: 'cogview-request-1',
+      providerTaskId: 'mock-sync-request-1',
       status: ImageTaskStatus.SUCCEEDED,
       results: [{ url: 'https://cdn.bigmodel.cn/generated/image.png' }],
     }
@@ -165,7 +165,7 @@ describe('ImageService.recordSubmission', () => {
 
     await expect(
       service.recordSubmission(task.taskId, userId, {
-        providerTaskId: 'cogview-request-1',
+        providerTaskId: 'mock-sync-request-1',
         status: 'succeeded',
         results: [{ url: 'https://cdn.bigmodel.cn/generated/image.png' }],
       }),
@@ -175,7 +175,7 @@ describe('ImageService.recordSubmission', () => {
     expect(imageUpdate).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
-          providerTaskId: 'cogview-request-1',
+          providerTaskId: 'mock-sync-request-1',
           status: ImageTaskStatus.SUCCEEDED,
         }),
       }),

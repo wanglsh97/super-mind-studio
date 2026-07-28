@@ -26,11 +26,6 @@ const userSessionSecret = z.preprocess(
   z.string().min(32),
 )
 
-const optionalModelId = z.preprocess(
-  (value) => (value === '' ? undefined : value),
-  z.string().min(1).optional(),
-)
-
 const optionalTextModelAlias = z.preprocess(
   (value) => (value === '' ? undefined : value),
   z.enum(['qwen', 'glm', 'deepseek', 'kimi']).optional(),
@@ -142,8 +137,6 @@ const environmentSchema = z
     GLM_ENABLED: booleanFromEnv.default(false),
     DEEPSEEK_ENABLED: booleanFromEnv.default(false),
     KIMI_ENABLED: booleanFromEnv.default(false),
-    WANXIANG_ENABLED: booleanFromEnv.default(false),
-    COGVIEW_ENABLED: booleanFromEnv.default(false),
     QWEN_API_KEY: optionalSecret,
     QWEN_BASE_URL: z.string().url().default('https://dashscope.aliyuncs.com/compatible-mode/v1'),
     GLM_API_KEY: optionalSecret,
@@ -152,16 +145,10 @@ const environmentSchema = z
     DEEPSEEK_BASE_URL: z.string().url().default('https://api.deepseek.com'),
     KIMI_API_KEY: optionalSecret,
     KIMI_BASE_URL: z.string().url().default('https://api.moonshot.cn/v1'),
-    WANXIANG_API_KEY: optionalSecret,
-    WANXIANG_BASE_URL: z.string().url().default('https://dashscope.aliyuncs.com/api/v1'),
-    COGVIEW_API_KEY: optionalSecret,
-    COGVIEW_BASE_URL: z.string().url().default('https://open.bigmodel.cn/api/paas/v4'),
     QWEN_FALLBACK_ALIAS: optionalTextModelAlias,
     GLM_FALLBACK_ALIAS: optionalTextModelAlias,
     DEEPSEEK_FALLBACK_ALIAS: optionalTextModelAlias,
     KIMI_FALLBACK_ALIAS: optionalTextModelAlias,
-    WANXIANG_MODEL_ID: optionalModelId,
-    COGVIEW_MODEL_ID: optionalModelId,
     PROMPT_OPTIMIZER_MODEL: z.enum(['qwen', 'glm', 'deepseek']).default('qwen'),
     CHAT_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().positive().default(10),
     IMAGE_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().positive().default(5),
@@ -317,18 +304,6 @@ const environmentSchema = z
         key: env.DEEPSEEK_API_KEY,
       },
       { name: 'KIMI', enabled: env.KIMI_ENABLED, key: env.KIMI_API_KEY },
-      {
-        name: 'WANXIANG',
-        enabled: env.WANXIANG_ENABLED,
-        key: env.WANXIANG_API_KEY,
-        model: env.WANXIANG_MODEL_ID,
-      },
-      {
-        name: 'COGVIEW',
-        enabled: env.COGVIEW_ENABLED,
-        key: env.COGVIEW_API_KEY,
-        model: env.COGVIEW_MODEL_ID,
-      },
     ]
 
     for (const provider of providers) {
@@ -338,13 +313,6 @@ const environmentSchema = z
           code: 'custom',
           path: [`${provider.name}_API_KEY`],
           message: `${provider.name} 启用时必须配置 API Key`,
-        })
-      }
-      if ('model' in provider && !provider.model) {
-        context.addIssue({
-          code: 'custom',
-          path: [`${provider.name}_MODEL_ID`],
-          message: `${provider.name} 启用时必须配置实际模型 ID`,
         })
       }
     }

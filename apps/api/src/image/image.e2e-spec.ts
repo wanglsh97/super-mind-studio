@@ -94,7 +94,7 @@ describe('Mock Image API/SDK/PostgreSQL E2E', () => {
   })
 
   it('submits, survives an API restart, polls to success and proxies the persisted result', async () => {
-    const submitted = await client.images.create({ model: 'wanxiang', prompt: '重启恢复测试' })
+    const submitted = await client.images.create({ model: 'mock-image', prompt: '重启恢复测试' })
     expect(submitted.status).toBe('pending')
     await expect(
       prisma.imageGenerationTask.findUnique({ where: { taskId: submitted.taskId } }),
@@ -122,7 +122,7 @@ describe('Mock Image API/SDK/PostgreSQL E2E', () => {
   })
 
   it('persists a normalized provider failure and its request lifecycle', async () => {
-    const submitted = await client.images.create({ model: 'wanxiang', prompt: '生成失败' })
+    const submitted = await client.images.create({ model: 'mock-image', prompt: '生成失败' })
     const failed = await client.images.get(submitted.taskId)
 
     expect(failed).toMatchObject({
@@ -144,7 +144,7 @@ describe('Mock Image API/SDK/PostgreSQL E2E', () => {
     await app?.close()
     app = undefined
     await start(new NeverCompletesImageAdapter())
-    const submitted = await client.images.create({ model: 'wanxiang', prompt: '保持运行' })
+    const submitted = await client.images.create({ model: 'mock-image', prompt: '保持运行' })
 
     await expect(
       client.images.wait(submitted.taskId, { timeoutMs: 30, intervalMs: 5 }),

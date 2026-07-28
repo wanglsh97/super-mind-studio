@@ -74,7 +74,7 @@ describe('Paid capability user authorization E2E', () => {
       fetch(`${baseUrl}/api/v1/images/generations`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ model: 'wanxiang', prompt: '匿名 Image' }),
+        body: JSON.stringify({ model: 'mock-image', prompt: '匿名 Image' }),
       }),
       fetch(`${baseUrl}/api/v1/prompts/optimize`, {
         method: 'POST',
@@ -110,7 +110,7 @@ describe('Paid capability user authorization E2E', () => {
   })
 
   it('returns indistinguishable 404 responses for another user image status and download', async () => {
-    const task = await clientA.images.create({ model: 'wanxiang', prompt: '仅属于 User A' })
+    const task = await clientA.images.create({ model: 'mock-image', prompt: '仅属于 User A' })
 
     for (const path of [
       `/api/v1/images/generations/${task.taskId}`,

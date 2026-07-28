@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config'
 import type { AgentToolDefinition, AgentToolResult } from '../tools/agent-tool'
 import type { AgentMcpServerConfig } from './agent-mcp.config'
 import { AgentMcpClientError, AgentMcpSdkClient, type AgentMcpRemoteTool } from './agent-mcp.client'
+import { AgentMcpPreferenceRepository } from './agent-mcp-preference.repository'
 
 export interface AgentMcpServerDescriptor {
   id: string
@@ -12,9 +13,10 @@ export interface AgentMcpServerDescriptor {
   description: string
 }
 
-export type AgentMcpServerConnectionStatus = 'configured' | 'ready' | 'error'
+export type AgentMcpServerConnectionStatus = 'configured' | 'ready' | 'error' | 'disabled'
 
 export interface AgentMcpServerStatus extends AgentMcpServerDescriptor {
+  enabled: boolean
   status: AgentMcpServerConnectionStatus
   allowedToolCount: number
   discoveredToolCount: number
@@ -29,17 +31,31 @@ export interface ResolveAgentMcpToolsInput {
 }
 
 export interface AgentMcpRegistry {
-  listServers(): readonly AgentMcpServerDescriptor[]
+  listServers(userId: string): Promise<readonly AgentMcpServerDescriptor[]>
+  describeServers(serverIds: readonly string[]): readonly AgentMcpServerDescriptor[]
   resolveTools(input: ResolveAgentMcpToolsInput): Promise<readonly AgentToolDefinition[]>
-  listStatuses(signal?: AbortSignal): Promise<readonly AgentMcpServerStatus[]>
+  listStatuses(userId: string, signal?: AbortSignal): Promise<readonly AgentMcpServerStatus[]>
+  setServerEnabled(
+    userId: string,
+    serverId: string,
+    enabled: boolean,
+    signal?: AbortSignal,
+  ): Promise<AgentMcpServerStatus>
 }
 
 export const AGENT_MCP_REGISTRY = Symbol('AGENT_MCP_REGISTRY')
 
+export class AgentMcpServerNotFoundError extends Error {
+  constructor(readonly serverId: string) {
+    super(`平台未配置 MCP Server：${serverId}`)
+    this.name = 'AgentMcpServerNotFoundError'
+  }
+}
+
 /** V1 不连接 MCP、不发现远程工具，也不读取任何 MCP 凭证。 */
 @Injectable()
 export class EmptyAgentMcpRegistry implements AgentMcpRegistry {
-  listServers(): readonly AgentMcpServerDescriptor[] {
+  async listServers(_userId: string): Promise<readonly AgentMcpServerDescriptor[]> {
     return []
   }
 
@@ -47,8 +63,20 @@ export class EmptyAgentMcpRegistry implements AgentMcpRegistry {
     return []
   }
 
-  async listStatuses(): Promise<readonly AgentMcpServerStatus[]> {
+  describeServers(): readonly AgentMcpServerDescriptor[] {
     return []
+  }
+
+  async listStatuses(_userId: string): Promise<readonly AgentMcpServerStatus[]> {
+    return []
+  }
+
+  async setServerEnabled(
+    _userId: string,
+    serverId: string,
+    _enabled: boolean,
+  ): Promise<AgentMcpServerStatus> {
+    throw new AgentMcpServerNotFoundError(serverId)
   }
 }
 
@@ -73,6 +101,8 @@ export class PlatformAgentMcpRegistry implements AgentMcpRegistry {
     private readonly config: ConfigService,
     @Inject(AgentMcpSdkClient)
     private readonly client: AgentMcpSdkClient,
+    @Inject(AgentMcpPreferenceRepository)
+    private readonly preferences: AgentMcpPreferenceRepository,
   ) {
     this.servers = config.get<AgentMcpServerConfig[]>('AGENT_MCP_SERVERS_JSON', [])
     this.discoveryTimeoutMs = config.get<number>('AGENT_MCP_DISCOVERY_TIMEOUT_MS', 10_000)
@@ -82,37 +112,98 @@ export class PlatformAgentMcpRegistry implements AgentMcpRegistry {
     this.maxOutputChars = config.get<number>('AGENT_MCP_MAX_OUTPUT_CHARS', 20_000)
   }
 
-  listServers(): readonly AgentMcpServerDescriptor[] {
-    return this.servers.map((server) => {
-      const last = this.lastStatuses.get(server.id)
-      return (
-        last ?? {
-          id: server.id,
-          name: server.name,
-          version: 'unknown',
-          description: server.description,
-        }
-      )
-    })
+  async listServers(userId: string): Promise<readonly AgentMcpServerDescriptor[]> {
+    const enabledServers = await this.enabledServers(userId)
+    return this.describeServers(enabledServers.map((server) => server.id))
+  }
+
+  describeServers(serverIds: readonly string[]): readonly AgentMcpServerDescriptor[] {
+    const selected = new Set(serverIds)
+    return this.servers
+      .filter((server) => selected.has(server.id))
+      .map((server) => {
+        const last = this.lastStatuses.get(server.id)
+        return (
+          last ?? {
+            id: server.id,
+            name: server.name,
+            version: 'unknown',
+            description: server.description,
+          }
+        )
+      })
   }
 
   async resolveTools(input: ResolveAgentMcpToolsInput): Promise<readonly AgentToolDefinition[]> {
+    const enabledServers = await this.enabledServers(input.userId)
     const snapshots = await Promise.all(
-      this.servers.map((server) => this.discoverServer(server, input.signal)),
+      enabledServers.map((server) => this.discoverServer(server, input.signal)),
     )
     for (const snapshot of snapshots) this.lastStatuses.set(snapshot.status.id, snapshot.status)
     return snapshots.flatMap((snapshot) => snapshot.tools)
   }
 
   async listStatuses(
+    userId: string,
     signal: AbortSignal = new AbortController().signal,
   ): Promise<readonly AgentMcpServerStatus[]> {
     if (this.servers.length === 0) return []
+    const preferences = await this.preferences.listForUser(userId)
     const snapshots = await Promise.all(
-      this.servers.map((server) => this.discoverServer(server, signal)),
+      this.servers.map((server) =>
+        preferences.get(server.id) === false
+          ? Promise.resolve(this.disabledServer(server))
+          : this.discoverServer(server, signal),
+      ),
     )
     for (const snapshot of snapshots) this.lastStatuses.set(snapshot.status.id, snapshot.status)
     return snapshots.map((snapshot) => snapshot.status)
+  }
+
+  async setServerEnabled(
+    userId: string,
+    serverId: string,
+    enabled: boolean,
+    signal: AbortSignal = new AbortController().signal,
+  ): Promise<AgentMcpServerStatus> {
+    const server = this.servers.find((candidate) => candidate.id === serverId)
+    if (!server) throw new AgentMcpServerNotFoundError(serverId)
+    await this.preferences.setEnabled(userId, serverId, enabled)
+    if (!enabled) {
+      const snapshot = this.disabledServer(server)
+      this.lastStatuses.set(server.id, snapshot.status)
+      return snapshot.status
+    }
+    const snapshot = await this.discoverServer(server, signal)
+    this.lastStatuses.set(server.id, snapshot.status)
+    return snapshot.status
+  }
+
+  private async enabledServers(userId: string): Promise<readonly AgentMcpServerConfig[]> {
+    const preferences = await this.preferences.listForUser(userId)
+    return this.servers.filter((server) => preferences.get(server.id) !== false)
+  }
+
+  private disabledServer(server: AgentMcpServerConfig): DiscoverySnapshot {
+    const descriptor: AgentMcpServerDescriptor = {
+      id: server.id,
+      name: server.name,
+      version: this.lastStatuses.get(server.id)?.version ?? 'unknown',
+      description: server.description,
+    }
+    return {
+      descriptor,
+      status: {
+        ...descriptor,
+        enabled: false,
+        status: 'disabled',
+        allowedToolCount: server.tools.length,
+        discoveredToolCount: 0,
+        registeredToolCount: 0,
+        errorCode: null,
+      },
+      tools: [],
+    }
   }
 
   private async discoverServer(
@@ -153,6 +244,7 @@ export class PlatformAgentMcpRegistry implements AgentMcpRegistry {
         descriptor,
         status: {
           ...descriptor,
+          enabled: true,
           status: 'ready',
           allowedToolCount: server.tools.length,
           discoveredToolCount: discovered.tools.length,
@@ -167,6 +259,7 @@ export class PlatformAgentMcpRegistry implements AgentMcpRegistry {
         descriptor: baseDescriptor,
         status: {
           ...baseDescriptor,
+          enabled: true,
           status: 'error',
           allowedToolCount: server.tools.length,
           discoveredToolCount: 0,

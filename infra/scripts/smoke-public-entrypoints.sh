@@ -45,7 +45,7 @@ assert_env_value() {
 }
 
 assert_env_value MOCK_PROVIDER_ENABLED true
-for provider in QWEN GLM DEEPSEEK KIMI WANXIANG COGVIEW; do
+for provider in QWEN GLM DEEPSEEK KIMI; do
   assert_env_value "${provider}_ENABLED" false
 done
 

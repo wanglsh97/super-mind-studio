@@ -208,7 +208,7 @@ function AdminConsoleLayoutInner({ children }: Readonly<{ children: ReactNode }>
           onClick={navigateMenu}
         />
       </Sider>
-      <Layout>
+      <Layout className="aigateway-admin-main">
         <Header className="aigateway-admin-header">
           <Typography.Title level={4} className="aigateway-admin-header-title">
             {headerTitle}
@@ -233,7 +233,9 @@ function AdminConsoleLayoutInner({ children }: Readonly<{ children: ReactNode }>
             </div>
           </Dropdown>
         </Header>
-        <Content className="aigateway-admin-console-content">{children}</Content>
+        <Content className="aigateway-admin-console-scroll">
+          <div className="aigateway-admin-console-content">{children}</div>
+        </Content>
       </Layout>
     </Layout>
   )

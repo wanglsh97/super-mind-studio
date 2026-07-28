@@ -3,7 +3,7 @@ import { MockImageAdapter } from './mock-image-adapter'
 
 const request = {
   requestId: '00000000-0000-4000-8000-000000000099',
-  modelAlias: 'wanxiang' as const,
+  modelAlias: 'mock-image' as const,
   resolvedModel: 'mock-image-v1',
   prompt: '一只机械猫',
   signal: new AbortController().signal,

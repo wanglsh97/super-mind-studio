@@ -16,11 +16,11 @@ runtime。浏览器端 `@assistant-ui/react-mcp` 会把连接和认证状态放�
 - 使用官方 MCP SDK v1 完成协议握手、分页发现和调用。
 - 在每次 Agent run 开始前生成不可变的合并工具集合，避免运行中工具漂移。
 - 保证超时、取消、输出上限、命名冲突、错误归一化和凭证脱敏。
-- 给已登录用户提供只读状态与通用动态工具 UI。
+- 给已登录用户提供状态、内置 Server 启停配置与通用动态工具 UI。
 
 **Non-Goals:**
 
-- 用户自助 Server CRUD、OAuth、Bearer Token 输入或跨设备凭证存储。
+- 用户自助 Server 新增/编辑/删除、OAuth、Bearer Token 输入或跨设备凭证存储。
 - stdio/本地子进程、legacy SSE、resources、prompts、sampling、elicitation。
 - MCP 写入/破坏性工具与审批流。
 - 后台定时健康检查、自动重连或多机连接协调。
@@ -29,7 +29,8 @@ runtime。浏览器端 `@assistant-ui/react-mcp` 会把连接和认证状态放�
 
 ```mermaid
 flowchart LR
-    W["Agent page"] -->|"GET /api/v1/agent/mcp/servers"| A["AgentController"]
+    W["Agent / MCP settings"] -->|"GET/PATCH /api/v1/agent/mcp/servers"| A["AgentController"]
+    A --> U[("UserMcpServerPreference")]
     R["AgentRunService"] --> M["PlatformAgentMcpRegistry"]
     M --> C["MCP SDK v1 Client"]
     C --> S["Configured Streamable HTTP MCP Server"]
@@ -51,7 +52,7 @@ flowchart LR
   `external_send`.
 
 The model and browser cannot supply URL, headers, token environment name or remote tool name.
-Production requires HTTPS. Development/test may use loopback HTTP for deterministic fixtures.
+Production requires HTTPS. Development/test may use loopback HTTP for isolated integration checks.
 
 ### Decision 2: Official SDK v1 and Streamable HTTP only
 
@@ -83,11 +84,17 @@ explicit `[UNTRUSTED MCP TOOL RESULT]` wrapper. Embedded instructions cannot ext
 Audit contains server ID, remote tool name, duration, content block count, truncation and normalized
 error code, never URL query secrets, bearer tokens, raw headers or full result content.
 
-### Decision 6: Read-only status, no browser credential manager
+### Decision 6: Server-side user enablement, no browser credential manager
 
-`GET /api/v1/agent/mcp/servers` returns id/name/description/status/tool counts/error code and never URL,
-headers or auth. The SDK decodes this projection. Agent UI shows a compact readiness summary and uses a
-generic activity card for any `mcp__` tool call.
+`GET /api/v1/agent/mcp/servers` returns id/name/description/enabled/status/tool counts/error code and
+never URL, headers or auth. Missing preferences default to enabled. `PATCH
+/api/v1/agent/mcp/servers/:serverId` accepts only `{ enabled: boolean }`, rejects unknown platform
+Server IDs, and upserts a row uniquely scoped by authenticated `userId + serverId`.
+
+Disabled Servers are not connected or discovered for that user. Agent run start reads preferences once,
+then freezes the resulting tools and MCP prompt descriptors for the entire run; changing a switch affects
+only later runs. The SDK decodes this projection. The user UI provides a dedicated configuration page,
+the Agent UI keeps a compact readiness summary, and dynamic `mcp__` calls use a generic activity card.
 
 ## Failure Handling
 
@@ -103,19 +110,23 @@ generic activity card for any `mcp__` tool call.
 - Credentials are referenced by environment variable name and resolved only inside NestJS.
 - Production rejects non-HTTPS endpoints; local HTTP must be loopback.
 - Exact configured tools only; no arbitrary endpoint, remote header or tool name from model input.
+- Preference reads and writes are scoped exclusively by the session-derived user ID.
 - V1 permits only `read` and `external_send`; write/destructive tools wait for an approval change.
 - MCP metadata and outputs remain untrusted and escaped/bounded.
 
 ## Test Strategy
 
 - Unit: config parser, namespacing, whitelist intersection, redaction, result normalization.
-- Contract: local official-SDK Streamable HTTP fixture covers initialize/list/call and cancellation.
+- Unit: mock client covers discovery, allowlist intersection, invocation and cancellation boundaries.
 - Agent integration: resolved tool is present in prompt and persisted tool lifecycle.
 - SDK/Web: status decode and generic MCP activity rendering.
-- Explicit smoke: start local fixture, configure one echo tool, run discovery/call without external
-  network or credentials.
+- Repository/API: default enabled, per-user isolation, unknown Server rejection and enable/disable update.
+- Web: loading, empty, error, saving and enabled/disabled states on the MCP configuration page.
+- Explicit dev acceptance: configure Context7 and DeepWiki, start API/Web, and verify both remote
+  servers are ready with their allowlisted tools.
 
 ## Rollback
 
 Clear `AGENT_MCP_SERVERS_JSON` to disable all generic MCP connections immediately, then revert the
-feature commits if needed. No schema rollback is required and existing audit rows remain readable.
+feature commits if needed. Rollback drops only `UserMcpServerPreference`; existing Agent audit rows
+remain readable.

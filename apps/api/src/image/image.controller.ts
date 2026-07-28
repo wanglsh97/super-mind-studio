@@ -48,7 +48,7 @@ export class ImageController {
   ): Promise<ImageTask> {
     await this.rateLimit.consumeImage(request.ip)
     const requestId = request.id ?? randomUUID()
-    const adapter = this.resolveAdapter(input.model)
+    const adapter = this.resolveAdapter()
     const task = await this.images.createPending(user.id, requestId, input, adapter, request.ip)
     const abortController = new AbortController()
     const abort = () => abortController.abort()
@@ -109,8 +109,7 @@ export class ImageController {
     response.send(Buffer.from(image.body))
   }
 
-  private resolveAdapter(alias: CreateImageGenerationDto['model']): ImageAdapter {
-    if (this.adapters.has(alias)) return this.adapters.get(alias)
+  private resolveAdapter(): ImageAdapter {
     if (this.adapters.has('mock')) return this.adapters.get('mock')
     throw new ServiceUnavailableException('当前没有可用的图片模型')
   }

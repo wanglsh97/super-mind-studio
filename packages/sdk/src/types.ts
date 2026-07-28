@@ -1,5 +1,5 @@
 export const TEXT_MODEL_ALIASES = ['qwen', 'glm', 'deepseek', 'kimi'] as const
-export const IMAGE_MODEL_ALIASES = ['wanxiang', 'cogview'] as const
+export const IMAGE_MODEL_ALIASES = ['mock-image'] as const
 
 export type TextModelAlias = (typeof TEXT_MODEL_ALIASES)[number]
 export type TextModelId = string

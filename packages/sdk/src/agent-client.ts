@@ -14,6 +14,7 @@ import type {
   CreateAgentRunRequest,
   CreateAgentThreadRequest,
   UpdateAgentThreadRequest,
+  UpdateAgentMcpServerRequest,
 } from './agent-types.js'
 import { AIGatewayAuthenticationError, AIGatewayError, AIGatewayProtocolError } from './errors.js'
 import { readSseData } from './sse.js'
@@ -44,6 +45,11 @@ export interface AgentThreadListOptions extends RequestOptions {
 export interface AgentClient {
   mcp: {
     servers(options?: RequestOptions): Promise<AgentMcpServerStatus[]>
+    update(
+      serverId: string,
+      input: UpdateAgentMcpServerRequest,
+      options?: RequestOptions,
+    ): Promise<AgentMcpServerStatus>
   }
   skills: {
     list(options?: RequestOptions): Promise<AgentSkillMarketItem[]>
@@ -103,6 +109,16 @@ export function createAgentClient(
         }
         return value.map(decodeMcpServerStatus)
       },
+      update: async (serverId, input, options) =>
+        decodeMcpServerStatus(
+          await requestJson(
+            fetchImplementation,
+            'PATCH',
+            `${baseUrl}/api/v1/agent/mcp/servers/${encodeURIComponent(serverId)}`,
+            input,
+            options,
+          ),
+        ),
     },
     skills: {
       list: async (options) => {
@@ -252,7 +268,8 @@ function decodeMcpServerStatus(value: unknown): AgentMcpServerStatus {
     !stringValue(record.name) ||
     typeof record.version !== 'string' ||
     typeof record.description !== 'string' ||
-    !['configured', 'ready', 'error'].includes(String(record.status)) ||
+    typeof record.enabled !== 'boolean' ||
+    !['configured', 'ready', 'error', 'disabled'].includes(String(record.status)) ||
     numberValue(record.allowedToolCount) === undefined ||
     numberValue(record.discoveredToolCount) === undefined ||
     numberValue(record.registeredToolCount) === undefined ||
@@ -265,6 +282,7 @@ function decodeMcpServerStatus(value: unknown): AgentMcpServerStatus {
     name: record.name as string,
     version: record.version as string,
     description: record.description as string,
+    enabled: record.enabled as boolean,
     status: record.status as AgentMcpServerStatus['status'],
     allowedToolCount: record.allowedToolCount as number,
     discoveredToolCount: record.discoveredToolCount as number,

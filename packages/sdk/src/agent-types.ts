@@ -185,18 +185,23 @@ export interface AgentRunSummary {
   completedAt: string | null
 }
 
-export type AgentMcpServerConnectionStatus = 'configured' | 'ready' | 'error'
+export type AgentMcpServerConnectionStatus = 'configured' | 'ready' | 'error' | 'disabled'
 
 export interface AgentMcpServerStatus {
   id: string
   name: string
   version: string
   description: string
+  enabled: boolean
   status: AgentMcpServerConnectionStatus
   allowedToolCount: number
   discoveredToolCount: number
   registeredToolCount: number
   errorCode: string | null
+}
+
+export interface UpdateAgentMcpServerRequest {
+  enabled: boolean
 }
 
 export interface AgentThreadSummary {

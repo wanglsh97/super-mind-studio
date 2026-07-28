@@ -31,7 +31,7 @@ async function main(): Promise<void> {
   // 强制 Mock、确定性、零成本：仅启用 Mock Adapter，禁用所有真实 provider。
   // 必须在进程启动前经 test:agent-e2e 脚本以环境变量注入（@nestjs/config 不覆盖已有 process.env）。
   assert.equal(process.env.MOCK_PROVIDER_ENABLED, 'true')
-  for (const provider of ['QWEN', 'GLM', 'DEEPSEEK', 'KIMI', 'WANXIANG', 'COGVIEW']) {
+  for (const provider of ['QWEN', 'GLM', 'DEEPSEEK', 'KIMI']) {
     assert.equal(process.env[`${provider}_ENABLED`], 'false', `${provider} 必须在无外网 E2E 中关闭`)
   }
   assert.equal(process.env.AGENT_WEB_FETCH_FIXTURE, 'true')

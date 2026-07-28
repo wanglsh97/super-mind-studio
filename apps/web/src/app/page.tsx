@@ -518,7 +518,7 @@ function AgentEnvironmentPanel({
       : hasLoaded
         ? 'bg-ink-subtle/45'
         : 'bg-brand animate-status-breathe'
-  const [isCollapsed, setIsCollapsed] = useState(false)
+  const [isCollapsed, setIsCollapsed] = useState(true)
 
   return (
     <aside

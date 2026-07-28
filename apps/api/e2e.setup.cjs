@@ -9,8 +9,6 @@ for (const key of [
   'QWEN_API_KEY',
   'GLM_API_KEY',
   'DEEPSEEK_API_KEY',
-  'WANXIANG_API_KEY',
-  'COGVIEW_API_KEY',
 ]) {
   delete process.env[key]
 }
@@ -35,6 +33,4 @@ Object.assign(process.env, {
   QWEN_ENABLED: 'false',
   GLM_ENABLED: 'false',
   DEEPSEEK_ENABLED: 'false',
-  WANXIANG_ENABLED: 'false',
-  COGVIEW_ENABLED: 'false',
 })

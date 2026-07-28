@@ -361,7 +361,7 @@ const STATUS_TAG_COLORS: Record<string, string> = {
   cancelled: 'default',
 }
 
-const MODEL_OPTIONS = ['qwen', 'glm', 'deepseek', 'kimi', 'wanxiang', 'cogview'].map((model) => ({
+const MODEL_OPTIONS = ['qwen', 'glm', 'deepseek', 'kimi', 'mock-image'].map((model) => ({
   value: model,
   label: model,
 }))

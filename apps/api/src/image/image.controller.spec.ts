@@ -8,7 +8,7 @@ import { ImageAdapterRegistry } from './adapters/image-adapter.registry'
 import { ImageController } from './image.controller'
 import type { ImageService } from './image.service'
 
-const input = { model: 'wanxiang' as const, prompt: '山水画', size: '1024x1024', count: 1 }
+const input = { model: 'mock-image' as const, prompt: '山水画', size: '1024x1024', count: 1 }
 const authenticatedUser = {
   id: '00000000-0000-4000-8000-000000000101',
   authProvider: 'GITHUB' as const,
@@ -29,7 +29,7 @@ function setup() {
   const rateLimit = { consumeImage } as unknown as RateLimitService
   const persisted = {
     taskId: '00000000-0000-4000-8000-000000000111',
-    modelAlias: 'wanxiang',
+    modelAlias: 'mock-image',
     status: 'PENDING',
     createdAt: new Date('2026-07-17T00:00:00.000Z'),
     updatedAt: new Date('2026-07-17T00:00:00.000Z'),
@@ -38,7 +38,7 @@ function setup() {
   const recordSubmission = jest.fn().mockResolvedValue(persisted)
   const toPublicTask = jest.fn().mockReturnValue({
     taskId: persisted.taskId,
-    model: 'wanxiang',
+    model: 'mock-image',
     status: 'pending',
     results: [],
   })

@@ -58,13 +58,18 @@ export class AgentPromptComposer {
     summaryId?: string | null
     now?: Date
     tools?: readonly AgentToolDefinition[]
+    mcpServers?: readonly {
+      id: string
+      name: string
+      description: string
+    }[]
   }): Promise<ComposedAgentPrompt> {
     const tools = input.tools ?? this.tools.list()
     const skills = (await this.skills.listCandidates(input.userId)).slice(
       0,
       MAX_PROMPT_CANDIDATE_SKILLS,
     )
-    const mcpServers = this.mcp.listServers()
+    const mcpServers = input.mcpServers ?? (await this.mcp.listServers(input.userId))
     const memories = await this.memory.recall({ userId: input.userId, threadId: input.threadId })
     const now = input.now ?? new Date()
 

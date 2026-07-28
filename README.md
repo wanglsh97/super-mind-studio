@@ -99,9 +99,11 @@ pnpm test:smoke:web-search
 
 ## Agent MCP 接入
 
-Agent 支持由平台管理员在 API 服务端配置远程 MCP Server。每次 Agent run 开始前，API 会通过 Streamable HTTP 发现允许的工具，并把 built-in 与 MCP 工具集合冻结到本次运行；远程工具统一命名为 `mcp__<server-id>__<tool-name>`。浏览器只能读取脱敏后的 Server 状态和工具数量，不会收到 endpoint、Authorization header 或 token。
+Agent 支持由平台管理员在 API 服务端配置远程 MCP Server。每次 Agent run 开始前，API 会通过 Streamable HTTP 发现允许的工具，并把 built-in 与 MCP 工具集合冻结到本次运行；远程工具统一命名为 `mcp__<server-id>__<tool-name>`。浏览器只能读取脱敏后的 Server 状态和工具数量，不会收到 endpoint、Authorization header 或 token。登录用户可以在 `/mcp` 启用或禁用内置 Server，偏好按账户保存并只影响之后启动的 Agent run。
 
-默认 `AGENT_MCP_SERVERS_JSON=[]`，不建立任何 MCP 连接。下面的示例只允许调用远端 `lookup` 工具，并把平台维护的描述提供给模型：
+本地 `.env.example` 默认启用只读 Context7 与 DeepWiki；生产模板仍保持
+`AGENT_MCP_SERVERS_JSON=[]`，需要完成外部服务审核后显式启用。若接入需要 Bearer Token 的
+其他 Server，可以按下面方式引用服务端环境变量：
 
 ```dotenv
 DOCS_MCP_TOKEN=<仅保存在服务端的 token>
@@ -112,8 +114,9 @@ V1 只支持 Streamable HTTP、静态工具白名单以及 `read`/`external_send
 
 相关接口与验证命令：
 
-- `GET /api/v1/agent/mcp/servers`：要求用户 Session，只返回脱敏状态。
-- `pnpm test:smoke:mcp`：启动本地 Streamable HTTP fixture，完成发现和调用，不访问公网。
+- `GET /api/v1/agent/mcp/servers`：要求用户 Session，只返回脱敏状态与当前用户开关。
+- `PATCH /api/v1/agent/mcp/servers/:serverId`：只接受 `{ "enabled": boolean }`，不能新增或修改 Server。
+- 本地 `.env` 默认配置 Context7 与 DeepWiki；启动 dev 服务后可在 Agent 右上角运行环境面板确认两个 Server 的就绪状态与 4 个只读工具。
 
 ## 阿里云 ECS 生产部署
 
@@ -186,3 +189,14 @@ DATABASE_URL=postgresql://aigateway:password@localhost:5432/aigateway_test pnpm 
 ```
 
 禁止把真实 API Key、生产数据库密码或 Cookie secret 提交到仓库。
+
+
+## 如何查看sandbox容器
+
+1. 登录到ECS后台，执行`docker ps`
+2. 找到对应的sandboxId，然后执行`docker exec -it <sandboxId> <shell命令>`
+
+## 如何看数据库
+
+1./admin后台能看，但不能改数据
+2. prisma studio。先执行`pnpm infra:up`，然后执行`pnpm exec prisma studio`

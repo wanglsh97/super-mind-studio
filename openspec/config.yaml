@@ -9,7 +9,7 @@ context: |
   V1 部署目标：阿里云 ECS（Ubuntu，4 核 8G）单机一体化部署，同时支持域名和公网 IP。
   后续版本若经用户明确确认，可以通过独立 OpenSpec change 增加专用执行节点或其他基础设施，
   但必须说明与 V1 单机基线的差异、成本、故障边界和回滚方式。
-  V1 模型范围：国内通义千问、智谱 GLM、DeepSeek；文生图为通义万相和 CogView。
+  V1 模型范围：国内通义千问、智谱 GLM、DeepSeek；文生图仅保留 mock-image 闭环。
   产品原则：先用 Mock Adapter 串通端到端主链路，再逐个接入真实厂商，最后完善后台和运维。
   已确认约束：V1 不使用 BullMQ；完整 Prompt 全量保存；用户端支持一次性匿名、GitHub OAuth 和 Google OAuth；
   管理员认证暂时保持独立固定账号；内容安全和全站每日硬顶列为后续版本。

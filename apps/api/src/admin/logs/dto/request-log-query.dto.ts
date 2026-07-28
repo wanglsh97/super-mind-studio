@@ -19,8 +19,7 @@ export const REQUEST_LOG_MODELS = [
   'glm',
   'deepseek',
   'kimi',
-  'wanxiang',
-  'cogview',
+  'mock-image',
 ] as const
 
 export class RequestLogQueryDto {

@@ -14,16 +14,14 @@ function adapter(id: ImageAdapter['id']): ImageAdapter {
 describe('ImageAdapterRegistry', () => {
   it('registers and lists provider-neutral image adapters', () => {
     const mock = adapter('mock')
-    const wanxiang = adapter('wanxiang')
-    const registry = new ImageAdapterRegistry([mock, wanxiang])
+    const registry = new ImageAdapterRegistry([mock])
 
     expect(registry.get('mock')).toBe(mock)
-    expect(registry.has('cogview')).toBe(false)
-    expect(registry.list()).toEqual([mock, wanxiang])
+    expect(registry.list()).toEqual([mock])
   })
 
   it('rejects duplicate IDs and missing adapters', () => {
     expect(() => new ImageAdapterRegistry([adapter('mock'), adapter('mock')])).toThrow('duplicated')
-    expect(() => new ImageAdapterRegistry([]).get('wanxiang')).toThrow('not registered')
+    expect(() => new ImageAdapterRegistry([]).get('mock')).toThrow('not registered')
   })
 })

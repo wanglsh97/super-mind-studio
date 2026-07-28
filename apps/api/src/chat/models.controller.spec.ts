@@ -53,7 +53,7 @@ describe('ModelsController', () => {
         ],
       } as unknown as ChatModelCatalog,
       providerHealth,
-      new ImageAdapterRegistry([imageAdapter('wanxiang'), imageAdapter('cogview')]),
+      new ImageAdapterRegistry([imageAdapter('mock')]),
     )
 
     await expect(controller.list()).resolves.toEqual([
@@ -78,21 +78,11 @@ describe('ModelsController', () => {
         health: 'unhealthy',
       },
       {
-        id: 'wanxiang',
-        alias: 'wanxiang',
-        modelId: 'wanxiang-image-model',
+        id: 'mock-image',
+        alias: 'mock-image',
+        modelId: 'mock-image-model',
         capabilities: ['image'],
-        displayName: '通义万相',
-        enabled: true,
-        configured: true,
-        health: 'unknown',
-      },
-      {
-        id: 'cogview',
-        alias: 'cogview',
-        modelId: 'cogview-image-model',
-        capabilities: ['image'],
-        displayName: '智谱 CogView',
+        displayName: 'Mock Image',
         enabled: true,
         configured: true,
         health: 'unknown',
@@ -124,13 +114,13 @@ describe('ModelsController', () => {
         health: 'unknown',
       },
       {
-        id: 'wanxiang',
-        alias: 'wanxiang',
-        modelId: 'mock-image',
+        id: 'mock-image',
+        alias: 'mock-image',
+        modelId: 'mock-image-model',
         capabilities: ['image'],
-        displayName: '通义万相（Mock）',
+        displayName: 'Mock Image',
         enabled: true,
-        configured: false,
+        configured: true,
         health: 'unknown',
       },
     ])

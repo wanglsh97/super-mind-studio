@@ -76,21 +76,44 @@ untrusted external data, and persist a credential-free tool lifecycle.
 - **THEN** the outbound call is aborted and the client is closed
 - **AND** a normalized cancelled tool result is emitted without retrying
 
-### Requirement: MCP status is visible without secrets
+### Requirement: Users can control built-in MCP Servers without receiving secrets
 
-Authenticated users SHALL be able to query a read-only projection of configured MCP Server readiness.
+Authenticated users SHALL be able to query a credential-free projection of configured MCP Server
+readiness and enable or disable only those platform-configured Servers for future Agent runs.
 
 #### Scenario: Agent page loads MCP status
 
 - **GIVEN** the current user is authenticated
 - **WHEN** the Agent page requests MCP status
-- **THEN** it receives Server identity, readiness, discovered/allowed tool counts and normalized error
+- **THEN** it receives Server identity, user enablement, readiness, discovered/allowed tool counts and normalized error
 - **AND** it receives no URL, auth mode, header, token or token environment name
+
+#### Scenario: A user disables a built-in Server
+
+- **GIVEN** Context7 is platform-configured and enabled by default for the current user
+- **WHEN** the authenticated user disables Context7
+- **THEN** the preference is persisted only for that user
+- **AND** later Agent runs do not connect to Context7 or expose its tools or Prompt descriptor
+- **AND** an already-started run keeps its immutable tool set
+
+#### Scenario: A user re-enables a built-in Server
+
+- **GIVEN** the current user previously disabled DeepWiki
+- **WHEN** the user enables DeepWiki
+- **THEN** later status reads report it enabled
+- **AND** later Agent runs may discover its platform-allowlisted tools
+
+#### Scenario: A user submits an unknown Server ID
+
+- **GIVEN** the platform did not configure Server `custom`
+- **WHEN** an authenticated user attempts to enable `custom`
+- **THEN** the API rejects the request
+- **AND** no preference or outbound MCP connection is created
 
 ### Requirement: MCP V1 excludes unsupported authority
 
 V1 SHALL reject write/destructive MCP risk configuration and SHALL NOT implement user-managed Server
-CRUD, OAuth, stdio, resources, prompts, sampling or elicitation.
+creation/editing/deletion, OAuth, stdio, resources, prompts, sampling or elicitation.
 
 #### Scenario: A destructive tool is configured
 

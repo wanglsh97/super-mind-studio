@@ -54,8 +54,6 @@
 - [x] 1.37 实现幂等状态查询，根据已存 provider task ID 合法推进 ImageGenerationTask 状态
 - [x] 1.38 实现图片下载代理，校验平台 task、image index、允许的 URL/类型/大小并设置安全响应头
 - [x] 1.39 在 SDK 实现 image create/get/wait/downloadUrl，轮询支持退避、超时、终态停止和取消
-- [ ] 1.40 实现 Wanxiang Adapter，以 fixture 和低额度真实任务分别验收
-- [ ] 1.41 实现 CogView Adapter，以 fixture 和低额度真实任务分别验收
 - [x] 1.42 添加 Image 集成测试，覆盖提交、API 重启后轮询、成功下载、失败和客户端超时
 
 ### Prompt 优化网关能力
@@ -151,7 +149,7 @@
 - [x] 3.14 通过 SDK 串通创建任务和轮询，展示 pending/running/succeeded/failed 与超时/取消状态
 - [x] 3.15 实现图片结果预览和网关代理下载，不直接拼接不可信 provider URL
 - [x] 3.16 实现 localStorage 最近 5 条任务、缩略图和 Prompt 历史，容忍损坏、过期和缺失结果
-- [x] 3.17 完成 Image 页面 Mock E2E，并分别对已启用 Wanxiang/CogView 执行低额度真实验收
+- [x] 3.17 完成 Image 页面 Mock E2E
 
 ### Prompt 优化页面
 
