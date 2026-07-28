@@ -14,6 +14,10 @@ import {
 } from 'react'
 
 import { useUserSession } from './user-session-provider'
+import {
+  removeActiveRun as removeActiveRunState,
+  upsertActiveRun as upsertActiveRunState,
+} from '../app/agent/agent-active-runs'
 
 const client = createAIGatewayClient()
 
@@ -27,13 +31,14 @@ type AgentWorkspaceValue = {
   setSelectedModel: (modelId: string) => void
   loading: boolean
   listError: string | null
-  /** 当前用户全局进行中的 Agent run；非空时禁用所有 Composer 提交。 */
-  userActiveRun: AgentRunSummary | null
+  /** 当前用户在不同 Thread 中进行中的 Agent runs。 */
+  activeRuns: AgentRunSummary[]
   startNewThread: () => void
   openThread: (threadId: string) => void
   prependThread: (thread: AgentThreadSummary) => void
   refreshThreads: () => Promise<void>
-  setUserActiveRun: (run: AgentRunSummary | null) => void
+  upsertActiveRun: (run: AgentRunSummary) => void
+  removeActiveRun: (threadId: string) => void
   renameThread: (threadId: string, title: string) => Promise<AgentThreadSummary>
   deleteThread: (threadId: string) => Promise<void>
 }
@@ -51,12 +56,12 @@ export function AgentWorkspaceProvider({ children }: Readonly<{ children: ReactN
   const [selectedModel, setSelectedModel] = useState('')
   const [loading, setLoading] = useState(false)
   const [listError, setListError] = useState<string | null>(null)
-  const [userActiveRun, setUserActiveRun] = useState<AgentRunSummary | null>(null)
+  const [activeRuns, setActiveRuns] = useState<AgentRunSummary[]>([])
 
   const refreshThreads = useCallback(async () => {
     const threadPage = await client.agent.threads.list()
     setThreads(threadPage.items)
-    setUserActiveRun(threadPage.activeRun)
+    setActiveRuns(threadPage.activeRuns)
   }, [])
 
   useEffect(() => {
@@ -72,7 +77,7 @@ export function AgentWorkspaceProvider({ children }: Readonly<{ children: ReactN
         ])
         if (cancelled) return
         setThreads(threadPage.items)
-        setUserActiveRun(threadPage.activeRun)
+        setActiveRuns(threadPage.activeRuns)
         const usable = modelList.filter(
           (model) => model.enabled && model.capabilities.includes('agent'),
         )
@@ -91,6 +96,14 @@ export function AgentWorkspaceProvider({ children }: Readonly<{ children: ReactN
     }
   }, [onAgentRoute, session.status])
 
+  useEffect(() => {
+    if (!onAgentRoute || session.status !== 'authenticated' || activeRuns.length === 0) return
+    const timer = window.setInterval(() => {
+      void refreshThreads().catch(() => undefined)
+    }, 3_000)
+    return () => window.clearInterval(timer)
+  }, [activeRuns.length, onAgentRoute, refreshThreads, session.status])
+
   const startNewThread = useCallback(() => {
     router.push('/')
   }, [router])
@@ -106,6 +119,14 @@ export function AgentWorkspaceProvider({ children }: Readonly<{ children: ReactN
 
   const prependThread = useCallback((thread: AgentThreadSummary) => {
     setThreads((current) => [thread, ...current.filter((item) => item.id !== thread.id)])
+  }, [])
+
+  const upsertActiveRun = useCallback((run: AgentRunSummary) => {
+    setActiveRuns((current) => upsertActiveRunState(current, run))
+  }, [])
+
+  const removeActiveRun = useCallback((threadId: string) => {
+    setActiveRuns((current) => removeActiveRunState(current, threadId))
   }, [])
 
   const renameThread = useCallback(async (threadId: string, title: string) => {
@@ -139,12 +160,13 @@ export function AgentWorkspaceProvider({ children }: Readonly<{ children: ReactN
       setSelectedModel,
       loading,
       listError,
-      userActiveRun,
+      activeRuns,
       startNewThread,
       openThread,
       prependThread,
       refreshThreads,
-      setUserActiveRun,
+      upsertActiveRun,
+      removeActiveRun,
       renameThread,
       deleteThread,
     }),
@@ -154,11 +176,13 @@ export function AgentWorkspaceProvider({ children }: Readonly<{ children: ReactN
       selectedModel,
       loading,
       listError,
-      userActiveRun,
+      activeRuns,
       startNewThread,
       openThread,
       prependThread,
       refreshThreads,
+      upsertActiveRun,
+      removeActiveRun,
       renameThread,
       deleteThread,
     ],

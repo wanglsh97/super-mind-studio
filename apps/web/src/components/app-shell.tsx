@@ -276,7 +276,8 @@ function NewConversationButton({ collapsed }: Readonly<{ collapsed: boolean }>) 
 
 function AgentThreadLinks() {
   const session = useUserSession()
-  const { threads, loading, listError, renameThread, deleteThread } = useAgentWorkspace()
+  const { threads, activeRuns, loading, listError, renameThread, deleteThread } =
+    useAgentWorkspace()
   const activeThreadId = useAgentActiveThreadId()
   const [renamingId, setRenamingId] = useState<string | null>(null)
   const [pendingDelete, setPendingDelete] = useState<AgentThreadSummary | null>(null)
@@ -358,6 +359,7 @@ function AgentThreadLinks() {
           const isActive = thread.id === activeThreadId
           const isRenaming = renamingId === thread.id
           const actionsOpen = openActionsId === thread.id
+          const isRunning = activeRuns.some((run) => run.threadId === thread.id)
           return (
             <li
               key={thread.id}
@@ -408,7 +410,16 @@ function AgentThreadLinks() {
                       isActive && 'font-semibold text-ink-secondary dark:text-ink',
                     )}
                   >
-                    {thread.title}
+                    <span className="flex min-w-0 items-center gap-1.5">
+                      <span className="min-w-0 flex-1 truncate">{thread.title}</span>
+                      {isRunning ? (
+                        <span
+                          className="size-1.5 shrink-0 rounded-full bg-brand"
+                          title="Agent 正在运行"
+                          aria-label="Agent 正在运行"
+                        />
+                      ) : null}
+                    </span>
                   </Link>
                   <div className="relative" ref={actionsOpen ? openActionsRef : undefined}>
                     <button

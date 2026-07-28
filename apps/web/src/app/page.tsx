@@ -70,6 +70,7 @@ import {
   isResumableActiveRun,
   mergeThreadMessagesWithRunView,
 } from './agent/agent-run-resume'
+import { activeRunForThread } from './agent/agent-active-runs'
 import { initialAgentRunViewState } from './agent/agent-run-reducer'
 import {
   AGENT_TOOL_ACTIVITY_LABELS,
@@ -106,8 +107,9 @@ function AgentConsole() {
     prependThread,
     startNewThread,
     refreshThreads,
-    userActiveRun,
-    setUserActiveRun,
+    activeRuns,
+    upsertActiveRun,
+    removeActiveRun,
   } = useAgentWorkspace()
   const activeThreadId = useAgentActiveThreadId()
   const [contextBudget, setContextBudget] = useState<AgentContextBudgetState | null>(null)
@@ -150,7 +152,7 @@ function AgentConsole() {
   }
   contextRef.current.onRunCreated = (run) => {
     setSandboxTelemetry({ status: 'creating' })
-    setUserActiveRun({
+    upsertActiveRun({
       id: run.id,
       threadId: run.threadId,
       status: 'running',
@@ -181,7 +183,7 @@ function AgentConsole() {
             : { status: 'idle' }
           : { status: 'idle' },
     )
-    setUserActiveRun(null)
+    if (activeThreadId) removeActiveRun(activeThreadId)
     void refreshThreads().catch(() => undefined)
   }
   contextRef.current.onContextBudget = setContextBudget
@@ -268,7 +270,8 @@ function AgentConsole() {
 
   const runtime = useLocalRuntime(adapter)
   const modelDisabled = modelOptions.length === 0
-  const submitBlocked = modelDisabled || userActiveRun !== null
+  const currentActiveRun = activeRunForThread(activeRuns, activeThreadId)
+  const submitBlocked = modelDisabled || currentActiveRun !== null
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
@@ -362,15 +365,15 @@ function AgentConsole() {
             </AgentThreadViewport>
             <AgentScrollToBottom />
             <AgentComposerDock>
-              {userActiveRun && userActiveRun.threadId !== activeThreadId ? (
-                <AgentActiveRunHint message="另一会话正在运行，请等待结束后再提交" />
+              {activeRuns.some((run) => run.threadId !== activeThreadId) ? (
+                <AgentActiveRunHint message="其他会话正在后台运行；当前会话仍可独立提交" />
               ) : null}
               <AgentComposerRoot>
                 <AgentSkillSlashPicker
                   candidates={skillCandidates}
                   selectedNames={selectedSkillNames}
                   loadState={skillLoadState}
-                  disabled={userActiveRun !== null}
+                  disabled={currentActiveRun !== null}
                   onToggle={(name) =>
                     setSelectedSkillNames((current) =>
                       current.includes(name)
@@ -857,7 +860,7 @@ function ThreadHydrator({
   const api = useAui()
   const isLocalRunRunning = useAuiState(({ thread }) => thread.isRunning)
   const activeThreadId = useAgentActiveThreadId()
-  const { setSelectedModel, setUserActiveRun, refreshThreads } = useAgentWorkspace()
+  const { setSelectedModel, upsertActiveRun, removeActiveRun, refreshThreads } = useAgentWorkspace()
   const handleAuthenticationFailure = useAuthenticationFailure()
 
   const [interruptedNotice, setInterruptedNotice] = useState<string | null>(null)
@@ -897,7 +900,7 @@ function ThreadHydrator({
 
         if (isResumableActiveRun(thread.activeRun)) {
           onSandboxStatus('creating')
-          setUserActiveRun(thread.activeRun)
+          upsertActiveRun(thread.activeRun)
           setInterruptedNotice(null)
           setResumeNotice('运行仍在进行，正在按事件游标恢复…')
           if (!resetThreadIfIdle(api.thread(), agentMessagesToThreadMessages(thread.messages))) {
@@ -943,7 +946,7 @@ function ThreadHydrator({
                 })
               }
               setResumeNotice(null)
-              setUserActiveRun(null)
+              removeActiveRun(activeThreadId)
               void refreshThreads().catch(() => undefined)
               return
             }
@@ -956,8 +959,8 @@ function ThreadHydrator({
         setInterruptedNotice(
           interrupted ? '上次运行因服务重启中断，未自动重放模型或工具。可继续发送新任务。' : null,
         )
-        if (thread.activeRun) setUserActiveRun(thread.activeRun)
-        else setUserActiveRun(null)
+        if (thread.activeRun) upsertActiveRun(thread.activeRun)
+        else removeActiveRun(activeThreadId)
         onSandboxSnapshot(thread.sandbox)
         resetThreadIfIdle(
           api.thread(),
@@ -1050,12 +1053,13 @@ function SummaryItems({ label, values }: { label: string; values: string[] }) {
 }
 
 function AgentStopButton() {
-  const { userActiveRun, setUserActiveRun, refreshThreads } = useAgentWorkspace()
+  const activeThreadId = useAgentActiveThreadId()
+  const { activeRuns, upsertActiveRun, refreshThreads } = useAgentWorkspace()
   const handleAuthenticationFailure = useAuthenticationFailure()
   const isRunning = useAuiState(({ thread }) => thread.isRunning)
   const [stopping, setStopping] = useState(false)
 
-  const runId = userActiveRun?.id ?? null
+  const runId = activeRunForThread(activeRuns, activeThreadId)?.id ?? null
   if (!isRunning && !runId) return null
 
   const requestCancel = () => {
@@ -1064,7 +1068,7 @@ function AgentStopButton() {
     void client.agent.runs
       .cancel(runId)
       .then((run) => {
-        setUserActiveRun(run)
+        upsertActiveRun(run)
         void refreshThreads().catch(() => undefined)
       })
       .catch((error) => {
