@@ -3,7 +3,7 @@
 ## 1. 规格与凭据验证
 
 - [x] 1.1 创建并 strict 校验 `enable-production-admin-password-auth` change
-- [ ] 1.2 增加生产管理员开关、用户名和 `scrypt-v1` 哈希配置校验
+- [x] 1.2 增加生产管理员开关、用户名和 `scrypt-v1` 哈希配置校验
 - [ ] 1.3 实现生产哈希凭据验证和动态管理员 Session username，覆盖单元测试
 
 ## 2. 部署配置与文档
