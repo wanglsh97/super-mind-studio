@@ -56,6 +56,7 @@ export class AgentMcpServerNotFoundError extends Error {
 @Injectable()
 export class EmptyAgentMcpRegistry implements AgentMcpRegistry {
   async listServers(_userId: string): Promise<readonly AgentMcpServerDescriptor[]> {
+    void _userId
     return []
   }
 
@@ -68,6 +69,7 @@ export class EmptyAgentMcpRegistry implements AgentMcpRegistry {
   }
 
   async listStatuses(_userId: string): Promise<readonly AgentMcpServerStatus[]> {
+    void _userId
     return []
   }
 
@@ -76,6 +78,8 @@ export class EmptyAgentMcpRegistry implements AgentMcpRegistry {
     serverId: string,
     _enabled: boolean,
   ): Promise<AgentMcpServerStatus> {
+    void _userId
+    void _enabled
     throw new AgentMcpServerNotFoundError(serverId)
   }
 }
