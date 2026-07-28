@@ -38,6 +38,20 @@ describe('AgentRunRepository', () => {
     )
   })
 
+  it('lists every active run for a user across different Threads', async () => {
+    const findMany = jest.fn().mockResolvedValue([{ id: 'run-b' }, { id: 'run-a' }])
+    const prisma = {
+      agentRun: { findMany },
+    } as unknown as PrismaService
+    const repository = new AgentRunRepository(prisma)
+
+    await expect(repository.listActiveForUser('user-a')).resolves.toHaveLength(2)
+    expect(findMany).toHaveBeenCalledWith({
+      where: { userId: 'user-a', status: { in: ['RUNNING', 'CANCELLING'] } },
+      orderBy: { createdAt: 'desc' },
+    })
+  })
+
   it('counts only active runs per user for the single-run constraint', async () => {
     const { count, repository } = setup()
     count.mockResolvedValue(1)

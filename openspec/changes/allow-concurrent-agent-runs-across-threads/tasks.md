@@ -5,7 +5,7 @@
 
 ## 2. SDK 与 Web 多运行状态
 
-- [ ] 2.1 将 Thread 列表契约升级为 `activeRuns`，更新 API mapper、SDK 解码和 contract tests
+- [x] 2.1 将 Thread 列表契约升级为 `activeRuns`，更新 API mapper、SDK 解码和 contract tests
 - [ ] 2.2 将 Web Workspace 升级为按 Thread 管理 active run，只禁用当前 Thread，并支持后台状态刷新、恢复和独立取消
 
 ## 3. 验收与交付

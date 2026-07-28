@@ -38,6 +38,7 @@ function setup() {
     findForOwner: jest.fn(),
     findActiveForThread: jest.fn(),
     findActiveForUser: jest.fn().mockResolvedValue(null),
+    listActiveForUser: jest.fn().mockResolvedValue([]),
     findLatestForThread: jest.fn().mockResolvedValue(null),
     countActiveForUser: jest.fn().mockResolvedValue(0),
   } as unknown as jest.Mocked<AgentRunRepository>
@@ -185,34 +186,57 @@ describe('AgentService', () => {
       pageSize: 20,
       total: 2,
       pageCount: 1,
-      activeRun: null,
+      activeRuns: [],
     })
     expect(threads.listForOwner).toHaveBeenCalledWith('user-a', { skip: 0, take: 20 })
   })
 
-  it('includes the user-global active run on the thread list page', async () => {
+  it('includes all user active runs on the thread list page', async () => {
     const { service, threads, runs } = setup()
     ;(threads.listForOwner as jest.Mock).mockResolvedValue({ rows: [threadRow()], total: 1 })
-    ;(runs.findActiveForUser as jest.Mock).mockResolvedValue({
-      id: 'run-live',
-      threadId: 'thread-1',
-      status: 'RUNNING',
-      limitReason: null,
-      usageUnknown: false,
-      inputTokens: 0,
-      outputTokens: 0,
-      totalTokens: 0,
-      estimatedCostCny: null,
-      modelCallCount: 0,
-      toolCallCount: 0,
-      webFetchCount: 0,
-      lastSequence: 0,
-      createdAt: new Date('2026-07-20T00:00:00.000Z'),
-      startedAt: new Date('2026-07-20T00:00:00.000Z'),
-      completedAt: null,
-    })
+    ;(runs.listActiveForUser as jest.Mock).mockResolvedValue([
+      {
+        id: 'run-live-a',
+        threadId: 'thread-1',
+        status: 'RUNNING',
+        limitReason: null,
+        usageUnknown: false,
+        inputTokens: 0,
+        outputTokens: 0,
+        totalTokens: 0,
+        estimatedCostCny: null,
+        modelCallCount: 0,
+        toolCallCount: 0,
+        webFetchCount: 0,
+        lastSequence: 0,
+        createdAt: new Date('2026-07-20T00:00:00.000Z'),
+        startedAt: new Date('2026-07-20T00:00:00.000Z'),
+        completedAt: null,
+      },
+      {
+        id: 'run-live-b',
+        threadId: 'thread-2',
+        status: 'CANCELLING',
+        limitReason: null,
+        usageUnknown: true,
+        inputTokens: 0,
+        outputTokens: 0,
+        totalTokens: 0,
+        estimatedCostCny: null,
+        modelCallCount: 1,
+        toolCallCount: 0,
+        webFetchCount: 0,
+        lastSequence: 2,
+        createdAt: new Date('2026-07-20T00:01:00.000Z'),
+        startedAt: new Date('2026-07-20T00:01:00.000Z'),
+        completedAt: null,
+      },
+    ])
     const page = await service.listThreads(user)
-    expect(page.activeRun).toEqual(expect.objectContaining({ id: 'run-live', status: 'running' }))
+    expect(page.activeRuns).toEqual([
+      expect.objectContaining({ id: 'run-live-a', status: 'running' }),
+      expect.objectContaining({ id: 'run-live-b', status: 'cancelling' }),
+    ])
   })
 
   it('returns an empty page when the owner has no threads', async () => {
@@ -225,7 +249,7 @@ describe('AgentService', () => {
       pageSize: 50,
       total: 0,
       pageCount: 0,
-      activeRun: null,
+      activeRuns: [],
     })
   })
 

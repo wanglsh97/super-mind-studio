@@ -222,7 +222,7 @@ describe('AgentClient threads and runs', () => {
             pageSize: 50,
             total: 1,
             pageCount: 1,
-            activeRun: null,
+            activeRuns: [],
           })
         }
         return Response.json({
@@ -262,13 +262,35 @@ describe('AgentClient threads and runs', () => {
           pageSize: 50,
           total: 1,
           pageCount: 1,
-          activeRun: null,
+          activeRuns: [
+            {
+              id: runId,
+              threadId,
+              status: 'running',
+              limitReason: null,
+              usage: {
+                inputTokens: null,
+                outputTokens: null,
+                totalTokens: null,
+                estimatedCostCny: null,
+                usageUnknown: true,
+                modelCalls: 0,
+                toolCalls: 0,
+                webFetchCalls: 0,
+              },
+              lastSequence: -1,
+              createdAt: '',
+              startedAt: null,
+              completedAt: null,
+            },
+          ],
         }),
     })
     const page = await client.agent.threads.list()
     assert.equal(page.items.length, 1)
     assert.equal(page.total, 1)
     assert.equal(page.pageSize, 50)
+    assert.equal(page.activeRuns.length, 1)
   })
 
   it('creates and cancels runs', async () => {

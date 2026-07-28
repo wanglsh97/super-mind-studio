@@ -213,8 +213,8 @@ export interface AgentThreadListPage {
   pageSize: number
   total: number
   pageCount: number
-  /** 当前用户全局至多一个进行中的 run；用于禁用所有 Composer 提交。 */
-  activeRun: AgentRunSummary | null
+  /** 当前用户在不同 Thread 中进行中的 runs。 */
+  activeRuns: AgentRunSummary[]
 }
 
 export interface AgentThreadSandbox {
