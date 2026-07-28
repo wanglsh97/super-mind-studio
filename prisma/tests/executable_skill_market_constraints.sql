@@ -4,13 +4,15 @@ BEGIN;
 
 INSERT INTO "User" (
   "id",
-  "githubId",
-  "githubUsername",
+  "authProvider",
+  "providerUserId",
+  "userName",
   "lastLoginAt",
   "updatedAt"
 ) VALUES
   (
     '00000000-0000-4000-8000-000000000101',
+    'ANONYMOUS',
     'skill-schema-user-1',
     'skill-schema-user-1',
     CURRENT_TIMESTAMP,
@@ -18,6 +20,7 @@ INSERT INTO "User" (
   ),
   (
     '00000000-0000-4000-8000-000000000102',
+    'ANONYMOUS',
     'skill-schema-user-2',
     'skill-schema-user-2',
     CURRENT_TIMESTAMP,

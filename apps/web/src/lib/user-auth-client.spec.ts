@@ -4,6 +4,8 @@ import { describe, it } from 'node:test'
 import {
   getUserSession,
   githubLoginUrl,
+  googleLoginUrl,
+  loginAnonymously,
   logoutUser,
   sanitizeUserReturnTo,
   UserAuthApiError,
@@ -28,6 +30,7 @@ describe('user auth login helpers', () => {
     assert.equal(sanitizeUserReturnTo(null), '/')
     assert.equal(sanitizeUserReturnTo('/chat/compare'), '/chat/compare')
     assert.equal(githubLoginUrl('/chat/compare'), '/api/v1/auth/github?returnTo=%2Fchat%2Fcompare')
+    assert.equal(googleLoginUrl('/chat/compare'), '/api/v1/auth/google?returnTo=%2Fchat%2Fcompare')
   })
 
   it('maps callback errors without exposing provider details', () => {
@@ -45,7 +48,7 @@ describe('user auth session client', () => {
       return Response.json(
         String(input).endsWith('/logout')
           ? { success: true }
-          : { user: { id: 'user-1', githubId: '1', githubUsername: 'octocat' } },
+          : { user: { id: 'user-1', authProvider: 'GITHUB', userName: 'octocat' } },
       )
     }
 
@@ -58,6 +61,34 @@ describe('user auth session client', () => {
         ['/api/v1/auth/logout', 'POST', 'same-origin'],
       ],
     )
+  })
+
+  it('posts anonymous login and returns the sanitized return path', async () => {
+    const mockFetch: typeof fetch = async (input, init) => {
+      assert.equal(String(input), '/api/v1/auth/anonymous?returnTo=%2Fchat%2Fcompare')
+      assert.equal(init?.method, 'POST')
+      assert.equal(init?.credentials, 'same-origin')
+      assert.equal(init?.body, undefined)
+      return Response.json({
+        user: {
+          id: 'anon-1',
+          authProvider: 'ANONYMOUS',
+          userName: 'Anonymous User',
+          avatarUrl: null,
+        },
+        returnTo: '/chat/compare',
+      })
+    }
+
+    await assert.deepEqual(await loginAnonymously('/chat/compare', mockFetch), {
+      user: {
+        id: 'anon-1',
+        authProvider: 'ANONYMOUS',
+        userName: 'Anonymous User',
+        avatarUrl: null,
+      },
+      returnTo: '/chat/compare',
+    })
   })
 
   it('returns a typed 401 for protected-page redirection', async () => {

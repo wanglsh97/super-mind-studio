@@ -3,7 +3,7 @@ import { Suspense } from 'react'
 
 import { LoginContent } from './login-content'
 
-export const metadata: Metadata = { title: 'Sign in with GitHub' }
+export const metadata: Metadata = { title: 'Sign in' }
 
 export default function LoginPage() {
   return (

@@ -204,14 +204,12 @@ function UserWorkspace({ children }: Readonly<{ children: ReactNode }>) {
                   avatarUrl={session.user.avatarUrl}
                   avatarFailed={avatarFailed}
                   onAvatarError={() => setAvatarFailed(true)}
-                  label={session.user.githubUsername.slice(0, 2).toUpperCase()}
+                  label={session.user.userName.slice(0, 2).toUpperCase()}
                 />
                 {!collapsed && (
                   <>
                     <div className="min-w-0 flex-1">
-                      <strong className="block truncate text-sm">
-                        {session.user.githubUsername}
-                      </strong>
+                      <strong className="block truncate text-sm">{session.user.userName}</strong>
                       <span className="mt-0.5 block text-[0.66rem] text-ink-faint">账户与设置</span>
                     </div>
                     <ChevronIcon className="size-4 shrink-0 text-ink-faint" />
@@ -228,7 +226,7 @@ function UserWorkspace({ children }: Readonly<{ children: ReactNode }>) {
               )}
             >
               <UserAvatar label={<UserIcon />} />
-              {!collapsed && <span>使用 GitHub 登录</span>}
+              {!collapsed && <span>登录</span>}
             </Link>
           ) : (
             <div

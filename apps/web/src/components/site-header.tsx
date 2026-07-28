@@ -55,7 +55,7 @@ export function SiteHeader() {
             <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white/75 p-1 pr-2 shadow-sm dark:border-white/10 dark:bg-white/5">
               <span className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-full bg-slate-200 text-[0.65rem] font-bold text-slate-700 dark:bg-slate-800 dark:text-slate-100">
                 {session.user.avatarUrl && !avatarFailed ? (
-                  // GitHub controls this HTTPS avatar URL; failure falls back to local initials.
+                  // OAuth providers control this HTTPS avatar URL; failure falls back to initials.
                   <img
                     src={session.user.avatarUrl}
                     alt=""
@@ -64,11 +64,11 @@ export function SiteHeader() {
                     onError={() => setAvatarFailed(true)}
                   />
                 ) : (
-                  session.user.githubUsername.slice(0, 2).toUpperCase()
+                  session.user.userName.slice(0, 2).toUpperCase()
                 )}
               </span>
               <span className="hidden max-w-32 truncate text-xs font-semibold md:inline">
-                {session.user.githubUsername}
+                {session.user.userName}
               </span>
               <button
                 type="button"
@@ -84,7 +84,7 @@ export function SiteHeader() {
               href={`/login?returnTo=${encodeURIComponent(sanitizeUserReturnTo(pathname))}`}
               className="rounded-full border border-[#ded9e8] bg-white/75 px-3 py-2 text-xs font-semibold shadow-sm transition hover:border-[#7057e8] hover:text-[#7057e8] dark:border-white/10 dark:bg-white/5"
             >
-              GitHub 登录
+              登录
             </Link>
           ) : null}
           <ThemeToggle />

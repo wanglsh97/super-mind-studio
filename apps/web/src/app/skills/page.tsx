@@ -264,7 +264,7 @@ export default function SkillsPage() {
         <section className="mt-8 rounded-3xl border border-dashed border-line p-16 text-center">
           <p className="font-semibold">登录后查看{view === 'added' ? '已添加' : '我的'} 技能</p>
           <Link className={cn(primaryButton, 'mt-5')} href="/login?returnTo=%2Fskills">
-            使用 GitHub 登录
+            登录
           </Link>
         </section>
       ) : view === 'mine' ? (
