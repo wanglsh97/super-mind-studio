@@ -97,11 +97,13 @@ sudo certbot certonly --standalone -d <域名>
 首次签发时 `80` 端口不能被其他进程占用。发布后，Nginx 会通过 `/var/www/certbot` 提供 ACME HTTP-01 challenge。将该证书的 Certbot renewal authenticator 改为 webroot，并执行一次 dry-run，确保续期不需要停止 Nginx：
 
 ```bash
-sudo certbot reconfigure --cert-name <域名> --webroot-path /var/www/certbot
-sudo certbot renew --dry-run
+sudo certbot reconfigure --cert-name <域名> --authenticator webroot --webroot-path /var/www/certbot
+sudo install -m 0755 infra/scripts/reload-nginx-after-cert-renewal.sh \
+  /etc/letsencrypt/renewal-hooks/deploy/reload-super-mind-nginx
+sudo certbot renew --dry-run --run-deploy-hooks --no-random-sleep-on-renew
 ```
 
-证书只读挂载到 Nginx；续期成功后执行 `docker compose ... exec -T nginx nginx -s reload` 让新证书生效。
+证书只读挂载到 Nginx；续期成功后，deploy hook 会向生产 Nginx 容器发送 `HUP`，无中断热加载新证书。
 
 ## 6. 首次发布
 
