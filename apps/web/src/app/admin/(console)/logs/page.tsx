@@ -2,10 +2,8 @@
 
 import {
   Alert,
-  Avatar,
   Button,
   Col,
-  DatePicker,
   Drawer,
   Form,
   Input,
@@ -13,6 +11,7 @@ import {
   Select,
   Space,
   Table,
+  Tag,
   Typography,
 } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
@@ -30,14 +29,12 @@ import type {
 const initialFilters: RequestLogFilters = { page: 1, pageSize: 20 }
 
 interface LogFilterFormValues {
-  capability?: string
+  requestId?: string
   status?: string
   model?: string
-  requestId?: string
-  githubUsername?: string
-  githubId?: string
-  from?: { toISOString?: () => string }
-  to?: { toISOString?: () => string }
+  authProvider?: string
+  userName?: string
+  providerUserId?: string
 }
 
 export default function AdminRequestLogsPage() {
@@ -80,14 +77,12 @@ export default function AdminRequestLogsPage() {
       page: 1,
       pageSize: 20,
     }
-    if (values.capability) next.capability = values.capability
+    if (values.requestId) next.requestId = values.requestId
     if (values.status) next.status = values.status
     if (values.model) next.model = values.model
-    if (values.requestId) next.requestId = values.requestId
-    if (values.githubUsername) next.githubUsername = values.githubUsername
-    if (values.githubId) next.githubId = values.githubId
-    if (values.from?.toISOString) next.from = values.from.toISOString()
-    if (values.to?.toISOString) next.to = values.to.toISOString()
+    if (values.authProvider) next.authProvider = values.authProvider
+    if (values.userName) next.userName = values.userName
+    if (values.providerUserId) next.providerUserId = values.providerUserId
     setFilters(next)
   }
 
@@ -125,35 +120,34 @@ export default function AdminRequestLogsPage() {
     {
       title: 'Request ID',
       dataIndex: 'requestId',
-      width: 280,
+      width: 180,
+      ellipsis: true,
       render: (value: string) => (
-        <Space size={4}>
-          <Typography.Link code onClick={() => openDetail(value)}>
-            {value.slice(0, 8)}…
-          </Typography.Link>
-          <Typography.Text copyable={{ text: value }} />
-        </Space>
+        <Typography.Link
+          title={value}
+          onClick={() => openDetail(value)}
+          style={{ fontFamily: 'monospace', whiteSpace: 'nowrap' }}
+        >
+          {abbreviateMiddle(value)}
+        </Typography.Link>
       ),
     },
     {
       title: '用户',
       key: 'user',
       width: 180,
-      render: (_, row) => (
-        <Space>
-          <Avatar size="small">{row.user.githubUsername.slice(0, 2).toUpperCase()}</Avatar>
-          <div>
-            <div>@{row.user.githubUsername}</div>
-            <Typography.Text type="secondary" style={{ fontSize: 11 }}>
-              {row.user.githubId}
-            </Typography.Text>
-          </div>
-        </Space>
-      ),
+      render: (_, row) => `${row.user.userName} · ${row.user.authProvider}`,
     },
-    { title: '能力', dataIndex: 'capability', width: 90 },
     { title: '模型', dataIndex: 'modelAlias', width: 100 },
-    { title: '状态', dataIndex: 'status', width: 100 },
+    {
+      title: '状态',
+      dataIndex: 'status',
+      width: 110,
+      render: (value: string) => {
+        const color = STATUS_TAG_COLORS[value.toLowerCase()] ?? 'default'
+        return <Tag color={color}>{value}</Tag>
+      },
+    },
     {
       title: '耗时',
       dataIndex: 'durationMs',
@@ -189,47 +183,37 @@ export default function AdminRequestLogsPage() {
         style={{ marginBottom: 16 }}
       >
         <Row gutter={16}>
-          <Col xs={24} sm={12} md={6}>
-            <Form.Item label="能力" name="capability">
-              <Select allowClear placeholder="全部" options={CAPABILITY_OPTIONS} />
-            </Form.Item>
-          </Col>
-          <Col xs={24} sm={12} md={6}>
-            <Form.Item label="状态" name="status">
-              <Select allowClear placeholder="全部" options={STATUS_OPTIONS} />
-            </Form.Item>
-          </Col>
-          <Col xs={24} sm={12} md={6}>
-            <Form.Item label="模型" name="model">
-              <Select allowClear placeholder="全部" options={MODEL_OPTIONS} />
-            </Form.Item>
-          </Col>
-          <Col xs={24} sm={12} md={6}>
+          <Col xs={24} sm={12} md={4}>
             <Form.Item label="Request ID" name="requestId">
               <Input placeholder="UUID" allowClear />
             </Form.Item>
           </Col>
-          <Col xs={24} sm={12} md={6}>
-            <Form.Item label="GitHub username" name="githubUsername">
-              <Input placeholder="octocat" allowClear />
+          <Col xs={24} sm={12} md={4}>
+            <Form.Item label="状态" name="status">
+              <Select allowClear placeholder="全部" options={STATUS_OPTIONS} />
             </Form.Item>
           </Col>
-          <Col xs={24} sm={12} md={6}>
-            <Form.Item label="GitHub ID" name="githubId">
-              <Input placeholder="数字 ID" allowClear />
+          <Col xs={24} sm={12} md={4}>
+            <Form.Item label="模型" name="model">
+              <Select allowClear placeholder="全部" options={MODEL_OPTIONS} />
             </Form.Item>
           </Col>
-          <Col xs={24} sm={12} md={6}>
-            <Form.Item label="开始时间" name="from">
-              <DatePicker showTime style={{ width: '100%' }} />
+          <Col xs={24} sm={12} md={4}>
+            <Form.Item label="登录方式" name="authProvider">
+              <Select allowClear placeholder="全部" options={AUTH_PROVIDER_OPTIONS} />
             </Form.Item>
           </Col>
-          <Col xs={24} sm={12} md={6}>
-            <Form.Item label="结束时间" name="to">
-              <DatePicker showTime style={{ width: '100%' }} />
+          <Col xs={24} sm={12} md={4}>
+            <Form.Item label="用户名称" name="userName">
+              <Input placeholder="不区分大小写" allowClear />
             </Form.Item>
           </Col>
-          <Col xs={24} sm={12} md={6}>
+          <Col xs={24} sm={12} md={4}>
+            <Form.Item label="Provider ID" name="providerUserId">
+              <Input placeholder="精确匹配" allowClear />
+            </Form.Item>
+          </Col>
+          <Col xs={24} sm={12} md={4}>
             <Form.Item label=" ">
               <Space>
                 <Button type="primary" htmlType="submit">
@@ -268,13 +252,7 @@ export default function AdminRequestLogsPage() {
         }}
       />
 
-      <Drawer
-        title="请求详情"
-        size={720}
-        open={detailOpen}
-        onClose={closeDetail}
-        destroyOnHidden
-      >
+      <Drawer title="请求详情" size={720} open={detailOpen} onClose={closeDetail} destroyOnHidden>
         {detailLoading ? (
           <Typography.Text type="secondary">正在加载详情…</Typography.Text>
         ) : detailError ? (
@@ -290,13 +268,11 @@ export default function AdminRequestLogsPage() {
 function DetailContent({ detail }: { detail: RequestLogDetail }) {
   const fields: Array<[string, unknown]> = [
     ['Request ID', detail.requestId],
-    ['GitHub username', `@${detail.user.githubUsername}`],
-    ['GitHub ID', detail.user.githubId],
+    ['登录方式', detail.user.authProvider],
+    ['用户名称', detail.user.userName],
+    ['Provider ID', detail.user.providerUserId],
     ['平台用户 ID', detail.user.id],
-    ['昵称', detail.user.displayName],
-    ['邮箱（仅管理员详情）', detail.user.email],
     ['状态', detail.status],
-    ['能力', detail.capability],
     ['模型 alias', detail.modelAlias],
     ['Provider', detail.provider],
     ['Resolved model', detail.resolvedModel],
@@ -311,7 +287,9 @@ function DetailContent({ detail }: { detail: RequestLogDetail }) {
           <Col key={label} xs={24} sm={12}>
             <Typography.Text type="secondary">{label}</Typography.Text>
             <div>
-              <Typography.Text>{value === null || value === undefined ? '—' : String(value)}</Typography.Text>
+              <Typography.Text>
+                {value === null || value === undefined ? '—' : String(value)}
+              </Typography.Text>
             </div>
           </Col>
         ))}
@@ -358,11 +336,10 @@ function JsonSection({ title, value }: { title: string; value: unknown }) {
   )
 }
 
-const CAPABILITY_OPTIONS = [
-  { value: 'chat', label: 'Chat' },
-  { value: 'image', label: '文生图' },
-  { value: 'prompt', label: 'Prompt' },
-]
+function abbreviateMiddle(value: string, head = 8, tail = 8): string {
+  if (value.length <= head + tail) return value
+  return `${value.slice(0, head)}**${value.slice(-tail)}`
+}
 
 const STATUS_OPTIONS = [
   { value: 'pending', label: 'Pending' },
@@ -370,6 +347,19 @@ const STATUS_OPTIONS = [
   { value: 'failed', label: 'Failed' },
   { value: 'cancelled', label: 'Cancelled' },
 ]
+
+const AUTH_PROVIDER_OPTIONS = [
+  { value: 'ANONYMOUS', label: 'Anonymous' },
+  { value: 'GITHUB', label: 'GitHub' },
+  { value: 'GOOGLE', label: 'Google' },
+]
+
+const STATUS_TAG_COLORS: Record<string, string> = {
+  pending: 'processing',
+  succeeded: 'success',
+  failed: 'error',
+  cancelled: 'default',
+}
 
 const MODEL_OPTIONS = ['qwen', 'glm', 'deepseek', 'kimi', 'wanxiang', 'cogview'].map((model) => ({
   value: model,

@@ -13,11 +13,13 @@ export class AdminRequestLogsController {
 
   @Get()
   @ApiQuery({
-    name: 'githubUsername',
+    name: 'authProvider',
     required: false,
-    description: 'GitHub username，不区分大小写',
+    enum: ['ANONYMOUS', 'GITHUB', 'GOOGLE'],
+    description: '登录来源',
   })
-  @ApiQuery({ name: 'githubId', required: false, description: 'GitHub 数字 ID，精确匹配' })
+  @ApiQuery({ name: 'userName', required: false, description: '用户名称，不区分大小写' })
+  @ApiQuery({ name: 'providerUserId', required: false, description: 'Provider ID，精确匹配' })
   list(@Query() query: RequestLogQueryDto) {
     return this.logs.list(query)
   }

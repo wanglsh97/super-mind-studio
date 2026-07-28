@@ -13,6 +13,7 @@ import {
 
 export const REQUEST_LOG_CAPABILITIES = ['chat', 'image', 'prompt'] as const
 export const REQUEST_LOG_STATUSES = ['pending', 'succeeded', 'failed', 'cancelled'] as const
+export const AUTH_PROVIDERS = ['ANONYMOUS', 'GITHUB', 'GOOGLE'] as const
 export const REQUEST_LOG_MODELS = [
   'qwen',
   'glm',
@@ -61,12 +62,15 @@ export class RequestLogQueryDto {
   declare requestId?: string
 
   @IsOptional()
-  @MaxLength(39)
-  @Matches(/^[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?$/)
-  declare githubUsername?: string
+  @IsIn(AUTH_PROVIDERS)
+  declare authProvider?: (typeof AUTH_PROVIDERS)[number]
 
   @IsOptional()
-  @MaxLength(32)
-  @Matches(/^\d+$/)
-  declare githubId?: string
+  @MaxLength(255)
+  declare userName?: string
+
+  @IsOptional()
+  @MaxLength(255)
+  @Matches(/^[^\u0000-\u001f\u007f]+$/)
+  declare providerUserId?: string
 }

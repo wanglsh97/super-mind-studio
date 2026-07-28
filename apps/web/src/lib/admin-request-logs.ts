@@ -9,14 +9,15 @@ export interface RequestLogFilters {
   model?: string
   status?: string
   requestId?: string
-  githubUsername?: string
-  githubId?: string
+  authProvider?: string
+  userName?: string
+  providerUserId?: string
 }
 
 export interface RequestLogUserSummary {
   id: string
-  githubId: string
-  githubUsername: string
+  authProvider: 'ANONYMOUS' | 'GITHUB' | 'GOOGLE'
+  userName: string
   avatarUrl: string | null
 }
 
@@ -64,8 +65,7 @@ export interface RequestLogDetail extends Omit<RequestLogListItem, 'billing'> {
   metadata: unknown
   updatedAt: string
   user: RequestLogUserSummary & {
-    displayName: string | null
-    email: string | null
+    providerUserId: string
   }
   billing: Record<string, unknown> | null
   imageTask: Record<string, unknown> | null

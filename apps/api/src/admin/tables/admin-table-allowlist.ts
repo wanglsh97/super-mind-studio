@@ -61,8 +61,7 @@ const field = (
   label: string,
   kind: AdminFieldKind,
   nullable = false,
-): AdminTableFieldCapability =>
-  Object.freeze({ name, label, kind, nullable, editable: false })
+): AdminTableFieldCapability => Object.freeze({ name, label, kind, nullable, editable: false })
 
 const relation = (
   field: string,
@@ -87,9 +86,9 @@ const capabilities: readonly AdminTableCapability[] = Object.freeze([
     ]),
     fields: Object.freeze([
       field('id', 'ID', 'string'),
-      field('githubId', 'GitHub ID', 'string'),
-      field('githubUsername', 'GitHub 用户名', 'string'),
-      field('displayName', '昵称', 'string', true),
+      field('authProvider', '登录方式', 'enum'),
+      field('providerUserId', 'Provider ID', 'string'),
+      field('userName', '用户名称', 'string'),
       field('avatarUrl', '头像 URL', 'string', true),
       field('email', '邮箱', 'string', true),
       field('lastLoginAt', '最近登录', 'datetime'),
@@ -103,9 +102,7 @@ const capabilities: readonly AdminTableCapability[] = Object.freeze([
     label: '用户会话',
     primaryKey: 'id',
     operations: QUERY_ONLY,
-    relations: Object.freeze([
-      relation('userId', 'users', 'id', '用户'),
-    ]),
+    relations: Object.freeze([relation('userId', 'users', 'id', '用户')]),
     fields: Object.freeze([
       field('id', 'ID', 'string'),
       field('userId', '用户 ID', 'string'),
@@ -162,9 +159,7 @@ const capabilities: readonly AdminTableCapability[] = Object.freeze([
     label: '计费明细',
     primaryKey: 'id',
     operations: QUERY_ONLY,
-    relations: Object.freeze([
-      relation('requestLogId', 'request-logs', 'id', '请求日志'),
-    ]),
+    relations: Object.freeze([relation('requestLogId', 'request-logs', 'id', '请求日志')]),
     fields: Object.freeze([
       field('id', 'ID', 'string'),
       field('requestLogId', 'RequestLog ID', 'string'),
@@ -317,9 +312,7 @@ const capabilities: readonly AdminTableCapability[] = Object.freeze([
     label: 'Agent 事件',
     primaryKey: 'id',
     operations: QUERY_ONLY,
-    relations: Object.freeze([
-      relation('runId', 'agent-runs', 'id', '运行'),
-    ]),
+    relations: Object.freeze([relation('runId', 'agent-runs', 'id', '运行')]),
     fields: Object.freeze([
       field('id', 'ID', 'string'),
       field('runId', '运行 ID', 'string'),
@@ -335,9 +328,7 @@ const capabilities: readonly AdminTableCapability[] = Object.freeze([
     label: 'Agent 工具调用',
     primaryKey: 'id',
     operations: QUERY_ONLY,
-    relations: Object.freeze([
-      relation('runId', 'agent-runs', 'id', '运行'),
-    ]),
+    relations: Object.freeze([relation('runId', 'agent-runs', 'id', '运行')]),
     fields: Object.freeze([
       field('id', 'ID', 'string'),
       field('runId', '运行 ID', 'string'),

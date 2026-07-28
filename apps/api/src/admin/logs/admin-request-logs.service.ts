@@ -47,20 +47,25 @@ export class AdminRequestLogsService {
       ...(query.model === undefined ? {} : { modelAlias: query.model }),
       ...(query.status === undefined ? {} : { status: STATUS[query.status] }),
       ...(query.requestId === undefined ? {} : { requestId: query.requestId }),
-      ...(query.githubUsername === undefined && query.githubId === undefined
+      ...(query.authProvider === undefined &&
+      query.userName === undefined &&
+      query.providerUserId === undefined
         ? {}
         : {
             user: {
               is: {
-                ...(query.githubUsername === undefined
+                ...(query.authProvider === undefined ? {} : { authProvider: query.authProvider }),
+                ...(query.userName === undefined
                   ? {}
                   : {
-                      githubUsername: {
-                        equals: query.githubUsername,
+                      userName: {
+                        equals: query.userName,
                         mode: 'insensitive' as const,
                       },
                     }),
-                ...(query.githubId === undefined ? {} : { githubId: query.githubId }),
+                ...(query.providerUserId === undefined
+                  ? {}
+                  : { providerUserId: query.providerUserId }),
               },
             },
           }),
@@ -87,8 +92,8 @@ export class AdminRequestLogsService {
           user: {
             select: {
               id: true,
-              githubId: true,
-              githubUsername: true,
+              authProvider: true,
+              userName: true,
               avatarUrl: true,
             },
           },
@@ -104,7 +109,13 @@ export class AdminRequestLogsService {
         },
       }),
     ])
-    return { items: serializeAdminRows(items), page, pageSize, total, pageCount: Math.ceil(total / pageSize) }
+    return {
+      items: serializeAdminRows(items),
+      page,
+      pageSize,
+      total,
+      pageCount: Math.ceil(total / pageSize),
+    }
   }
 
   async detail(requestId: string) {
@@ -137,11 +148,10 @@ export class AdminRequestLogsService {
         user: {
           select: {
             id: true,
-            githubId: true,
-            githubUsername: true,
-            displayName: true,
+            authProvider: true,
+            providerUserId: true,
+            userName: true,
             avatarUrl: true,
-            email: true,
           },
         },
         billing: true,

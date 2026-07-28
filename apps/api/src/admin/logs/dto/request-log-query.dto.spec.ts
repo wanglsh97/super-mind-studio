@@ -13,6 +13,9 @@ describe('RequestLogQueryDto', () => {
       model: 'deepseek',
       status: 'pending',
       requestId: '00000000-0000-4000-8000-000000000208',
+      authProvider: 'GOOGLE',
+      userName: 'Example User',
+      providerUserId: 'google-subject',
     })
 
     await expect(validate(query)).resolves.toHaveLength(0)
@@ -27,6 +30,8 @@ describe('RequestLogQueryDto', () => {
     { status: 'running' },
     { requestId: 'not-a-uuid' },
     { from: 'not-a-date' },
+    { authProvider: 'PASSWORD' },
+    { providerUserId: 'invalid\u0000id' },
   ])('rejects invalid filter %#', async (input) => {
     await expect(validate(plainToInstance(RequestLogQueryDto, input))).resolves.not.toHaveLength(0)
   })

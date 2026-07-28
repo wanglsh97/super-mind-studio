@@ -88,7 +88,7 @@ describe('Public/admin Prompt privacy E2E', () => {
     expect(cookie).toBeTruthy()
 
     const usernameLogsResponse = await fetch(
-      `${baseUrl}/api/v1/admin/logs?githubUsername=FIXTURE-OCTOCAT`,
+      `${baseUrl}/api/v1/admin/logs?authProvider=GITHUB&userName=FIXTURE-OCTOCAT`,
       { headers: { cookie: cookie ?? '' } },
     )
     expect(usernameLogsResponse.status).toBe(200)
@@ -98,8 +98,8 @@ describe('Public/admin Prompt privacy E2E', () => {
         requestId: string
         user: {
           id: string
-          githubId: string
-          githubUsername: string
+          authProvider: string
+          userName: string
           avatarUrl: string | null
         }
       }>
@@ -107,33 +107,34 @@ describe('Public/admin Prompt privacy E2E', () => {
     expect(usernameLogs.total).toBe(1)
     expect(usernameLogs.items[0]?.user).toMatchObject({
       id: expect.any(String),
-      githubId: FIXTURE_GITHUB_ID,
-      githubUsername: FIXTURE_USER_IDENTITY.githubUsername,
+      authProvider: 'GITHUB',
+      userName: FIXTURE_USER_IDENTITY.userName,
       avatarUrl: FIXTURE_USER_IDENTITY.avatarUrl,
     })
     expect(JSON.stringify(usernameLogs)).not.toContain(FIXTURE_USER_IDENTITY.email)
     expect(JSON.stringify(usernameLogs)).not.toContain(secretPrompt)
 
-    const githubIdLogsResponse = await fetch(
-      `${baseUrl}/api/v1/admin/logs?githubId=${FIXTURE_GITHUB_ID}`,
+    const providerIdLogsResponse = await fetch(
+      `${baseUrl}/api/v1/admin/logs?providerUserId=${FIXTURE_GITHUB_ID}`,
       { headers: { cookie: cookie ?? '' } },
     )
-    expect(githubIdLogsResponse.status).toBe(200)
-    await expect(githubIdLogsResponse.json()).resolves.toMatchObject({ total: 1 })
+    expect(providerIdLogsResponse.status).toBe(200)
+    await expect(providerIdLogsResponse.json()).resolves.toMatchObject({ total: 1 })
 
     const detailResponse = await fetch(
       `${baseUrl}/api/v1/admin/logs/${usernameLogs.items[0]?.requestId}`,
       { headers: { cookie: cookie ?? '' } },
     )
     expect(detailResponse.status).toBe(200)
-    await expect(detailResponse.json()).resolves.toMatchObject({
+    const detailBody = await detailResponse.json()
+    expect(detailBody).toMatchObject({
       user: {
-        githubId: FIXTURE_GITHUB_ID,
-        githubUsername: FIXTURE_USER_IDENTITY.githubUsername,
-        displayName: FIXTURE_USER_IDENTITY.displayName,
-        email: FIXTURE_USER_IDENTITY.email,
+        authProvider: 'GITHUB',
+        providerUserId: FIXTURE_GITHUB_ID,
+        userName: FIXTURE_USER_IDENTITY.userName,
       },
     })
+    expect(JSON.stringify(detailBody)).not.toContain(FIXTURE_USER_IDENTITY.email)
 
     for (const path of ['overview', 'trends', 'latencies', 'errors']) {
       const response = await fetch(`${baseUrl}/api/v1/admin/dashboard/${path}`, {

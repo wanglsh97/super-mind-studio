@@ -13,8 +13,9 @@ describe('loadRequestLogs', () => {
         pageSize: 25,
         status: 'failed',
         model: '',
-        githubUsername: 'octocat',
-        githubId: '12345678',
+        authProvider: 'GITHUB',
+        userName: 'octocat',
+        providerUserId: '12345678',
       },
       async (input, init) => {
         call = { url: String(input), ...(init === undefined ? {} : { init }) }
@@ -24,7 +25,7 @@ describe('loadRequestLogs', () => {
 
     assert.equal(
       call?.url,
-      '/api/v1/admin/logs?page=2&pageSize=25&status=failed&githubUsername=octocat&githubId=12345678',
+      '/api/v1/admin/logs?page=2&pageSize=25&status=failed&authProvider=GITHUB&userName=octocat&providerUserId=12345678',
     )
     assert.equal(call?.init?.credentials, 'same-origin')
   })

@@ -2,20 +2,18 @@ import type { PrismaService } from '../../database/prisma.service'
 import { AdminRequestLogsService } from './admin-request-logs.service'
 
 function setup() {
-  const count = jest.fn().mockReturnValue('count-query')
-  const findMany = jest.fn().mockReturnValue('items-query')
+  const count = jest.fn().mockResolvedValue(2)
+  const findMany = jest.fn().mockResolvedValue([{ requestId: 'request-1' }])
   const findUnique = jest.fn()
-  const transaction = jest.fn().mockResolvedValue([2, [{ requestId: 'request-1' }]])
   const prisma = {
     requestLog: { count, findMany, findUnique },
-    $transaction: transaction,
   } as unknown as PrismaService
-  return { count, findMany, findUnique, service: new AdminRequestLogsService(prisma), transaction }
+  return { count, findMany, findUnique, service: new AdminRequestLogsService(prisma) }
 }
 
 describe('AdminRequestLogsService', () => {
   it('combines filters, paginates, and never selects Prompt', async () => {
-    const { count, findMany, service, transaction } = setup()
+    const { count, findMany, service } = setup()
 
     await expect(
       service.list({
@@ -27,8 +25,9 @@ describe('AdminRequestLogsService', () => {
         model: 'qwen',
         status: 'failed',
         requestId: '00000000-0000-4000-8000-000000000208',
-        githubUsername: 'Fixture-Octocat',
-        githubId: '90000001',
+        authProvider: 'GITHUB',
+        userName: 'Fixture-Octocat',
+        providerUserId: '90000001',
       }),
     ).resolves.toEqual({
       items: [{ requestId: 'request-1' }],
@@ -49,8 +48,9 @@ describe('AdminRequestLogsService', () => {
       requestId: '00000000-0000-4000-8000-000000000208',
       user: {
         is: {
-          githubUsername: { equals: 'Fixture-Octocat', mode: 'insensitive' },
-          githubId: '90000001',
+          authProvider: 'GITHUB',
+          userName: { equals: 'Fixture-Octocat', mode: 'insensitive' },
+          providerUserId: '90000001',
         },
       },
     }
@@ -63,8 +63,8 @@ describe('AdminRequestLogsService', () => {
           user: {
             select: {
               id: true,
-              githubId: true,
-              githubUsername: true,
+              authProvider: true,
+              userName: true,
               avatarUrl: true,
             },
           },
@@ -72,7 +72,6 @@ describe('AdminRequestLogsService', () => {
       }),
     )
     expect(JSON.stringify(findMany.mock.calls)).not.toContain('email')
-    expect(transaction).toHaveBeenCalledWith(['count-query', 'items-query'])
   })
 
   it('uses bounded defaults and rejects an inverted time range before querying', async () => {
@@ -108,11 +107,10 @@ describe('AdminRequestLogsService', () => {
           user: {
             select: {
               id: true,
-              githubId: true,
-              githubUsername: true,
-              displayName: true,
+              authProvider: true,
+              providerUserId: true,
+              userName: true,
               avatarUrl: true,
-              email: true,
             },
           },
           billing: true,
@@ -122,16 +120,16 @@ describe('AdminRequestLogsService', () => {
     )
   })
 
-  it('filters usernames case-insensitively when no GitHub ID is supplied', async () => {
+  it('filters user names case-insensitively when no provider ID is supplied', async () => {
     const { count, service } = setup()
 
-    await service.list({ githubUsername: 'Fixture-Octocat' })
+    await service.list({ userName: 'Fixture-Octocat' })
 
     expect(count).toHaveBeenCalledWith({
       where: {
         user: {
           is: {
-            githubUsername: { equals: 'Fixture-Octocat', mode: 'insensitive' },
+            userName: { equals: 'Fixture-Octocat', mode: 'insensitive' },
           },
         },
       },

@@ -18,7 +18,7 @@
 
 - [x] 3.1 将 Web Session profile、导航和用户展示迁移到 `authProvider/userName/avatarUrl`，移除所有 `github*` 业务字段
 - [x] 3.2 登录页新增 Google 入口，将匿名登录改为无 fingerprint 请求，并覆盖三入口 loading/error/returnTo 测试
-- [ ] 3.3 将管理员日志 API 与页面改为通用用户摘要及 provider/userName/providerUserId 筛选，普通 Session 不返回 Provider ID 或 email
+- [x] 3.3 将管理员日志 API 与页面改为通用用户摘要及 provider/userName/providerUserId 筛选，普通 Session 不返回 Provider ID 或 email
 
 ## 4. 文档与验收
 
