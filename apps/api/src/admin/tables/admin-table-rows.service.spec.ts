@@ -79,159 +79,23 @@ describe('AdminTableRowsService', () => {
     await expect(service.list('request-logs', { sortBy: 'DROP TABLE' })).rejects.toMatchObject({
       status: 400,
     })
-    await expect(service.list('users', {})).rejects.toMatchObject({ status: 404 })
+    await expect(service.list('not-a-table', {})).rejects.toMatchObject({ status: 404 })
     expect(requestLog.findMany).not.toHaveBeenCalled()
   })
 
-  it('validates fields then updates and writes its audit in the same transaction', async () => {
-    const { adminAuditLog, billingRecord, service, transaction } = setup()
-
-    await expect(
-      service.update(
-        'billing-records',
-        '00000000-0000-4000-8000-000000000212',
-        { inputTokens: 2, estimatedCostCny: '0.12000000' },
-        {
-          actor: 'root',
-          requestId: '00000000-0000-4000-8000-000000000999',
-          sourceIp: '127.0.0.1',
-        },
-      ),
-    ).resolves.toMatchObject({ inputTokens: 2 })
-    expect(transaction).toHaveBeenCalledTimes(1)
-    expect(billingRecord.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: { inputTokens: 2, estimatedCostCny: '0.12000000' },
-      }),
-    )
-    expect(adminAuditLog.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          actor: 'root',
-          action: 'UPDATE',
-          targetTable: 'billing-records',
-          beforeData: expect.any(Object),
-          afterData: expect.any(Object),
-        }),
-      }),
-    )
-  })
-
-  it('rejects immutable fields, malformed values, audit mutation, and missing records', async () => {
-    const { billingRecord, service, transaction } = setup()
-
-    await expect(
-      service.update(
-        'billing-records',
-        '00000000-0000-4000-8000-000000000212',
-        { id: 'x' },
-        { actor: 'root' },
-      ),
-    ).rejects.toMatchObject({ status: 400 })
-    await expect(
-      service.update(
-        'billing-records',
-        '00000000-0000-4000-8000-000000000212',
-        { inputTokens: -1 },
-        { actor: 'root' },
-      ),
-    ).rejects.toMatchObject({ status: 400 })
-    await expect(
-      service.update(
-        'admin-audit-logs',
-        '00000000-0000-4000-8000-000000000212',
-        { actor: 'intruder' },
-        { actor: 'root' },
-      ),
-    ).rejects.toMatchObject({ status: 400 })
-    await expect(
-      service.delete('admin-audit-logs', '00000000-0000-4000-8000-000000000212', { actor: 'root' }),
-    ).rejects.toMatchObject({ status: 400 })
-    expect(transaction).not.toHaveBeenCalled()
-
-    billingRecord.findUnique.mockResolvedValueOnce(null)
-    await expect(
-      service.delete('billing-records', '00000000-0000-4000-8000-000000000212', { actor: 'root' }),
-    ).rejects.toMatchObject({ status: 404 })
-    expect(billingRecord.delete).not.toHaveBeenCalled()
-  })
-
-  it('deletes an allowed row and records a delete snapshot atomically', async () => {
-    const { adminAuditLog, imageGenerationTask, service, transaction } = setup()
-
-    await expect(
-      service.delete('image-generation-tasks', '00000000-0000-4000-8000-000000000212', {
-        actor: 'root',
-      }),
-    ).resolves.toEqual({ deleted: true, id: '00000000-0000-4000-8000-000000000212' })
-    expect(transaction).toHaveBeenCalledTimes(1)
-    expect(imageGenerationTask.delete).toHaveBeenCalled()
-    expect(adminAuditLog.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ action: 'DELETE', afterData: expect.anything() }),
-      }),
-    )
-  })
-
-  it('rejects the update transaction when its audit snapshot cannot be persisted', async () => {
-    const context = setup()
-    const auditFailure = new Error('audit persistence failed')
-    context.adminAuditLog.create.mockRejectedValueOnce(auditFailure)
-
-    await expect(
-      context.service.update(
-        'billing-records',
-        '00000000-0000-4000-8000-000000000212',
-        { inputTokens: 3 },
-        { actor: 'root' },
-      ),
-    ).rejects.toBe(auditFailure)
-
-    expect(context.transaction).toHaveBeenCalledTimes(1)
-    expect(context.billingRecord.update).toHaveBeenCalledTimes(1)
-    expect(context.adminAuditLog.create).toHaveBeenCalledTimes(1)
-  })
-
-  it('rejects the delete transaction when its audit snapshot cannot be persisted', async () => {
-    const context = setup()
-    const auditFailure = new Error('audit persistence failed')
-    context.adminAuditLog.create.mockRejectedValueOnce(auditFailure)
-
-    await expect(
-      context.service.delete('image-generation-tasks', '00000000-0000-4000-8000-000000000212', {
-        actor: 'root',
-      }),
-    ).rejects.toBe(auditFailure)
-
-    expect(context.transaction).toHaveBeenCalledTimes(1)
-    expect(context.imageGenerationTask.delete).toHaveBeenCalledTimes(1)
-    expect(context.adminAuditLog.create).toHaveBeenCalledTimes(1)
-  })
-
-  it('deletes a request billing relation in the same transaction and rejects a repeated delete', async () => {
+  it('rejects create, update, and delete for the read-only table browser', async () => {
     const context = setup()
     const id = '00000000-0000-4000-8000-000000000212'
 
-    await expect(context.service.delete('request-logs', id, { actor: 'root' })).resolves.toEqual({
-      deleted: true,
-      id,
-    })
-
-    expect(context.transaction).toHaveBeenCalledTimes(1)
-    expect(context.billingRecord.deleteMany).toHaveBeenCalledWith({
-      where: { requestLogId: id },
-    })
-    expect(context.requestLog.delete).toHaveBeenCalledWith({ where: { id } })
-    expect(context.adminAuditLog.create).toHaveBeenCalledTimes(1)
-
-    context.requestLog.findUnique.mockResolvedValueOnce(null)
+    await expect(
+      context.service.create('billing-records', { inputTokens: 1 }, { actor: 'root' }),
+    ).rejects.toMatchObject({ status: 400 })
+    await expect(
+      context.service.update('billing-records', id, { inputTokens: 2 }, { actor: 'root' }),
+    ).rejects.toMatchObject({ status: 400 })
     await expect(
       context.service.delete('request-logs', id, { actor: 'root' }),
-    ).rejects.toMatchObject({ status: 404 })
-
-    expect(context.transaction).toHaveBeenCalledTimes(2)
-    expect(context.billingRecord.deleteMany).toHaveBeenCalledTimes(1)
-    expect(context.requestLog.delete).toHaveBeenCalledTimes(1)
-    expect(context.adminAuditLog.create).toHaveBeenCalledTimes(1)
+    ).rejects.toMatchObject({ status: 400 })
+    expect(context.transaction).not.toHaveBeenCalled()
   })
 })
