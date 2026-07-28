@@ -4,7 +4,7 @@
 
 - [x] 1.1 建立并 strict 校验 `generalize-user-auth-providers` change，记录三身份独立、匿名一次性身份、统一权限和不兼容数据库重置边界
 - [x] 1.2 更新 Prisma `User` 为通用字段和 `(authProvider, providerUserId)` 唯一约束，创建正式 migration 并生成 Prisma client
-- [ ] 1.3 新增 `UserModule`、通用身份输入和 `UserService`，覆盖三 Provider 创建、OAuth upsert、资料刷新和相同邮箱不合并测试
+- [x] 1.3 新增 `UserModule`、通用身份输入和 `UserService`，覆盖三 Provider 创建、OAuth upsert、资料刷新和相同邮箱不合并测试
 
 ## 2. API 登录与 Session
 
