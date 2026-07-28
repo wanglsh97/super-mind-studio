@@ -166,3 +166,4 @@
 - [x] 3.31 移除移动端导航和窄屏重排入口，将用户端固定为最低 1366px 的 PC-only 桌面布局
 - [x] 3.32 将产品品牌统一为 Super Mind Studio，将 workspace SDK scope 迁移为 `@supermind/sdk`，并保留 AI Gateway 作为底层技术模块
 - [x] 3.33 为 assistant-ui 消息 Markdown 增加 fenced SVG 安全预览，流式未闭合时保留源码并阻止脚本、外部资源和原始 HTML
+- [x] 3.34 修复 LocalRuntime 流式生成与会话历史同步竞态，运行期间禁止重置消息仓库并在结束后重新水合

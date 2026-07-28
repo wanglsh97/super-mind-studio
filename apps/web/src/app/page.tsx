@@ -64,6 +64,7 @@ import {
   type AgentRunMetadata as AgentRunMetadataType,
 } from './agent/agent-run-adapter'
 import { shouldStartNewThreadOnModelChange } from './agent/agent-model-policy'
+import { resetThreadIfIdle } from './agent/agent-thread-hydration'
 import {
   foldEventsFromCursor,
   isResumableActiveRun,
@@ -526,6 +527,7 @@ function ThreadHydrator({
   onSandboxSnapshot: (sandbox: AgentThreadSandbox | null) => void
 }) {
   const api = useAui()
+  const isLocalRunRunning = useAuiState(({ thread }) => thread.isRunning)
   const activeThreadId = useAgentActiveThreadId()
   const { setSelectedModel, setUserActiveRun, refreshThreads } = useAgentWorkspace()
   const handleAuthenticationFailure = useAuthenticationFailure()
@@ -534,6 +536,10 @@ function ThreadHydrator({
   const [resumeNotice, setResumeNotice] = useState<string | null>(null)
 
   useEffect(() => {
+    // LocalRuntime owns the message repository for the duration of a local run.
+    // Re-run hydration after runEnd instead of invalidating its parent-message chain.
+    if (isLocalRunRunning) return
+
     if (skipHydrationRef.current) {
       skipHydrationRef.current = false
       return
@@ -545,7 +551,7 @@ function ThreadHydrator({
     void (async () => {
       try {
         if (!activeThreadId) {
-          api.thread().reset([])
+          resetThreadIfIdle(api.thread(), [])
           setInterruptedNotice(null)
           setResumeNotice(null)
           onContextBudget(null)
@@ -566,7 +572,9 @@ function ThreadHydrator({
           setUserActiveRun(thread.activeRun)
           setInterruptedNotice(null)
           setResumeNotice('运行仍在进行，正在按事件游标恢复…')
-          api.thread().reset(agentMessagesToThreadMessages(thread.messages))
+          if (!resetThreadIfIdle(api.thread(), agentMessagesToThreadMessages(thread.messages))) {
+            return
+          }
 
           let view = initialAgentRunViewState()
           let afterSequence = -1
@@ -586,13 +594,16 @@ function ThreadHydrator({
               onSandboxStatus(event.status, event.sandboxId)
             }
             afterSequence = event.sequence
-            api
-              .thread()
-              .reset(
+            if (
+              !resetThreadIfIdle(
+                api.thread(),
                 agentMessagesToThreadMessages(
                   mergeThreadMessagesWithRunView(thread.messages, view),
                 ),
               )
+            ) {
+              return
+            }
             if (event.type === 'run-terminal') {
               if (!sandboxFailed && sandboxId) {
                 onSandboxSnapshot({
@@ -620,7 +631,8 @@ function ThreadHydrator({
         if (thread.activeRun) setUserActiveRun(thread.activeRun)
         else setUserActiveRun(null)
         onSandboxSnapshot(thread.sandbox)
-        api.thread().reset(
+        resetThreadIfIdle(
+          api.thread(),
           agentMessagesToThreadMessages(thread.messages, {
             lastRunStatus: thread.lastRun?.status ?? null,
           }),
@@ -634,7 +646,7 @@ function ThreadHydrator({
       cancelled = true
       resumeAbort.abort()
     }
-  }, [activeThreadId])
+  }, [activeThreadId, isLocalRunRunning])
 
   if (interruptedNotice) return <AgentInterruptedBanner message={interruptedNotice} />
   if (resumeNotice) return <AgentInterruptedBanner message={resumeNotice} />
