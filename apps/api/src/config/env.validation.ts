@@ -62,6 +62,14 @@ const environmentSchema = z
       .url()
       .default('http://localhost:3001/api/v1/auth/github/callback'),
     GITHUB_OAUTH_HTTP_TIMEOUT_MS: z.coerce.number().int().min(1_000).max(30_000).default(10_000),
+    GOOGLE_OAUTH_ENABLED: booleanFromEnv.default(false),
+    GOOGLE_CLIENT_ID: optionalSecret,
+    GOOGLE_CLIENT_SECRET: optionalSecret,
+    GOOGLE_CALLBACK_URL: z
+      .string()
+      .url()
+      .default('http://localhost:3001/api/v1/auth/google/callback'),
+    GOOGLE_OAUTH_HTTP_TIMEOUT_MS: z.coerce.number().int().min(1_000).max(30_000).default(10_000),
     USER_SESSION_SECRET: userSessionSecret,
     USER_SESSION_TTL_SECONDS: z.coerce.number().int().default(2_592_000),
     SKILL_OBJECT_STORE_DRIVER: z.enum(['memory', 'oss']).default('memory'),
@@ -234,12 +242,21 @@ const environmentSchema = z
         })
       }
     }
-    if (env.NODE_ENV === 'production' && !env.GITHUB_OAUTH_ENABLED) {
-      context.addIssue({
-        code: 'custom',
-        path: ['GITHUB_OAUTH_ENABLED'],
-        message: '生产环境必须启用 GitHub OAuth',
-      })
+    if (env.GOOGLE_OAUTH_ENABLED) {
+      if (!env.GOOGLE_CLIENT_ID) {
+        context.addIssue({
+          code: 'custom',
+          path: ['GOOGLE_CLIENT_ID'],
+          message: '启用 Google OAuth 时必须配置 Client ID',
+        })
+      }
+      if (!env.GOOGLE_CLIENT_SECRET) {
+        context.addIssue({
+          code: 'custom',
+          path: ['GOOGLE_CLIENT_SECRET'],
+          message: '启用 Google OAuth 时必须配置 Client Secret',
+        })
+      }
     }
     if (
       env.NODE_ENV === 'production' &&
@@ -251,11 +268,26 @@ const environmentSchema = z
         message: '生产环境必须配置独立的用户会话密钥',
       })
     }
-    if (env.NODE_ENV === 'production' && !env.GITHUB_CALLBACK_URL.startsWith('https://')) {
+    if (
+      env.NODE_ENV === 'production' &&
+      env.GITHUB_OAUTH_ENABLED &&
+      !env.GITHUB_CALLBACK_URL.startsWith('https://')
+    ) {
       context.addIssue({
         code: 'custom',
         path: ['GITHUB_CALLBACK_URL'],
         message: '生产环境 GitHub callback 必须使用 HTTPS',
+      })
+    }
+    if (
+      env.NODE_ENV === 'production' &&
+      env.GOOGLE_OAUTH_ENABLED &&
+      !env.GOOGLE_CALLBACK_URL.startsWith('https://')
+    ) {
+      context.addIssue({
+        code: 'custom',
+        path: ['GOOGLE_CALLBACK_URL'],
+        message: '生产环境 Google callback 必须使用 HTTPS',
       })
     }
     if (

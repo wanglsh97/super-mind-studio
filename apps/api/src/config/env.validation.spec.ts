@@ -27,6 +27,11 @@ describe('validateEnvironment', () => {
       'http://localhost:3001/api/v1/auth/github/callback',
     )
     expect(environment.GITHUB_OAUTH_HTTP_TIMEOUT_MS).toBe(10_000)
+    expect(environment.GOOGLE_OAUTH_ENABLED).toBe(false)
+    expect(environment.GOOGLE_CALLBACK_URL).toBe(
+      'http://localhost:3001/api/v1/auth/google/callback',
+    )
+    expect(environment.GOOGLE_OAUTH_HTTP_TIMEOUT_MS).toBe(10_000)
     expect(environment.USER_SESSION_TTL_SECONDS).toBe(2_592_000)
     expect(environment.CHAT_RATE_LIMIT_PER_MINUTE).toBe(10)
     expect(environment.CHAT_MAX_TOKENS).toBe(4096)
@@ -286,6 +291,21 @@ describe('validateEnvironment', () => {
     ).toThrow('GITHUB_CLIENT_ID')
   })
 
+  it('requires Google credentials only when Google OAuth is enabled', () => {
+    expect(() =>
+      validateEnvironment({ ...requiredEnvironment, GOOGLE_OAUTH_ENABLED: 'true' }),
+    ).toThrow('GOOGLE_CLIENT_ID')
+
+    expect(() =>
+      validateEnvironment({
+        ...requiredEnvironment,
+        GOOGLE_OAUTH_ENABLED: 'true',
+        GOOGLE_CLIENT_ID: 'google-client-id',
+        GOOGLE_CLIENT_SECRET: 'google-client-secret',
+      }),
+    ).not.toThrow()
+  })
+
   it('enforces the fixed 30-day user session lifetime', () => {
     expect(() =>
       validateEnvironment({ ...requiredEnvironment, USER_SESSION_TTL_SECONDS: '3600' }),
@@ -314,6 +334,18 @@ describe('validateEnvironment', () => {
         GITHUB_CLIENT_ID: 'github-client-id',
         GITHUB_CLIENT_SECRET: 'github-client-secret',
         GITHUB_CALLBACK_URL: 'https://example.com/api/v1/auth/github/callback',
+        USER_SESSION_SECRET: 'production-user-session-secret-with-32-characters',
+        ADMIN_SESSION_SECRET: 'production-session-secret-with-32-characters',
+        ADMIN_FIXED_CREDENTIALS_ENABLED: 'false',
+      }),
+    ).not.toThrow()
+  })
+
+  it('allows production to run with anonymous login while OAuth providers are disabled', () => {
+    expect(() =>
+      validateEnvironment({
+        ...requiredEnvironment,
+        NODE_ENV: 'production',
         USER_SESSION_SECRET: 'production-user-session-secret-with-32-characters',
         ADMIN_SESSION_SECRET: 'production-session-secret-with-32-characters',
         ADMIN_FIXED_CREDENTIALS_ENABLED: 'false',
