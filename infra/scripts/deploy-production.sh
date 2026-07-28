@@ -96,13 +96,10 @@ if [ "$skill_object_store_driver" != 'oss' ]; then
   echo '生产环境 SKILL_OBJECT_STORE_DRIVER 必须为 oss。' >&2
   exit 1
 fi
-case "$oss_region" in
-  oss-*) ;;
-  *)
-    echo 'OSS_REGION 必须使用 OSS Region ID，例如 oss-cn-hangzhou。' >&2
-    exit 1
-    ;;
-esac
+if [ -z "$oss_region" ]; then
+  echo 'OSS_REGION 不能为空。' >&2
+  exit 1
+fi
 case "$oss_endpoint" in
   https://*) ;;
   *)

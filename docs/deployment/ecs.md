@@ -66,7 +66,7 @@ nano .env.production
 - `GOOGLE_CLIENT_ID`、`GOOGLE_CLIENT_SECRET`：只使用独立的生产 OAuth Client，不能复用开发 Client。
 - `GOOGLE_CALLBACK_URL`：必须精确为 `https://<DOMAIN>/api/v1/auth/google/callback`，并在 Google Cloud Console 中配置同一个 redirect URI。
 - `USER_SESSION_SECRET`：至少 32 个随机字符；`USER_SESSION_TTL_SECONDS` 必须保持 `2592000`。
-- `SKILL_OBJECT_STORE_DRIVER=oss`，并配置私有 Bucket 的 `OSS_REGION`、`OSS_BUCKET`、RAM AccessKey 和公网 HTTPS `OSS_ENDPOINT`。Node.js SDK 的杭州 Region ID 必须写为 `oss-cn-hangzhou`，不能写成 `cn-hangzhou`。
+- `SKILL_OBJECT_STORE_DRIVER=oss`，并配置私有 Bucket 的 `OSS_REGION`、`OSS_BUCKET`、RAM AccessKey 和公网 HTTPS `OSS_ENDPOINT`。当前 `ali-oss` 同时接受 `cn-hangzhou` 和 `oss-cn-hangzhou`，模板采用官方文档常用的后者。
 - `OSS_INTERNAL=false`：Skill 包由用户浏览器直传，签名 URL 不能使用仅 ECS 可达的内网 Endpoint。
 - `ADMIN_SESSION_SECRET`：与用户 Session Secret 不同的随机值。
 - `ADMIN_FIXED_CREDENTIALS_ENABLED`：模板默认 `false`；只有在明确接受固定 `root/123456` 公网风险时才设为
@@ -87,7 +87,7 @@ AGENT_MCP_SERVERS_JSON=[]
 
 GitHub 和 Google OAuth 可独立启用：启用对应 provider 时设置 `GITHUB_OAUTH_ENABLED=true` 或 `GOOGLE_OAUTH_ENABLED=true`，并完整配置该 provider 的 Client ID、Client Secret 和 callback。一次性匿名登录始终可用；生产与 dev 使用相同身份逻辑。Compose 会把 OAuth 和两类 Session 配置显式注入 API；已启用 provider 缺少任一必填值时应在启动前失败。OAuth 应用主页使用 `https://<DOMAIN>`，不要填写公网 IP，也不要把 Client Secret 复制到命令输出、日志或工单。
 
-私有 OSS Bucket 必须配置浏览器直传 CORS：Origin 精确填写 `WEB_ORIGIN`，允许 `PUT`，Allowed Headers 至少覆盖 `content-type`、`x-oss-object-acl`、`x-oss-meta-kind` 和 `x-oss-meta-sha256`（也可按 OSS 官方建议设为 `*`）。不要把 Bucket 改为 public-read；上传权限来自短时单对象签名。AccessKey 必须属于最小权限 RAM 用户，泄漏后立即轮换。生产发布脚本会拒绝缺少 OSS 配置、错误 Region 格式、非 HTTPS Endpoint 或 `OSS_INTERNAL=true`。
+私有 OSS Bucket 必须配置浏览器直传 CORS：Origin 精确填写 `WEB_ORIGIN`，允许 `PUT`，Allowed Headers 至少覆盖 `content-type`、`x-oss-object-acl`、`x-oss-meta-kind` 和 `x-oss-meta-sha256`（也可按 OSS 官方建议设为 `*`）。不要把 Bucket 改为 public-read；上传权限来自短时单对象签名。AccessKey 必须属于最小权限 RAM 用户，泄漏后立即轮换。生产发布脚本会拒绝缺少 OSS 配置、空 Region、非 HTTPS Endpoint 或 `OSS_INTERNAL=true`。
 
 首次部署保持 MCP 关闭。启用前应审核 Server 身份、工具语义、数据出境和外部副作用，并把精确工具白名单写入 `AGENT_MCP_SERVERS_JSON`。生产 endpoint 必须使用 HTTPS；Bearer token 通过配置中的 `tokenEnv` 引用，不能嵌入 JSON。模板与 Compose 默认提供 `AGENT_MCP_TOKEN` 槽位；如需多个独立 token，先在 `infra/compose/compose.prod.yml` 的 API `environment` 中逐项增加对应变量，再在 JSON 中引用。不要使用 `env_file` 把整份生产配置无差别注入 API。
 
