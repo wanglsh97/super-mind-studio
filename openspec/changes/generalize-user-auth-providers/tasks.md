@@ -23,5 +23,5 @@
 ## 4. 文档与验收
 
 - [x] 4.1 更新 PRD、技术方案、README、Swagger 和部署配置，移除 GitHub-only、设备指纹和匿名生产禁用陈述
-- [ ] 4.2 运行 format、lint、typecheck、unit、相关 PostgreSQL/Redis Mock E2E、build、Prisma migration validate 和 OpenSpec strict validate
-- [ ] 4.3 完成三种登录浏览器回归；真实 OAuth 凭证缺失时记录待执行的 GitHub/Google callback 冒烟，不伪造线上验收结果
+- [x] 4.2 运行 format、lint、typecheck、unit、相关 PostgreSQL/Redis Mock E2E、build、Prisma migration validate 和 OpenSpec strict validate
+- [x] 4.3 完成三种登录浏览器回归；真实 OAuth 凭证缺失时记录待执行的 GitHub/Google callback 冒烟，不伪造线上验收结果
