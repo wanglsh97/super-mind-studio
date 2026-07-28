@@ -47,8 +47,9 @@ describe('Admin Skill review API E2E', () => {
   it('protects review APIs and transitions pending Skills once with rejection reasons', async () => {
     const owner = await prisma.user.create({
       data: {
-        githubId: `review-${randomUUID().slice(0, 8)}`,
-        githubUsername: 'review-owner',
+        authProvider: 'ANONYMOUS',
+        providerUserId: `review-${randomUUID().slice(0, 8)}`,
+        userName: 'review-owner',
         lastLoginAt: new Date(),
       },
     })
@@ -163,8 +164,9 @@ describe('Admin Skill review API E2E', () => {
   it('rolls back the Skill transition and review when audit persistence fails', async () => {
     const owner = await prisma.user.create({
       data: {
-        githubId: `review-rollback-${randomUUID().slice(0, 8)}`,
-        githubUsername: 'review-rollback-owner',
+        authProvider: 'ANONYMOUS',
+        providerUserId: `review-rollback-${randomUUID().slice(0, 8)}`,
+        userName: 'review-rollback-owner',
         lastLoginAt: new Date(),
       },
     })

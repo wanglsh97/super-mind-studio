@@ -18,9 +18,8 @@ import { AgentService } from './agent.service'
 
 const user: AuthenticatedUser = {
   id: 'user-a',
-  githubId: '1',
-  githubUsername: 'octocat',
-  displayName: null,
+  authProvider: 'GITHUB',
+  userName: 'octocat',
   avatarUrl: null,
 }
 

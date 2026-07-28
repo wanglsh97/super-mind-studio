@@ -29,9 +29,9 @@ describeBrowserHarness('User auth browser E2E harness', () => {
       .overrideProvider(GITHUB_OAUTH_CLIENT)
       .useValue({
         authenticate: jest.fn().mockResolvedValue({
-          githubId: '90000001',
-          githubUsername: 'fixture-octocat',
-          displayName: 'Fixture Octocat',
+          authProvider: 'GITHUB',
+          providerUserId: '90000001',
+          userName: 'fixture-octocat',
           avatarUrl: 'https://avatars.githubusercontent.com/u/90000001?v=4',
           email: 'fixture-octocat@example.test',
         }),

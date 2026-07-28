@@ -65,10 +65,7 @@ export class SkillMarketRepository implements SkillMarketRepositoryPort {
               {
                 owner: {
                   is: {
-                    OR: [
-                      { githubUsername: { contains: keyword, mode: 'insensitive' as const } },
-                      { displayName: { contains: keyword, mode: 'insensitive' as const } },
-                    ],
+                    userName: { contains: keyword, mode: 'insensitive' as const },
                   },
                 },
               },

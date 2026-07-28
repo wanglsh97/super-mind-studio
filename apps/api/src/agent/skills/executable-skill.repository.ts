@@ -44,12 +44,17 @@ export class ExecutableSkillRepository implements ExecutableSkillRepositoryPort 
   async ensureMockPublishedSkill(): Promise<ExecutableSkillRecord> {
     return this.prisma.$transaction(async (tx) => {
       await tx.user.upsert({
-        where: { githubId: MOCK_EXECUTABLE_SKILL.owner.githubId },
+        where: {
+          authProvider_providerUserId: {
+            authProvider: MOCK_EXECUTABLE_SKILL.owner.authProvider,
+            providerUserId: MOCK_EXECUTABLE_SKILL.owner.providerUserId,
+          },
+        },
         create: {
           id: MOCK_EXECUTABLE_SKILL.owner.id,
-          githubId: MOCK_EXECUTABLE_SKILL.owner.githubId,
-          githubUsername: MOCK_EXECUTABLE_SKILL.owner.githubUsername,
-          displayName: 'Super Mind Skills',
+          authProvider: MOCK_EXECUTABLE_SKILL.owner.authProvider,
+          providerUserId: MOCK_EXECUTABLE_SKILL.owner.providerUserId,
+          userName: MOCK_EXECUTABLE_SKILL.owner.userName,
           lastLoginAt: new Date(0),
         },
         update: {},

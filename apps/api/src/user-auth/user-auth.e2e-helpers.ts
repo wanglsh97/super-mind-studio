@@ -7,9 +7,9 @@ import { UserSessionService } from './user-session.service'
 
 export const FIXTURE_GITHUB_ID = '90000001'
 export const FIXTURE_USER_IDENTITY = {
-  githubId: FIXTURE_GITHUB_ID,
-  githubUsername: 'fixture-octocat',
-  displayName: 'Fixture Octocat',
+  authProvider: 'GITHUB' as const,
+  providerUserId: FIXTURE_GITHUB_ID,
+  userName: 'fixture-octocat',
   avatarUrl: 'https://avatars.githubusercontent.com/u/90000001?v=4',
   email: 'fixture-octocat@example.test',
 }

@@ -26,8 +26,9 @@ describe('SkillUploadSession PostgreSQL E2E', () => {
   beforeEach(async () => {
     const user = await prisma.user.create({
       data: {
-        githubId: `upload-e2e-${crypto.randomUUID().slice(0, 8)}`,
-        githubUsername: 'upload-e2e',
+        authProvider: 'ANONYMOUS',
+        providerUserId: `upload-e2e-${crypto.randomUUID().slice(0, 8)}`,
+        userName: 'upload-e2e',
         lastLoginAt: new Date(),
       },
     })

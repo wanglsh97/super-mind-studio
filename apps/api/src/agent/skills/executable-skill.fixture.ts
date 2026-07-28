@@ -10,8 +10,9 @@ export const MOCK_EXECUTABLE_SKILL = Object.freeze({
   category: 'development',
   owner: {
     id: '00000000-0000-4000-8000-00000000a500',
-    githubId: 'system-skill-market',
-    githubUsername: 'aigateway-skills',
+    authProvider: 'ANONYMOUS' as const,
+    providerUserId: 'system-skill-market',
+    userName: 'Super Mind Skills',
   },
   objectKey: 'skills/mock-data-cleaner/package.zip',
   skillMarkdown:

@@ -13,11 +13,9 @@ import { PromptTemplateRegistry } from './prompt-template.registry'
 
 const authenticatedUser = {
   id: '00000000-0000-4000-8000-000000000101',
-  githubId: '12345678',
-  githubUsername: 'octocat',
-  displayName: null,
+  authProvider: 'GITHUB' as const,
+  userName: 'octocat',
   avatarUrl: null,
-  email: null,
 }
 
 function setup(

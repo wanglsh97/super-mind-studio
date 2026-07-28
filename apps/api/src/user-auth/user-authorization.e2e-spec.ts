@@ -45,9 +45,9 @@ describe('Paid capability user authorization E2E', () => {
     await cleanupUserTestData(prisma)
     const tokenA = await provisionFixtureUserSession(app)
     const sessionB = await app.get(UserSessionService).create({
-      githubId: '90000002',
-      githubUsername: 'fixture-hubot',
-      displayName: 'Fixture Hubot',
+      authProvider: 'GITHUB',
+      providerUserId: '90000002',
+      userName: 'fixture-hubot',
       avatarUrl: null,
       email: null,
     })
@@ -91,7 +91,7 @@ describe('Paid capability user authorization E2E', () => {
     await expect(prisma.imageGenerationTask.count()).resolves.toBe(0)
   })
 
-  it('attributes Prompt logs to the authenticated GitHub user', async () => {
+  it('attributes Prompt logs to the authenticated platform user', async () => {
     const result = await clientA.prompts.optimize({ prompt: '记录用户归属', mode: 'structure' })
 
     await expect(
@@ -100,7 +100,11 @@ describe('Paid capability user authorization E2E', () => {
         include: { user: true, billing: true },
       }),
     ).resolves.toMatchObject({
-      user: { githubId: FIXTURE_GITHUB_ID, githubUsername: 'fixture-octocat' },
+      user: {
+        authProvider: 'GITHUB',
+        providerUserId: FIXTURE_GITHUB_ID,
+        userName: 'fixture-octocat',
+      },
       billing: { usageUnknown: false },
     })
   })

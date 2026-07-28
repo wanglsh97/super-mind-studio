@@ -35,9 +35,9 @@ describe('Agent Skill market E2E', () => {
     await cleanupUserTestData(prisma)
     const tokenA = await provisionFixtureUserSession(app)
     const sessionB = await app.get(UserSessionService).create({
-      githubId: '90000002',
-      githubUsername: 'fixture-hubot',
-      displayName: 'Fixture Hubot',
+      authProvider: 'GITHUB',
+      providerUserId: '90000002',
+      userName: 'fixture-hubot',
       avatarUrl: null,
       email: null,
     })

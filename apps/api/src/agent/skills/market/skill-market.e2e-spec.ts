@@ -51,9 +51,9 @@ describe('Public Skill market API E2E', () => {
     const suffix = randomUUID().slice(0, 8)
     const owner = await prisma.user.create({
       data: {
-        githubId: `market-${suffix}`,
-        githubUsername: `author-${suffix}`,
-        displayName: `Market Author ${suffix}`,
+        authProvider: 'ANONYMOUS',
+        providerUserId: `market-${suffix}`,
+        userName: `Market Author ${suffix}`,
         lastLoginAt: new Date(),
       },
     })
@@ -123,8 +123,9 @@ describe('Public Skill market API E2E', () => {
     const suffix = randomUUID().slice(0, 8)
     const owner = await prisma.user.create({
       data: {
-        githubId: `market-detail-${suffix}`,
-        githubUsername: `detail-author-${suffix}`,
+        authProvider: 'ANONYMOUS',
+        providerUserId: `market-detail-${suffix}`,
+        userName: `detail-author-${suffix}`,
         lastLoginAt: new Date(),
       },
     })
@@ -168,7 +169,14 @@ describe('Public Skill market API E2E', () => {
   })
 
   it('protects owner and add routes while the SDK adds, removes and lists owned Skills', async () => {
-    const owner = await prisma.user.findUniqueOrThrow({ where: { githubId: FIXTURE_GITHUB_ID } })
+    const owner = await prisma.user.findUniqueOrThrow({
+      where: {
+        authProvider_providerUserId: {
+          authProvider: 'GITHUB',
+          providerUserId: FIXTURE_GITHUB_ID,
+        },
+      },
+    })
     const skill = await createSkill(prisma, owner.id, {
       name: `market-owner-${randomUUID().slice(0, 8)}`,
       title: 'Owner utility',

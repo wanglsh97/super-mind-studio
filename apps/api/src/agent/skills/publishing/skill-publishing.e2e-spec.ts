@@ -220,8 +220,9 @@ describe('Skill publishing claim PostgreSQL E2E', () => {
 async function createUser(prisma: PrismaService, suffix: string) {
   return prisma.user.create({
     data: {
-      githubId: `claim-${suffix}-${randomUUID().slice(0, 8)}`,
-      githubUsername: `claim-${suffix}`,
+      authProvider: 'ANONYMOUS',
+      providerUserId: `claim-${suffix}-${randomUUID().slice(0, 8)}`,
+      userName: `claim-${suffix}`,
       lastLoginAt: new Date(),
     },
   })

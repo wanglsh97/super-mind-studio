@@ -28,16 +28,18 @@ function setup(overrides: Record<string, string | number | boolean> = {}) {
     avatarUrl: null,
     email: null,
   })
-  const create = jest.fn(async (identity: { authProvider: string; userName: string }) => ({
-    token: 'session-token',
-    expiresAt: new Date('2026-08-18T00:00:00.000Z'),
-    user: {
-      id: 'user-id',
-      authProvider: identity.authProvider,
-      userName: identity.userName,
-      avatarUrl: null,
-    },
-  }))
+  const create = jest.fn(
+    async (identity: { authProvider: string; providerUserId: string; userName: string }) => ({
+      token: 'session-token',
+      expiresAt: new Date('2026-08-18T00:00:00.000Z'),
+      user: {
+        id: 'user-id',
+        authProvider: identity.authProvider,
+        userName: identity.userName,
+        avatarUrl: null,
+      },
+    }),
+  )
   const read = jest.fn().mockResolvedValue({
     id: 'user-id',
     authProvider: 'GITHUB',

@@ -101,8 +101,9 @@ describe('Executable Skill added-state PostgreSQL E2E', () => {
 async function createUser(prisma: PrismaService, suffix: string) {
   return prisma.user.create({
     data: {
-      githubId: `added-${suffix}-${randomUUID().slice(0, 8)}`,
-      githubUsername: `added-${suffix}`,
+      authProvider: 'ANONYMOUS',
+      providerUserId: `added-${suffix}-${randomUUID().slice(0, 8)}`,
+      userName: `added-${suffix}`,
       lastLoginAt: new Date(),
     },
   })

@@ -46,7 +46,15 @@ describe('ExecutableSkillRepository', () => {
 
     await expect(repository.ensureMockPublishedSkill()).resolves.toBe(skill)
     expect(transaction.user.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { githubId: 'system-skill-market' }, update: {} }),
+      expect.objectContaining({
+        where: {
+          authProvider_providerUserId: {
+            authProvider: 'ANONYMOUS',
+            providerUserId: 'system-skill-market',
+          },
+        },
+        update: {},
+      }),
     )
     expect(transaction.skill.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
