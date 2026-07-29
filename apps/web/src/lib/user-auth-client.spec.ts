@@ -21,6 +21,7 @@ describe('user auth login helpers', () => {
       '/admin',
       '/chat',
       '/chat?next=x',
+      '/chat/compare',
       '/agent',
       '/image',
       '/prompt',
@@ -28,10 +29,9 @@ describe('user auth login helpers', () => {
       assert.equal(sanitizeUserReturnTo(unsafe), '/')
     }
     assert.equal(sanitizeUserReturnTo(null), '/')
-    assert.equal(sanitizeUserReturnTo('/chat/compare'), '/chat/compare')
     assert.equal(sanitizeUserReturnTo('/mcp'), '/mcp')
-    assert.equal(githubLoginUrl('/chat/compare'), '/api/v1/auth/github?returnTo=%2Fchat%2Fcompare')
-    assert.equal(googleLoginUrl('/chat/compare'), '/api/v1/auth/google?returnTo=%2Fchat%2Fcompare')
+    assert.equal(githubLoginUrl('/mcp'), '/api/v1/auth/github?returnTo=%2Fmcp')
+    assert.equal(googleLoginUrl('/mcp'), '/api/v1/auth/google?returnTo=%2Fmcp')
   })
 
   it('maps callback errors without exposing provider details', () => {
@@ -66,7 +66,7 @@ describe('user auth session client', () => {
 
   it('posts anonymous login and returns the sanitized return path', async () => {
     const mockFetch: typeof fetch = async (input, init) => {
-      assert.equal(String(input), '/api/v1/auth/anonymous?returnTo=%2Fchat%2Fcompare')
+      assert.equal(String(input), '/api/v1/auth/anonymous?returnTo=%2Fmcp')
       assert.equal(init?.method, 'POST')
       assert.equal(init?.credentials, 'same-origin')
       assert.equal(init?.body, undefined)
@@ -77,18 +77,18 @@ describe('user auth session client', () => {
           userName: 'Anonymous User',
           avatarUrl: null,
         },
-        returnTo: '/chat/compare',
+        returnTo: '/mcp',
       })
     }
 
-    await assert.deepEqual(await loginAnonymously('/chat/compare', mockFetch), {
+    await assert.deepEqual(await loginAnonymously('/mcp', mockFetch), {
       user: {
         id: 'anon-1',
         authProvider: 'ANONYMOUS',
         userName: 'Anonymous User',
         avatarUrl: null,
       },
-      returnTo: '/chat/compare',
+      returnTo: '/mcp',
     })
   })
 

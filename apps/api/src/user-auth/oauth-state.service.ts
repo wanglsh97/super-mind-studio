@@ -1,7 +1,7 @@
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto'
 
 const OAUTH_STATE_TTL_MS = 10 * 60 * 1_000
-const SAFE_RETURN_PATHS = new Set(['/', '/chat/compare'])
+const SAFE_RETURN_PATHS = new Set(['/', '/mcp'])
 export type OAuthProvider = 'GITHUB' | 'GOOGLE'
 
 interface OAuthStatePayload {

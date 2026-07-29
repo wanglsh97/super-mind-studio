@@ -10,8 +10,4 @@ describe('retired Chat route policy', () => {
     assert.equal(sanitizeUserReturnTo('/chat'), '/')
     assert.equal(sanitizeUserReturnTo(null), CHAT_ROUTE_DESTINATION)
   })
-
-  it('keeps multi-model comparison as an allowed Agent sub-scenario', () => {
-    assert.equal(sanitizeUserReturnTo('/chat/compare'), '/chat/compare')
-  })
 })

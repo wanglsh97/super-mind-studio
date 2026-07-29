@@ -86,6 +86,8 @@
 - [x] 1.65 修复 OpenSandbox 显式产物 realpath 校验的流式 stdout 收集，确保 export_file 可持久化并在聊天中展示文件卡片
 - [x] 1.66 将 shell、read_file、write_file、export_file 重组为通用 Sandbox tools，与 Skill activation tool 保持平级注册和独立模块边界
 - [x] 1.67 按工具复杂度整理 Agent tools 目录：单文件工具平铺，多文件 web-fetch/web-search 工具归入同名目录
+- [ ] 1.68 移除公开 Chat completions Controller、DTO、SSE、SDK `chat.*` 契约及专属测试，将保留的模型基础设施收敛为 Agent 使用的 `ModelGatewayModule`
+- [ ] 1.69 为 Qwen3.7-Plus、GLM-5.2、DeepSeek-V4-Pro、Kimi K3 显式配置 thinking，并将 `reasoning_content` 规范化为 Agent reasoning 事件，覆盖工具调用历史回灌
 
 ## 2. 管理员中后台
 
@@ -171,3 +173,4 @@
 - [x] 3.34 修复 LocalRuntime 流式生成与会话历史同步竞态，运行期间禁止重置消息仓库并在结束后重新水合
 - [x] 3.35 将 MCP 状态从 Composer 迁入右上角运行环境浮层，统一展示 Sandbox、MCP、Skills 与上下文占用
 - [x] 3.36 移除运行环境的重复入口浮层，将详情面板改为可直接折叠和恢复的单层组件
+- [x] 3.37 移除 `/chat/compare`、Agent 中的对比入口及相关 C 端状态代码，只保留 `/chat` 到根 Agent 的旧链接兼容跳转

@@ -28,7 +28,6 @@ import { useAgentActiveThreadId, useAgentWorkspace } from '../components/agent-w
 import { AgentSkillSlashPicker } from '../components/agent-skill-slash-picker'
 import {
   AgentActiveRunHint,
-  AgentComposerAction,
   AgentComposerActions,
   AgentComposerDock,
   AgentComposerFooter,
@@ -395,7 +394,6 @@ function AgentConsole() {
                 <AgentComposerFooter>
                   <AgentComposerActions>
                     <NewThreadButton onNewThread={startNewThread} />
-                    <AgentComposerAction href="/chat/compare">模型对比</AgentComposerAction>
                   </AgentComposerActions>
                   <AgentComposerSubmitGroup>
                     <ModelSelect

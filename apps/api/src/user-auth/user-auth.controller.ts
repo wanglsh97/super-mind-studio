@@ -77,7 +77,7 @@ export class UserAuthController {
   @ApiQuery({
     name: 'returnTo',
     required: false,
-    enum: ['/', '/chat/compare'],
+    enum: ['/', '/mcp'],
   })
   @ApiFoundResponse({ description: '跳转到 GitHub authorize URL，并写入一次性 state Cookie' })
   @ApiConflictResponse({ description: '已有有效用户 Session，必须先退出' })
@@ -138,7 +138,7 @@ export class UserAuthController {
   @ApiQuery({
     name: 'returnTo',
     required: false,
-    enum: ['/', '/chat/compare'],
+    enum: ['/', '/mcp'],
   })
   @ApiFoundResponse({ description: '跳转到 Google authorize URL，并写入一次性 state Cookie' })
   @ApiConflictResponse({ description: '已有有效用户 Session，必须先退出' })
@@ -201,7 +201,7 @@ export class UserAuthController {
   @ApiQuery({
     name: 'returnTo',
     required: false,
-    enum: ['/', '/chat/compare'],
+    enum: ['/', '/mcp'],
   })
   @ApiCreatedResponse({
     description: '创建本地 Session，并写入用户 Cookie',

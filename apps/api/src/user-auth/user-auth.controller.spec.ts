@@ -152,7 +152,7 @@ describe('UserAuthController', () => {
     const { authenticateGoogle, controller, create } = setup()
     const beginResponse = responseDouble()
 
-    await controller.beginGoogleLogin('/chat/compare', loggedOutRequest(), beginResponse)
+    await controller.beginGoogleLogin('/mcp', loggedOutRequest(), beginResponse)
 
     expect(beginResponse.cookie).toHaveBeenCalledWith(
       GOOGLE_OAUTH_STATE_COOKIE,
@@ -183,7 +183,7 @@ describe('UserAuthController', () => {
     expect(create).toHaveBeenCalledWith(
       expect.objectContaining({ authProvider: 'GOOGLE', providerUserId: 'google-subject' }),
     )
-    expect(response.redirect).toHaveBeenCalledWith(302, 'http://localhost:3000/chat/compare')
+    expect(response.redirect).toHaveBeenCalledWith(302, 'http://localhost:3000/mcp')
   })
 
   it('returns a normalized disabled-provider error', async () => {
@@ -262,12 +262,16 @@ describe('UserAuthController', () => {
       cookies: { [USER_SESSION_COOKIE]: 'active-session-token' },
     } as unknown as Request
 
-    await expect(controller.beginGitHubLogin('/', request, responseDouble())).rejects.toMatchObject({
-      status: 409,
-    })
-    await expect(controller.beginGoogleLogin('/', request, responseDouble())).rejects.toMatchObject({
-      status: 409,
-    })
+    await expect(controller.beginGitHubLogin('/', request, responseDouble())).rejects.toMatchObject(
+      {
+        status: 409,
+      },
+    )
+    await expect(controller.beginGoogleLogin('/', request, responseDouble())).rejects.toMatchObject(
+      {
+        status: 409,
+      },
+    )
     await expect(controller.anonymousLogin('/', request, responseDouble())).rejects.toMatchObject({
       status: 409,
     })
