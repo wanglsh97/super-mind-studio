@@ -1,8 +1,9 @@
-data: {"id":"glm-sanitized-1","request_id":"glm-request-sanitized-1","created":1750000000,"model":"glm-fixture","choices":[{"index":0,"delta":{"role":"assistant","content":"你好"},"finish_reason":null}]}
+data: {"id":"glm-sanitized-1","request_id":"glm-request-sanitized-1","created":1750000000,"model":"glm-fixture","choices":[{"index":0,"delta":{"role":"assistant","reasoning_content":"先分析问候语。"},"finish_reason":null}]}
+
+data: {"id":"glm-sanitized-1","request_id":"glm-request-sanitized-1","created":1750000000,"model":"glm-fixture","choices":[{"index":0,"delta":{"content":"你好"},"finish_reason":null}]}
 
 data: {"id":"glm-sanitized-1","request_id":"glm-request-sanitized-1","created":1750000000,"model":"glm-fixture","choices":[{"index":0,"delta":{"content":"，我是 GLM。"},"finish_reason":null}]}
 
 data: {"id":"glm-sanitized-1","request_id":"glm-request-sanitized-1","created":1750000000,"model":"glm-fixture","choices":[{"index":0,"delta":{"content":""},"finish_reason":"stop"}],"usage":{"prompt_tokens":9,"completion_tokens":6,"total_tokens":15}}
 
 data: [DONE]
-

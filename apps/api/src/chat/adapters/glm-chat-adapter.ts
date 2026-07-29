@@ -61,6 +61,8 @@ export class GlmChatAdapter implements ChatAdapter {
           model: request.resolvedModel,
           messages: toOpenAICompatibleMessages(request.messages),
           stream: true,
+          thinking: { type: 'enabled' },
+          reasoning_effort: 'max',
           ...(request.temperature === undefined ? {} : { temperature: request.temperature }),
           ...(request.topP === undefined ? {} : { top_p: request.topP }),
           ...(request.maxTokens === undefined ? {} : { max_tokens: request.maxTokens }),
@@ -88,6 +90,13 @@ export class GlmChatAdapter implements ChatAdapter {
         const chunk = parseChunk(event.data)
         if (chunk.toolCallDeltas !== undefined) toolCalls.addDeltas(chunk.toolCallDeltas)
         if (chunk.providerRequestId !== undefined) providerRequestId = chunk.providerRequestId
+        if (chunk.reasoningContent !== undefined) {
+          yield {
+            type: 'reasoning',
+            content: chunk.reasoningContent,
+            ...(providerRequestId === undefined ? {} : { providerRequestId }),
+          }
+        }
         if (chunk.content !== undefined) {
           yield {
             type: 'delta',
@@ -120,6 +129,7 @@ export class GlmChatAdapter implements ChatAdapter {
 
 function parseChunk(data: unknown): {
   content?: string
+  reasoningContent?: string
   finishReason?: ChatFinishReason
   toolCallDeltas?: unknown
   usage?: ChatAdapterUsage
@@ -145,6 +155,12 @@ function parseChunk(data: unknown): {
       const value = record(choice, 'GLM choice')
       if (value.delta !== undefined && value.delta !== null) {
         const delta = record(value.delta, 'GLM delta')
+        if (delta.reasoning_content !== undefined && delta.reasoning_content !== null) {
+          if (typeof delta.reasoning_content !== 'string') {
+            throw protocolError('GLM reasoning_content must be text')
+          }
+          if (delta.reasoning_content) parsed.reasoningContent = delta.reasoning_content
+        }
         if (delta.content !== undefined && delta.content !== null) {
           if (typeof delta.content !== 'string') throw protocolError('GLM content must be text')
           if (delta.content) parsed.content = delta.content

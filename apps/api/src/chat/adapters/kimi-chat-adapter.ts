@@ -63,7 +63,7 @@ export class KimiChatAdapter implements ChatAdapter {
           messages: toOpenAICompatibleMessages(request.messages),
           stream: true,
           stream_options: { include_usage: true },
-          ...(useK2Defaults ? { thinking: { type: 'disabled' } } : {}),
+          ...(useK2Defaults ? { thinking: { type: 'disabled' } } : { reasoning_effort: 'max' }),
           ...(useK2Defaults || request.temperature === undefined
             ? {}
             : { temperature: request.temperature }),
@@ -93,6 +93,13 @@ export class KimiChatAdapter implements ChatAdapter {
         const chunk = parseChunk(event.data)
         if (chunk.toolCallDeltas !== undefined) toolCalls.addDeltas(chunk.toolCallDeltas)
         if (chunk.providerRequestId !== undefined) providerRequestId = chunk.providerRequestId
+        if (chunk.reasoningContent !== undefined) {
+          yield {
+            type: 'reasoning',
+            content: chunk.reasoningContent,
+            ...(providerRequestId === undefined ? {} : { providerRequestId }),
+          }
+        }
         if (chunk.content !== undefined) {
           yield {
             type: 'delta',
@@ -125,6 +132,7 @@ export class KimiChatAdapter implements ChatAdapter {
 
 interface ParsedChunk {
   content?: string
+  reasoningContent?: string
   finishReason?: ChatFinishReason
   toolCallDeltas?: unknown
   usage?: ChatAdapterUsage
@@ -151,6 +159,12 @@ function parseChunk(data: unknown): ParsedChunk {
       const value = record(choice, 'Kimi choice')
       if (value.delta !== undefined && value.delta !== null) {
         const delta = record(value.delta, 'Kimi delta')
+        if (delta.reasoning_content !== undefined && delta.reasoning_content !== null) {
+          if (typeof delta.reasoning_content !== 'string') {
+            throw protocolError('Kimi reasoning_content must be text')
+          }
+          if (delta.reasoning_content) parsed.reasoningContent = delta.reasoning_content
+        }
         if (delta.content !== undefined && delta.content !== null) {
           if (typeof delta.content !== 'string') throw protocolError('Kimi content must be text')
           if (delta.content) parsed.content = delta.content

@@ -82,6 +82,13 @@ export class QwenChatAdapter implements ChatAdapter {
 
         const chunk = this.parseChunk(event.data)
         if (chunk.toolCallDeltas !== undefined) toolCalls.addDeltas(chunk.toolCallDeltas)
+        if (chunk.reasoningContent !== undefined) {
+          yield {
+            type: 'reasoning',
+            content: chunk.reasoningContent,
+            ...(providerRequestId === undefined ? {} : { providerRequestId }),
+          }
+        }
         if (chunk.content !== undefined) {
           yield {
             type: 'delta',
@@ -119,6 +126,7 @@ export class QwenChatAdapter implements ChatAdapter {
       messages: toOpenAICompatibleMessages(request.messages),
       stream: true,
       stream_options: { include_usage: true },
+      enable_thinking: true,
       ...(request.temperature === undefined ? {} : { temperature: request.temperature }),
       ...(request.topP === undefined ? {} : { top_p: request.topP }),
       ...(request.maxTokens === undefined ? {} : { max_tokens: request.maxTokens }),
@@ -128,6 +136,7 @@ export class QwenChatAdapter implements ChatAdapter {
 
   private parseChunk(data: unknown): {
     content?: string
+    reasoningContent?: string
     finishReason?: ChatFinishReason
     toolCallDeltas?: unknown
     usage?: ChatAdapterUsage
@@ -137,6 +146,7 @@ export class QwenChatAdapter implements ChatAdapter {
 
     const parsed: {
       content?: string
+      reasoningContent?: string
       finishReason?: ChatFinishReason
       toolCallDeltas?: unknown
       usage?: ChatAdapterUsage
@@ -153,6 +163,14 @@ export class QwenChatAdapter implements ChatAdapter {
         const parsedChoice = record(choice, 'Qwen choice')
         if (parsedChoice.delta !== undefined && parsedChoice.delta !== null) {
           const delta = record(parsedChoice.delta, 'Qwen delta')
+          if (delta.reasoning_content !== undefined && delta.reasoning_content !== null) {
+            if (typeof delta.reasoning_content !== 'string') {
+              throw this.protocolError('Qwen reasoning_content must be a string or null')
+            }
+            if (delta.reasoning_content.length > 0) {
+              parsed.reasoningContent = delta.reasoning_content
+            }
+          }
           if (delta.content !== undefined && delta.content !== null) {
             if (typeof delta.content !== 'string') {
               throw this.protocolError('Qwen delta content must be a string or null')

@@ -1,4 +1,4 @@
-data: {"choices":[{"delta":{"content":null,"role":"assistant","reasoning_content":""},"index":0,"finish_reason":null}],"usage":null,"model":"qwen-plus-fixture","id":"chatcmpl-sanitized-1"}
+data: {"choices":[{"delta":{"content":null,"role":"assistant","reasoning_content":"先分析问候语。"},"index":0,"finish_reason":null}],"usage":null,"model":"qwen-plus-fixture","id":"chatcmpl-sanitized-1"}
 
 data: {"choices":[{"delta":{"content":"你好"},"index":0,"finish_reason":null}],"usage":null,"model":"qwen-plus-fixture","id":"chatcmpl-sanitized-1"}
 
@@ -9,4 +9,3 @@ data: {"choices":[{"delta":{"content":""},"index":0,"finish_reason":"stop"}],"us
 data: {"choices":[],"usage":{"prompt_tokens":12,"completion_tokens":7,"total_tokens":19},"model":"qwen-plus-fixture","id":"chatcmpl-sanitized-1"}
 
 data: [DONE]
-

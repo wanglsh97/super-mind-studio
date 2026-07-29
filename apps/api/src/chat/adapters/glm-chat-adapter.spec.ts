@@ -28,6 +28,7 @@ describeChatAdapterContract({
         return new Response(fixture, { headers: { 'content-type': 'text/event-stream' } })
       }),
       expectedDeltas: ['你好', '，我是 GLM。'],
+      expectedReasoning: ['先分析问候语。'],
       expectedUsage: { inputTokens: 9, outputTokens: 6, totalTokens: 15, usageUnknown: false },
       expectedFinishReason: 'stop',
       expectedProviderRequestId: 'glm-request-sanitized-1',
@@ -42,6 +43,8 @@ describeChatAdapterContract({
               { role: 'user', content: 'Reply with a short greeting.' },
             ],
             stream: true,
+            thinking: { type: 'enabled' },
+            reasoning_effort: 'max',
             temperature: 0.7,
             top_p: 0.8,
             max_tokens: 321,

@@ -61,6 +61,8 @@ export class DeepSeekChatAdapter implements ChatAdapter {
           messages: toOpenAICompatibleMessages(request.messages),
           stream: true,
           stream_options: { include_usage: true },
+          thinking: { type: 'enabled' },
+          reasoning_effort: 'max',
           ...(request.temperature === undefined ? {} : { temperature: request.temperature }),
           ...(request.topP === undefined ? {} : { top_p: request.topP }),
           ...(request.maxTokens === undefined ? {} : { max_tokens: request.maxTokens }),
@@ -88,6 +90,12 @@ export class DeepSeekChatAdapter implements ChatAdapter {
         const chunk = parseChunk(event.data)
         if (chunk.toolCallDeltas !== undefined) toolCalls.addDeltas(chunk.toolCallDeltas)
         if (chunk.providerRequestId !== undefined) providerRequestId = chunk.providerRequestId
+        if (chunk.reasoningContent !== undefined)
+          yield {
+            type: 'reasoning',
+            content: chunk.reasoningContent,
+            ...(providerRequestId === undefined ? {} : { providerRequestId }),
+          }
         if (chunk.content !== undefined)
           yield {
             type: 'delta',
@@ -120,6 +128,7 @@ export class DeepSeekChatAdapter implements ChatAdapter {
 
 interface ParsedChunk {
   content?: string
+  reasoningContent?: string
   finishReason?: ChatFinishReason
   toolCallDeltas?: unknown
   usage?: ChatAdapterUsage
@@ -138,6 +147,11 @@ function parseChunk(data: unknown): ParsedChunk {
       const value = record(choice, 'DeepSeek choice')
       if (value.delta !== undefined && value.delta !== null) {
         const delta = record(value.delta, 'DeepSeek delta')
+        if (delta.reasoning_content !== undefined && delta.reasoning_content !== null) {
+          if (typeof delta.reasoning_content !== 'string')
+            throw protocolError('DeepSeek reasoning_content must be text')
+          if (delta.reasoning_content) parsed.reasoningContent = delta.reasoning_content
+        }
         if (delta.content !== undefined && delta.content !== null) {
           if (typeof delta.content !== 'string')
             throw protocolError('DeepSeek content must be text')

@@ -28,6 +28,7 @@ describeChatAdapterContract({
         return new Response(fixture, { headers: { 'content-type': 'text/event-stream' } })
       }),
       expectedDeltas: ['你好', '，我是 Kimi。'],
+      expectedReasoning: ['先分析问候语。'],
       expectedUsage: { inputTokens: 11, outputTokens: 7, totalTokens: 18, usageUnknown: false },
       expectedFinishReason: 'stop',
       expectedProviderRequestId: 'cmpl-kimi-sanitized-1',
@@ -43,6 +44,7 @@ describeChatAdapterContract({
             ],
             stream: true,
             stream_options: { include_usage: true },
+            reasoning_effort: 'max',
             temperature: 0.7,
             top_p: 0.8,
             max_tokens: 321,

@@ -15,6 +15,7 @@ interface ChatAdapterContractCase {
 }
 
 interface ChatAdapterSuccessContractCase extends ChatAdapterContractCase {
+  expectedReasoning?: readonly string[]
   expectedDeltas: readonly string[]
   expectedUsage: ChatAdapterUsage
   expectedFinishReason: ChatFinishReason
@@ -74,6 +75,13 @@ export function describeChatAdapterContract(harness: ChatAdapterContractHarness)
 
       expect(contractCase.adapter.id).toBe(harness.adapterId)
       expect(events).toEqual([
+        ...(contractCase.expectedReasoning ?? []).map((content) => ({
+          type: 'reasoning' as const,
+          content,
+          ...(contractCase.expectedProviderRequestId
+            ? { providerRequestId: contractCase.expectedProviderRequestId }
+            : {}),
+        })),
         ...contractCase.expectedDeltas.map((content) => ({
           type: 'delta' as const,
           content,

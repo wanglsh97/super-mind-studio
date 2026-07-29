@@ -69,6 +69,7 @@ describeChatAdapterContract({
     return {
       adapter,
       expectedDeltas: ['你好', '，我是千问。'],
+      expectedReasoning: ['先分析问候语。'],
       expectedUsage: { inputTokens: 12, outputTokens: 7, totalTokens: 19, usageUnknown: false },
       expectedFinishReason: 'stop',
       expectedProviderRequestId: 'fixture-qwen-request-1',
@@ -91,6 +92,7 @@ describeChatAdapterContract({
             ],
             stream: true,
             stream_options: { include_usage: true },
+            enable_thinking: true,
             temperature: 0.7,
             top_p: 0.8,
             max_tokens: 321,
