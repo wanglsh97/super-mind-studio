@@ -76,7 +76,7 @@ export function AgentScrollToBottom() {
     <ThreadPrimitive.ScrollToBottom
       aria-label="滚动到底部"
       className={cn(
-        'absolute right-3 bottom-48 z-5 grid size-9 place-items-center rounded-full border border-line bg-surface-card text-brand shadow-[0_8px_24px_rgb(46_32_76/0.12)] dark:bg-surface-muted dark:text-brand-light',
+        'absolute bottom-48 left-1/2 z-5 grid size-9 -translate-x-1/2 place-items-center rounded-full border border-line bg-surface-card text-brand shadow-[0_8px_24px_rgb(46_32_76/0.12)] dark:bg-surface-muted dark:text-brand-light',
         focusRing,
       )}
     >
