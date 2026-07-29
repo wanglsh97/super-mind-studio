@@ -10,6 +10,7 @@ import {
   ThreadPrimitive,
   useAui,
   useAuiState,
+  useThreadViewport,
 } from '@assistant-ui/react'
 import Link from 'next/link'
 import type { ReactNode } from 'react'
@@ -72,6 +73,10 @@ export function AgentThreadViewport({ children }: Readonly<{ children: ReactNode
 }
 
 export function AgentScrollToBottom() {
+  const isAtBottom = useThreadViewport((viewport) => viewport.isAtBottom)
+
+  if (isAtBottom) return null
+
   return (
     <ThreadPrimitive.ScrollToBottom
       aria-label="滚动到底部"
