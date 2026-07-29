@@ -33,7 +33,7 @@ The authenticated user analytics experience SHALL show a GitHub-contribution-sty
 - **AND** a day with a higher total Token count has a stronger heatmap intensity than a day with a lower count
 
 ### Requirement: User daily details distinguish input, output, cache, and reasoning Tokens
-The user analytics experience SHALL provide a daily-detail visualization for the selected analysis period that presents input Token, output Token, Prompt Cache Token, and reasoning Token values. It SHALL communicate that cache and reasoning are component metrics rather than additional consumption. For an individual model that does not provide cache or reasoning usage, the corresponding value SHALL render as `--`. For an aggregate that covers multiple models, known values SHALL be summed and unavailable values SHALL contribute zero.
+The user analytics experience SHALL provide a daily-detail visualization for the selected analysis period that presents input Token, output Token, Prompt Cache Token, and reasoning Token values. It SHALL communicate that cache and reasoning are component metrics rather than additional consumption. A model that does not provide cache or reasoning usage SHALL render and aggregate the corresponding displayed value as `0`.
 
 #### Scenario: A daily aggregate mixes supported and unsupported models
 - **GIVEN** a user's daily records include one model with reported Prompt Cache Tokens and one model without that metric
@@ -44,7 +44,7 @@ The user analytics experience SHALL provide a daily-detail visualization for the
 #### Scenario: A user inspects one unsupported model
 - **GIVEN** all selected records belong to a model that does not report reasoning Token usage
 - **WHEN** its daily detail is displayed
-- **THEN** the reasoning value is rendered as `--`
+- **THEN** the reasoning value is rendered as `0`
 
 ### Requirement: User analytics include a model total comparison
 The authenticated user analytics experience SHALL provide one comparison chart that shows each model's total Token usage over the selected analysis period. The model comparison MUST use actual resolved model invocations, not only the model initially selected for a Run.
