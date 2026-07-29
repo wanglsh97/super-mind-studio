@@ -29,4 +29,9 @@ export class AdminDashboardController {
   errors() {
     return this.dashboard.errors()
   }
+
+  @Get('token-analytics')
+  tokenAnalytics() {
+    return this.dashboard.tokenAnalytics()
+  }
 }

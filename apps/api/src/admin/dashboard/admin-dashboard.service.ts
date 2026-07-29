@@ -4,6 +4,7 @@ import { TEXT_MODEL_ALIASES } from '../../chat/chat.constants'
 import { ProviderHealthService } from '../../chat/provider-health.service'
 import { PrismaService } from '../../database/prisma.service'
 import { RequestStatus } from '../../generated/prisma/client'
+import { TokenAnalyticsService } from '../../token-analytics/token-analytics.service'
 
 const DAY_MS = 24 * 60 * 60 * 1_000
 
@@ -12,6 +13,7 @@ export class AdminDashboardService {
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(ProviderHealthService) private readonly health: ProviderHealthService,
+    @Inject(TokenAnalyticsService) private readonly tokenAnalyticsService: TokenAnalyticsService,
   ) {}
 
   async overview() {
@@ -117,5 +119,9 @@ export class AdminDashboardService {
         completedAt: true,
       },
     })
+  }
+
+  tokenAnalytics() {
+    return this.tokenAnalyticsService.forAdmin()
   }
 }

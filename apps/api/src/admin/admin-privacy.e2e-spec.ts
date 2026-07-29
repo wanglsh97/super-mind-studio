@@ -71,6 +71,7 @@ describe('Public/admin Prompt privacy E2E', () => {
       '/api/v1/admin/dashboard/trends',
       '/api/v1/admin/dashboard/latencies',
       '/api/v1/admin/dashboard/errors',
+      '/api/v1/admin/dashboard/token-analytics',
       '/api/v1/admin/logs',
       '/api/v1/admin/tables',
     ]) {
@@ -136,7 +137,7 @@ describe('Public/admin Prompt privacy E2E', () => {
     })
     expect(JSON.stringify(detailBody)).not.toContain(FIXTURE_USER_IDENTITY.email)
 
-    for (const path of ['overview', 'trends', 'latencies', 'errors']) {
+    for (const path of ['overview', 'trends', 'latencies', 'errors', 'token-analytics']) {
       const response = await fetch(`${baseUrl}/api/v1/admin/dashboard/${path}`, {
         headers: { cookie: cookie ?? '' },
       })

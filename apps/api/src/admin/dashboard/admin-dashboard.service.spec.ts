@@ -2,13 +2,19 @@ import type { ProviderHealthService } from '../../chat/provider-health.service'
 import type { PrismaService } from '../../database/prisma.service'
 import { RequestStatus } from '../../generated/prisma/client'
 import { AdminDashboardService } from './admin-dashboard.service'
+import type { TokenAnalyticsService } from '../../token-analytics/token-analytics.service'
 
 function setup() {
   const findMany = jest.fn()
   const prisma = { requestLog: { findMany } } as unknown as PrismaService
   const getStatus = jest.fn().mockResolvedValue('healthy')
   const health = { getStatus } as unknown as ProviderHealthService
-  return { findMany, getStatus, service: new AdminDashboardService(prisma, health) }
+  const tokenAnalytics = { forAdmin: jest.fn() } as unknown as TokenAnalyticsService
+  return {
+    findMany,
+    getStatus,
+    service: new AdminDashboardService(prisma, health, tokenAnalytics),
+  }
 }
 
 describe('AdminDashboardService', () => {

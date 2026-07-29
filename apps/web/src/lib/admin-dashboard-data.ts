@@ -30,6 +30,31 @@ export type DashboardErrors = Array<{
   completedAt: string | null
 }>
 
+export interface DashboardTokenMetrics {
+  inputTokens: number
+  outputTokens: number
+  totalTokens: number
+  cachedInputTokens: number
+  reasoningTokens: number
+}
+
+export interface DashboardTokenAnalytics {
+  generatedAt: string
+  today: DashboardTokenMetrics & { modelCalls: number; cacheRate: number }
+  models: Array<DashboardTokenMetrics & { model: string; modelCalls: number; cacheRate: number }>
+  heatmap: {
+    from: string
+    to: string
+    daily: Array<{ date: string; totalTokens: number }>
+  }
+  skills: Array<
+    DashboardTokenMetrics & { name: string; modelCalls: number; cacheRate: number }
+  >
+  tools: Array<
+    DashboardTokenMetrics & { name: string; modelCalls: number; cacheRate: number }
+  >
+}
+
 export type DashboardSection<T> =
   { status: 'success'; data: T } | { status: 'error'; message: string; unauthorized: boolean }
 
@@ -38,22 +63,25 @@ export interface DashboardData {
   trends: DashboardSection<DashboardTrends>
   latencies: DashboardSection<DashboardLatencies>
   errors: DashboardSection<DashboardErrors>
+  tokenAnalytics: DashboardSection<DashboardTokenAnalytics>
 }
 
 export async function loadDashboard(
   fetchImplementation: typeof fetch = fetch,
 ): Promise<DashboardData> {
-  const [overview, trends, latencies, errors] = await Promise.allSettled([
+  const [overview, trends, latencies, errors, tokenAnalytics] = await Promise.allSettled([
     request<DashboardOverview>('overview', fetchImplementation),
     request<DashboardTrends>('trends', fetchImplementation),
     request<DashboardLatencies>('latencies', fetchImplementation),
     request<DashboardErrors>('errors', fetchImplementation),
+    request<DashboardTokenAnalytics>('token-analytics', fetchImplementation),
   ])
   return {
     overview: section(overview),
     trends: section(trends),
     latencies: section(latencies),
     errors: section(errors),
+    tokenAnalytics: section(tokenAnalytics),
   }
 }
 
