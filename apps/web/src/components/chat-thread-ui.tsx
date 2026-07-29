@@ -12,7 +12,7 @@ import {
   useAuiState,
   useThreadViewport,
 } from '@assistant-ui/react'
-import { CopyIcon } from 'lucide-react'
+import { CopyIcon, CheckIcon } from 'lucide-react'
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { useEffect, useRef, useState } from 'react'
@@ -696,9 +696,18 @@ export function AssistantMessage({
             <ActionBarPrimitive.Copy
               aria-label="复制回复"
               title="复制"
-              className="grid size-7 cursor-pointer place-items-center rounded-md opacity-25 transition-[background,color,opacity] group-hover:opacity-100 hover:bg-brand-subtle hover:text-brand-hover focus-visible:opacity-100 disabled:cursor-not-allowed dark:hover:bg-brand-subtle dark:hover:text-brand-light"
+              className="group/copy grid size-7 cursor-pointer place-items-center rounded-md opacity-25 transition-[background,color,opacity] group-hover:opacity-100 hover:bg-brand-subtle hover:text-brand-hover focus-visible:opacity-100 disabled:cursor-not-allowed dark:hover:bg-brand-subtle dark:hover:text-brand-light"
             >
-              <CopyIcon aria-hidden="true" className="size-3.5" strokeWidth={1.8} />
+              <CopyIcon
+                aria-hidden="true"
+                className="size-3.5 group-data-[copied=true]/copy:hidden"
+                strokeWidth={1.8}
+              />
+              <CheckIcon
+                aria-hidden="true"
+                className="hidden size-3.5 group-data-[copied=true]/copy:block"
+                strokeWidth={1.8}
+              />
             </ActionBarPrimitive.Copy>
           </ActionBarPrimitive.Root>
         </div>
