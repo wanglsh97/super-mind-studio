@@ -21,10 +21,13 @@ export function TokenCalendarHeatmap({
   const calendar = useMemo(() => buildCalendar(from, to, days), [days, from, to])
   return (
     <div className="overflow-x-auto pb-1" role="img" aria-label={ariaLabel}>
-      <div className="min-w-max">
+      <div className="mx-auto w-max">
         <div className="mb-2 ml-9 flex gap-1">
           {calendar.weeks.map((week, index) => (
-            <div key={week.key} className="w-3 text-[10px] text-slate-400">
+            <div
+              key={week.key}
+              className="w-3 whitespace-nowrap text-[10px] text-slate-400"
+            >
               {calendar.monthLabels.get(index) ?? ''}
             </div>
           ))}
