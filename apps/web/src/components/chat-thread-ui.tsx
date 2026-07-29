@@ -632,7 +632,7 @@ export function UserMessage() {
       <div className="font-mono text-[0.55rem] font-bold tracking-[0.13em] text-ink-subtle">
         YOU
       </div>
-      <div className="max-w-[min(82%,38rem)] rounded-2xl rounded-br-md bg-[linear-gradient(135deg,#2764ff,#4d6ee8)] px-4 py-3 text-[0.87rem] leading-relaxed text-white shadow-[0_12px_30px_rgb(39_100_255/0.16)] max-md:max-w-[92%] dark:bg-surface dark:text-ink">
+      <div className="max-w-[min(82%,38rem)] rounded-2xl rounded-br-md border border-sky-200 bg-[linear-gradient(135deg,#f4f9ff,#eaf4ff)] px-4 py-3 text-[0.87rem] leading-relaxed text-slate-800 shadow-[0_10px_24px_rgb(39_100_255/0.08)] max-md:max-w-[92%] dark:border-slate-300 dark:bg-slate-50 dark:text-slate-800">
         <MessagePrimitive.Parts />
       </div>
     </MessagePrimitive.Root>
