@@ -635,10 +635,7 @@ export function AgentEmptyState({
 export function UserMessage() {
   return (
     <MessagePrimitive.Root className="flex flex-col items-end gap-2 py-4">
-      <div className="font-mono text-[0.55rem] font-bold tracking-[0.13em] text-ink-subtle">
-        YOU
-      </div>
-      <div className="max-w-[min(82%,38rem)] rounded-2xl rounded-br-md border border-sky-200 bg-[linear-gradient(135deg,#f4f9ff,#eaf4ff)] px-4 py-3 text-[0.87rem] leading-relaxed text-slate-800 shadow-[0_10px_24px_rgb(39_100_255/0.08)] max-md:max-w-[92%] dark:border-slate-300 dark:bg-slate-50 dark:text-slate-800">
+      <div className="liquid-glass-soft max-w-[min(82%,38rem)] rounded-2xl px-4 py-3 text-[0.87rem] leading-relaxed text-ink-secondary max-md:max-w-[92%] dark:text-ink-secondary">
         <MessagePrimitive.Parts />
       </div>
     </MessagePrimitive.Root>
@@ -691,7 +688,7 @@ export function AssistantMessage({
           </ErrorPrimitive.Root>
         </MessagePrimitive.Error>
         <div className="mt-3 flex min-h-7 items-center justify-between gap-4 font-mono text-[0.56rem] text-ink-subtle">
-          {metadata}
+          {/* {metadata} */}
           <ActionBarPrimitive.Root className="flex items-center gap-1">
             <ActionBarPrimitive.Copy
               aria-label="复制回复"
