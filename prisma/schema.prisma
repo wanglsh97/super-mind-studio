@@ -73,6 +73,17 @@ enum AgentToolCallStatus {
   CANCELLED
 }
 
+enum AgentInvocationStatus {
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+
+enum AgentInvocationAttributionKind {
+  SKILL
+  TOOL
+}
+
 enum SkillStatus {
   PENDING_REVIEW
   PUBLISHED
@@ -136,6 +147,7 @@ model User {
   ownedSkills    Skill[]               @relation("SkillOwner")
   files          UserFile[]
   skillUploads   SkillUploadSession[]
+  modelInvocations AgentModelInvocation[]
 
   @@unique([authProvider, providerUserId])
   @@index([userName])
@@ -316,6 +328,7 @@ model RequestLog {
   agentRunId        String?              @db.Uuid
   agentRun          AgentRun?            @relation(fields: [agentRunId], references: [id], onDelete: SetNull)
   billing           BillingRecord?
+  agentModelInvocation AgentModelInvocation?
   imageTask         ImageGenerationTask?
 
   @@index([userId, createdAt])
@@ -488,10 +501,55 @@ model AgentRun {
   messages             AgentMessage[]
   requestLogs          RequestLog[]
   files                UserFile[]
+  modelInvocations     AgentModelInvocation[]
 
   @@index([threadId, createdAt])
   @@index([userId, status])
   @@index([sandboxId])
+}
+
+model AgentModelInvocation {
+  id                       String                          @id @default(uuid()) @db.Uuid
+  requestId                String                          @unique @db.Uuid
+  requestLogId             String                          @unique @db.Uuid
+  agentRunId               String?                         @db.Uuid
+  userId                   String                          @db.Uuid
+  status                   AgentInvocationStatus
+  provider                 String?                         @db.VarChar(64)
+  resolvedModel            String?                         @db.VarChar(128)
+  inputTokens              Int?
+  outputTokens             Int?
+  totalTokens              Int?
+  cachedInputTokens        Int?
+  reasoningTokens          Int?
+  usageUnknown             Boolean                         @default(true)
+  cacheUsageAvailable      Boolean                         @default(false)
+  reasoningUsageAvailable  Boolean                         @default(false)
+  startedAt                DateTime                        @db.Timestamptz(3)
+  completedAt              DateTime                        @db.Timestamptz(3)
+  createdAt                DateTime                        @default(now()) @db.Timestamptz(3)
+  updatedAt                DateTime                        @updatedAt @db.Timestamptz(3)
+  requestLog               RequestLog                      @relation(fields: [requestLogId], references: [id], onDelete: Cascade)
+  agentRun                 AgentRun?                       @relation(fields: [agentRunId], references: [id], onDelete: SetNull)
+  user                     User                            @relation(fields: [userId], references: [id], onDelete: Restrict)
+  attributions             AgentModelInvocationAttribution[]
+
+  @@index([userId, completedAt])
+  @@index([resolvedModel, completedAt])
+  @@index([completedAt])
+}
+
+model AgentModelInvocationAttribution {
+  id           String                         @id @default(uuid()) @db.Uuid
+  invocationId String                         @db.Uuid
+  kind         AgentInvocationAttributionKind
+  name         String                         @db.VarChar(191)
+  weight       Decimal                        @default(1) @db.Decimal(10, 8)
+  createdAt    DateTime                       @default(now()) @db.Timestamptz(3)
+  invocation   AgentModelInvocation           @relation(fields: [invocationId], references: [id], onDelete: Cascade)
+
+  @@unique([invocationId, kind, name])
+  @@index([kind, name])
 }
 
 model AgentEvent {

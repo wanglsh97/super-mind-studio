@@ -5,6 +5,7 @@ import { ModelGatewayModule } from '../chat/model-gateway.module'
 import { RedisModule } from '../redis/redis.module'
 import { RequestLifecycleModule } from '../request-lifecycle/request-lifecycle.module'
 import { UserAuthModule } from '../user-auth/user-auth.module'
+import { TokenAnalyticsModule } from '../token-analytics/token-analytics.module'
 import { AgentActiveRunLock } from './agent-active-run.lock'
 import { AgentContextPreparer } from './context/agent-context-preparer'
 import { AgentOutputFileRepository } from './files/agent-output-file.repository'
@@ -13,6 +14,7 @@ import { AgentContextSummaryRepository } from './context/agent-context-summary.r
 import { AgentContextSummaryService } from './context/agent-context-summary.service'
 import { AgentController } from './agent.controller'
 import { AgentMessageRepository } from './agent-message.repository'
+import { AgentModelInvocationRepository } from './agent-model-invocation.repository'
 import { AgentMcpSdkClient } from './mcp/agent-mcp.client'
 import { AgentMcpPreferenceRepository } from './mcp/agent-mcp-preference.repository'
 import { AGENT_MCP_REGISTRY, PlatformAgentMcpRegistry } from './mcp/agent-mcp.registry'
@@ -118,12 +120,20 @@ export function createSandboxRuntime(config: ConfigService): SandboxRuntimePort 
  * 始终限制在服务端，不进入 SDK 公共面或浏览器。
  */
 @Module({
-  imports: [ConfigModule, UserAuthModule, ModelGatewayModule, RequestLifecycleModule, RedisModule],
+  imports: [
+    ConfigModule,
+    UserAuthModule,
+    ModelGatewayModule,
+    RequestLifecycleModule,
+    RedisModule,
+    TokenAnalyticsModule,
+  ],
   controllers: [AgentController, SkillMarketController],
   providers: [
     AgentThreadRepository,
     AgentRunRepository,
     AgentMessageRepository,
+    AgentModelInvocationRepository,
     AgentRunEventBus,
     AgentActiveRunLock,
     AgentContextPreparer,

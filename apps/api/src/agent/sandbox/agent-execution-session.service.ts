@@ -104,6 +104,13 @@ export class AgentExecutionSessionService {
     return { sandboxId: session.thread.sandboxId, skill, alreadyActive: false }
   }
 
+  activeSkillNames(runId: string, userId: string): string[] {
+    const session = this.requireRunSession(runId, userId)
+    return [...session.activeSkills.values()]
+      .map((skill) => skill.manifest.name)
+      .sort((left, right) => left.localeCompare(right))
+  }
+
   async runShell(
     runId: string,
     userId: string,

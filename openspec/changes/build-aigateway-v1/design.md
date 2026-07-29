@@ -181,6 +181,8 @@ Prompt 页面只提交 `{ prompt, mode }`。`PromptTemplateRegistry` 将 mode �
 | --- | --- |
 | `RequestLog` | `id/requestId` 唯一；capability、完整 prompt/messages JSON、alias、provider、resolvedModel、status、timings、failover、error；`createdAt` 索引 |
 | `BillingRecord` | 与 `RequestLog` 一对一；input/output/total token、priceVersion、estimatedCostCny；允许 usageUnknown |
+| `AgentModelInvocation` | 每次 Agent 内部模型调用一条；关联 AgentRun、User 与 RequestLog，记录实际 provider/resolved model、input/output/total、cached input、reasoning、usage 可用性及调用时间 |
+| `AgentModelInvocationAttribution` | 将一次模型调用按 `skill/tool` 维度关联到稳定名称；同一调用、维度与名称唯一，保证单一维度聚合不重复计数 |
 | `ImageGenerationTask` | 平台 task ID、provider task ID、prompt、alias、options、normalized status、results JSON、error、poll timestamps；终态不可逆 |
 | `AdminAuditLog` | 只增不改；actor、action、targetTable、targetId、before/after JSON、requestId、IP、createdAt |
 
@@ -189,9 +191,18 @@ Prompt 页面只提交 `{ prompt, mode }`。`PromptTemplateRegistry` 将 mode �
 - `RequestLog`: `pending → succeeded | failed | cancelled`；后台可标记/筛选长时间 pending，但不自动伪造终态。
 - `ImageGenerationTask`: `pending → running → succeeded | failed`，允许 `pending → succeeded | failed`；终态查询幂等。
 - `BillingRecord` 与请求终结在同一事务 upsert，避免重复轮询或重试产生多条账单。
+- `AgentModelInvocation` 以 Agent 每次 `requestId` 唯一；失败或取消时只要 Provider 返回 usage 仍保留实际消耗，cache/reasoning 作为 input/output 细分而不重复加入 total。
 - 删除 `RequestLog` 时在事务内处理一对一 BillingRecord；删除 Image task 不应删除 AdminAuditLog。
 
 索引优先支持后台查询：`RequestLog(createdAt,status,modelAlias,capability)`、`ImageGenerationTask(createdAt,status)`、`AdminAuditLog(createdAt,action,targetTable)`。不为完整 Prompt 建全文索引。
+
+### Agent Token analytics
+
+Agent 模型调用包装器在 `RequestLog/BillingRecord` 生命周期之外同步写入调用级 Token 账本。实际 resolved model 以模型调用终态事件为准，避免故障转移归到用户最初选择的模型。Provider 未返回缓存或思考用量时，数据库保留“未提供”状态，用户端和管理后台展示及聚合时按 `0` 表达。
+
+归因采用调用级关联而不是复制账单：当前已激活 Skill 作为 Skill 维度；产生 tool call 的模型调用及紧随 tool result 的模型调用关联到对应 Tool。一次调用涉及多个同类名称时按稳定名称去重，因此在任一归因维度中不会因重复事件重复累计。Skill description 注入产生的提示词本身不作为 Skill 消耗单独计数。
+
+用户端提供仅当前用户可见的 Token 分析接口：最近三个月日历热力图按自然日汇总总 Token；每日明细返回 input/output/cache/reasoning；模型图按实际 resolved model 汇总。管理端 Dashboard 的 Token 概览与模型明细统计服务器自然日“今天”，同时提供最近三个月全站热力图，以及按 Skill/Tool/模型的无 Prompt 聚合。所有聚合响应仅含名称、计数与 Token 数值，不返回 messages、Prompt、工具参数或结果。
 
 ## SDK and API Contracts
 

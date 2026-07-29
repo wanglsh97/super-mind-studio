@@ -37,7 +37,12 @@ export type ModelStreamEvent =
   | { type: 'text'; delta: string }
   | { type: 'reasoning'; delta: string }
   | { type: 'tool-call'; toolCall: ChatAdapterToolCall }
-  | { type: 'usage'; usage: ChatAdapterUsage }
+  | {
+      type: 'usage'
+      usage: ChatAdapterUsage
+      provider?: TextModelAlias
+      resolvedModel?: string
+    }
   | {
       type: 'finish'
       finishReason: ChatFinishReason

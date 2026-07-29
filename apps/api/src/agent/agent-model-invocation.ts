@@ -8,16 +8,20 @@ import type {
 } from '../chat/model-invocation.port'
 import { PricingService } from '../billing/pricing.service'
 import type { RequestLifecycleService } from '../request-lifecycle/request-lifecycle.service'
+import type { AgentModelInvocationRepository } from './agent-model-invocation.repository'
 
 export interface AgentModelInvocationContext {
   userId: string
   agentRunId: string
+  activeSkillNames?: () => readonly string[]
 }
 
 const UNKNOWN_USAGE: ChatAdapterUsage = {
   inputTokens: null,
   outputTokens: null,
   totalTokens: null,
+  cachedInputTokens: null,
+  reasoningTokens: null,
   usageUnknown: true,
 }
 
@@ -31,6 +35,7 @@ export function createAgentModelInvocationPort(
   base: ModelInvocationPort,
   lifecycle: RequestLifecycleService,
   pricing: PricingService,
+  invocations: AgentModelInvocationRepository,
   context: AgentModelInvocationContext,
 ): ModelInvocationPort {
   return {
@@ -50,16 +55,27 @@ export function createAgentModelInvocationPort(
 
       let firstTokenAt: Date | undefined
       let usage: ChatAdapterUsage | undefined
+      let provider: ChatAdapterId | undefined
+      let resolvedModel: string | undefined
       let finished = false
+      const skillNames = [...new Set(context.activeSkillNames?.() ?? [])]
+      const toolNames = new Set(trailingToolNames(request.messages))
 
       try {
         for await (const event of base.invoke(request)) {
           if (event.type === 'text' || event.type === 'reasoning' || event.type === 'tool-call') {
             firstTokenAt ??= new Date()
           }
-          if (event.type === 'usage') usage = event.usage
+          if (event.type === 'tool-call') toolNames.add(event.toolCall.name)
+          if (event.type === 'usage') {
+            usage = event.usage
+            provider = event.provider as ChatAdapterId
+            resolvedModel = event.resolvedModel
+          }
           if (event.type === 'finish') {
             finished = true
+            provider = event.provider as ChatAdapterId
+            resolvedModel = event.resolvedModel
             const priced = pricing.calculate(
               event.provider as ChatAdapterId,
               usage ?? UNKNOWN_USAGE,
@@ -78,11 +94,26 @@ export function createAgentModelInvocationPort(
                 : { providerRequestId: event.providerRequestId }),
               ...(event.failover === undefined ? {} : { failover: event.failover }),
             })
+            await invocations.save({
+              requestId: request.requestId,
+              requestLogId: started.id,
+              agentRunId: context.agentRunId,
+              userId: context.userId,
+              status: 'succeeded',
+              provider: event.provider,
+              resolvedModel: event.resolvedModel,
+              usage: usage ?? UNKNOWN_USAGE,
+              startedAt: started.startedAt,
+              completedAt: new Date(),
+              skillNames,
+              toolNames: [...toolNames],
+            })
           }
           yield event
         }
 
         if (!finished) {
+          const completedAt = new Date()
           await lifecycle.finish({
             requestLogId: started.id,
             requestId: request.requestId,
@@ -96,10 +127,25 @@ export function createAgentModelInvocationPort(
               details: { retryable: true },
             },
           })
+          await invocations.save({
+            requestId: request.requestId,
+            requestLogId: started.id,
+            agentRunId: context.agentRunId,
+            userId: context.userId,
+            status: 'failed',
+            ...(provider === undefined ? {} : { provider }),
+            ...(resolvedModel === undefined ? {} : { resolvedModel }),
+            usage: usage ?? UNKNOWN_USAGE,
+            startedAt: started.startedAt,
+            completedAt,
+            skillNames,
+            toolNames: [...toolNames],
+          })
         }
       } catch (error) {
         if (!finished) {
           const aborted = request.signal.aborted
+          const completedAt = new Date()
           await lifecycle.finish({
             requestLogId: started.id,
             requestId: request.requestId,
@@ -117,9 +163,33 @@ export function createAgentModelInvocationPort(
                   },
                 }),
           })
+          await invocations.save({
+            requestId: request.requestId,
+            requestLogId: started.id,
+            agentRunId: context.agentRunId,
+            userId: context.userId,
+            status: aborted ? 'cancelled' : 'failed',
+            ...(provider === undefined ? {} : { provider }),
+            ...(resolvedModel === undefined ? {} : { resolvedModel }),
+            usage: usage ?? UNKNOWN_USAGE,
+            startedAt: started.startedAt,
+            completedAt,
+            skillNames,
+            toolNames: [...toolNames],
+          })
         }
         throw error
       }
     },
   }
+}
+
+function trailingToolNames(messages: readonly { role: string; toolName?: string }[]): string[] {
+  const names: string[] = []
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const message = messages[index]
+    if (!message || message.role !== 'tool') break
+    if (message.toolName) names.push(message.toolName)
+  }
+  return names
 }

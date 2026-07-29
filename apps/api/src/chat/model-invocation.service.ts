@@ -136,7 +136,7 @@ export class ModelInvocationService implements ModelInvocationPort {
       case 'tool-call':
         return { type: 'tool-call', toolCall: event.toolCall }
       case 'usage':
-        return { type: 'usage', usage: event.usage }
+        return { type: 'usage', usage: event.usage, provider, resolvedModel }
       case 'finish':
         return {
           type: 'finish',

@@ -7,7 +7,11 @@ import { ModelInvocationService } from './model-invocation.service'
 import type { ModelStreamEvent } from './model-invocation.port'
 import type { ProviderHealthService } from './provider-health.service'
 
-function adapterOf(id: ChatAdapter['id'], events: readonly ChatAdapterEvent[], error?: Error): ChatAdapter {
+function adapterOf(
+  id: ChatAdapter['id'],
+  events: readonly ChatAdapterEvent[],
+  error?: Error,
+): ChatAdapter {
   return {
     id,
     resolvedModel: `${id}-real`,
@@ -79,7 +83,10 @@ describe('ModelInvocationService', () => {
         type: 'tool-call',
         toolCall: { id: 't1', name: 'web_fetch', arguments: { url: 'https://a.test' } },
       },
-      { type: 'usage', usage: { inputTokens: 1, outputTokens: 2, totalTokens: 3, usageUnknown: false } },
+      {
+        type: 'usage',
+        usage: { inputTokens: 1, outputTokens: 2, totalTokens: 3, usageUnknown: false },
+      },
       { type: 'finish', finishReason: 'tool_calls' },
     ])
     const { service } = serviceFor(primary)
@@ -89,8 +96,16 @@ describe('ModelInvocationService', () => {
     expect(events).toEqual([
       { type: 'reasoning', delta: '先思考' },
       { type: 'text', delta: '答案' },
-      { type: 'tool-call', toolCall: { id: 't1', name: 'web_fetch', arguments: { url: 'https://a.test' } } },
-      { type: 'usage', usage: { inputTokens: 1, outputTokens: 2, totalTokens: 3, usageUnknown: false } },
+      {
+        type: 'tool-call',
+        toolCall: { id: 't1', name: 'web_fetch', arguments: { url: 'https://a.test' } },
+      },
+      {
+        type: 'usage',
+        usage: { inputTokens: 1, outputTokens: 2, totalTokens: 3, usageUnknown: false },
+        provider: 'qwen',
+        resolvedModel: 'qwen-real',
+      },
       {
         type: 'finish',
         finishReason: 'tool_calls',
@@ -102,7 +117,10 @@ describe('ModelInvocationService', () => {
 
   it('forwards tools, toolChoice and sampling parameters to the adapter', async () => {
     const primary = adapterOf('qwen', [
-      { type: 'usage', usage: { inputTokens: 0, outputTokens: 0, totalTokens: 0, usageUnknown: true } },
+      {
+        type: 'usage',
+        usage: { inputTokens: 0, outputTokens: 0, totalTokens: 0, usageUnknown: true },
+      },
       { type: 'finish', finishReason: 'stop' },
     ])
     const { service } = serviceFor(primary)
@@ -134,7 +152,10 @@ describe('ModelInvocationService', () => {
     )
     const fallback = adapterOf('glm', [
       { type: 'delta', content: 'fallback' },
-      { type: 'usage', usage: { inputTokens: 1, outputTokens: 1, totalTokens: 2, usageUnknown: false } },
+      {
+        type: 'usage',
+        usage: { inputTokens: 1, outputTokens: 1, totalTokens: 2, usageUnknown: false },
+      },
       { type: 'finish', finishReason: 'stop' },
     ])
     const { service, failover } = serviceFor(primary, [fallback], fallback)

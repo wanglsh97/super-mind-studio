@@ -16,6 +16,7 @@ import type { ModelInvocationPort } from '../chat/model-invocation.port'
 import { PricingService } from '../billing/pricing.service'
 import { RequestLifecycleService } from '../request-lifecycle/request-lifecycle.service'
 import { createAgentModelInvocationPort } from './agent-model-invocation'
+import { AgentModelInvocationRepository } from './agent-model-invocation.repository'
 import { AgentActiveRunLock } from './agent-active-run.lock'
 import { AgentContextPreparer } from './context/agent-context-preparer'
 import { AgentContextSummaryRepository } from './context/agent-context-summary.repository'
@@ -85,6 +86,8 @@ export class AgentRunService {
   constructor(
     @Inject(AgentRunRepository) private readonly runs: AgentRunRepository,
     @Inject(AgentMessageRepository) private readonly messages: AgentMessageRepository,
+    @Inject(AgentModelInvocationRepository)
+    private readonly modelInvocations: AgentModelInvocationRepository,
     @Inject(AgentToolRegistry) private readonly tools: AgentToolRegistry,
     @Inject(MODEL_INVOCATION_PORT) private readonly modelInvocation: ModelInvocationPort,
     @Inject(RequestLifecycleService) private readonly lifecycle: RequestLifecycleService,
@@ -193,7 +196,13 @@ export class AgentRunService {
         this.modelInvocation,
         this.lifecycle,
         this.pricing,
-        { userId: input.userId, agentRunId: input.runId },
+        this.modelInvocations,
+        {
+          userId: input.userId,
+          agentRunId: input.runId,
+          activeSkillNames: () =>
+            this.executionSessions.activeSkillNames(input.runId, input.userId),
+        },
       )
 
       const { Agent } = await loadPiAgentCore()
