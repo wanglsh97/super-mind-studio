@@ -30,6 +30,7 @@ describe('user auth login helpers', () => {
     }
     assert.equal(sanitizeUserReturnTo(null), '/')
     assert.equal(sanitizeUserReturnTo('/mcp'), '/mcp')
+    assert.equal(sanitizeUserReturnTo('/usage'), '/usage')
     assert.equal(githubLoginUrl('/mcp'), '/api/v1/auth/github?returnTo=%2Fmcp')
     assert.equal(googleLoginUrl('/mcp'), '/api/v1/auth/google?returnTo=%2Fmcp')
   })

@@ -150,6 +150,15 @@ function UserWorkspace({ children }: Readonly<{ children: ReactNode }>) {
                   )}
                 >
                   <Link
+                    href="/usage"
+                    role="menuitem"
+                    onClick={() => setUserMenuOpen(false)}
+                    className={menuItemClass}
+                  >
+                    <UsageIcon />
+                    <span>Token 用量</span>
+                  </Link>
+                  <Link
                     href="/skills"
                     role="menuitem"
                     onClick={() => setUserMenuOpen(false)}
@@ -280,6 +289,14 @@ function NewConversationButton({ collapsed }: Readonly<{ collapsed: boolean }>) 
       </span>
       {!collapsed && <span>新建会话</span>}
     </Link>
+  )
+}
+
+function UsageIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+      <path d="M4 19V9m5 10V5m5 14v-7m5 7V3" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
   )
 }
 
