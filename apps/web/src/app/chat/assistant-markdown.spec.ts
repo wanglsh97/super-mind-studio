@@ -69,6 +69,18 @@ describe('AssistantMarkdown security', () => {
     assert.doesNotMatch(markup, /language-svg/)
   })
 
+  it('renders non-SVG fenced blocks with the custom highlighter and language label', () => {
+    const markup = renderToStaticMarkup(
+      createElement(AssistantMarkdown, null, '```ts\nconst answer: number = 42\n```'),
+    )
+
+    assert.match(markup, /aria-label="复制 ts 代码"/)
+    assert.match(markup, />ts<\/span>/)
+    assert.match(markup, />const<\/span>/)
+    assert.match(markup, /> answer<\/span>/)
+    assert.doesNotMatch(markup, /<pre[^>]*class="language-ts"/)
+  })
+
   it('removes active SVG content and externally loaded resources', () => {
     const sanitized = sanitizeSvg(
       [

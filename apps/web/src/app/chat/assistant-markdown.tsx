@@ -5,6 +5,8 @@ import Markdown from 'react-markdown'
 import type { ExtraProps } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 
+import { CodeBlock } from './code-block'
+
 const allowedElements = [
   'p',
   'br',
@@ -176,6 +178,16 @@ function SvgAwarePre({
     }
   }
 
+  if (isCodeElement(child)) {
+    const language = getCodeLanguage(child.props.className)
+    return (
+      <CodeBlock
+        code={normalizeCodeSource(child.props.children)}
+        {...(language ? { language } : {})}
+      />
+    )
+  }
+
   return <pre {...props}>{children}</pre>
 }
 
@@ -186,8 +198,23 @@ function isSvgCodeElement(value: ReactNode): value is MarkdownCodeElement {
   )
 }
 
+function isCodeElement(value: ReactNode): value is MarkdownCodeElement {
+  return React.isValidElement<{ className?: string }>(value)
+}
+
+function getCodeLanguage(className?: string): string | undefined {
+  return className
+    ?.split(/\s+/)
+    .find((name) => name.startsWith('language-'))
+    ?.slice('language-'.length)
+}
+
 function normalizeSvgSource(value: ReactNode): string {
   return String(value ?? '').trim()
+}
+
+function normalizeCodeSource(value: ReactNode): string {
+  return String(value ?? '').replace(/\n$/, '')
 }
 
 export function findCompletedSvgBlocks(markdown: string): ReadonlySet<string> {
