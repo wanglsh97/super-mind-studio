@@ -24,6 +24,7 @@
 - `prompt-optimization`: 基于统一聊天网关的 Prompt 优化模式、结果展示和复制操作。
 - `admin-console`: 固定管理员认证、仪表盘、日志查询、业务表白名单维护和管理操作审计。
 - `observability-billing`: 完整 Prompt 请求日志、结构化运行日志、Token/费用记录和运行指标聚合。
+- `agent-token-analytics`: 仅面向 Agent Run 的可追溯 Token 明细、用户个人用量分析及管理员按模型、Skill、Tool 的聚合统计。
 - `deployment-delivery`: ECS 单机容器编排、Nginx 域名/IP 入口、配置注入、数据备份和发布验收。
 
 ### Modified Capabilities
