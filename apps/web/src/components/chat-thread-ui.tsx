@@ -12,6 +12,7 @@ import {
   useAuiState,
   useThreadViewport,
 } from '@assistant-ui/react'
+import { CopyIcon } from 'lucide-react'
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { useEffect, useRef, useState } from 'react'
@@ -692,8 +693,12 @@ export function AssistantMessage({
         <div className="mt-3 flex min-h-7 items-center justify-between gap-4 font-mono text-[0.56rem] text-ink-subtle">
           {metadata}
           <ActionBarPrimitive.Root>
-            <ActionBarPrimitive.Copy className="rounded-md px-2 py-1 font-sans text-[0.65rem] opacity-25 transition-[background,color,opacity] group-hover:opacity-100 hover:bg-brand-subtle hover:text-brand-hover focus-visible:opacity-100 dark:hover:bg-brand-subtle dark:hover:text-brand-light">
-              复制
+            <ActionBarPrimitive.Copy
+              aria-label="复制回复"
+              title="复制"
+              className="grid size-7 cursor-pointer place-items-center rounded-md opacity-25 transition-[background,color,opacity] group-hover:opacity-100 hover:bg-brand-subtle hover:text-brand-hover focus-visible:opacity-100 disabled:cursor-not-allowed dark:hover:bg-brand-subtle dark:hover:text-brand-light"
+            >
+              <CopyIcon aria-hidden="true" className="size-3.5" strokeWidth={1.8} />
             </ActionBarPrimitive.Copy>
           </ActionBarPrimitive.Root>
         </div>
