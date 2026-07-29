@@ -692,7 +692,7 @@ export function AssistantMessage({
         </MessagePrimitive.Error>
         <div className="mt-3 flex min-h-7 items-center justify-between gap-4 font-mono text-[0.56rem] text-ink-subtle">
           {metadata}
-          <ActionBarPrimitive.Root>
+          <ActionBarPrimitive.Root className="flex items-center gap-1">
             <ActionBarPrimitive.Copy
               aria-label="复制回复"
               title="复制"
