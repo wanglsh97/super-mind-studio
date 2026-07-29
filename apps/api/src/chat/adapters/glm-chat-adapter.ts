@@ -14,6 +14,7 @@ import type {
 } from './chat-adapter'
 import { ChatAdapterError } from './chat-adapter'
 import { toOpenAICompatibleMessages } from './openai-compatible-message'
+import { openAICompatibleUsageDetails } from './openai-compatible-usage'
 import {
   OpenAICompatibleToolCallAssembler,
   openAICompatibleToolRequestFields,
@@ -194,6 +195,7 @@ function parseUsage(value: unknown): ChatAdapterUsage {
     inputTokens: token(usage.prompt_tokens, 'GLM prompt_tokens'),
     outputTokens: token(usage.completion_tokens, 'GLM completion_tokens'),
     totalTokens: token(usage.total_tokens, 'GLM total_tokens'),
+    ...openAICompatibleUsageDetails(usage, 'GLM', protocolError),
     usageUnknown: false,
   }
 }

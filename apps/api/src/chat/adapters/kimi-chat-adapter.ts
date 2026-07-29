@@ -14,6 +14,7 @@ import type {
 } from './chat-adapter'
 import { ChatAdapterError } from './chat-adapter'
 import { toOpenAICompatibleMessages } from './openai-compatible-message'
+import { openAICompatibleUsageDetails } from './openai-compatible-usage'
 import {
   OpenAICompatibleToolCallAssembler,
   openAICompatibleToolRequestFields,
@@ -203,6 +204,7 @@ function parseUsage(value: unknown): ChatAdapterUsage {
     inputTokens: token(usage.prompt_tokens, 'Kimi prompt_tokens'),
     outputTokens: token(usage.completion_tokens, 'Kimi completion_tokens'),
     totalTokens: token(usage.total_tokens, 'Kimi total_tokens'),
+    ...openAICompatibleUsageDetails(usage, 'Kimi', protocolError),
     usageUnknown: false,
   }
 }

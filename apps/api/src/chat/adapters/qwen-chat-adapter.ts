@@ -14,6 +14,7 @@ import type {
 } from './chat-adapter'
 import { ChatAdapterError } from './chat-adapter'
 import { toOpenAICompatibleMessages } from './openai-compatible-message'
+import { openAICompatibleUsageDetails } from './openai-compatible-usage'
 import {
   OpenAICompatibleToolCallAssembler,
   openAICompatibleToolRequestFields,
@@ -209,6 +210,7 @@ export class QwenChatAdapter implements ChatAdapter {
       inputTokens: nonNegativeInteger(usage.prompt_tokens, 'Qwen prompt_tokens'),
       outputTokens: nonNegativeInteger(usage.completion_tokens, 'Qwen completion_tokens'),
       totalTokens: nonNegativeInteger(usage.total_tokens, 'Qwen total_tokens'),
+      ...openAICompatibleUsageDetails(usage, 'Qwen', this.protocolError.bind(this)),
       usageUnknown: false,
     }
   }

@@ -76,7 +76,14 @@ describe('MockChatAdapter', () => {
       },
       {
         type: 'usage',
-        usage: { inputTokens: 1, outputTokens: 2, totalTokens: 3, usageUnknown: false },
+        usage: {
+          inputTokens: 1,
+          outputTokens: 2,
+          totalTokens: 3,
+          cachedInputTokens: 0,
+          reasoningTokens: 0,
+          usageUnknown: false,
+        },
         providerRequestId: 'mock-00000000-0000-4000-8000-000000000001',
       },
       {

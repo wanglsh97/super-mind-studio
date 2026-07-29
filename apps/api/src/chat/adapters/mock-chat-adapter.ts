@@ -211,6 +211,8 @@ export class MockChatAdapter implements ChatAdapter {
       inputTokens,
       outputTokens,
       totalTokens: inputTokens + outputTokens,
+      cachedInputTokens: 0,
+      reasoningTokens: 0,
       usageUnknown: false,
     }
   }

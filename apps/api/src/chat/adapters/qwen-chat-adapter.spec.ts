@@ -70,7 +70,14 @@ describeChatAdapterContract({
       adapter,
       expectedDeltas: ['你好', '，我是千问。'],
       expectedReasoning: ['先分析问候语。'],
-      expectedUsage: { inputTokens: 12, outputTokens: 7, totalTokens: 19, usageUnknown: false },
+      expectedUsage: {
+        inputTokens: 12,
+        outputTokens: 7,
+        totalTokens: 19,
+        cachedInputTokens: null,
+        reasoningTokens: null,
+        usageUnknown: false,
+      },
       expectedFinishReason: 'stop',
       expectedProviderRequestId: 'fixture-qwen-request-1',
       assertRequest: () => {

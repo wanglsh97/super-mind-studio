@@ -29,7 +29,14 @@ describeChatAdapterContract({
       }),
       expectedDeltas: ['你好', '，我是 Kimi。'],
       expectedReasoning: ['先分析问候语。'],
-      expectedUsage: { inputTokens: 11, outputTokens: 7, totalTokens: 18, usageUnknown: false },
+      expectedUsage: {
+        inputTokens: 11,
+        outputTokens: 7,
+        totalTokens: 18,
+        cachedInputTokens: 0,
+        reasoningTokens: null,
+        usageUnknown: false,
+      },
       expectedFinishReason: 'stop',
       expectedProviderRequestId: 'cmpl-kimi-sanitized-1',
       assertRequest: () => {

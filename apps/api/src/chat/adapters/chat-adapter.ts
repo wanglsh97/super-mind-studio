@@ -55,6 +55,10 @@ export interface ChatAdapterUsage {
   inputTokens: number | null
   outputTokens: number | null
   totalTokens: number | null
+  /** Provider-reported cached portion of input tokens; null/undefined means unavailable. */
+  cachedInputTokens?: number | null
+  /** Provider-reported reasoning portion of output tokens; null/undefined means unavailable. */
+  reasoningTokens?: number | null
   usageUnknown: boolean
 }
 

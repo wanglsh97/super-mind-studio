@@ -119,7 +119,7 @@ function toPiUsage(usage: ChatAdapterUsage): Usage {
   return {
     input,
     output,
-    cacheRead: 0,
+    cacheRead: usage.cachedInputTokens ?? 0,
     cacheWrite: 0,
     totalTokens: usage.totalTokens ?? input + output,
     cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },

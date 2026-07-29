@@ -29,7 +29,14 @@ describeChatAdapterContract({
       }),
       expectedDeltas: ['你好', '，我是 DeepSeek。'],
       expectedReasoning: ['先分析问候语。'],
-      expectedUsage: { inputTokens: 10, outputTokens: 8, totalTokens: 18, usageUnknown: false },
+      expectedUsage: {
+        inputTokens: 10,
+        outputTokens: 8,
+        totalTokens: 18,
+        cachedInputTokens: null,
+        reasoningTokens: null,
+        usageUnknown: false,
+      },
       expectedFinishReason: 'stop',
       expectedProviderRequestId: 'deepseek-sanitized-1',
       assertRequest: () => {

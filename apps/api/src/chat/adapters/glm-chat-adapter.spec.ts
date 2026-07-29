@@ -29,7 +29,14 @@ describeChatAdapterContract({
       }),
       expectedDeltas: ['你好', '，我是 GLM。'],
       expectedReasoning: ['先分析问候语。'],
-      expectedUsage: { inputTokens: 9, outputTokens: 6, totalTokens: 15, usageUnknown: false },
+      expectedUsage: {
+        inputTokens: 9,
+        outputTokens: 6,
+        totalTokens: 15,
+        cachedInputTokens: null,
+        reasoningTokens: null,
+        usageUnknown: false,
+      },
       expectedFinishReason: 'stop',
       expectedProviderRequestId: 'glm-request-sanitized-1',
       assertRequest: () => {
