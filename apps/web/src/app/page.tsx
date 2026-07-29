@@ -2,12 +2,12 @@
 
 import { createAIGatewayClient, parseAgentOutputFileReference } from '@supermind/sdk'
 import type {
-  AgentContextBudgetState,
   AgentContextSummary,
   AgentMcpServerStatus,
   AgentSandboxStatus,
   AgentSkillCandidate,
   AgentStreamEvent,
+  AgentThread,
   AgentThreadSandbox,
   TextModelAlias,
   TextModelId,
@@ -72,6 +72,7 @@ import {
 } from './agent/agent-run-resume'
 import { activeRunForThread } from './agent/agent-active-runs'
 import { initialAgentRunViewState } from './agent/agent-run-reducer'
+import { threadTokenUsagePercentage } from './agent/agent-thread-token-usage'
 import {
   AGENT_TOOL_ACTIVITY_LABELS,
   resolveAgentToolActivityState,
@@ -114,7 +115,7 @@ function AgentConsole() {
     removeActiveRun,
   } = useAgentWorkspace()
   const activeThreadId = useAgentActiveThreadId()
-  const [contextBudget, setContextBudget] = useState<AgentContextBudgetState | null>(null)
+  const [threadTokenUsage, setThreadTokenUsage] = useState<AgentThread['tokenUsage'] | null>(null)
   const [contextSummary, setContextSummary] = useState<AgentContextSummary | null>(null)
   const [compressionEvents, setCompressionEvents] = useState<
     Extract<AgentStreamEvent, { type: 'context-compressed' }>[]
@@ -135,7 +136,6 @@ function AgentConsole() {
     onThreadCreated: (() => undefined) as (thread: Parameters<typeof prependThread>[0]) => void,
     onRunCreated: (() => undefined) as (run: { id: string; threadId: string }) => void,
     onRunFinished: () => undefined,
-    onContextBudget: (() => undefined) as (budget: AgentContextBudgetState) => void,
     onContextCompressed: (() => undefined) as (
       event: Extract<AgentStreamEvent, { type: 'context-compressed' }>,
     ) => void,
@@ -148,7 +148,7 @@ function AgentConsole() {
   contextRef.current.selectedSkillNames = selectedSkillNames
   contextRef.current.onThreadCreated = (thread) => {
     skipHydrationRef.current = true
-    setContextBudget(null)
+    setThreadTokenUsage(null)
     setContextSummary(null)
     setCompressionEvents([])
     prependThread(thread)
@@ -187,10 +187,18 @@ function AgentConsole() {
             : { status: 'idle' }
           : { status: 'idle' },
     )
-    if (activeThreadId) removeActiveRun(activeThreadId)
+    if (activeThreadId) {
+      removeActiveRun(activeThreadId)
+      void client.agent.threads
+        .get(activeThreadId)
+        .then((thread) => {
+          setThreadTokenUsage(thread.tokenUsage)
+          setContextSummary(thread.contextSummary)
+        })
+        .catch(() => undefined)
+    }
     void refreshThreads().catch(() => undefined)
   }
-  contextRef.current.onContextBudget = setContextBudget
   contextRef.current.onContextCompressed = (event) => {
     setCompressionEvents((current) => [...current, event])
     if (event.summaryId && contextRef.current.threadId) {
@@ -281,7 +289,7 @@ function AgentConsole() {
     <AssistantRuntimeProvider runtime={runtime}>
       <ThreadHydrator
         skipHydrationRef={skipHydrationRef}
-        onContextBudget={setContextBudget}
+        onTokenUsage={setThreadTokenUsage}
         onContextSummary={setContextSummary}
         onCompressionEvent={(event) => setCompressionEvents((current) => [...current, event])}
         onResetCompressionEvents={() => setCompressionEvents([])}
@@ -307,8 +315,7 @@ function AgentConsole() {
             skillCandidates={skillCandidates}
             selectedSkillNames={selectedSkillNames}
             skillLoadState={skillLoadState}
-            contextBudget={contextBudget}
-            contextSummary={contextSummary}
+            tokenUsage={threadTokenUsage}
           />
           <AgentThreadRoot>
             <AgentThreadViewport>
@@ -482,8 +489,7 @@ function AgentEnvironmentPanel({
   skillCandidates,
   selectedSkillNames,
   skillLoadState,
-  contextBudget,
-  contextSummary,
+  tokenUsage,
 }: {
   sandbox: SandboxTelemetry
   mcpServers: AgentMcpServerStatus[]
@@ -491,8 +497,7 @@ function AgentEnvironmentPanel({
   skillCandidates: AgentSkillCandidate[]
   selectedSkillNames: string[]
   skillLoadState: 'loading' | 'ready' | 'failed'
-  contextBudget: AgentContextBudgetState | null
-  contextSummary: AgentContextSummary | null
+  tokenUsage: AgentThread['tokenUsage'] | null
 }) {
   const sandboxCopy = SANDBOX_STATUS_COPY[sandbox.status]
   const sandboxId = 'sandboxId' in sandbox ? sandbox.sandboxId : undefined
@@ -502,12 +507,7 @@ function AgentEnvironmentPanel({
       : sandboxId
     : null
   const mcpSummary = summarizeAgentMcpStatuses(mcpServers)
-  const contextPercentage = contextBudget
-    ? Math.min(
-        999,
-        Math.round((contextBudget.usedTokens / Math.max(1, contextBudget.usableTokens)) * 100),
-      )
-    : null
+  const contextPercentage = tokenUsage ? threadTokenUsagePercentage(tokenUsage) : null
   const hasFailure =
     sandbox.status === 'failed' || mcpLoadState === 'failed' || skillLoadState === 'failed'
   const hasLoaded = mcpLoadState === 'ready' && skillLoadState === 'ready'
@@ -701,30 +701,30 @@ function AgentEnvironmentPanel({
               icon={<ContextIcon />}
               label="Context"
               value={
-                contextPercentage === null
-                  ? contextSummary
-                    ? '摘要可用'
-                    : '等待运行'
-                  : `${contextBudget?.estimated ? '约 ' : ''}${contextPercentage}%`
+                tokenUsage
+                  ? contextPercentage === null
+                    ? '上下文未知'
+                    : `${tokenUsage.estimated ? '约 ' : ''}${contextPercentage}%`
+                  : '等待会话'
               }
               valueClassName={
-                contextBudget?.level === 'forced'
+                contextPercentage !== null && contextPercentage >= 90
                   ? 'text-danger'
-                  : contextBudget?.level === 'moderate'
+                  : contextPercentage !== null && contextPercentage >= 70
                     ? 'text-brand'
                     : 'text-ink'
               }
               detail={
-                contextBudget
-                  ? `${contextBudget.usedTokens.toLocaleString()} / ${contextBudget.usableTokens.toLocaleString()} tokens`
-                  : contextSummary
-                    ? `摘要 r${contextSummary.revision}`
-                    : '首轮响应后显示占用'
+                tokenUsage
+                  ? tokenUsage.contextWindowTokens === null
+                    ? `${tokenUsage.totalTokens.toLocaleString()} tokens · 模型上下文未知`
+                    : `${tokenUsage.totalTokens.toLocaleString()} / ${tokenUsage.contextWindowTokens.toLocaleString()} tokens`
+                  : '选择或创建 Thread 后显示'
               }
               dotClassName={
-                contextBudget?.level === 'forced'
+                contextPercentage !== null && contextPercentage >= 90
                   ? 'bg-danger'
-                  : contextBudget
+                  : tokenUsage
                     ? 'bg-brand'
                     : 'bg-ink-subtle/45'
               }
@@ -737,7 +737,7 @@ function AgentEnvironmentPanel({
                   <span
                     className={cn(
                       'block h-full rounded-full',
-                      contextBudget?.level === 'forced' ? 'bg-danger' : 'bg-brand',
+                      contextPercentage >= 90 ? 'bg-danger' : 'bg-brand',
                     )}
                     style={{ width: `${Math.min(100, contextPercentage)}%` }}
                   />
@@ -850,7 +850,7 @@ function toSandboxTelemetry(sandbox: AgentThreadSandbox | null): SandboxTelemetr
 
 function ThreadHydrator({
   skipHydrationRef,
-  onContextBudget,
+  onTokenUsage,
   onContextSummary,
   onCompressionEvent,
   onResetCompressionEvents,
@@ -858,7 +858,7 @@ function ThreadHydrator({
   onSandboxSnapshot,
 }: {
   skipHydrationRef: { current: boolean }
-  onContextBudget: (budget: AgentContextBudgetState | null) => void
+  onTokenUsage: (usage: AgentThread['tokenUsage'] | null) => void
   onContextSummary: (summary: AgentContextSummary | null) => void
   onCompressionEvent: (event: Extract<AgentStreamEvent, { type: 'context-compressed' }>) => void
   onResetCompressionEvents: () => void
@@ -893,7 +893,7 @@ function ThreadHydrator({
           resetThreadIfIdle(api.thread(), [])
           setInterruptedNotice(null)
           setResumeNotice(null)
-          onContextBudget(null)
+          onTokenUsage(null)
           onContextSummary(null)
           onResetCompressionEvents()
           onSandboxSnapshot(null)
@@ -903,7 +903,7 @@ function ThreadHydrator({
         if (cancelled) return
         setSelectedModel(thread.model)
         onContextSummary(thread.contextSummary)
-        onContextBudget(null)
+        onTokenUsage(thread.tokenUsage)
         onResetCompressionEvents()
 
         if (isResumableActiveRun(thread.activeRun)) {
@@ -925,7 +925,6 @@ function ThreadHydrator({
           })) {
             if (cancelled) return
             view = foldEventsFromCursor([event], afterSequence, view)
-            if (event.type === 'context-budget') onContextBudget(event)
             if (event.type === 'context-compressed') onCompressionEvent(event)
             if (event.type === 'sandbox-status') {
               sandboxFailed = event.status === 'failed'
