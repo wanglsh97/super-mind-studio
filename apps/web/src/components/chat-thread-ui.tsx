@@ -12,7 +12,7 @@ import {
   useAuiState,
   useThreadViewport,
 } from '@assistant-ui/react'
-import { CopyIcon, CheckIcon } from 'lucide-react'
+import { CheckIcon, CopyIcon, ThumbsDownIcon, ThumbsUpIcon } from 'lucide-react'
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { useEffect, useRef, useState } from 'react'
@@ -709,6 +709,20 @@ export function AssistantMessage({
                 strokeWidth={1.8}
               />
             </ActionBarPrimitive.Copy>
+            <ActionBarPrimitive.FeedbackPositive
+              aria-label="有帮助"
+              title="有帮助"
+              className="grid size-7 cursor-pointer place-items-center rounded-md opacity-25 transition-[background,color,opacity] group-hover:opacity-100 hover:bg-brand-subtle hover:text-brand-hover focus-visible:opacity-100 disabled:cursor-not-allowed disabled:opacity-25 data-[submitted=true]:bg-brand-subtle data-[submitted=true]:text-brand dark:hover:bg-brand-subtle dark:hover:text-brand-light"
+            >
+              <ThumbsUpIcon aria-hidden="true" className="size-3.5" strokeWidth={1.8} />
+            </ActionBarPrimitive.FeedbackPositive>
+            <ActionBarPrimitive.FeedbackNegative
+              aria-label="没帮助"
+              title="没帮助"
+              className="grid size-7 cursor-pointer place-items-center rounded-md opacity-25 transition-[background,color,opacity] group-hover:opacity-100 hover:bg-brand-subtle hover:text-brand-hover focus-visible:opacity-100 disabled:cursor-not-allowed disabled:opacity-25 data-[submitted=true]:bg-brand-subtle data-[submitted=true]:text-brand dark:hover:bg-brand-subtle dark:hover:text-brand-light"
+            >
+              <ThumbsDownIcon aria-hidden="true" className="size-3.5" strokeWidth={1.8} />
+            </ActionBarPrimitive.FeedbackNegative>
           </ActionBarPrimitive.Root>
         </div>
       </div>
