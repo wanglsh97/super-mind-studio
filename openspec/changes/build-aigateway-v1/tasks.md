@@ -90,6 +90,9 @@
 - [x] 1.69 为 Qwen3.7-Plus、GLM-5.2、DeepSeek-V4-Pro、Kimi K3 显式配置 thinking，并将 `reasoning_content` 规范化为 Agent reasoning 事件，覆盖工具调用历史回灌
 - [x] 1.70 为 Agent run 增加 `thinkingEffort=fast|balanced|deep` 契约并贯通工具循环、上下文摘要和四个 Provider Adapter，覆盖校验与协议映射测试
 - [x] 1.71 在 Agent Thread 详情中返回全部持久化消息的 token 估算与绑定模型最大上下文，并覆盖服务端契约测试
+- [x] 1.72 扩展统一 usage 契约以采集 cached input 与 reasoning Token，并为四个 Provider、Mock 和 Pi bridge 补齐映射测试
+- [x] 1.73 新增 AgentModelInvocation 调用级账本与 Skill/Tool 归因迁移，在 Agent 每次模型调用终结时幂等持久化实际 resolved model 和 usage
+- [x] 1.74 实现仅当前用户可访问的三个月 Token 日历、每日明细和模型总量聚合 API，并覆盖权限、缺失维度按 0 展示和无历史回填测试
 
 ## 2. 管理员中后台
 
@@ -120,6 +123,7 @@
 - [x] 2.17 完成中后台安全验收：未认证探测、Prompt 访问边界、allowlist 绕过、修改/删除与审计原子性
 - [x] 2.18 对固定开发凭证增加生产告警，并在公网正式开放前将管理员认证升级设为发布硬门槛
 - [x] 2.19 修复 Agent 请求日志详情仅展示 Provider 输入快照的问题，补充关联 AgentRun 的完整持久化消息并区分两种口径
+- [x] 2.20 在 Dashboard 增加今日 Token 概览、按实际模型的输入/输出/缓存/思考明细、三个月全站日历热力图及 Skill/Tool 聚合，并验证响应不泄露用户内容
 
 ## 3. 用户端网页（Chat、文生图、Prompt 优化）
 
@@ -183,3 +187,4 @@
 - [ ] 3.40 将 Agent 运行停止按钮改为与发送按钮等尺寸的圆形纯图标控件，使用方形停止符号并保留可访问名称
 - [ ] 3.41 为思考强度档位增加推理特点说明，并以名称、弱化说明和固定行末选中标记的两行信息样式展示
 - [x] 3.42 将运行环境 Context 模块改为当前 Thread token 总数与绑定模型最大上下文的占比，不再消费单次调用的 context-budget
+- [x] 3.44 新增用户 Token 分析页，展示最近三个月 GitHub 风格总量热力图、每日 input/output/cache/reasoning 明细和实际模型总量图
