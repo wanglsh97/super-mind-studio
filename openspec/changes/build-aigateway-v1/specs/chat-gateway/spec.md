@@ -1,104 +1,65 @@
 ## ADDED Requirements
 
-### Requirement: Anonymous users can run a single-model streamed chat
-The public Chat page SHALL let an anonymous visitor select one enabled text-model alias, submit a conversation, render Markdown incrementally, stop generation, clear the conversation, and start another request without creating an account.
+### Requirement: Agent is the only C-end conversation contract
+The C-end SHALL use the authenticated persistent Agent thread/run/event APIs for ordinary conversation and multi-step tool work. The product MUST NOT expose a standalone Chat page, comparison page, SDK `chat.stream/compare` surface, or `POST /api/v1/chat/completions` endpoint. `/chat` MAY redirect to `/` only for legacy bookmarks.
 
-#### Scenario: Successful streamed conversation
-- **GIVEN** an enabled model alias and a visitor below the rate limit
-- **WHEN** the visitor submits a non-empty message
-- **THEN** the Web application calls `@supermind/sdk`
-- **AND** assistant content is rendered incrementally until the completion event
-- **AND** the final usage and estimated CNY cost are available to the client
+#### Scenario: User starts an ordinary conversation
+- **GIVEN** an authenticated user and an enabled Agent-capable model
+- **WHEN** the user submits text from the root workspace
+- **THEN** the Web application creates or continues an Agent thread and run through `@supermind/sdk`
+- **AND** reasoning, text, tool activity and terminal state are projected through the recoverable Agent event stream
+- **AND** no public Chat completions request is made
 
-### Requirement: Assistant SVG code blocks render as isolated safe previews
-The Chat page SHALL render a completed fenced `svg` code block in assistant Markdown as an inline preview after applying an SVG-specific element and attribute allowlist. Raw HTML outside fenced SVG blocks MUST remain disabled. Incomplete streamed SVG blocks SHALL remain code until the closing fence and closing `svg` element are available. Scriptable elements, event-handler attributes, embedded HTML, and externally loaded resources MUST NOT reach the rendered preview.
+#### Scenario: Removed Chat API is probed
+- **GIVEN** a client calls `POST /api/v1/chat/completions`
+- **WHEN** NestJS resolves the route
+- **THEN** no Chat controller handles the request
+- **AND** the response is the platform's normalized not-found error
 
-#### Scenario: Safe SVG code block completes
-- **GIVEN** an assistant message contains a fenced `svg` code block with supported vector elements and attributes
-- **WHEN** the closing `svg` element and Markdown fence have arrived
-- **THEN** the Chat page displays the sanitized SVG preview
-- **AND** surrounding Markdown continues to render normally
+### Requirement: Selectable model instances are resolved through a repository catalog
+The model gateway SHALL resolve stable public model instance IDs through a version-controlled repository catalog to a display name, provider adapter and upstream model ID. Runtime environment variables MUST NOT replace or mutate the catalog. Model discovery MAY expose reviewed metadata but MUST NOT expose credentials.
 
-#### Scenario: SVG code block contains active content
-- **GIVEN** an assistant fenced `svg` block contains scripts, event handlers, embedded HTML, or external resources
-- **WHEN** the Chat page renders the completed message
-- **THEN** unsupported elements and attributes are removed before insertion into the document
-- **AND** raw HTML rendering remains disabled for all other assistant content
+#### Scenario: Agent selects a configured model
+- **GIVEN** an enabled model instance in the catalog
+- **WHEN** an Agent thread is created with that model ID
+- **THEN** the model gateway resolves its provider and upstream model
+- **AND** persisted Agent and request records retain the public model ID, provider and resolved upstream model
 
-#### Scenario: SVG is still streaming
-- **GIVEN** an assistant fenced `svg` block has not received its closing fence or closing `svg` element
-- **WHEN** another text delta is rendered
-- **THEN** the partial SVG is displayed as code
-- **AND** no partial SVG is inserted into the document
+### Requirement: Provider thinking is normalized for Agent
+Qwen3.7-Plus, GLM-5.2, DeepSeek-V4-Pro and Kimi K3 SHALL run with their documented thinking mode and effort controls. Each adapter SHALL map streamed `reasoning_content` to the platform-neutral `reasoning` event without mixing it into final answer text.
 
-### Requirement: Chat uses one stable POST SSE contract
-`POST /api/v1/chat/completions` SHALL require `stream: true` and return OpenAI-compatible `text/event-stream` chunks, a platform usage extension, and a final `data: [DONE]` frame. Every accepted request SHALL have a request ID that is available in the response and persisted record.
+#### Scenario: Provider streams reasoning before text
+- **GIVEN** a thinking-capable configured provider
+- **WHEN** the provider emits `reasoning_content` followed by `content`
+- **THEN** the adapter emits ordered `reasoning` and `text` events
+- **AND** the Agent stream projects them as independent reasoning and text message parts
 
-#### Scenario: Stream completes normally
-- **GIVEN** an adapter yields content and usage
-- **WHEN** the gateway forwards the result
-- **THEN** every event is a valid SSE `data:` frame in the documented normalized schema
-- **AND** exactly one usage result is emitted before exactly one `[DONE]` frame
+#### Scenario: Tool call follows reasoning
+- **GIVEN** a thinking model emits reasoning and a tool call
+- **WHEN** the Agent submits the tool result in a follow-up model invocation
+- **THEN** the complete associated reasoning content and tool call are replayed in provider-compatible fields
+- **AND** the provider can continue without a missing-reasoning protocol error
 
-#### Scenario: Invalid non-stream request
-- **GIVEN** a chat payload sets `stream` to false or omits it
-- **WHEN** the API validates the request
-- **THEN** the API returns a normalized 400 JSON error before opening an SSE stream
+### Requirement: Agent model failover is bounded by the first content event
+The model gateway SHALL attempt at most one configured fallback for an eligible timeout or upstream 5xx before any reasoning, text or tool-call event is emitted. It MUST NOT switch providers after the first content event.
 
-### Requirement: Selectable model instances are resolved through a configurable catalog
-The gateway SHALL accept stable public model instance IDs and resolve each instance through a version-controlled, repository-owned catalog to a community display name, one of the supported domestic provider adapters, and an actual upstream model ID. Multiple public model instances MAY resolve to the same provider adapter. Runtime environment variables MUST NOT replace or mutate the model catalog. A shared OpenAI-compatible transport MAY handle common HTTP/SSE behavior, while each adapter MUST own authentication, request mapping, chunk mapping, usage mapping, and error mapping.
+#### Scenario: Primary fails before content
+- **GIVEN** an Agent model invocation with a healthy configured fallback
+- **WHEN** the primary fails with an eligible error before emitting reasoning, text or a tool call
+- **THEN** the fallback handles the invocation without mixing provider output
+- **AND** the request log records the failover
 
-#### Scenario: A second Kimi model is added
-- **GIVEN** a Kimi provider Adapter is enabled and an existing Kimi model instance remains configured
-- **WHEN** a developer appends a Kimi K3 entry to the repository model catalog and deploys the reviewed change
-- **THEN** model discovery returns both Kimi instances with their configured community names
-- **AND** clients can select either public model ID without adding a new provider Adapter or changing a frontend model union
-- **AND** persisted records contain the selected public model ID, provider alias, and resolved upstream model ID
+#### Scenario: Primary fails after reasoning begins
+- **GIVEN** the primary has emitted a reasoning event
+- **WHEN** its stream subsequently fails
+- **THEN** the model gateway propagates the normalized error
+- **AND** it does not invoke a fallback
 
-#### Scenario: Runtime attempts to override the catalog
-- **GIVEN** a deployment environment contains an unreviewed `CHAT_MODELS` value
-- **WHEN** the upgraded API starts
-- **THEN** the runtime value does not alter the repository-owned model list
-- **AND** only API credentials, provider endpoints, and provider enable flags remain deployment configuration
+### Requirement: Agent cancellation propagates best effort
+The SDK and Web runtime SHALL stop consuming the active Agent run when the user cancels, and the API SHALL propagate the abort signal to the active provider and tool execution where supported.
 
-### Requirement: Single-model failover is bounded by the first delta
-For single-model chat only, the gateway SHALL attempt a configured fallback when the primary returns a timeout or eligible 5xx error before any content delta is sent. The gateway MUST NOT switch providers after the first content delta, and MUST NOT apply failover in comparison mode.
-
-#### Scenario: Primary fails before first delta
-- **GIVEN** a single-model request with a healthy configured fallback
-- **WHEN** the primary times out before yielding content
-- **THEN** the fallback handles the request without mixing primary content
-- **AND** the request log records the original model, fallback model, and failure reason
-
-#### Scenario: Primary fails after content begins
-- **GIVEN** the client has received at least one primary content delta
-- **WHEN** the primary stream fails
-- **THEN** the gateway emits a normalized stream error and terminates
-- **AND** it does not append content from another model
-
-### Requirement: Client cancellation propagates best effort
-The SDK SHALL expose an abort mechanism. The Web application SHALL stop reading immediately when the visitor cancels, and the API SHALL propagate disconnection or abort to the active provider request where the upstream supports cancellation.
-
-#### Scenario: Visitor stops generation
-- **GIVEN** a chat stream is active
-- **WHEN** the visitor selects stop
-- **THEN** the UI stops appending content promptly
-- **AND** the gateway finalizes the request as cancelled rather than successful
-
-### Requirement: Comparison streams are isolated
-The Chat page SHALL support concurrent comparison of two or three enabled text-model aliases. Each model SHALL have independent loading, content, usage, error, and cancellation state; one failed model MUST NOT stop or fail over another model.
-
-#### Scenario: One comparison model fails
-- **GIVEN** three comparison streams are active
-- **WHEN** one provider returns an error
-- **THEN** only that model column shows the normalized error
-- **AND** the remaining streams continue to completion
-
-### Requirement: Public chat limits are enforced before provider calls
-The gateway SHALL enforce a configurable default limit of 10 Chat calls per source IP per 60 seconds and SHALL reject `max_tokens` above 4096. A rejected request MUST NOT invoke a provider.
-
-#### Scenario: IP exceeds chat limit
-- **GIVEN** one source IP has consumed its configured Chat allowance
-- **WHEN** it submits another Chat request in the same window
-- **THEN** the API returns 429 with retry information
-- **AND** no provider adapter is called
+#### Scenario: User stops a run
+- **GIVEN** an Agent run is active
+- **WHEN** the user selects stop
+- **THEN** the UI stops appending events promptly
+- **AND** the run and request lifecycle are finalized as cancelled rather than successful

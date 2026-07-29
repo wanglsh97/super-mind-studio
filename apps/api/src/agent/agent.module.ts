@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common'
 import { ConfigModule, ConfigService } from '@nestjs/config'
 
-import { ChatModule } from '../chat/chat.module'
+import { ModelGatewayModule } from '../chat/model-gateway.module'
 import { RedisModule } from '../redis/redis.module'
 import { RequestLifecycleModule } from '../request-lifecycle/request-lifecycle.module'
 import { UserAuthModule } from '../user-auth/user-auth.module'
@@ -118,7 +118,7 @@ export function createSandboxRuntime(config: ConfigService): SandboxRuntimePort 
  * 始终限制在服务端，不进入 SDK 公共面或浏览器。
  */
 @Module({
-  imports: [ConfigModule, UserAuthModule, ChatModule, RequestLifecycleModule, RedisModule],
+  imports: [ConfigModule, UserAuthModule, ModelGatewayModule, RequestLifecycleModule, RedisModule],
   controllers: [AgentController, SkillMarketController],
   providers: [
     AgentThreadRepository,

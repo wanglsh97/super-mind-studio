@@ -1,14 +1,20 @@
 #!/bin/sh
 set -eu
 
-config='infra/nginx/default.conf.template'
+config='infra/nginx/app-locations.conf'
 smoke='infra/scripts/smoke-production.sh'
-route_block="$(sed -n '/location = \/api\/v1\/chat\/completions {/,/^    }/p' "$config")"
+route_block="$(
+  awk '
+    index($0, "location ~ ^/api/v1/agent/runs/") == 1 { capture = 1 }
+    capture { print }
+    capture && $0 == "}" { exit }
+  ' "$config"
+)"
 
 require_route_directive() {
   directive="$1"
   if ! printf '%s\n' "$route_block" | grep -Fq "$directive"; then
-    echo "Chat SSE 路由缺少配置：$directive" >&2
+    echo "Agent SSE 路由缺少配置：$directive" >&2
     exit 1
   fi
 }
@@ -22,7 +28,7 @@ require_smoke_probe() {
 }
 
 if [ -z "$route_block" ]; then
-  echo '未找到 Chat SSE 专用 Nginx location。' >&2
+  echo '未找到 Agent SSE 专用 Nginx location。' >&2
   exit 1
 fi
 
@@ -38,8 +44,8 @@ require_route_directive 'add_header X-Accel-Buffering no always;'
 require_route_directive 'add_header Cache-Control no-cache always;'
 
 require_smoke_probe '--no-buffer'
-require_smoke_probe 'delta_count'
-require_smoke_probe 'spread_ms'
+require_smoke_probe 'text-delta'
+require_smoke_probe 'run-terminal'
 require_smoke_probe 'data: [DONE]'
 
-echo 'Nginx Chat SSE configuration and delayed-chunk smoke assertions are present.'
+echo 'Nginx Agent SSE configuration and production smoke assertions are present.'

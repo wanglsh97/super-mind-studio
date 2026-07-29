@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common'
 
-import { ChatModule } from '../../chat/chat.module'
+import { ModelGatewayModule } from '../../chat/model-gateway.module'
 import { AdminDashboardController } from './admin-dashboard.controller'
 import { AdminDashboardService } from './admin-dashboard.service'
 
 @Module({
-  imports: [ChatModule],
+  imports: [ModelGatewayModule],
   controllers: [AdminDashboardController],
   providers: [AdminDashboardService],
 })

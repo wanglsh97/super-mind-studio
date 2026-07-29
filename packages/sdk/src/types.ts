@@ -24,73 +24,7 @@ export interface Usage {
   usageUnknown: boolean
 }
 
-export interface ChatMessage {
-  role: 'system' | 'user' | 'assistant'
-  content: string
-}
-
-export interface ChatRequest {
-  model: TextModelId
-  messages: ChatMessage[]
-  stream: true
-  temperature?: number
-  topP?: number
-  maxTokens?: number
-  comparison?: boolean
-}
-
 export type ChatFinishReason = 'stop' | 'length' | 'content_filter' | 'tool_calls' | 'unknown'
-
-export interface ChatSseDeltaPayload {
-  id: string
-  object: 'chat.completion.chunk'
-  created: number
-  model: TextModelId
-  request_id: string
-  choices: Array<{
-    index: number
-    delta: {
-      role?: 'assistant'
-      content?: string
-    }
-    finish_reason: ChatFinishReason | null
-  }>
-}
-
-export interface ChatSseUsagePayload {
-  id: string
-  object: 'chat.completion.usage'
-  created: number
-  model: TextModelId
-  request_id: string
-  choices: []
-  usage: {
-    prompt_tokens: number | null
-    completion_tokens: number | null
-    total_tokens: number | null
-    aigateway: {
-      estimated_cost_cny: string | null
-      usage_unknown: boolean
-    }
-  }
-}
-
-export interface ChatSseErrorPayload {
-  object: 'chat.completion.error'
-  request_id: string
-  error: GatewayError
-}
-
-export type ChatSsePayload = ChatSseDeltaPayload | ChatSseUsagePayload | ChatSseErrorPayload
-
-export const CHAT_SSE_DONE = '[DONE]' as const
-
-export type ChatEvent =
-  | { type: 'start'; requestId: string; model: TextModelId }
-  | { type: 'delta'; requestId: string; content: string }
-  | { type: 'usage'; requestId: string; usage: Usage }
-  | { type: 'error'; requestId: string; error: GatewayError }
-  | { type: 'done'; requestId: string }
 
 export type ImageTaskStatus = 'pending' | 'running' | 'succeeded' | 'failed'
 

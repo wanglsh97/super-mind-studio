@@ -9,7 +9,7 @@ import { AdminRequestLogsModule } from './admin/logs/admin-request-logs.module'
 import { AdminSkillReviewModule } from './admin/skills/admin-skill-review.module'
 import { AdminTablesModule } from './admin/tables/admin-tables.module'
 import { AgentModule } from './agent/agent.module'
-import { ChatModule } from './chat/chat.module'
+import { ModelGatewayModule } from './chat/model-gateway.module'
 import { validateEnvironment } from './config/env.validation'
 import { createPinoHttpOptions } from './config/logger.config'
 import { DatabaseModule } from './database/database.module'
@@ -35,7 +35,7 @@ import { UserAuthModule } from './user-auth/user-auth.module'
     RedisModule,
     UserAuthModule,
     HealthModule,
-    ChatModule,
+    ModelGatewayModule,
     ImageModule,
     PromptModule,
     AgentModule,

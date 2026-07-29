@@ -41,9 +41,6 @@ describe('OpenAPI authentication documentation E2E', () => {
         },
       },
       paths: {
-        '/api/v1/chat/completions': {
-          post: { security: [{ [USER_SESSION_COOKIE]: [] }] },
-        },
         '/api/v1/auth/session': {
           get: { security: [{ [USER_SESSION_COOKIE]: [] }] },
         },
@@ -55,6 +52,7 @@ describe('OpenAPI authentication documentation E2E', () => {
     expect(serialized).not.toContain('GITHUB_CLIENT_SECRET')
     expect(serialized).not.toContain('accessToken')
     const paths = document.paths as Record<string, { get?: unknown }>
+    expect(paths['/api/v1/chat/completions']).toBeUndefined()
     expect(JSON.stringify(paths['/api/v1/auth/session']?.get)).not.toContain('"email"')
   })
 })

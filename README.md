@@ -1,6 +1,6 @@
 # Super Mind Studio
 
-Super Mind Studio 是一个面向灵感探索与任务执行的 AI Agent 工作空间。用户可通过一次性匿名、GitHub OAuth 或 Google OAuth 登录，在 Agent 中进行普通对话或多步任务，并使用多模型对比与 Skill；管理员中后台负责模型调用、费用、日志和业务数据治理。底层 AI Gateway 仍统一提供 Chat、Image 与 Prompt 能力及厂商适配，当前工程优先使用 Mock Adapter 串通完整链路。
+Super Mind Studio 是一个面向灵感探索与任务执行的 AI Agent 工作空间。用户可通过一次性匿名、GitHub OAuth 或 Google OAuth 登录，在持久 Agent 中进行普通对话或多步任务并使用 Skill；管理员中后台负责模型调用、费用、日志和业务数据治理。底层模型网关统一提供 Qwen、GLM、DeepSeek、Kimi 与 Mock Adapter，Image 与 Prompt 作为内部 API/SDK 能力保留。
 
 ## 环境要求
 
@@ -39,7 +39,6 @@ pnpm dev
 
 登录页、模型列表和 health 保持公开。根路径 `/` 直接承载 Agent，要求 `aigateway_user_session` HttpOnly Cookie；该 Cookie 可由匿名、GitHub 或 Google 登录创建。匿名登录每次创建新的不可恢复 User，但拥有与 OAuth 用户相同的功能和永久数据保留行为。以下用户能力同样要求该 Session：
 
-- `POST /api/v1/chat/completions`
 - `POST /api/v1/images/generations` 及任务状态/下载
 - `POST /api/v1/prompts/optimize`
 - `/api/v1/agent/*`（持久 Agent 会话、运行事件和 Skill 市场）
@@ -48,7 +47,9 @@ pnpm dev
 
 根路径 `/` 是普通对话和工具型多步任务的统一入口，会话与运行事件持久化到 PostgreSQL。登录成功后直接进入 `/`；营销 Hero 首页与 `/agent` 路由均已移除，`/agent` 不做兼容跳转。旧 `/chat` 不再加载独立的浏览器内存聊天应用，访问时会兼容跳转到 `/`。
 
-多模型对比暂时保留在 `/chat/compare`，可从 Agent Composer 进入；每个模型仍使用独立 Chat SSE 请求和取消状态。底层 `POST /api/v1/chat/completions` 与 `@supermind/sdk` Chat client 继续保留，供模型对比、Prompt 优化及其他内部场景复用。
+`/chat/compare` 和公开 `POST /api/v1/chat/completions` 已删除，`@supermind/sdk` 不再暴露 `chat.stream/compare`。服务端仍使用厂商 Chat Completions 协议作为 Adapter 实现细节，Agent 通过内部 `ModelInvocationPort` 消费统一 reasoning/text/tool/usage/finish 事件。
+
+四个真实模型均在服务端显式使用 thinking：Qwen3.7-Plus 开启 `enable_thinking`，GLM-5.2 与 DeepSeek-V4-Pro 开启 `thinking.type` 并使用 `reasoning_effort=max`，Kimi K3 使用其强制 thinking 模式和 `reasoning_effort=max`。`reasoning_content` 只进入 Agent reasoning 事件，不混入最终回答文本。
 
 C 端不再提供 `/image` 与 `/prompt` 页面，访问这两个地址直接返回 404，不做兼容跳转。Image/Prompt 的 API、SDK、数据库记录和管理端日志仍保留，供 Agent 工具化或后续内部场景复用。
 
@@ -140,7 +141,7 @@ pnpm db:migrate:dev
 pnpm db:migrate:deploy
 ```
 
-Mock Chat 主链路可在不配置任何真实厂商 API Key 的情况下执行完整回归。命令会校验测试数据库名，部署已有 migration，并运行 SDK、API、本地 PostgreSQL E2E、Web 状态测试与 Web 生产构建：
+Mock Agent 主链路可在不配置任何真实厂商 API Key 的情况下执行完整回归。命令会校验测试数据库名，部署已有 migration，并运行 SDK、API、本地 PostgreSQL E2E、Web 状态测试与 Web 生产构建：
 
 ```bash
 TEST_DATABASE_URL=postgresql://aigateway:password@localhost:5432/aigateway_test pnpm test:mock-chat
@@ -190,7 +191,6 @@ DATABASE_URL=postgresql://aigateway:password@localhost:5432/aigateway_test pnpm 
 
 禁止把真实 API Key、生产数据库密码或 Cookie secret 提交到仓库。
 
-
 ## 如何查看sandbox容器
 
 1. 登录到ECS后台，执行`docker ps`
@@ -198,5 +198,5 @@ DATABASE_URL=postgresql://aigateway:password@localhost:5432/aigateway_test pnpm 
 
 ## 如何看数据库
 
-1./admin后台能看，但不能改数据
-2. prisma studio。先执行`pnpm infra:up`，然后执行`pnpm exec prisma studio`
+1. `/admin` 后台能看，但不能改数据。
+2. Prisma Studio：先执行 `pnpm infra:up`，然后执行 `pnpm exec prisma studio`。

@@ -2,7 +2,8 @@
 set -eu
 
 if rg -n 'https?://|localhost|127\.0\.0\.1|API_INTERNAL_URL' apps/web/src \
-  --glob '!**/*.spec.ts'; then
+  --glob '!**/*.spec.ts' \
+  --glob '!**/*.svg'; then
   echo 'Public Web source contains a non-same-origin endpoint' >&2
   exit 1
 fi

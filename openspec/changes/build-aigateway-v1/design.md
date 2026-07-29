@@ -1,6 +1,6 @@
 ## Context
 
-Super Mind Studio 定位为 AI 灵感创作平台，由两个认证边界组成：匿名、GitHub 或 Google 用户登录后使用 Chat、文生图、Prompt 优化、Agent 和 Skill；固定管理员通过独立 Session 进入 `/admin` 查看运行情况、完整请求详情并维护白名单业务数据。AI Gateway 是底层技术模块。V1 的价值不是一次性覆盖所有模型，而是证明统一协议、SDK dogfooding、请求可观测和单机交付形成闭环。
+Super Mind Studio 定位为 AI 灵感创作平台，由两个认证边界组成：匿名、GitHub 或 Google 用户登录后使用 Agent 和 Skill；固定管理员通过独立 Session 进入 `/admin` 查看运行情况、完整请求详情并维护白名单业务数据。Image/Prompt 与模型网关作为底层 API/SDK 能力保留，不再提供独立 C 端页面。AI Gateway 是底层技术模块。
 
 已确认约束：
 
@@ -17,7 +17,7 @@ Super Mind Studio 定位为 AI 灵感创作平台，由两个认证边界组成�
 
 **Goals:**
 
-- 先交付一条可重复验收的纵向主链路：Web → SDK → API → Mock Adapter → SSE → PostgreSQL 日志/计费。
+- 先交付一条可重复验收的纵向主链路：Agent Web → SDK → Agent API → ModelInvocationPort → Mock Adapter → 可恢复事件流 → PostgreSQL 日志/计费。
 - 以能力模块组织模块化单体，使新增厂商只增加 Adapter 和配置，不改变公开 SDK 契约。
 - 为 Chat、Image、Prompt 和 Admin 定义清晰的控制器、服务、数据和错误边界。
 - 使真实模型接入、对比模式和后台能力可以按里程碑增量上线，每一步都保持现有链路可运行。
@@ -39,7 +39,7 @@ Super Mind Studio 定位为 AI 灵感创作平台，由两个认证边界组成�
 flowchart LR
     U["GitHub-authenticated user"] --> N["Nginx :80/:443"]
     M["Administrator"] --> N
-    N -->|"/, /chat, /image, /prompt, /admin"| W["Next.js Web"]
+    N -->|"/, /login, /skills, /mcp, /admin"| W["Next.js Web"]
     W -->|"Browser + @supermind/sdk /api/v1"| N
     N -->|"/api/v1, /api-docs, /health"| A["NestJS API"]
     A --> P[("PostgreSQL")]
@@ -76,7 +76,7 @@ infra/
 
 ```mermaid
 flowchart TB
-    C["ChatModule"] --> G["GatewayOrchestrator"]
+    C["ModelGatewayModule"] --> G["ModelInvocationService"]
     O["PromptModule"] --> G
     I["ImageModule"] --> IR["ImageAdapterRegistry"]
     G --> TR["ChatAdapterRegistry"]
@@ -103,8 +103,8 @@ flowchart TB
 
 | 模块 | 负责 | 不负责 |
 | --- | --- | --- |
-| `ChatModule` | DTO 校验、SSE 生命周期、单模型/对比编排、取消 | 厂商字段、费用公式、后台查询 |
-| `GatewayOrchestrator` | 模型选择、首 delta 边界、有限 failover、统一事件 | HTTP Controller、数据库 CRUD |
+| `ModelGatewayModule` | 模型目录、Adapter registry、模型选择、首事件边界、有限 failover、统一事件 | Agent HTTP/SSE、数据库 CRUD |
+| `AgentModule` | 持久 thread/run、可恢复事件流、工具循环、取消和模型调用计费包装 | 厂商字段与鉴权 |
 | `ProviderModule` | Adapter 注册、别名解析、厂商鉴权/协议/错误映射 | 页面状态和业务日志展示 |
 | `ImageModule` | 创建任务、按查询驱动异步状态同步、持久化同步 provider 终态、下载代理 | 后台队列和长期对象存储 |
 | `PromptModule` | mode 校验、版本化模板、调用 Gateway | 接收客户端任意 system Prompt |
@@ -117,7 +117,7 @@ Controller 只能依赖应用 Service；应用 Service 通过接口依赖 Adapte
 
 ## Main Flows
 
-### First milestone: Mock streamed Chat vertical slice
+### First milestone: Mock streamed Agent vertical slice
 
 ```mermaid
 sequenceDiagram
@@ -128,21 +128,23 @@ sequenceDiagram
     participant P as PostgreSQL
     participant M as Mock Adapter
 
-    B->>S: chat.stream(request, AbortSignal)
-    S->>A: POST /api/v1/chat/completions
-    A->>A: validate + requestId
+    B->>S: agent.createThread + createRun
+    S->>A: POST /api/v1/agent/threads/:threadId/runs
+    A->>A: validate + create run
     A->>R: atomic IP limit
     A->>P: create RequestLog(pending, full prompt)
     A->>M: stream(normalized request)
-    loop normalized deltas
-        M-->>A: delta
-        A-->>S: SSE data frame
-        S-->>B: typed delta
+    loop normalized events
+        M-->>A: reasoning / text / tool / usage
+        A->>P: append durable run events
+        S->>A: GET /api/v1/agent/runs/:runId/events
+        A-->>S: resumable SSE event
+        S-->>B: typed Agent event
     end
     M-->>A: usage + finish
     A->>P: transaction: finalize log + upsert billing
-    A-->>S: usage + [DONE]
-    S-->>B: final result
+    A-->>S: terminal event + [DONE]
+    S-->>B: final run state
 ```
 
 关键提交点：限流和 `RequestLog(pending)` 成功后才允许调用模型，避免付费调用完全不可追踪。正常结束、失败、断连或取消都通过 `finally` 进入同一个终结逻辑。终结写入执行短次数重试；仍失败时写入 `critical` Pino 日志。V1 不引入异步补偿队列，因此“终结写失败可能留下 pending 记录”是已接受风险，后台需能筛选异常 pending。
@@ -150,9 +152,9 @@ sequenceDiagram
 ### Real provider and failover
 
 1. `ModelCatalog` 将公开模型实例 ID 解析为社区展示名、厂商 Adapter、真实上游模型 ID、定价版本和可选 fallback；同一 Adapter 可承载多个模型实例。
-2. `GatewayOrchestrator` 启动主 Adapter，并在向客户端发送第一个 content delta 前保留切换资格。
+2. `GatewayOrchestrator` 启动主 Adapter，并在产生第一个 reasoning、text 或 tool 事件前保留切换资格。
 3. 仅超时或配置允许的 5xx 可触发一次 fallback；鉴权、参数、余额不足等错误不盲目切换。
-4. 第一个 delta 写出后锁定 provider。随后错误通过 SSE error 事件结束，不能拼接另一个模型的内容。
+4. 第一个可见或可持久化模型事件产生后锁定 provider。随后错误通过 Agent 终态事件结束，不能拼接另一个模型的内容。
 5. 对比模式由 SDK 发起 2–3 个独立请求，每个请求有独立 request ID、AbortController 和日志；API 不把对比包装成一个隐藏的复合请求。
 
 ### Image generation without a queue
@@ -193,14 +195,11 @@ Prompt 页面只提交 `{ prompt, mode }`。`PromptTemplateRegistry` 将 mode �
 
 ## SDK and API Contracts
 
-`@supermind/sdk` 的公开面按业务能力组织在一个包内：
+`@supermind/sdk` 的公开面按业务能力组织在一个包内。独立 `chat.stream/compare` 已由持久 Agent 取代：
 
 ```ts
 interface AIGatewayClient {
-  chat: {
-    stream(input: ChatRequest, options?: { signal?: AbortSignal }): AsyncIterable<ChatEvent>
-    compare(inputs: CompareRequest, options?: { signal?: AbortSignal }): CompareHandle
-  }
+  agent: AgentClient
   images: {
     create(input: ImageRequest): Promise<ImageTask>
     get(taskId: string): Promise<ImageTask>
@@ -216,7 +215,7 @@ interface AIGatewayClient {
 }
 ```
 
-SDK 负责 base URL、Fetch、POST SSE 解析、`[DONE]` 校验、typed error、AbortSignal、图片轮询和费用扩展解析；不负责保存页面聊天状态、渲染 Markdown、偷偷重试生成请求或持有厂商 API Key。
+SDK 负责 base URL、Agent thread/run/event 协议、断线补读、typed error、AbortSignal、图片轮询和费用扩展解析；不再暴露普通 Chat POST SSE parser/compare helper，也不持有厂商 API Key。
 
 所有非流式错误使用统一 JSON envelope：`requestId`、`code`、`message`、`retryable`、可选 `details`。流打开前使用 HTTP 状态码；流打开后使用规范化 SSE error event。任何公开错误不得返回上游鉴权信息或堆栈。
 
@@ -254,7 +253,7 @@ Chat 使用 POST、请求体、AbortSignal 和响应状态检查，浏览器原�
 
 ### Decision 8: Flow-first milestones over horizontal layer completion
 
-每个阶段交付一个从 UI 到存储的可运行能力，先 Mock Chat，再真实单模型、对比、Image、Prompt、Admin 和部署。可选的“先写完数据库，再写完后端，再写完前端”会把集成风险推迟到最后，也无法在 API Key 缺失时获得早期反馈。
+每个阶段交付一个从 UI 到存储的可运行能力，先 Mock Agent，再接入真实模型、Image、Prompt、Admin 和部署。可选的“先写完数据库，再写完后端，再写完前端”会把集成风险推迟到最后，也无法在 API Key 缺失时获得早期反馈。
 
 ### Decision 9: Commit by task and push by product module
 
@@ -266,11 +265,17 @@ Chat 使用 POST、请求体、AbortSignal 和响应状态检查，浏览器原�
 
 ### Decision 11: assistant-ui owns the Agent conversation UI, not the gateway protocol
 
-单模型 Agent 会话使用 `@assistant-ui/react` 的 LocalRuntime 以及 Thread、Message、Composer 和 ActionBar primitives 管理客户端消息状态、自动滚动、取消和无障碍交互。右侧聊天模块保留独立容器，但内部不再用顶部工具栏切断消息画布；模型切换、对比入口、生成参数和新会话操作统一收进吸附底部的 Composer 卡片，卡片下展示 AI 内容甄别提醒。LocalRuntime 的自定义 `ChatModelAdapter` 只把 assistant-ui 的文本消息映射到仓库内 `@supermind/sdk`，继续消费既有 POST SSE 契约；Web 不引入 Vercel AI SDK、assistant-ui Cloud 或厂商协议。多模型对比仍由 `@supermind/sdk` compare helper 管理独立请求和 AbortController，避免 UI runtime 改变已确认的每路隔离语义。
+Agent 会话使用 `@assistant-ui/react` primitives 管理消息呈现、自动滚动、取消和无障碍交互，但 thread、run 和事件状态以服务端 Agent API 为真源。模型切换、生成参数和新会话操作统一放在 Composer 区域；Web 通过仓库内 `@supermind/sdk` 创建持久 thread/run，并消费可恢复 Agent SSE，不接触厂商协议。产品不再提供多模型对比入口或浏览器内存 Chat runtime。
 
 ### Decision 12: Version-controlled model catalog is separate from provider adapters
 
 Chat 客户端提交公开模型实例 ID，而不是厂商 alias。服务端 `ModelCatalog` 从仓库内 `chat-models.config.ts` 读取实例 ID、社区展示名、`qwen/glm/deepseek/kimi` 厂商 alias 和真实上游模型 ID；Adapter registry 仍按厂商注册，因此同一 Kimi Adapter 可以运行 Kimi K2.6、Kimi K3 等多个实例。模型目录变更必须经过代码评审、测试和发布，部署环境不得通过 `CHAT_MODELS` 或单模型 ID 环境变量覆盖目录。API Key、Base URL 和厂商启停仍通过环境变量注入。模型发现接口只公开模型目录元数据，不公开鉴权配置。
+
+### Decision 13: Agent is the only C-end conversation contract
+
+根路径持久 Agent 是 C 端唯一对话入口。删除 `/chat/compare` 和 SDK `chat.stream/compare`，`/chat` 仅作为旧书签到 `/` 的兼容跳转；API 删除 `POST /api/v1/chat/completions`、普通 Chat DTO/SSE writer 和对应 E2E。服务端保留厂商 Chat Completions transport 作为实现细节，并以 `ModelGatewayModule` 向 Agent、Prompt、模型发现和管理健康投影提供统一模型目录、Adapter registry、thinking/text/tool/usage/finish 事件与有限 failover。
+
+四个真实模型均在 Adapter 层显式启用或配置 thinking：Qwen 使用 `enable_thinking`，GLM/DeepSeek 使用 `thinking.type` 与 `reasoning_effort`，Kimi K3 使用 `reasoning_effort` 且保持其强制 thinking 语义。Adapter 必须把 `reasoning_content` 映射为平台 `reasoning` 事件；Agent tool loop 必须完整回灌与工具调用关联的 reasoning 历史。
 
 ## Failure Handling
 
@@ -290,16 +295,16 @@ Chat 客户端提交公开模型实例 ID，而不是厂商 alias。服务端 `M
 
 整体任务按产品责任边界划分为三个大板块：
 
-1. **API 网关服务建设**：包含工程骨架、统一 SDK/协议、四张数据库表、Redis 限流、Mock/真实 Adapter、Chat SSE、Image 任务、Prompt 优化、日志计费、测试和 ECS 部署基础。
+1. **API 网关服务建设**：包含工程骨架、统一 SDK/协议、四张数据库表、Redis 限流、Mock/真实 Adapter、Agent 模型事件流、Image 任务、Prompt 优化、日志计费、测试和 ECS 部署基础。
 2. **管理员中后台**：包含固定管理员认证、Dashboard、请求日志、完整 Prompt 详情、数据库白名单编辑/删除和不可变审计日志。
-3. **用户端网页**：包含公开首页/登录页、通用 User Session 保护的 Chat 单模型/对比、文生图、Prompt 优化、PC-only 桌面布局和主题。用户端最低支持 1366px 布局宽度，不提供移动端导航或窄屏重排。
+3. **用户端网页**：包含登录页、通用 User Session 保护的根 Agent 工作台、Skill/MCP 辅助页面、PC-only 桌面布局和主题。独立 Chat/Compare/Image/Prompt 页面不属于当前 C 端契约。
 
 三个板块是任务归类，不代表必须把一个板块全部做完才开始下一个。实际实施仍按以下波次推进：
 
-1. **Wave A — 最小闭环（最高优先）**：完成网关板块的 workspace、PostgreSQL/Redis、四表迁移、Mock Chat、RequestLog/BillingRecord 和 SDK SSE；同时完成用户端最小 Chat 页面。无 API Key 时即可验收 Web → SDK → API → Mock Adapter → SSE → PostgreSQL。
-2. **Wave B — 网关能力完善**：加入 Redis 限流、统一错误、usage/费用、首 delta failover，并按 Qwen → GLM → DeepSeek 逐个接入；每个 Adapter 独立通过 contract suite 和真实低额度冒烟。
+1. **Wave A — 最小闭环（最高优先）**：完成网关板块的 workspace、PostgreSQL/Redis、四表迁移、Mock Adapter、RequestLog/BillingRecord 和 Agent SDK 事件流；同时完成用户端最小 Agent 页面。无 API Key 时即可验收 Web → SDK → API → Mock Adapter → SSE → PostgreSQL。
+2. **Wave B — 网关能力完善**：加入 Redis 限流、统一错误、usage/费用、首事件 failover，并按 Qwen → GLM → DeepSeek → Kimi 逐个接入；每个 Adapter 独立通过 contract suite 和真实低额度冒烟。
 3. **Wave C — 管理员中后台闭环**：按认证 guard → 日志列表/详情 → Dashboard → 白名单表维护 → 原子审计实施，所有接口先验证未授权不可访问。
-4. **Wave D — 用户能力扩展**：完成 Chat 多模型对比；Image 保留 Mock 提交/轮询/持久化/下载闭环；Prompt 优化复用网关、计费和日志。
+4. **Wave D — 用户能力扩展**：完善 Agent 工具、Skill 与 MCP；Image 保留 Mock 提交/轮询/持久化/下载闭环；Prompt 优化复用网关、计费和日志。
 5. **Wave E — 单机上线验收**：完成生产 Compose、Nginx SSE、日志轮转、备份恢复、IP/域名和人工发布/回滚 runbook，在 ECS 运行完整冒烟。
 
 Wave A 是第一个必须完成的演示基线。之后未完成页面或未购买 Key 的模型均通过 feature flag/disabled model state 隐藏，不影响已经串通的能力。

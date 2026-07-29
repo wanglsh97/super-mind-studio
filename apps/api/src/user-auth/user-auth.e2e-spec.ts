@@ -220,7 +220,7 @@ describe('GitHub user authentication E2E', () => {
   })
 
   redisIt('uses the real Redis limiter after fixture OAuth login', async () => {
-    const begin = await fetch(`${baseUrl}/api/v1/auth/github?returnTo=%2Fchat`, {
+    const begin = await fetch(`${baseUrl}/api/v1/auth/github?returnTo=%2Fmcp`, {
       redirect: 'manual',
     })
     const stateCookie = cookiePair(begin.headers.get('set-cookie'))
@@ -231,7 +231,7 @@ describe('GitHub user authentication E2E', () => {
     )
     const sessionCookie = cookiePair(callback.headers.get('set-cookie'), 'aigateway_user_session')
 
-    const response = await fetch(`${baseUrl}/api/v1/chat/completions`, {
+    const response = await fetch(`${baseUrl}/api/v1/prompts/optimize`, {
       method: 'POST',
       headers: {
         cookie: sessionCookie,
@@ -239,14 +239,13 @@ describe('GitHub user authentication E2E', () => {
         'x-forwarded-for': `198.51.100.${(process.pid % 250) + 1}`,
       },
       body: JSON.stringify({
-        model: 'qwen',
-        messages: [{ role: 'user', content: '真实 Redis 限流验收' }],
-        stream: true,
+        prompt: '真实 Redis 限流验收',
+        mode: 'structure',
       }),
     })
 
     expect(response.status).toBe(200)
-    expect(await response.text()).toContain('data: [DONE]')
+    await expect(response.json()).resolves.toMatchObject({ optimizedPrompt: expect.any(String) })
     expect(authenticate).toHaveBeenCalledWith('fixture-code')
   })
 })

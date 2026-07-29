@@ -17,16 +17,16 @@ The user workspace SHALL render Agent directly at `/` as the only primary surfac
 - **WHEN** the Web application sanitizes the return path
 - **THEN** it returns `/`
 
-### Requirement: Multi-model comparison remains an Agent sub-scenario
+### Requirement: Multi-model comparison is retired
 
-The existing `/chat/compare` route SHALL remain available to authenticated users until a dedicated route migration is specified. It SHALL be reachable from `/`, SHALL visually activate the Agent navigation group, and SHALL return to `/`.
+The C-end SHALL NOT register `/chat/compare` or expose a model comparison action. Authentication return-path allowlists MUST reject `/chat/compare` and fall back to `/`.
 
-#### Scenario: User compares models
+#### Scenario: User opens an old comparison URL
 
-- **GIVEN** an authenticated user opens model comparison from Agent
-- **WHEN** the comparison page renders
-- **THEN** its independent per-model request behavior remains unchanged
-- **AND** the page provides a return action to `/`
+- **GIVEN** a user has an old `/chat/compare` link
+- **WHEN** the route is requested
+- **THEN** Next.js returns not found
+- **AND** no comparison client bundle or public Chat request is loaded
 
 ### Requirement: The C-end workspace is dedicated to Agent
 

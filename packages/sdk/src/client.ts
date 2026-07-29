@@ -1,14 +1,10 @@
 import type {
-  ChatEvent,
-  ChatMessage,
-  ChatRequest,
   GatewayError,
   ImageRequest,
   ImageTask,
   ModelSummary,
   OptimizePromptRequest,
   OptimizePromptResult,
-  TextModelId,
 } from './types.js'
 import {
   AIGatewayAuthenticationError,
@@ -16,7 +12,6 @@ import {
   AIGatewayProtocolError,
   AIGatewayTimeoutError,
 } from './errors.js'
-import { readSseData } from './sse.js'
 import { createAgentClient } from './agent-client.js'
 import type { AgentClient } from './agent-client.js'
 import type { SkillDirectUploadTransport } from './skill-upload.js'
@@ -44,30 +39,7 @@ export interface CreateAIGatewayClientOptions {
   skillUploadTransport?: SkillDirectUploadTransport
 }
 
-export interface ChatCompareRequest {
-  models: readonly TextModelId[]
-  messages: ChatMessage[]
-  temperature?: number
-  topP?: number
-  maxTokens?: number
-}
-
-export interface ChatCompareRun {
-  model: TextModelId
-  events: AsyncIterable<ChatEvent>
-  cancel(reason?: unknown): void
-}
-
-export interface ChatCompareSession {
-  runs: readonly ChatCompareRun[]
-  cancelAll(reason?: unknown): void
-}
-
 export interface AIGatewayClient {
-  chat: {
-    stream(input: ChatRequest, options?: RequestOptions): AsyncIterable<ChatEvent>
-    compare(input: ChatCompareRequest, options?: RequestOptions): ChatCompareSession
-  }
   images: {
     create(input: ImageRequest, options?: RequestOptions): Promise<ImageTask>
     get(taskId: string, options?: RequestOptions): Promise<ImageTask>
@@ -98,12 +70,6 @@ export function createAIGatewayClient(options: CreateAIGatewayClientOptions = {}
     })
 
   return {
-    chat: {
-      stream: (input, requestOptions) =>
-        streamChat(fetchWithCredentials, baseUrl, input, requestOptions),
-      compare: (input, requestOptions) =>
-        compareChat(fetchWithCredentials, baseUrl, input, requestOptions),
-    },
     images: {
       create: (input, requestOptions) =>
         createImage(fetchWithCredentials, baseUrl, input, requestOptions),
@@ -128,56 +94,6 @@ export function createAIGatewayClient(options: CreateAIGatewayClientOptions = {}
     skills: createSkillMarketClient(fetchWithCredentials, baseUrl),
     admin: {
       skills: createAdminSkillClient(fetchWithCredentials, baseUrl),
-    },
-  }
-}
-
-function compareChat(
-  fetchImplementation: typeof globalThis.fetch,
-  baseUrl: string,
-  input: ChatCompareRequest,
-  options: RequestOptions | undefined,
-): ChatCompareSession {
-  if (input.models.length < 2 || input.models.length > 3) {
-    throw new TypeError('Chat comparison requires 2 or 3 models')
-  }
-  if (new Set(input.models).size !== input.models.length) {
-    throw new TypeError('Chat comparison models must be unique')
-  }
-
-  const controllers = input.models.map(() => new AbortController())
-  const abortAllFromCaller = () => {
-    for (const controller of controllers) controller.abort(options?.signal?.reason)
-  }
-  if (options?.signal?.aborted) abortAllFromCaller()
-  else options?.signal?.addEventListener('abort', abortAllFromCaller, { once: true })
-
-  const runs = input.models.map((model, index): ChatCompareRun => {
-    const controller = controllers[index]!
-    return {
-      model,
-      events: streamChat(
-        fetchImplementation,
-        baseUrl,
-        {
-          model,
-          messages: input.messages,
-          stream: true,
-          comparison: true,
-          ...(input.temperature === undefined ? {} : { temperature: input.temperature }),
-          ...(input.topP === undefined ? {} : { topP: input.topP }),
-          ...(input.maxTokens === undefined ? {} : { maxTokens: input.maxTokens }),
-        },
-        { signal: controller.signal },
-      ),
-      cancel: (reason) => controller.abort(reason),
-    }
-  })
-
-  return {
-    runs,
-    cancelAll: (reason) => {
-      for (const controller of controllers) controller.abort(reason)
     },
   }
 }
@@ -427,93 +343,6 @@ function parseModelSummary(value: unknown, requestId: string): ModelSummary {
   return value as ModelSummary
 }
 
-async function* streamChat(
-  fetchImplementation: typeof globalThis.fetch,
-  baseUrl: string,
-  input: ChatRequest,
-  options: RequestOptions | undefined,
-): AsyncGenerator<ChatEvent, void, void> {
-  const response = await fetchImplementation(`${baseUrl}/api/v1/chat/completions`, {
-    method: 'POST',
-    headers: {
-      accept: 'text/event-stream',
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify(input),
-    ...(options?.signal === undefined ? {} : { signal: options.signal }),
-  })
-  const headerRequestId = response.headers.get('x-request-id')
-
-  if (!response.ok) throw await responseError(response, headerRequestId)
-  if (!headerRequestId) {
-    throw new AIGatewayProtocolError('unknown', 'Chat response is missing x-request-id')
-  }
-  if (!response.headers.get('content-type')?.toLowerCase().includes('text/event-stream')) {
-    throw new AIGatewayProtocolError(headerRequestId, 'Chat response is not text/event-stream')
-  }
-  if (!response.body) {
-    throw new AIGatewayProtocolError(headerRequestId, 'Chat response has no readable body')
-  }
-
-  yield { type: 'start', requestId: headerRequestId, model: input.model }
-
-  let doneCount = 0
-  let usageCount = 0
-
-  for await (const data of readSseData(response.body)) {
-    if (doneCount > 0) {
-      throw new AIGatewayProtocolError(headerRequestId, 'SSE data was emitted after [DONE]')
-    }
-    if (data === '[DONE]') {
-      doneCount += 1
-      continue
-    }
-
-    const payload = parseJsonRecord(data, headerRequestId)
-    assertRequestId(payload, headerRequestId)
-
-    if (payload.object === 'chat.completion.chunk') {
-      for (const content of parseDeltaContents(payload, headerRequestId)) {
-        yield { type: 'delta', requestId: headerRequestId, content }
-      }
-      continue
-    }
-
-    if (payload.object === 'chat.completion.usage') {
-      usageCount += 1
-      if (usageCount > 1) {
-        throw new AIGatewayProtocolError(headerRequestId, 'SSE emitted usage more than once')
-      }
-      yield {
-        type: 'usage',
-        requestId: headerRequestId,
-        usage: parseUsage(payload, headerRequestId),
-      }
-      continue
-    }
-
-    if (payload.object === 'chat.completion.error') {
-      yield {
-        type: 'error',
-        requestId: headerRequestId,
-        error: parseStreamError(payload, headerRequestId),
-      }
-      return
-    }
-
-    throw new AIGatewayProtocolError(headerRequestId, 'SSE emitted an unknown payload object')
-  }
-
-  if (doneCount !== 1) {
-    throw new AIGatewayProtocolError(headerRequestId, 'SSE must end with exactly one [DONE]')
-  }
-  if (usageCount !== 1) {
-    throw new AIGatewayProtocolError(headerRequestId, 'SSE must emit exactly one usage payload')
-  }
-
-  yield { type: 'done', requestId: headerRequestId }
-}
-
 async function responseError(response: Response, headerRequestId: string | null) {
   let body: unknown
   try {
@@ -536,78 +365,6 @@ async function responseError(response: Response, headerRequestId: string | null)
   return response.status === 401
     ? new AIGatewayAuthenticationError(error)
     : new AIGatewayError(error, { status: response.status })
-}
-
-function parseJsonRecord(data: string, requestId: string): Record<string, unknown> {
-  try {
-    const value: unknown = JSON.parse(data)
-    const record = asRecord(value)
-    if (record) return record
-  } catch (error) {
-    throw new AIGatewayProtocolError(requestId, 'SSE data is not valid JSON', error)
-  }
-  throw new AIGatewayProtocolError(requestId, 'SSE JSON payload must be an object')
-}
-
-function assertRequestId(payload: Record<string, unknown>, expected: string): void {
-  if (payload.request_id !== expected) {
-    throw new AIGatewayProtocolError(expected, 'SSE request_id does not match x-request-id')
-  }
-}
-
-function parseDeltaContents(payload: Record<string, unknown>, requestId: string): string[] {
-  if (!Array.isArray(payload.choices)) {
-    throw new AIGatewayProtocolError(requestId, 'Chat chunk choices must be an array')
-  }
-
-  const contents: string[] = []
-  for (const value of payload.choices) {
-    const choice = asRecord(value)
-    const delta = asRecord(choice?.delta)
-    if (!choice || !delta) {
-      throw new AIGatewayProtocolError(requestId, 'Chat chunk choice is invalid')
-    }
-    if (delta.content !== undefined && typeof delta.content !== 'string') {
-      throw new AIGatewayProtocolError(requestId, 'Chat delta content must be a string')
-    }
-    if (typeof delta.content === 'string' && delta.content.length > 0) contents.push(delta.content)
-  }
-  return contents
-}
-
-function parseUsage(payload: Record<string, unknown>, requestId: string) {
-  const usage = asRecord(payload.usage)
-  const extension = asRecord(usage?.aigateway)
-  if (!usage || !extension) {
-    throw new AIGatewayProtocolError(requestId, 'Chat usage payload is invalid')
-  }
-
-  return {
-    inputTokens: nullableNumber(usage.prompt_tokens, requestId),
-    outputTokens: nullableNumber(usage.completion_tokens, requestId),
-    totalTokens: nullableNumber(usage.total_tokens, requestId),
-    estimatedCostCny: nullableString(extension.estimated_cost_cny, requestId),
-    usageUnknown: requiredBoolean(extension.usage_unknown, requestId),
-  }
-}
-
-function parseStreamError(payload: Record<string, unknown>, requestId: string): GatewayError {
-  const error = asRecord(payload.error)
-  if (!error) throw new AIGatewayProtocolError(requestId, 'Chat error payload is invalid')
-  const code = stringValue(error.code)
-  const message = stringValue(error.message)
-  const retryable = booleanValue(error.retryable)
-  if (!code || !message || retryable === undefined) {
-    throw new AIGatewayProtocolError(requestId, 'Chat error fields are invalid')
-  }
-  const details = asRecord(error.details)
-  return {
-    requestId,
-    code,
-    message,
-    retryable,
-    ...(details === undefined ? {} : { details }),
-  }
 }
 
 function nullableNumber(value: unknown, requestId: string): number | null {

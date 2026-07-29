@@ -41,3 +41,8 @@
 
 - [x] 8.1 更新 design 和 user-workspace-routing，明确新建会话次级样式及 Skill 入口迁入用户菜单，并通过 strict validation
 - [x] 8.2 重设新建会话样式、删除侧栏 Skill 卡片并加入用户菜单入口，运行 Web test、typecheck、lint、build、浏览器验证和 OpenSpec strict validation
+
+## 9. 对比与公开 Chat 契约退役
+
+- [x] 9.1 更新 proposal、design、路由规格、PRD、技术方案和 README，明确 `/chat/compare` 与公开 Chat API/SDK 退役
+- [x] 9.2 删除对比页、认证白名单、SDK `chat.*`、Chat Controller/DTO/SSE 与部署专用路由，运行测试、typecheck、lint、build 和 strict validation

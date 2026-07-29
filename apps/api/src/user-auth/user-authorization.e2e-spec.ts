@@ -60,17 +60,8 @@ describe('Paid capability user authorization E2E', () => {
     if (app) await app.close()
   })
 
-  it('rejects anonymous Chat, Image, and Prompt before persistence or Adapter calls', async () => {
+  it('rejects anonymous Image and Prompt before persistence or Adapter calls', async () => {
     const attempts = [
-      fetch(`${baseUrl}/api/v1/chat/completions`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          model: 'qwen',
-          messages: [{ role: 'user', content: '匿名 Chat' }],
-          stream: true,
-        }),
-      }),
       fetch(`${baseUrl}/api/v1/images/generations`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },

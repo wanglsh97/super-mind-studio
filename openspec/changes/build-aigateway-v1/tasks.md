@@ -86,7 +86,7 @@
 - [x] 1.65 修复 OpenSandbox 显式产物 realpath 校验的流式 stdout 收集，确保 export_file 可持久化并在聊天中展示文件卡片
 - [x] 1.66 将 shell、read_file、write_file、export_file 重组为通用 Sandbox tools，与 Skill activation tool 保持平级注册和独立模块边界
 - [x] 1.67 按工具复杂度整理 Agent tools 目录：单文件工具平铺，多文件 web-fetch/web-search 工具归入同名目录
-- [ ] 1.68 移除公开 Chat completions Controller、DTO、SSE、SDK `chat.*` 契约及专属测试，将保留的模型基础设施收敛为 Agent 使用的 `ModelGatewayModule`
+- [x] 1.68 移除公开 Chat completions Controller、DTO、SSE、SDK `chat.*` 契约及专属测试，将保留的模型基础设施收敛为 Agent 使用的 `ModelGatewayModule`
 - [ ] 1.69 为 Qwen3.7-Plus、GLM-5.2、DeepSeek-V4-Pro、Kimi K3 显式配置 thinking，并将 `reasoning_content` 规范化为 Agent reasoning 事件，覆盖工具调用历史回灌
 
 ## 2. 管理员中后台

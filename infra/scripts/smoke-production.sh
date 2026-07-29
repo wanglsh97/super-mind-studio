@@ -3,28 +3,17 @@ set -eu
 
 BASE_URL="${1:-${BASE_URL:-http://127.0.0.1}}"
 BASE_URL="${BASE_URL%/}"
-SMOKE_MODEL_ALIAS="${SMOKE_MODEL_ALIAS:-qwen}"
+SMOKE_MODEL_ID="${SMOKE_MODEL_ID:-qwen3.7-plus}"
 SMOKE_USER_SESSION_TOKEN="${SMOKE_USER_SESSION_TOKEN:-}"
 
-case "$SMOKE_MODEL_ALIAS" in
-  qwen | glm | deepseek | kimi) ;;
-  *)
-    echo "不支持的 SMOKE_MODEL_ALIAS：$SMOKE_MODEL_ALIAS" >&2
-    exit 1
-    ;;
-esac
-
 temp_dir="$(mktemp -d)"
-fifo="$temp_dir/chat-stream"
-transcript="$temp_dir/chat-transcript.log"
 anonymous_response="$temp_dir/anonymous-response.json"
+thread_response="$temp_dir/thread-response.json"
+run_response="$temp_dir/run-response.json"
+event_transcript="$temp_dir/agent-events.log"
 curl_config="$temp_dir/curl-config"
-curl_pid=''
 
 cleanup() {
-  if [ -n "$curl_pid" ]; then
-    kill "$curl_pid" 2>/dev/null || true
-  fi
   rm -rf "$temp_dir"
 }
 trap cleanup EXIT INT TERM
@@ -36,73 +25,50 @@ curl --noproxy '*' --fail --silent --show-error --max-time 10 "$BASE_URL/" >/dev
 anonymous_status="$(curl --noproxy '*' --silent --show-error --max-time 10 \
   --output "$anonymous_response" \
   --write-out '%{http_code}' \
-  --request POST "$BASE_URL/api/v1/chat/completions" \
+  --request POST "$BASE_URL/api/v1/agent/threads" \
   --header 'Content-Type: application/json' \
-  --data "{\"model\":\"$SMOKE_MODEL_ALIAS\",\"messages\":[{\"role\":\"user\",\"content\":\"认证门禁冒烟\"}],\"stream\":true,\"maxTokens\":64}")"
+  --data "{\"model\":\"$SMOKE_MODEL_ID\"}")"
 if [ "$anonymous_status" != '401' ]; then
-  echo "未登录 Chat 门禁应返回 401，实际为 $anonymous_status。" >&2
+  echo "未登录 Agent 门禁应返回 401，实际为 $anonymous_status。" >&2
   exit 1
 fi
 
 if [ -z "$SMOKE_USER_SESSION_TOKEN" ]; then
-  echo 'production_smoke=ok health=ok auth_gate=401 authenticated_sse=skipped'
+  echo 'production_smoke=ok health=ok agent_auth_gate=401 authenticated_agent=skipped'
   exit 0
 fi
 
 umask 077
 printf 'cookie = "aigateway_user_session=%s"\n' "$SMOKE_USER_SESSION_TOKEN" >"$curl_config"
 
-mkfifo "$fifo"
-
-curl --noproxy '*' --fail --no-buffer --silent --show-error --max-time 30 \
+curl --noproxy '*' --fail --silent --show-error --max-time 15 \
   --config "$curl_config" \
-  --request POST "$BASE_URL/api/v1/chat/completions" \
+  --request POST "$BASE_URL/api/v1/agent/threads" \
   --header 'Content-Type: application/json' \
-  --data "{\"model\":\"$SMOKE_MODEL_ALIAS\",\"messages\":[{\"role\":\"user\",\"content\":\"生产部署流式冒烟\"}],\"stream\":true,\"maxTokens\":64}" \
-  >"$fifo" &
-curl_pid=$!
+  --data "{\"model\":\"$SMOKE_MODEL_ID\"}" \
+  --output "$thread_response"
+thread_id="$(node -e 'const fs=require("fs");const v=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));if(!v.id)process.exit(1);process.stdout.write(v.id)' "$thread_response")"
 
-delta_count=0
-first_delta_ms=''
-last_delta_ms=''
-usage_seen=0
-done_seen=0
+curl --noproxy '*' --fail --silent --show-error --max-time 15 \
+  --config "$curl_config" \
+  --request POST "$BASE_URL/api/v1/agent/threads/$thread_id/runs" \
+  --header 'Content-Type: application/json' \
+  --data '{"input":"生产部署 Agent 流式冒烟"}' \
+  --output "$run_response"
+run_id="$(node -e 'const fs=require("fs");const v=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));if(!v.id)process.exit(1);process.stdout.write(v.id)' "$run_response")"
 
-epoch_ms() {
-  node -e 'process.stdout.write(String(Date.now()))'
-}
+curl --noproxy '*' --fail --no-buffer --silent --show-error --max-time 60 \
+  --config "$curl_config" \
+  "$BASE_URL/api/v1/agent/runs/$run_id/events" \
+  --output "$event_transcript"
 
-while IFS= read -r line; do
-  printf '%s\n' "$line" >>"$transcript"
-  case "$line" in
-    data:*'"content":'*)
-      now_ms="$(epoch_ms)"
-      delta_count=$((delta_count + 1))
-      if [ -z "$first_delta_ms" ]; then first_delta_ms="$now_ms"; fi
-      last_delta_ms="$now_ms"
-      ;;
-    data:*'"object":"chat.completion.usage"'*) usage_seen=1 ;;
-    'data: [DONE]') done_seen=1 ;;
-  esac
-done <"$fifo"
+node -e '
+const fs=require("fs");
+const body=fs.readFileSync(process.argv[1],"utf8");
+if(!body.includes("\"type\":\"text-delta\"")) throw new Error("Agent stream missing text-delta");
+if(!body.includes("\"type\":\"run-terminal\"")) throw new Error("Agent stream missing run-terminal");
+if(!body.includes("data: [DONE]")) throw new Error("Agent stream missing [DONE]");
+' "$event_transcript"
 
-wait "$curl_pid"
-curl_pid=''
-
-if [ "$delta_count" -lt 3 ]; then
-  echo "Chat SSE delta 数不足：$delta_count" >&2
-  exit 1
-fi
-if [ "$usage_seen" -ne 1 ] || [ "$done_seen" -ne 1 ]; then
-  echo 'Chat SSE 缺少 usage 或 [DONE]' >&2
-  exit 1
-fi
-
-spread_ms=$((last_delta_ms - first_delta_ms))
-if [ "$spread_ms" -lt 20 ]; then
-  echo "Chat SSE 可能被代理缓冲：delta 时间跨度仅 ${spread_ms}ms" >&2
-  exit 1
-fi
-
-printf 'production_smoke=ok health=ok auth_gate=401 authenticated_sse=ok deltas=%s spread_ms=%s\n' \
-  "$delta_count" "$spread_ms"
+printf 'production_smoke=ok health=ok agent_auth_gate=401 authenticated_agent=ok thread_id=%s run_id=%s\n' \
+  "$thread_id" "$run_id"
