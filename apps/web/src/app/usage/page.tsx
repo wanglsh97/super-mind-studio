@@ -79,7 +79,7 @@ function UsageAnalytics() {
             <div>
               <h1 className="font-display text-3xl font-semibold tracking-[-0.04em]">Token 用量</h1>
               <p className="mt-3 text-sm leading-6 text-ink-secondary dark:text-ink-dark-muted">
-                最近三个月的 Agent 模型消耗。缓存属于输入，思考属于输出，不会重复计入总量。
+                最近一年的 Agent 模型消耗。缓存属于输入，思考属于输出，不会重复计入总量。
               </p>
             </div>
             {data ? (
@@ -119,7 +119,7 @@ function UsageAnalytics() {
                 from={data.from}
                 to={data.to}
                 days={data.daily}
-                ariaLabel="最近三个月每日 Token 使用热力图"
+                ariaLabel="最近一年每日 Token 使用热力图"
               />
             </section>
 

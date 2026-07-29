@@ -202,7 +202,7 @@ Agent 模型调用包装器在 `RequestLog/BillingRecord` 生命周期之外同�
 
 归因采用调用级关联而不是复制账单：当前已激活 Skill 作为 Skill 维度；产生 tool call 的模型调用及紧随 tool result 的模型调用关联到对应 Tool。一次调用涉及多个同类名称时按稳定名称去重，因此在任一归因维度中不会因重复事件重复累计。Skill description 注入产生的提示词本身不作为 Skill 消耗单独计数。
 
-用户端提供仅当前用户可见的 Token 分析接口：最近三个月日历热力图按自然日汇总总 Token；每日明细返回 input/output/cache/reasoning；模型图按实际 resolved model 汇总。管理端 Dashboard 的 Token 概览与模型明细统计服务器自然日“今天”，同时提供最近三个月全站热力图，以及按 Skill/Tool/模型的无 Prompt 聚合。所有聚合响应仅含名称、计数与 Token 数值，不返回 messages、Prompt、工具参数或结果。
+用户端提供仅当前用户可见的 Token 分析接口：最近一年日历热力图按自然日汇总总 Token；每日明细返回 input/output/cache/reasoning；模型图按实际 resolved model 汇总。管理端 Dashboard 的 Token 概览与模型明细统计服务器自然日“今天”，同时提供最近三个月全站热力图，以及按 Skill/Tool/模型的无 Prompt 聚合。所有聚合响应仅含名称、计数与 Token 数值，不返回 messages、Prompt、工具参数或结果。
 
 ## SDK and API Contracts
 

@@ -28,6 +28,7 @@ describe('TokenAnalyticsService', () => {
 
     const result = await service.forUser('user-1', 0)
 
+    expect(result).toMatchObject({ from: '2025-07-29', to: '2026-07-29' })
     expect(findMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: expect.objectContaining({ userId: 'user-1' }) }),
     )

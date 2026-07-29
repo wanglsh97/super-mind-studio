@@ -23,11 +23,11 @@ For every Agent model invocation whose provider supplies usage, the platform SHA
 - **WHEN** the invocation is persisted
 - **THEN** the unavailable dimensions remain distinguishable from a reported value of zero
 
-### Requirement: User analytics show a three-month daily Token calendar
-The authenticated user analytics experience SHALL show a GitHub-contribution-style calendar heatmap for the most recent three months. Each cell SHALL represent one local calendar day for the current user, and its intensity SHALL represent the sum of that day's total Tokens across the user's Agent Runs. Month labels and weekday rows SHALL make the calendar chronology legible.
+### Requirement: User analytics show a one-year daily Token calendar
+The authenticated user analytics experience SHALL show a GitHub-contribution-style calendar heatmap for the most recent year. Each cell SHALL represent one local calendar day for the current user, and its intensity SHALL represent the sum of that day's total Tokens across the user's Agent Runs. Month labels and weekday rows SHALL make the calendar chronology legible.
 
 #### Scenario: A user opens token analytics
-- **GIVEN** the user has Agent Run Token records within the most recent three months
+- **GIVEN** the user has Agent Run Token records within the most recent year
 - **WHEN** the analytics page loads
 - **THEN** it renders one heatmap cell per day in that period
 - **AND** a day with a higher total Token count has a stronger heatmap intensity than a day with a lower count

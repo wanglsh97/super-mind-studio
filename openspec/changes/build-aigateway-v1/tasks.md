@@ -92,7 +92,7 @@
 - [x] 1.71 在 Agent Thread 详情中返回全部持久化消息的 token 估算与绑定模型最大上下文，并覆盖服务端契约测试
 - [x] 1.72 扩展统一 usage 契约以采集 cached input 与 reasoning Token，并为四个 Provider、Mock 和 Pi bridge 补齐映射测试
 - [x] 1.73 新增 AgentModelInvocation 调用级账本与 Skill/Tool 归因迁移，在 Agent 每次模型调用终结时幂等持久化实际 resolved model 和 usage
-- [x] 1.74 实现仅当前用户可访问的三个月 Token 日历、每日明细和模型总量聚合 API，并覆盖权限、缺失维度按 0 展示和无历史回填测试
+- [x] 1.74 实现仅当前用户可访问的一年 Token 日历、每日明细和模型总量聚合 API，并覆盖权限、缺失维度按 0 展示和无历史回填测试
 
 ## 2. 管理员中后台
 
@@ -187,4 +187,4 @@
 - [ ] 3.40 将 Agent 运行停止按钮改为与发送按钮等尺寸的圆形纯图标控件，使用方形停止符号并保留可访问名称
 - [ ] 3.41 为思考强度档位增加推理特点说明，并以名称、弱化说明和固定行末选中标记的两行信息样式展示
 - [x] 3.42 将运行环境 Context 模块改为当前 Thread token 总数与绑定模型最大上下文的占比，不再消费单次调用的 context-budget
-- [x] 3.44 新增用户 Token 分析页，展示最近三个月 GitHub 风格总量热力图、每日 input/output/cache/reasoning 明细和实际模型总量图
+- [x] 3.44 新增用户 Token 分析页，展示最近一年 GitHub 风格总量热力图、每日 input/output/cache/reasoning 明细和实际模型总量图

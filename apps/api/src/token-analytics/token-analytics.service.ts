@@ -28,7 +28,7 @@ export class TokenAnalyticsService {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
   async forUser(userId: string, timezoneOffsetMinutes = 0) {
-    const period = recentThreeMonthPeriod(new Date(), timezoneOffsetMinutes)
+    const period = recentCalendarPeriod(new Date(), timezoneOffsetMinutes, 12)
     const rows = await this.prisma.agentModelInvocation.findMany({
       where: {
         userId,
@@ -55,7 +55,7 @@ export class TokenAnalyticsService {
     const now = new Date()
     const today = new Date(now)
     today.setHours(0, 0, 0, 0)
-    const period = recentThreeMonthPeriod(now, 0)
+    const period = recentCalendarPeriod(now, 0, 3)
     const rows = await this.prisma.agentModelInvocation.findMany({
       where: {
         completedAt: { gte: period.from, lt: period.toExclusive },
@@ -234,10 +234,14 @@ function groupAttributions(rows: readonly InvocationRow[], kind: 'SKILL' | 'TOOL
     .sort((left, right) => right.totalTokens - left.totalTokens)
 }
 
-function recentThreeMonthPeriod(now: Date, timezoneOffsetMinutes: number) {
+function recentCalendarPeriod(
+  now: Date,
+  timezoneOffsetMinutes: number,
+  months: number,
+) {
   const shifted = new Date(now.getTime() - timezoneOffsetMinutes * 60_000)
   const fromLocal = new Date(
-    Date.UTC(shifted.getUTCFullYear(), shifted.getUTCMonth() - 3, shifted.getUTCDate()),
+    Date.UTC(shifted.getUTCFullYear(), shifted.getUTCMonth() - months, shifted.getUTCDate()),
   )
   const toLocal = new Date(
     Date.UTC(shifted.getUTCFullYear(), shifted.getUTCMonth(), shifted.getUTCDate() + 1),
