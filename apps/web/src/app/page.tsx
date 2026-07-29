@@ -280,7 +280,13 @@ function AgentConsole() {
     [handleAuthenticationFailure],
   )
 
-  const runtime = useLocalRuntime(adapter)
+  const feedbackAdapter = useMemo(
+    () => ({
+      submit: () => undefined,
+    }),
+    [],
+  )
+  const runtime = useLocalRuntime(adapter, { adapters: { feedback: feedbackAdapter } })
   const modelDisabled = modelOptions.length === 0
   const currentActiveRun = activeRunForThread(activeRuns, activeThreadId)
   const submitBlocked = modelDisabled || currentActiveRun !== null
