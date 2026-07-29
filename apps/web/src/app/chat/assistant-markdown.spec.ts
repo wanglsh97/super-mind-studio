@@ -76,6 +76,7 @@ describe('AssistantMarkdown security', () => {
 
     assert.match(markup, /aria-label="复制 ts 代码"/)
     assert.match(markup, />ts<\/span>/)
+    assert.match(markup, /bg-white/)
     assert.match(markup, />const<\/span>/)
     assert.match(markup, /> answer<\/span>/)
     assert.doesNotMatch(markup, /<pre[^>]*class="language-ts"/)

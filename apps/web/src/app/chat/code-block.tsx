@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
 import React from 'react'
+import { useState } from 'react'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism'
 
@@ -20,18 +20,28 @@ export function CodeBlock({ code, language }: Readonly<{ code: string; language?
   }
 
   return (
-    <section className="not-prose my-3 overflow-hidden rounded-xl border border-slate-200 bg-[#fafafa] shadow-sm dark:border-white/10 dark:bg-slate-50">
-      <header className="flex items-center justify-between border-b border-slate-200 bg-slate-100/80 px-3 py-2 dark:border-slate-200 dark:bg-slate-100">
-        <span className="font-mono text-[0.62rem] font-bold uppercase tracking-[0.12em] text-slate-500">
+    <section className="not-prose my-4 overflow-hidden rounded-[1.15rem] border border-slate-300 bg-white shadow-none dark:border-slate-300 dark:bg-white">
+      <header className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-6 py-4 dark:border-slate-200 dark:bg-slate-50">
+        <span className="font-sans text-base font-semibold capitalize tracking-normal text-slate-900">
           {displayLanguage}
         </span>
         <button
           type="button"
           onClick={copyCode}
-          className="rounded-md px-2 py-1 text-[0.68rem] font-medium text-slate-500 transition hover:bg-slate-200 hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-600"
+          className="grid size-8 place-items-center rounded-md text-slate-500 transition hover:bg-slate-200 hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-600"
           aria-label={`复制 ${displayLanguage} 代码`}
+          title={copied ? '已复制' : '复制代码'}
         >
-          {copied ? '已复制' : '复制'}
+          {copied ? (
+            <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+              <path d="m5 12 4 4L19 6" />
+            </svg>
+          ) : (
+            <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+              <rect x="9" y="9" width="11" height="11" rx="2" />
+              <path d="M15 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h3" />
+            </svg>
+          )}
         </button>
       </header>
       <SyntaxHighlighter
@@ -39,13 +49,13 @@ export function CodeBlock({ code, language }: Readonly<{ code: string; language?
         style={oneLight}
         customStyle={{
           margin: 0,
-          padding: '1rem',
+          padding: '1.75rem 2rem',
           borderRadius: 0,
           background: 'transparent',
-          fontSize: '0.78rem',
-          lineHeight: 1.65,
+          fontSize: '1rem',
+          lineHeight: 1.8,
         }}
-        codeTagProps={{ className: 'font-mono' }}
+        codeTagProps={{ className: '!bg-transparent !p-0 font-mono' }}
         wrapLongLines
       >
         {code}

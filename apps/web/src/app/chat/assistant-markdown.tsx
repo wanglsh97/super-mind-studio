@@ -129,7 +129,7 @@ export function AssistantMarkdown({ children }: { children: string }) {
   const completedSvgBlocks = findCompletedSvgBlocks(children)
 
   return (
-    <div className="space-y-3 break-words [&_a]:text-cyan-700 [&_a]:underline [&_blockquote]:border-l-2 [&_blockquote]:border-slate-300 [&_blockquote]:pl-3 [&_code]:rounded [&_code]:bg-slate-200/70 [&_code]:px-1 [&_pre]:overflow-x-auto [&_pre]:rounded-xl [&_pre]:bg-slate-950 [&_pre]:p-4 [&_pre]:text-slate-100 [&_table]:block [&_table]:overflow-x-auto [&_td]:border [&_td]:border-slate-200 [&_td]:p-2 [&_th]:border [&_th]:border-slate-200 [&_th]:p-2 dark:[&_a]:text-cyan-300 dark:[&_code]:bg-white/10 dark:[&_td]:border-white/10 dark:[&_th]:border-white/10">
+    <div className="space-y-3 break-words [&_:not(pre)>code]:rounded [&_:not(pre)>code]:bg-slate-100 [&_:not(pre)>code]:px-1 [&_table]:block [&_table]:overflow-x-auto [&_td]:border [&_td]:border-slate-200 [&_td]:p-2 [&_th]:border [&_th]:border-slate-200 [&_th]:p-2 dark:[&_a]:text-cyan-300 dark:[&_:not(pre)>code]:bg-white/10 dark:[&_td]:border-white/10 dark:[&_th]:border-white/10">
       <Markdown
         remarkPlugins={[remarkGfm]}
         skipHtml
