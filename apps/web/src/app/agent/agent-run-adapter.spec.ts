@@ -169,6 +169,7 @@ test('aborting local SSE does not call runs.cancel (browser disconnect must not 
   const adapter = createAgentRunAdapter(client, () => ({
     threadId: 'thread-1',
     model: 'mock',
+    thinkingEffort: 'balanced',
     selectedSkillNames: [],
     onThreadCreated: () => undefined,
   }))
@@ -232,6 +233,7 @@ test('forwards live Sandbox status events to the workspace status module', async
   const adapter = createAgentRunAdapter(client, () => ({
     threadId: 'thread-1',
     model: 'mock',
+    thinkingEffort: 'balanced',
     selectedSkillNames: [],
     onThreadCreated: () => undefined,
     onSandboxStatus: (status, sandboxId) => {
@@ -286,6 +288,7 @@ test('waits for limit terminal after a context error and releases the active run
   const adapter = createAgentRunAdapter(client, () => ({
     threadId: 'thread-1',
     model: 'qwen',
+    thinkingEffort: 'deep',
     selectedSkillNames: ['mock-data-cleaner'],
     onThreadCreated: () => undefined,
     onRunFinished: () => {
@@ -300,6 +303,7 @@ test('waits for limit terminal after a context error and releases the active run
     chunks.push(chunk)
   assert.deepEqual(createInput, {
     input: '继续',
+    thinkingEffort: 'deep',
     skills: [{ name: 'mock-data-cleaner' }],
   })
   assert.equal(finished, 1)

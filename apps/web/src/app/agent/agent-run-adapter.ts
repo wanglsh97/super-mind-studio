@@ -5,6 +5,7 @@ import type {
   AgentRunTerminalStatus,
   AgentSandboxStatus,
   AgentStreamEvent,
+  AgentThinkingEffort,
   AgentThreadSummary,
   AIGatewayClient,
 } from '@supermind/sdk'
@@ -19,6 +20,7 @@ import type {
 export interface AgentRunAdapterContext {
   threadId: string | null
   model: string
+  thinkingEffort: AgentThinkingEffort
   selectedSkillNames: readonly string[]
   onThreadCreated: (thread: AgentThreadSummary) => void
   onRunCreated?: (run: { id: string; threadId: string }) => void
@@ -79,6 +81,7 @@ export function createAgentRunAdapter(
 
       const run = await client.agent.runs.create(threadId, {
         input,
+        thinkingEffort: context.thinkingEffort,
         ...(context.selectedSkillNames.length === 0
           ? {}
           : { skills: context.selectedSkillNames.map((name) => ({ name })) }),

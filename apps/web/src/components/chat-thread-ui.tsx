@@ -1,6 +1,6 @@
 'use client'
 
-import type { TextModelAlias, TextModelId, Usage } from '@supermind/sdk'
+import type { AgentThinkingEffort, TextModelAlias, TextModelId, Usage } from '@supermind/sdk'
 import {
   ActionBarPrimitive,
   AuiIf,
@@ -381,6 +381,8 @@ export function ModelSelect({
   disabled,
   boundHint,
   menuTitle,
+  thinkingEffort,
+  onThinkingEffortChange,
   onChange,
 }: Readonly<{
   value: TextModelId
@@ -388,6 +390,8 @@ export function ModelSelect({
   disabled: boolean
   boundHint?: boolean
   menuTitle?: string
+  thinkingEffort: AgentThinkingEffort
+  onThinkingEffortChange: (effort: AgentThinkingEffort) => void
   onChange: (value: TextModelId) => void
 }>) {
   const [open, setOpen] = useState(false)
@@ -422,7 +426,7 @@ export function ModelSelect({
             : `运行模型：${selectedLabel}`
         }
         title={boundHint ? '切换模型将新建会话，当前会话保持不变' : undefined}
-        aria-haspopup="listbox"
+        aria-haspopup="dialog"
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
         className={cn(
@@ -445,39 +449,90 @@ export function ModelSelect({
       </button>
       {open && (
         <div
-          role="listbox"
-          aria-label="选择运行模型"
-          className="liquid-glass absolute right-0 bottom-[calc(100%+0.55rem)] z-10 w-56 overflow-hidden rounded-2xl p-1.5 max-md:w-[min(14rem,calc(100vw-2rem))]"
+          role="dialog"
+          aria-label="运行模型与思考强度"
+          className="liquid-glass absolute right-0 bottom-[calc(100%+0.55rem)] z-10 w-64 overflow-hidden rounded-[1.15rem] p-1.5 shadow-[0_20px_50px_rgb(39_59_112/0.2)] max-md:w-[min(16rem,calc(100vw-2rem))]"
         >
           <p className="px-2.5 py-1 text-[0.58rem] font-bold tracking-widest text-ink-subtle">
             {menuTitle ?? (boundHint ? '切换模型将新建会话' : '运行模型')}
           </p>
-          {options.map((option) => {
-            const isSelected = option.value === value
-            return (
-              <button
-                key={option.value}
-                type="button"
-                role="option"
-                aria-selected={isSelected}
-                onClick={() => {
-                  onChange(option.value)
-                  setOpen(false)
-                }}
-                className={cn(
-                  'flex w-full min-h-9 items-center justify-between rounded-lg px-2.5 text-[0.72rem] font-semibold text-ink-secondary transition-[background,color] hover:bg-brand-subtle hover:text-brand-hover dark:text-ink-dark-muted dark:hover:bg-surface-muted dark:hover:text-brand-light',
-                  isSelected &&
-                    'bg-brand-muted text-brand-hover dark:bg-[#392d52] dark:text-brand-light',
-                )}
-              >
-                <span className="flex min-w-0 items-center gap-2.5">
-                  <ModelLogo alias={option.provider} />
-                  <span>{option.label}</span>
-                </span>
-                {isSelected && <span aria-hidden="true">✓</span>}
-              </button>
-            )
-          })}
+          <div role="listbox" aria-label="选择运行模型">
+            {options.map((option) => {
+              const isSelected = option.value === value
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  role="option"
+                  aria-selected={isSelected}
+                  onClick={() => {
+                    onChange(option.value)
+                    setOpen(false)
+                  }}
+                  className={cn(
+                    'flex min-h-9 w-full items-center justify-between rounded-lg px-2.5 text-[0.72rem] font-semibold text-ink-secondary transition-[background,color] hover:bg-brand-subtle hover:text-brand-hover dark:text-ink-dark-muted dark:hover:bg-surface-muted dark:hover:text-brand-light',
+                    isSelected &&
+                      'bg-brand-muted text-brand-hover dark:bg-[#392d52] dark:text-brand-light',
+                  )}
+                >
+                  <span className="flex min-w-0 items-center gap-2.5">
+                    <ModelLogo alias={option.provider} />
+                    <span>{option.label}</span>
+                  </span>
+                  {isSelected && <span aria-hidden="true">✓</span>}
+                </button>
+              )
+            })}
+          </div>
+          <div className="mx-1 mt-1.5 border-t border-line/70 pt-2">
+            <div className="mb-1.5 flex items-center justify-between px-1">
+              <span className="text-[0.58rem] font-bold tracking-widest text-ink-subtle">
+                思考强度
+              </span>
+              <span className="text-[0.56rem] text-ink-subtle">本次运行</span>
+            </div>
+            <div
+              role="radiogroup"
+              aria-label="选择思考强度"
+              className="grid grid-cols-3 gap-1 rounded-xl border border-line/70 bg-surface-inset/70 p-1"
+            >
+              {(
+                [
+                  { value: 'fast', label: '快速', note: '更快' },
+                  { value: 'balanced', label: '均衡', note: '默认' },
+                  { value: 'deep', label: '深度', note: '更充分' },
+                ] as const
+              ).map((option) => {
+                const isSelected = option.value === thinkingEffort
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    role="radio"
+                    aria-checked={isSelected}
+                    onClick={() => onThinkingEffortChange(option.value)}
+                    className={cn(
+                      'relative min-w-0 rounded-lg px-1 py-2 text-center transition-[background,color,box-shadow] focus-visible:outline-2 focus-visible:outline-brand-focus focus-visible:outline-offset-1',
+                      isSelected
+                        ? 'bg-[linear-gradient(145deg,rgb(39_100_255/0.14),rgb(139_124_255/0.18))] text-brand-hover shadow-[0_3px_12px_rgb(77_86_220/0.14)] dark:text-brand-light'
+                        : 'text-ink-subtle hover:bg-surface/70 hover:text-ink-secondary',
+                    )}
+                  >
+                    <span className="block text-[0.68rem] font-bold">{option.label}</span>
+                    <span className="mt-0.5 block text-[0.52rem] leading-none opacity-70">
+                      {option.note}
+                    </span>
+                    {isSelected && (
+                      <span
+                        aria-hidden="true"
+                        className="absolute inset-x-3 bottom-0.5 h-px rounded-full bg-brand/70"
+                      />
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
         </div>
       )}
     </div>

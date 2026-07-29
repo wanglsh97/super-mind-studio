@@ -102,6 +102,8 @@ function AgentConsole() {
     models,
     selectedModel,
     setSelectedModel,
+    thinkingEffort,
+    setThinkingEffort,
     openThread,
     prependThread,
     startNewThread,
@@ -127,6 +129,7 @@ function AgentConsole() {
   const contextRef = useRef({
     threadId: activeThreadId as string | null,
     model: selectedModel,
+    thinkingEffort,
     selectedSkillNames: [] as readonly string[],
     onThreadCreated: (() => undefined) as (thread: Parameters<typeof prependThread>[0]) => void,
     onRunCreated: (() => undefined) as (run: { id: string; threadId: string }) => void,
@@ -140,6 +143,7 @@ function AgentConsole() {
 
   contextRef.current.threadId = activeThreadId
   contextRef.current.model = selectedModel
+  contextRef.current.thinkingEffort = thinkingEffort
   contextRef.current.selectedSkillNames = selectedSkillNames
   contextRef.current.onThreadCreated = (thread) => {
     skipHydrationRef.current = true
@@ -403,6 +407,8 @@ function AgentConsole() {
                       options={modelOptions}
                       disabled={modelDisabled}
                       boundHint={activeThreadId !== null}
+                      thinkingEffort={thinkingEffort}
+                      onThinkingEffortChange={setThinkingEffort}
                       onChange={handleModelChange}
                     />
                     <AgentStopButton />

@@ -1,7 +1,12 @@
 'use client'
 
 import { createAIGatewayClient } from '@supermind/sdk'
-import type { AgentRunSummary, AgentThreadSummary, ModelSummary } from '@supermind/sdk'
+import type {
+  AgentRunSummary,
+  AgentThinkingEffort,
+  AgentThreadSummary,
+  ModelSummary,
+} from '@supermind/sdk'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import {
   createContext,
@@ -29,6 +34,8 @@ type AgentWorkspaceValue = {
   models: ModelSummary[]
   selectedModel: string
   setSelectedModel: (modelId: string) => void
+  thinkingEffort: AgentThinkingEffort
+  setThinkingEffort: (effort: AgentThinkingEffort) => void
   loading: boolean
   listError: string | null
   /** 当前用户在不同 Thread 中进行中的 Agent runs。 */
@@ -54,6 +61,7 @@ export function AgentWorkspaceProvider({ children }: Readonly<{ children: ReactN
   const [threads, setThreads] = useState<AgentThreadSummary[]>([])
   const [models, setModels] = useState<ModelSummary[]>([])
   const [selectedModel, setSelectedModel] = useState('')
+  const [thinkingEffort, setThinkingEffort] = useState<AgentThinkingEffort>('balanced')
   const [loading, setLoading] = useState(false)
   const [listError, setListError] = useState<string | null>(null)
   const [activeRuns, setActiveRuns] = useState<AgentRunSummary[]>([])
@@ -158,6 +166,8 @@ export function AgentWorkspaceProvider({ children }: Readonly<{ children: ReactN
       models,
       selectedModel,
       setSelectedModel,
+      thinkingEffort,
+      setThinkingEffort,
       loading,
       listError,
       activeRuns,
@@ -174,6 +184,7 @@ export function AgentWorkspaceProvider({ children }: Readonly<{ children: ReactN
       threads,
       models,
       selectedModel,
+      thinkingEffort,
       loading,
       listError,
       activeRuns,
