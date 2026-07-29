@@ -173,6 +173,34 @@ export interface AgentRunUsage extends Usage {
   webFetchCalls: number
 }
 
+export interface AgentTokenMetrics {
+  inputTokens: number
+  outputTokens: number
+  totalTokens: number
+  cachedInputTokens: number
+  reasoningTokens: number
+}
+
+export interface AgentTokenDailyUsage extends AgentTokenMetrics {
+  date: string
+  modelCalls: number
+  cacheRate: number
+}
+
+export interface AgentTokenModelUsage extends AgentTokenMetrics {
+  model: string
+  modelCalls: number
+  cacheRate: number
+}
+
+export interface AgentTokenAnalytics {
+  from: string
+  to: string
+  timezoneOffsetMinutes: number
+  daily: AgentTokenDailyUsage[]
+  models: AgentTokenModelUsage[]
+}
+
 export interface AgentRunSummary {
   id: string
   threadId: string

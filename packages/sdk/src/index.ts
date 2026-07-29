@@ -12,6 +12,7 @@ export type { AgentOutputFileReference } from './agent-files.js'
 export type {
   AgentClient,
   AgentEventSubscribeOptions,
+  AgentTokenAnalyticsOptions,
   AgentThreadListOptions,
 } from './agent-client.js'
 export {
@@ -77,6 +78,10 @@ export type {
   AgentExecutionErrorCode,
   AgentFileOperation,
   AgentMessage,
+  AgentTokenAnalytics,
+  AgentTokenDailyUsage,
+  AgentTokenMetrics,
+  AgentTokenModelUsage,
   AgentMcpServerConnectionStatus,
   AgentMcpServerStatus,
   AgentMessagePart,

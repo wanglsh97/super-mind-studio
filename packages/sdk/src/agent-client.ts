@@ -6,6 +6,7 @@ import type {
 } from './agent-skill-types.js'
 import type {
   AgentMcpServerStatus,
+  AgentTokenAnalytics,
   AgentRunSummary,
   AgentStreamEvent,
   AgentThread,
@@ -42,7 +43,14 @@ export interface AgentThreadListOptions extends RequestOptions {
   pageSize?: number
 }
 
+export interface AgentTokenAnalyticsOptions extends RequestOptions {
+  timezoneOffsetMinutes?: number
+}
+
 export interface AgentClient {
+  analytics: {
+    get(options?: AgentTokenAnalyticsOptions): Promise<AgentTokenAnalytics>
+  }
   mcp: {
     servers(options?: RequestOptions): Promise<AgentMcpServerStatus[]>
     update(
@@ -95,6 +103,22 @@ export function createAgentClient(
 ): AgentClient {
   const directUpload = options.skillUploadTransport ?? createBrowserSkillUploadTransport()
   return {
+    analytics: {
+      get: async (options) => {
+        const offset = options?.timezoneOffsetMinutes
+        const query =
+          offset === undefined ? '' : `?timezoneOffsetMinutes=${encodeURIComponent(offset)}`
+        return decodeTokenAnalytics(
+          await requestJson(
+            fetchImplementation,
+            'GET',
+            `${baseUrl}/api/v1/agent/token-analytics${query}`,
+            undefined,
+            options,
+          ),
+        )
+      },
+    },
     mcp: {
       servers: async (options) => {
         const value = await requestJson<unknown>(
@@ -258,6 +282,76 @@ export function createAgentClient(
         subscribeRunEvents(fetchImplementation, baseUrl, runId, options),
     },
   }
+}
+
+function decodeTokenAnalytics(value: unknown): AgentTokenAnalytics {
+  const record = asRecord(value)
+  if (
+    !record ||
+    !stringValue(record.from) ||
+    !stringValue(record.to) ||
+    typeof record.timezoneOffsetMinutes !== 'number' ||
+    !Array.isArray(record.daily) ||
+    !Array.isArray(record.models)
+  ) {
+    throw new AIGatewayProtocolError('unknown', 'Agent Token analytics response is malformed')
+  }
+  return {
+    from: record.from as string,
+    to: record.to as string,
+    timezoneOffsetMinutes: record.timezoneOffsetMinutes,
+    daily: record.daily.map((item) => {
+      const row = decodeTokenMetrics(item)
+      const source = asRecord(item)
+      if (!source || !stringValue(source.date)) {
+        throw new AIGatewayProtocolError('unknown', 'Agent daily Token analytics is malformed')
+      }
+      return {
+        date: source.date as string,
+        modelCalls: metricNumber(source.modelCalls),
+        cacheRate: rateNumber(source.cacheRate),
+        ...row,
+      }
+    }),
+    models: record.models.map((item) => {
+      const row = decodeTokenMetrics(item)
+      const source = asRecord(item)
+      if (!source || !stringValue(source.model)) {
+        throw new AIGatewayProtocolError('unknown', 'Agent model Token analytics is malformed')
+      }
+      return {
+        model: source.model as string,
+        modelCalls: metricNumber(source.modelCalls),
+        cacheRate: rateNumber(source.cacheRate),
+        ...row,
+      }
+    }),
+  }
+}
+
+function decodeTokenMetrics(value: unknown) {
+  const row = asRecord(value)
+  if (!row) throw new AIGatewayProtocolError('unknown', 'Token metrics are malformed')
+  return {
+    inputTokens: metricNumber(row.inputTokens),
+    outputTokens: metricNumber(row.outputTokens),
+    totalTokens: metricNumber(row.totalTokens),
+    cachedInputTokens: metricNumber(row.cachedInputTokens),
+    reasoningTokens: metricNumber(row.reasoningTokens),
+  }
+}
+
+function metricNumber(value: unknown): number {
+  const parsed = numberValue(value)
+  if (parsed === undefined) throw new AIGatewayProtocolError('unknown', 'Token metric is malformed')
+  return parsed
+}
+
+function rateNumber(value: unknown): number {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
+    throw new AIGatewayProtocolError('unknown', 'Token rate is malformed')
+  }
+  return value
 }
 
 function decodeMcpServerStatus(value: unknown): AgentMcpServerStatus {

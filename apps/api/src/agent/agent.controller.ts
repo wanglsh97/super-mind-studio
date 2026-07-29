@@ -26,6 +26,7 @@ import { CurrentUser } from '../user-auth/current-user.decorator'
 import { USER_SESSION_COOKIE } from '../user-auth/user-auth.constants'
 import type { AuthenticatedUser } from '../user-auth/user-session.service'
 import { UserSessionGuard } from '../user-auth/user-session.guard'
+import { TokenAnalyticsService } from '../token-analytics/token-analytics.service'
 import { AgentRunEventBus } from './agent-run-event-bus'
 import { AgentRunRepository } from './agent-run.repository'
 import { AgentService } from './agent.service'
@@ -65,7 +66,16 @@ export class AgentController {
     @Inject(ExecutableSkillService) private readonly executableSkills: ExecutableSkillService,
     @Inject(SkillUploadSessionService) private readonly skillUploads: SkillUploadSessionService,
     @Inject(AGENT_MCP_REGISTRY) private readonly mcp: AgentMcpRegistry,
+    @Inject(TokenAnalyticsService) private readonly tokenAnalytics: TokenAnalyticsService,
   ) {}
+
+  @Get('token-analytics')
+  async getTokenAnalytics(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query('timezoneOffsetMinutes') rawOffset: string | undefined,
+  ) {
+    return this.tokenAnalytics.forUser(user.id, parseTimezoneOffset(rawOffset))
+  }
 
   @Get('mcp/servers')
   @ApiOperation({ summary: '读取平台 MCP Server 脱敏状态' })
@@ -386,6 +396,13 @@ export class AgentController {
     response.write('data: [DONE]\n\n')
     response.end()
   }
+}
+
+function parseTimezoneOffset(value: string | undefined): number {
+  if (value === undefined) return 0
+  const parsed = Number(value)
+  if (!Number.isInteger(parsed) || parsed < -840 || parsed > 840) return 0
+  return parsed
 }
 
 function writeData(response: Response, payload: unknown): void {

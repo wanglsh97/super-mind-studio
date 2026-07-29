@@ -9,6 +9,52 @@ import type { AgentStreamEvent } from './agent-types.js'
 const runId = '00000000-0000-4000-8000-0000000000f0'
 const threadId = '00000000-0000-4000-8000-0000000000f1'
 
+describe('AgentClient Token analytics', () => {
+  it('requests the browser timezone projection and decodes usage dimensions', async () => {
+    const urls: string[] = []
+    const client = createAIGatewayClient({
+      fetch: async (input) => {
+        urls.push(String(input))
+        return Response.json({
+          from: '2026-04-29',
+          to: '2026-07-29',
+          timezoneOffsetMinutes: 420,
+          daily: [
+            {
+              date: '2026-07-29',
+              inputTokens: 10,
+              outputTokens: 4,
+              totalTokens: 14,
+              cachedInputTokens: 3,
+              reasoningTokens: 2,
+              modelCalls: 1,
+              cacheRate: 0.3,
+            },
+          ],
+          models: [
+            {
+              model: 'qwen3.7-plus',
+              inputTokens: 10,
+              outputTokens: 4,
+              totalTokens: 14,
+              cachedInputTokens: 3,
+              reasoningTokens: 2,
+              modelCalls: 1,
+              cacheRate: 0.3,
+            },
+          ],
+        })
+      },
+    })
+
+    const analytics = await client.agent.analytics.get({ timezoneOffsetMinutes: 420 })
+
+    assert.equal(urls[0], '/api/v1/agent/token-analytics?timezoneOffsetMinutes=420')
+    assert.equal(analytics.daily[0]?.cachedInputTokens, 3)
+    assert.equal(analytics.models[0]?.model, 'qwen3.7-plus')
+  })
+})
+
 describe('AgentClient MCP status', () => {
   it('lists a credential-free MCP Server status projection', async () => {
     const urls: string[] = []
