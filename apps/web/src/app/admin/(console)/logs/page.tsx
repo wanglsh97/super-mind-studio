@@ -294,7 +294,19 @@ function DetailContent({ detail }: { detail: RequestLogDetail }) {
           </Col>
         ))}
       </Row>
-      <JsonSection title="完整 Prompt / Messages" value={detail.prompt} />
+      <JsonSection title="完整 Provider Prompt / Messages（调用输入快照）" value={detail.prompt} />
+      {detail.agentRun ? (
+        <JsonSection
+          title="完整 Agent Run Messages（含输出与工具结果）"
+          value={{
+            runId: detail.agentRun.id,
+            threadId: detail.agentRun.threadId,
+            status: detail.agentRun.status,
+            input: detail.agentRun.input,
+            messages: detail.agentRun.messages,
+          }}
+        />
+      ) : null}
       <JsonSection title="Usage / Cost" value={detail.billing} />
       <JsonSection
         title="Failover"

@@ -155,6 +155,24 @@ export class AdminRequestLogsService {
           },
         },
         billing: true,
+        agentRun: {
+          select: {
+            id: true,
+            threadId: true,
+            status: true,
+            input: true,
+            messages: {
+              orderBy: { sequence: 'asc' },
+              select: {
+                id: true,
+                role: true,
+                sequence: true,
+                parts: true,
+                createdAt: true,
+              },
+            },
+          },
+        },
         imageTask: {
           select: {
             taskId: true,

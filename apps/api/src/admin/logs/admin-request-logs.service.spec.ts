@@ -90,11 +90,35 @@ describe('AdminRequestLogsService', () => {
       requestId: '00000000-0000-4000-8000-000000000210',
       prompt: { messages: [{ role: 'user', content: '完整问题' }] },
       billing: { totalTokens: 10 },
+      agentRun: {
+        id: 'run-1',
+        threadId: 'thread-1',
+        status: 'SUCCEEDED',
+        input: '完整问题',
+        messages: [
+          {
+            id: 'message-1',
+            role: 'ASSISTANT',
+            sequence: 1,
+            parts: [{ type: 'text', text: '完整回答' }],
+            createdAt: new Date('2026-07-29T00:00:01.000Z'),
+          },
+        ],
+      },
     })
 
     await expect(service.detail('00000000-0000-4000-8000-000000000210')).resolves.toMatchObject({
       prompt: expect.any(Object),
       billing: expect.any(Object),
+      agentRun: {
+        messages: [
+          expect.objectContaining({
+            role: 'ASSISTANT',
+            parts: [{ type: 'text', text: '完整回答' }],
+            createdAt: '2026-07-29T00:00:01.000Z',
+          }),
+        ],
+      },
     })
     expect(findUnique).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -114,6 +138,18 @@ describe('AdminRequestLogsService', () => {
             },
           },
           billing: true,
+          agentRun: {
+            select: expect.objectContaining({
+              messages: {
+                orderBy: { sequence: 'asc' },
+                select: expect.objectContaining({
+                  role: true,
+                  sequence: true,
+                  parts: true,
+                }),
+              },
+            }),
+          },
           imageTask: expect.any(Object),
         }),
       }),

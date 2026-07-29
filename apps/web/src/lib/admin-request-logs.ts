@@ -68,6 +68,19 @@ export interface RequestLogDetail extends Omit<RequestLogListItem, 'billing'> {
     providerUserId: string
   }
   billing: Record<string, unknown> | null
+  agentRun: {
+    id: string
+    threadId: string
+    status: string
+    input: string
+    messages: Array<{
+      id: string
+      role: 'USER' | 'ASSISTANT' | 'TOOL'
+      sequence: number
+      parts: unknown
+      createdAt: string
+    }>
+  } | null
   imageTask: Record<string, unknown> | null
 }
 
