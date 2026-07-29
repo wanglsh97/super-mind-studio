@@ -54,6 +54,16 @@ The Agent run contract SHALL accept only the provider-neutral `thinkingEffort` v
 - **WHEN** a client submits a value other than `fast`, `balanced`, or `deep`
 - **THEN** the Agent run API rejects it before creating or invoking the run
 
+### Requirement: Thread context telemetry uses whole-thread tokens
+The Agent Thread detail SHALL expose a provider-neutral token estimate for all persisted messages in the current Thread together with the maximum context window of the Thread-bound model. The Environment Context module SHALL calculate the displayed percentage from these Thread-level values and SHALL NOT use a per-invocation `context-budget` event as its source.
+
+#### Scenario: Existing Thread is restored
+- **GIVEN** a Thread contains messages from one or more completed runs
+- **WHEN** the client loads the Thread detail
+- **THEN** the API returns the token estimate across all persisted Thread messages
+- **AND** returns the bound model's maximum context-window tokens
+- **AND** the Context module displays their ratio, allowing the cumulative percentage to exceed 100%
+
 ### Requirement: Agent model failover is bounded by the first content event
 The model gateway SHALL attempt at most one configured fallback for an eligible timeout or upstream 5xx before any reasoning, text or tool-call event is emitted. It MUST NOT switch providers after the first content event.
 

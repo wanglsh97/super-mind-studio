@@ -259,6 +259,46 @@ describe('AgentService', () => {
     await expect(service.getThread(user, 'thread-x')).rejects.toBeInstanceOf(NotFoundException)
   })
 
+  it('returns the whole Thread message token estimate against its bound model context window', async () => {
+    const { service, threads, messages, models } = setup()
+    ;(threads.findSummaryForOwner as jest.Mock).mockResolvedValue(
+      threadRow({ modelId: 'qwen3.7-plus' }),
+    )
+    ;(messages.listForThread as jest.Mock).mockResolvedValue([
+      {
+        id: 'message-1',
+        threadId: 'thread-1',
+        runId: 'run-1',
+        role: 'USER',
+        sequence: 0,
+        parts: [{ type: 'text', text: '第一轮问题' }],
+        createdAt: new Date('2026-07-20T00:00:00.000Z'),
+      },
+      {
+        id: 'message-2',
+        threadId: 'thread-1',
+        runId: 'run-1',
+        role: 'ASSISTANT',
+        sequence: 1,
+        parts: [{ type: 'text', text: '第一轮回答' }],
+        createdAt: new Date('2026-07-20T00:00:01.000Z'),
+      },
+    ])
+    ;(models.resolve as jest.Mock).mockReturnValue({
+      id: 'qwen3.7-plus',
+      contextWindowTokens: 1_000_000,
+    })
+
+    const thread = await service.getThread(user, 'thread-1')
+
+    expect(thread.tokenUsage).toEqual({
+      totalTokens: expect.any(Number),
+      contextWindowTokens: 1_000_000,
+      estimated: true,
+    })
+    expect(thread.tokenUsage.totalTokens).toBeGreaterThan(0)
+  })
+
   it('rejects a second concurrent run in the same thread', async () => {
     const { service, threads, runs, models, activeRunLock, runService } = setup()
     ;(threads.findSummaryForOwner as jest.Mock).mockResolvedValue(threadRow({ id: 'thread-a' }))

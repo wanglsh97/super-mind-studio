@@ -89,6 +89,7 @@
 - [x] 1.68 移除公开 Chat completions Controller、DTO、SSE、SDK `chat.*` 契约及专属测试，将保留的模型基础设施收敛为 Agent 使用的 `ModelGatewayModule`
 - [x] 1.69 为 Qwen3.7-Plus、GLM-5.2、DeepSeek-V4-Pro、Kimi K3 显式配置 thinking，并将 `reasoning_content` 规范化为 Agent reasoning 事件，覆盖工具调用历史回灌
 - [x] 1.70 为 Agent run 增加 `thinkingEffort=fast|balanced|deep` 契约并贯通工具循环、上下文摘要和四个 Provider Adapter，覆盖校验与协议映射测试
+- [x] 1.71 在 Agent Thread 详情中返回全部持久化消息的 token 估算与绑定模型最大上下文，并覆盖服务端契约测试
 
 ## 2. 管理员中后台
 

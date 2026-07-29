@@ -236,6 +236,12 @@ export interface AgentThread extends AgentThreadSummary {
   /** 该会话最近一次 run（含已终结）；用于展示 interrupted 等终态。 */
   lastRun: AgentRunSummary | null
   contextSummary: AgentContextSummary | null
+  /** 当前 Thread 全部持久化消息的 token 估算与绑定模型最大上下文。 */
+  tokenUsage: {
+    totalTokens: number
+    contextWindowTokens: number | null
+    estimated: boolean
+  }
   /** 当前 Thread 可复用的临时 Sandbox；已销毁或尚未创建时为 null。 */
   sandbox: AgentThreadSandbox | null
 }

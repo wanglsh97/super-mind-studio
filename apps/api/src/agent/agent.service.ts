@@ -21,6 +21,8 @@ import type { AgentRun } from '../generated/prisma/client'
 import type { AuthenticatedUser } from '../user-auth/user-session.service'
 import { AgentActiveRunLock } from './agent-active-run.lock'
 import { AgentContextSummaryRepository } from './context/agent-context-summary.repository'
+import { persistedMessageToAdapter } from './context/agent-history-context'
+import { AgentTokenEstimator } from './context/agent-token-estimator'
 import {
   AGENT_DEFAULT_THREAD_TITLE,
   AGENT_THREAD_LIST_DEFAULT_PAGE,
@@ -46,6 +48,8 @@ import { AgentExecutionSessionService } from './sandbox/agent-execution-session.
 
 @Injectable()
 export class AgentService {
+  private readonly tokenEstimator = new AgentTokenEstimator()
+
   private readonly logger = new Logger(AgentService.name)
 
   constructor(
@@ -115,6 +119,10 @@ export class AgentService {
       this.runs.findLatestForThread(threadId),
       this.contextSummaries.findForThread(threadId),
     ])
+    const tokenEstimate = this.tokenEstimator.messages(
+      messages.flatMap((message) => persistedMessageToAdapter(message)),
+    )
+    const model = this.models.resolve(summary.modelId)
 
     return {
       ...toThreadSummary(summary),
@@ -122,6 +130,11 @@ export class AgentService {
       activeRun: activeRun ? toRunSummary(activeRun) : null,
       lastRun: lastRun ? toRunSummary(lastRun) : null,
       contextSummary: contextSummary ? toContextSummary(contextSummary) : null,
+      tokenUsage: {
+        totalTokens: tokenEstimate.tokens,
+        contextWindowTokens: model?.contextWindowTokens ?? null,
+        estimated: tokenEstimate.estimated,
+      },
       sandbox: toThreadSandbox(summary),
     }
   }
