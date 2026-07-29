@@ -164,7 +164,7 @@ export function AgentComposerAction({
 }
 
 export function AgentComposerSubmitGroup({ children }: Readonly<{ children: ReactNode }>) {
-  return <div className="flex min-w-0 items-center gap-1.5 md:gap-2">{children}</div>
+  return <div className="flex min-w-0 items-center gap-1.5">{children}</div>
 }
 
 export function AgentSendButton({
@@ -425,7 +425,7 @@ export function ModelSelect({
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
         className={cn(
-          'flex h-8 min-w-0 max-w-[10rem] items-center gap-1.5 rounded-lg px-2.5 text-[0.7rem] font-semibold text-ink-muted transition-[background,color] hover:bg-surface-inset/45 hover:text-ink-secondary aria-expanded:bg-surface-inset aria-expanded:text-ink-secondary md:min-w-[7.5rem]',
+          'flex h-8 max-w-[10rem] items-center gap-1.5 rounded-lg px-2.5 text-[0.7rem] font-semibold text-ink-muted transition-[background,color] hover:bg-surface-inset/45 hover:text-ink-secondary aria-expanded:bg-surface-inset aria-expanded:text-ink-secondary md:min-w-[7.5rem]',
           focusRing,
         )}
       >
@@ -464,7 +464,7 @@ export function ModelSelect({
                 }}
                 className={cn(
                   'flex min-h-8 w-full items-center justify-between rounded-lg px-2.5 text-[0.68rem] font-medium text-ink-muted transition-[background,color] hover:bg-surface-inset/45 hover:text-ink-secondary',
-                  isSelected && 'bg-surface-inset text-ink font-semibold',
+                  isSelected && 'text-ink font-semibold',
                 )}
               >
                 <span className="flex min-w-0 items-center gap-2">
@@ -484,10 +484,11 @@ export function ModelSelect({
 const THINKING_EFFORT_OPTIONS: ReadonlyArray<{
   value: AgentThinkingEffort
   label: string
+  note: string
 }> = [
-  { value: 'fast', label: '快速' },
-  { value: 'balanced', label: '均衡' },
-  { value: 'deep', label: '深度' },
+  { value: 'fast', label: '快速', note: '更快、更省' },
+  { value: 'balanced', label: '均衡', note: '默认' },
+  { value: 'deep', label: '深度', note: 'token消耗更高' },
 ]
 
 export function ThinkingEffortSelect({
@@ -529,14 +530,11 @@ export function ThinkingEffortSelect({
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
         className={cn(
-          'flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-[0.68rem] font-medium text-ink-subtle transition-[background,color] hover:bg-surface-inset/45 hover:text-ink-muted aria-expanded:bg-surface-inset aria-expanded:text-ink-muted',
+          'flex h-8 items-center rounded-lg px-2.5 text-[0.68rem] font-medium text-ink-subtle transition-[background,color] hover:bg-surface-inset/45 hover:text-ink-muted aria-expanded:bg-surface-inset aria-expanded:text-ink-muted',
           focusRing,
         )}
       >
-        <span>思考</span>
-        <span aria-hidden="true" className="text-line-strong">
-          ·
-        </span>
+        <span>思考强度：</span>
         <span className="font-semibold text-ink-muted">{selectedLabel}</span>
         <svg
           aria-hidden="true"
@@ -553,7 +551,7 @@ export function ThinkingEffortSelect({
         <div
           role="listbox"
           aria-label="选择思考强度"
-          className="liquid-glass absolute right-0 bottom-[calc(100%+0.45rem)] z-10 w-28 rounded-xl p-1 shadow-[0_14px_34px_rgb(39_59_112/0.16)]"
+          className="liquid-glass absolute right-0 bottom-[calc(100%+0.45rem)] z-10 w-44 rounded-xl p-1 shadow-[0_14px_34px_rgb(39_59_112/0.16)]"
         >
           {THINKING_EFFORT_OPTIONS.map((option) => {
             const isSelected = option.value === value
@@ -568,12 +566,32 @@ export function ThinkingEffortSelect({
                   setOpen(false)
                 }}
                 className={cn(
-                  'flex min-h-8 w-full items-center justify-between rounded-lg px-2.5 text-[0.68rem] font-medium text-ink-muted transition-[background,color] hover:bg-surface-inset/45 hover:text-ink-secondary',
-                  isSelected && 'bg-surface-inset text-ink font-semibold',
+                  'flex min-h-11 w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left transition-[background,color] hover:bg-surface-inset/45',
+                  isSelected && 'bg-surface-inset/55',
                 )}
               >
-                <span>{option.label}</span>
-                {isSelected && <span aria-hidden="true">✓</span>}
+                <span className="min-w-0 flex-1">
+                  <span
+                    className={cn(
+                      'block text-[0.68rem] font-semibold text-ink-muted',
+                      isSelected && 'text-ink',
+                    )}
+                  >
+                    {option.label}
+                  </span>
+                  <span className="mt-0.5 block text-[0.55rem] leading-3.5 text-ink-subtle">
+                    {option.note}
+                  </span>
+                </span>
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    'grid size-4 shrink-0 place-items-center rounded-full text-[0.62rem] font-bold',
+                    isSelected ? 'text-brand' : 'text-transparent',
+                  )}
+                >
+                  ✓
+                </span>
               </button>
             )
           })}
@@ -733,7 +751,7 @@ export function AgentRunMetadata({
 export function AgentReasoning({ text }: Readonly<{ text: string }>) {
   return (
     <details className="my-2 rounded-xl border border-dashed border-line px-3 py-2 text-[0.85rem] text-ink-muted dark:border-line-soft">
-      <summary className="cursor-pointer">推理过程（可能不完整或不准确）</summary>
+      <summary className="cursor-pointer">思考过程</summary>
       <div className="mt-2 whitespace-pre-wrap">{text}</div>
     </details>
   )

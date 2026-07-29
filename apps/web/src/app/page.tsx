@@ -324,7 +324,7 @@ function AgentConsole() {
                     <UserMessage />
                   ) : (
                     <AssistantMessage
-                      label="SUPER MIND · AGENT"
+                      label="AGENT"
                       metadata={<AgentMessageMetadata />}
                       renderPart={(part) => {
                         if (part.type === 'tool-call') {
@@ -401,6 +401,11 @@ function AgentConsole() {
                     <NewThreadButton onNewThread={startNewThread} />
                   </AgentComposerActions>
                   <AgentComposerSubmitGroup>
+                    <ThinkingEffortSelect
+                      value={thinkingEffort}
+                      disabled={modelDisabled}
+                      onChange={setThinkingEffort}
+                    />
                     <ModelSelect
                       value={
                         (selectedModel as TextModelId) || modelOptions[0]?.value || 'qwen3.7-plus'
@@ -409,11 +414,6 @@ function AgentConsole() {
                       disabled={modelDisabled}
                       boundHint={activeThreadId !== null}
                       onChange={handleModelChange}
-                    />
-                    <ThinkingEffortSelect
-                      value={thinkingEffort}
-                      disabled={modelDisabled}
-                      onChange={setThinkingEffort}
                     />
                     <AgentStopButton />
                     <AuiIf condition={({ thread }) => !thread.isRunning && !submitBlocked}>
@@ -1086,21 +1086,36 @@ function AgentStopButton() {
   }
 
   const className = cn(
-    'grid h-9 w-auto place-items-center rounded-full bg-[#2c2540] px-3 text-[0.7rem] font-bold text-white transition-[background,transform] hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-40 dark:bg-surface-inset dark:text-ink',
+    'grid size-9 shrink-0 place-items-center rounded-full bg-[#151515] text-white transition-[background,transform,opacity] hover:-translate-y-px hover:bg-[#252525] disabled:cursor-not-allowed disabled:opacity-45 disabled:transform-none dark:bg-white dark:text-[#151515] dark:hover:bg-[#f0f0f0]',
     'focus-visible:outline-3 focus-visible:outline-brand-focus focus-visible:outline-offset-3',
   )
+  const icon = <span aria-hidden="true" className="block size-3 rounded-[0.2rem] bg-current" />
+  const ariaLabel = stopping ? '正在停止运行' : '停止运行'
 
   if (isRunning) {
     return (
-      <ComposerPrimitive.Cancel className={className} disabled={stopping} onClick={requestCancel}>
-        {stopping ? '停止中…' : '停止'}
+      <ComposerPrimitive.Cancel
+        className={className}
+        disabled={stopping}
+        aria-label={ariaLabel}
+        title="停止运行"
+        onClick={requestCancel}
+      >
+        {icon}
       </ComposerPrimitive.Cancel>
     )
   }
 
   return (
-    <button type="button" className={className} disabled={stopping} onClick={requestCancel}>
-      {stopping ? '停止中…' : '停止'}
+    <button
+      type="button"
+      className={className}
+      disabled={stopping}
+      aria-label={ariaLabel}
+      title="停止运行"
+      onClick={requestCancel}
+    >
+      {icon}
     </button>
   )
 }
