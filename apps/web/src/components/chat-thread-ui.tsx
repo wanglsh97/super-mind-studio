@@ -363,7 +363,7 @@ export function ModelLogo({ alias }: Readonly<{ alias: TextModelAlias }>) {
   return (
     <span
       className={cn(
-        'grid size-[1.3rem] shrink-0 place-items-center overflow-hidden rounded-full border border-line text-[0.68rem] font-extrabold leading-none shadow-[0_1px_2px_rgb(46_32_76/0.08)] dark:border-line-soft',
+        'grid size-[1.2rem] shrink-0 place-items-center overflow-hidden rounded-full border border-line text-[0.62rem] font-extrabold leading-none dark:border-line-soft',
         logoClasses[alias],
         branding.logoUrl && 'bg-cover bg-center bg-no-repeat',
       )}
@@ -381,8 +381,6 @@ export function ModelSelect({
   disabled,
   boundHint,
   menuTitle,
-  thinkingEffort,
-  onThinkingEffortChange,
   onChange,
 }: Readonly<{
   value: TextModelId
@@ -390,15 +388,12 @@ export function ModelSelect({
   disabled: boolean
   boundHint?: boolean
   menuTitle?: string
-  thinkingEffort: AgentThinkingEffort
-  onThinkingEffortChange: (effort: AgentThinkingEffort) => void
   onChange: (value: TextModelId) => void
 }>) {
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
   const selected = options.find((option) => option.value === value)
   const selectedLabel = selected?.label ?? value
-  const selectedProvider = selected?.provider ?? 'qwen'
 
   useEffect(() => {
     if (!open) return
@@ -426,15 +421,14 @@ export function ModelSelect({
             : `运行模型：${selectedLabel}`
         }
         title={boundHint ? '切换模型将新建会话，当前会话保持不变' : undefined}
-        aria-haspopup="dialog"
+        aria-haspopup="listbox"
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
         className={cn(
-          'liquid-glass-soft flex h-9 min-w-0 items-center gap-2 rounded-xl px-3 text-xs font-bold text-ink-secondary transition-[border-color,background,box-shadow] hover:border-brand/25 focus-visible:outline-2 focus-visible:outline-brand-focus focus-visible:outline-offset-2 aria-expanded:border-brand/30 aria-expanded:shadow-[0_0_0_2px_rgb(39_100_255/0.08)] md:min-w-[8.5rem]',
+          'flex h-8 min-w-0 max-w-[10rem] items-center gap-1.5 rounded-lg px-2.5 text-[0.7rem] font-semibold text-ink-muted transition-[background,color] hover:bg-surface-inset/45 hover:text-ink-secondary aria-expanded:bg-surface-inset aria-expanded:text-ink-secondary md:min-w-[7.5rem]',
           focusRing,
         )}
       >
-        <ModelLogo alias={selectedProvider} />
         <span className="min-w-0 flex-1 truncate">{selectedLabel}</span>
         <svg
           aria-hidden="true"
@@ -449,90 +443,140 @@ export function ModelSelect({
       </button>
       {open && (
         <div
-          role="dialog"
-          aria-label="运行模型与思考强度"
-          className="liquid-glass absolute right-0 bottom-[calc(100%+0.55rem)] z-10 w-64 overflow-hidden rounded-[1.15rem] p-1.5 shadow-[0_20px_50px_rgb(39_59_112/0.2)] max-md:w-[min(16rem,calc(100vw-2rem))]"
+          role="listbox"
+          aria-label="选择运行模型"
+          className="liquid-glass absolute right-0 bottom-[calc(100%+0.45rem)] z-10 w-48 overflow-hidden rounded-xl p-1 shadow-[0_14px_34px_rgb(39_59_112/0.16)]"
         >
-          <p className="px-2.5 py-1 text-[0.58rem] font-bold tracking-widest text-ink-subtle">
+          <p className="px-2 py-1 text-[0.55rem] font-semibold text-ink-subtle">
             {menuTitle ?? (boundHint ? '切换模型将新建会话' : '运行模型')}
           </p>
-          <div role="listbox" aria-label="选择运行模型">
-            {options.map((option) => {
-              const isSelected = option.value === value
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  role="option"
-                  aria-selected={isSelected}
-                  onClick={() => {
-                    onChange(option.value)
-                    setOpen(false)
-                  }}
-                  className={cn(
-                    'flex min-h-9 w-full items-center justify-between rounded-lg px-2.5 text-[0.72rem] font-semibold text-ink-secondary transition-[background,color] hover:bg-brand-subtle hover:text-brand-hover dark:text-ink-dark-muted dark:hover:bg-surface-muted dark:hover:text-brand-light',
-                    isSelected &&
-                      'bg-brand-muted text-brand-hover dark:bg-[#392d52] dark:text-brand-light',
-                  )}
-                >
-                  <span className="flex min-w-0 items-center gap-2.5">
-                    <ModelLogo alias={option.provider} />
-                    <span>{option.label}</span>
-                  </span>
-                  {isSelected && <span aria-hidden="true">✓</span>}
-                </button>
-              )
-            })}
-          </div>
-          <div className="mx-1 mt-1.5 border-t border-line/70 pt-2">
-            <div className="mb-1.5 flex items-center justify-between px-1">
-              <span className="text-[0.58rem] font-bold tracking-widest text-ink-subtle">
-                思考强度
-              </span>
-              <span className="text-[0.56rem] text-ink-subtle">本次运行</span>
-            </div>
-            <div
-              role="radiogroup"
-              aria-label="选择思考强度"
-              className="grid grid-cols-3 gap-1 rounded-xl border border-line/70 bg-surface-inset/70 p-1"
-            >
-              {(
-                [
-                  { value: 'fast', label: '快速', note: '更快' },
-                  { value: 'balanced', label: '均衡', note: '默认' },
-                  { value: 'deep', label: '深度', note: '更充分' },
-                ] as const
-              ).map((option) => {
-                const isSelected = option.value === thinkingEffort
-                return (
-                  <button
-                    key={option.value}
-                    type="button"
-                    role="radio"
-                    aria-checked={isSelected}
-                    onClick={() => onThinkingEffortChange(option.value)}
-                    className={cn(
-                      'relative min-w-0 rounded-lg px-1 py-2 text-center transition-[background,color,box-shadow] focus-visible:outline-2 focus-visible:outline-brand-focus focus-visible:outline-offset-1',
-                      isSelected
-                        ? 'bg-[linear-gradient(145deg,rgb(39_100_255/0.14),rgb(139_124_255/0.18))] text-brand-hover shadow-[0_3px_12px_rgb(77_86_220/0.14)] dark:text-brand-light'
-                        : 'text-ink-subtle hover:bg-surface/70 hover:text-ink-secondary',
-                    )}
-                  >
-                    <span className="block text-[0.68rem] font-bold">{option.label}</span>
-                    <span className="mt-0.5 block text-[0.52rem] leading-none opacity-70">
-                      {option.note}
-                    </span>
-                    {isSelected && (
-                      <span
-                        aria-hidden="true"
-                        className="absolute inset-x-3 bottom-0.5 h-px rounded-full bg-brand/70"
-                      />
-                    )}
-                  </button>
-                )
-              })}
-            </div>
-          </div>
+          {options.map((option) => {
+            const isSelected = option.value === value
+            return (
+              <button
+                key={option.value}
+                type="button"
+                role="option"
+                aria-selected={isSelected}
+                onClick={() => {
+                  onChange(option.value)
+                  setOpen(false)
+                }}
+                className={cn(
+                  'flex min-h-8 w-full items-center justify-between rounded-lg px-2.5 text-[0.68rem] font-medium text-ink-muted transition-[background,color] hover:bg-surface-inset/45 hover:text-ink-secondary',
+                  isSelected && 'bg-surface-inset text-ink font-semibold',
+                )}
+              >
+                <span className="flex min-w-0 items-center gap-2">
+                  <ModelLogo alias={option.provider} />
+                  <span className="truncate">{option.label}</span>
+                </span>
+                {isSelected && <span aria-hidden="true">✓</span>}
+              </button>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+const THINKING_EFFORT_OPTIONS: ReadonlyArray<{
+  value: AgentThinkingEffort
+  label: string
+}> = [
+  { value: 'fast', label: '快速' },
+  { value: 'balanced', label: '均衡' },
+  { value: 'deep', label: '深度' },
+]
+
+export function ThinkingEffortSelect({
+  value,
+  disabled,
+  onChange,
+}: Readonly<{
+  value: AgentThinkingEffort
+  disabled: boolean
+  onChange: (effort: AgentThinkingEffort) => void
+}>) {
+  const [open, setOpen] = useState(false)
+  const rootRef = useRef<HTMLDivElement>(null)
+  const selectedLabel =
+    THINKING_EFFORT_OPTIONS.find((option) => option.value === value)?.label ?? '均衡'
+
+  useEffect(() => {
+    if (!open) return
+    const closeOnOutsideClick = (event: PointerEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) setOpen(false)
+    }
+    document.addEventListener('pointerdown', closeOnOutsideClick)
+    return () => document.removeEventListener('pointerdown', closeOnOutsideClick)
+  }, [open])
+
+  return (
+    <div
+      className="relative"
+      ref={rootRef}
+      onKeyDown={(event) => {
+        if (event.key === 'Escape') setOpen(false)
+      }}
+    >
+      <button
+        type="button"
+        disabled={disabled}
+        aria-label={`思考强度：${selectedLabel}`}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => setOpen((current) => !current)}
+        className={cn(
+          'flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-[0.68rem] font-medium text-ink-subtle transition-[background,color] hover:bg-surface-inset/45 hover:text-ink-muted aria-expanded:bg-surface-inset aria-expanded:text-ink-muted',
+          focusRing,
+        )}
+      >
+        <span>思考</span>
+        <span aria-hidden="true" className="text-line-strong">
+          ·
+        </span>
+        <span className="font-semibold text-ink-muted">{selectedLabel}</span>
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 16 16"
+          className={cn(
+            'size-3 shrink-0 fill-none stroke-current stroke-[1.6] transition-transform',
+            open && 'rotate-180',
+          )}
+        >
+          <path d="m5 6 3 3 3-3" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+      {open && (
+        <div
+          role="listbox"
+          aria-label="选择思考强度"
+          className="liquid-glass absolute right-0 bottom-[calc(100%+0.45rem)] z-10 w-28 rounded-xl p-1 shadow-[0_14px_34px_rgb(39_59_112/0.16)]"
+        >
+          {THINKING_EFFORT_OPTIONS.map((option) => {
+            const isSelected = option.value === value
+            return (
+              <button
+                key={option.value}
+                type="button"
+                role="option"
+                aria-selected={isSelected}
+                onClick={() => {
+                  onChange(option.value)
+                  setOpen(false)
+                }}
+                className={cn(
+                  'flex min-h-8 w-full items-center justify-between rounded-lg px-2.5 text-[0.68rem] font-medium text-ink-muted transition-[background,color] hover:bg-surface-inset/45 hover:text-ink-secondary',
+                  isSelected && 'bg-surface-inset text-ink font-semibold',
+                )}
+              >
+                <span>{option.label}</span>
+                {isSelected && <span aria-hidden="true">✓</span>}
+              </button>
+            )
+          })}
         </div>
       )}
     </div>

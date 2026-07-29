@@ -50,6 +50,7 @@ import {
   AgentToolResult,
   AssistantMessage,
   ModelSelect,
+  ThinkingEffortSelect,
   NewThreadButton,
   UserMessage,
 } from '../components/chat-thread-ui'
@@ -407,9 +408,12 @@ function AgentConsole() {
                       options={modelOptions}
                       disabled={modelDisabled}
                       boundHint={activeThreadId !== null}
-                      thinkingEffort={thinkingEffort}
-                      onThinkingEffortChange={setThinkingEffort}
                       onChange={handleModelChange}
+                    />
+                    <ThinkingEffortSelect
+                      value={thinkingEffort}
+                      disabled={modelDisabled}
+                      onChange={setThinkingEffort}
                     />
                     <AgentStopButton />
                     <AuiIf condition={({ thread }) => !thread.isRunning && !submitBlocked}>
