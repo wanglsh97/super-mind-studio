@@ -31,6 +31,7 @@ The authenticated user analytics experience SHALL show a GitHub-contribution-sty
 - **WHEN** the analytics page loads
 - **THEN** it renders one heatmap cell per day in that period
 - **AND** a day with a higher total Token count has a stronger heatmap intensity than a day with a lower count
+- **AND** hovering any populated date cell shows that date and its exact total Token count
 
 ### Requirement: User daily details distinguish input, output, cache, and reasoning Tokens
 The user analytics experience SHALL provide a daily-detail visualization for the selected analysis period that presents input Token, output Token, Prompt Cache Token, and reasoning Token values. It SHALL communicate that cache and reasoning are component metrics rather than additional consumption. A model that does not provide cache or reasoning usage SHALL render and aggregate the corresponding displayed value as `0`.

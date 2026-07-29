@@ -1,6 +1,7 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 
 export interface TokenCalendarDay {
   date: string
@@ -19,54 +20,87 @@ export function TokenCalendarHeatmap({
   ariaLabel: string
 }) {
   const calendar = useMemo(() => buildCalendar(from, to, days), [days, from, to])
+  const [hoveredDay, setHoveredDay] = useState<{
+    date: string
+    totalTokens: number
+    left: number
+    top: number
+  } | null>(null)
+
   return (
-    <div className="overflow-x-auto pb-1" role="img" aria-label={ariaLabel}>
-      <div className="mx-auto w-max">
-        <div className="mb-2 ml-9 flex gap-1">
-          {calendar.weeks.map((week, index) => (
-            <div
-              key={week.key}
-              className="w-3 whitespace-nowrap text-[10px] text-slate-400"
-            >
-              {calendar.monthLabels.get(index) ?? ''}
-            </div>
-          ))}
-        </div>
-        <div className="flex gap-2">
-          <div className="grid grid-rows-7 gap-1 pt-0 text-[10px] leading-3 text-slate-400">
-            {['日', '', '二', '', '四', '', '六'].map((label, index) => (
-              <span key={`${label}-${index}`} className="h-3">
-                {label}
-              </span>
-            ))}
-          </div>
-          <div className="flex gap-1">
-            {calendar.weeks.map((week) => (
-              <div key={week.key} className="grid grid-rows-7 gap-1">
-                {week.days.map((day, index) =>
-                  day ? (
-                    <span
-                      key={day.date}
-                      title={`${day.date} · ${day.totalTokens.toLocaleString('zh-CN')} Tokens`}
-                      className={`size-3 rounded-[3px] ${heatClass(day.totalTokens, calendar.max)}`}
-                    />
-                  ) : (
-                    <span key={`empty-${index}`} className="size-3" />
-                  ),
-                )}
+    <>
+      <div className="overflow-x-auto pb-1" role="img" aria-label={ariaLabel}>
+        <div className="mx-auto w-max">
+          <div className="mb-2 ml-9 flex gap-1">
+            {calendar.weeks.map((week, index) => (
+              <div key={week.key} className="w-3 whitespace-nowrap text-[10px] text-slate-400">
+                {calendar.monthLabels.get(index) ?? ''}
               </div>
             ))}
           </div>
-        </div>
-        <div className="mt-3 flex items-center justify-end gap-1 text-[10px] text-slate-400">
-          <span className="mr-1">少</span>
-          {[0, 1, 2, 3, 4].map((level) => (
-            <span key={level} className={`size-3 rounded-[3px] ${levelClass(level)}`} />
-          ))}
-          <span className="ml-1">多</span>
+          <div className="flex gap-2">
+            <div className="grid grid-rows-7 gap-1 pt-0 text-[10px] leading-3 text-slate-400">
+              {['日', '', '二', '', '四', '', '六'].map((label, index) => (
+                <span key={`${label}-${index}`} className="h-3">
+                  {label}
+                </span>
+              ))}
+            </div>
+            <div className="flex gap-1">
+              {calendar.weeks.map((week) => (
+                <div key={week.key} className="grid grid-rows-7 gap-1">
+                  {week.days.map((day, index) =>
+                    day ? (
+                      <span
+                        key={day.date}
+                        onMouseEnter={({ currentTarget }) => {
+                          const bounds = currentTarget.getBoundingClientRect()
+                          setHoveredDay({
+                            date: day.date,
+                            totalTokens: day.totalTokens,
+                            left: Math.max(
+                              88,
+                              Math.min(window.innerWidth - 88, bounds.left + bounds.width / 2),
+                            ),
+                            top: bounds.top - 8,
+                          })
+                        }}
+                        onMouseLeave={() => setHoveredDay(null)}
+                        className={`size-3 cursor-help rounded-[3px] transition-[box-shadow,transform] hover:scale-110 hover:ring-2 hover:ring-emerald-500/35 ${heatClass(day.totalTokens, calendar.max)}`}
+                      />
+                    ) : (
+                      <span key={`empty-${index}`} className="size-3" />
+                    ),
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="mt-3 flex items-center justify-end gap-1 text-[10px] text-slate-400">
+            <span className="mr-1">少</span>
+            {[0, 1, 2, 3, 4].map((level) => (
+              <span key={level} className={`size-3 rounded-[3px] ${levelClass(level)}`} />
+            ))}
+            <span className="ml-1">多</span>
+          </div>
         </div>
       </div>
-    </div>
+      {hoveredDay && typeof document !== 'undefined'
+        ? createPortal(
+            <div
+              role="tooltip"
+              style={{ left: hoveredDay.left, top: hoveredDay.top }}
+              className="pointer-events-none fixed z-[100] -translate-x-1/2 -translate-y-full rounded-lg border border-white/10 bg-slate-950/95 px-3 py-2 text-white shadow-xl backdrop-blur"
+            >
+              <span className="block font-mono text-[10px] text-slate-400">{hoveredDay.date}</span>
+              <strong className="mt-0.5 block whitespace-nowrap font-mono text-xs font-semibold">
+                {hoveredDay.totalTokens.toLocaleString('zh-CN')} Tokens
+              </strong>
+            </div>,
+            document.body,
+          )
+        : null}
+    </>
   )
 }
 
