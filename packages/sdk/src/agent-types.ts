@@ -286,8 +286,16 @@ export interface UpdateAgentThreadRequest {
   title: string
 }
 
+/** Agent run 级思考强度；厂商字段由服务端 Adapter 映射。 */
+export type AgentThinkingEffort = 'fast' | 'balanced' | 'deep'
+
 export interface CreateAgentRunRequest {
   input: string
+  /**
+   * 三档用户表达在所有模型上保持一致，服务端映射为厂商支持的开关、budget 或 effort。
+   * 省略时服务端默认 `balanced`。
+   */
+  thinkingEffort?: AgentThinkingEffort
   /**
    * 在首次模型调用前预激活的、当前用户已添加的 Skill。
    * 名称全局唯一；省略或传空数组时由模型自行决定是否调用 `activate_skill`。

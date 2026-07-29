@@ -93,6 +93,8 @@ describeChatAdapterContract({
             stream: true,
             stream_options: { include_usage: true },
             enable_thinking: true,
+            thinking_budget: 4096,
+            preserve_thinking: true,
             temperature: 0.7,
             top_p: 0.8,
             max_tokens: 321,
@@ -129,6 +131,47 @@ describeChatAdapterContract({
 })
 
 describe('QwenChatAdapter', () => {
+  it.each([
+    ['fast', false, undefined, false],
+    ['balanced', true, 4_096, true],
+    ['deep', true, 16_384, true],
+  ] as const)(
+    'maps %s thinking effort to Qwen thinking controls',
+    async (thinkingEffort, enabled, budget, preservesThinking) => {
+      let body: Record<string, unknown> | undefined
+      const subject = adapterWith(async (_input, init) => {
+        body = JSON.parse(String(init?.body)) as Record<string, unknown>
+        return sseResponse(successFixture)
+      })
+
+      await collect(subject, {
+        ...request(),
+        thinkingEffort,
+        messages: [
+          { role: 'assistant', content: '', reasoningContent: '历史推理' },
+          { role: 'user', content: '继续' },
+        ],
+      })
+
+      expect(body).toMatchObject({
+        enable_thinking: enabled,
+        messages: enabled
+          ? [
+              { role: 'assistant', content: '', reasoning_content: '历史推理' },
+              { role: 'user', content: '继续' },
+            ]
+          : [
+              { role: 'assistant', content: '' },
+              { role: 'user', content: '继续' },
+            ],
+      })
+      if (budget === undefined) expect(body).not.toHaveProperty('thinking_budget')
+      else expect(body).toHaveProperty('thinking_budget', budget)
+      if (preservesThinking) expect(body).toHaveProperty('preserve_thinking', true)
+      else expect(body).not.toHaveProperty('preserve_thinking')
+    },
+  )
+
   it.each([
     [400, 'QWEN_BAD_REQUEST', false],
     [401, 'QWEN_AUTHENTICATION_ERROR', false],

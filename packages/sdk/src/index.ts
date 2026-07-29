@@ -98,6 +98,7 @@ export type {
   AgentSkillActivationStatus,
   AgentStreamEvent,
   AgentTextPart,
+  AgentThinkingEffort,
   AgentThread,
   AgentThreadListPage,
   AgentThreadSandbox,

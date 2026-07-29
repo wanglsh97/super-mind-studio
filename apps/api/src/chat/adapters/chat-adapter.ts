@@ -1,4 +1,4 @@
-import type { ChatFinishReason, TextModelAlias } from '@supermind/sdk'
+import type { AgentThinkingEffort, ChatFinishReason, TextModelAlias } from '@supermind/sdk'
 
 import type { ChatAdapterId } from '../chat.constants'
 
@@ -46,6 +46,7 @@ export interface ChatAdapterRequest {
   temperature?: number
   topP?: number
   maxTokens?: number
+  thinkingEffort?: AgentThinkingEffort
   tools?: readonly ChatAdapterToolDefinition[]
   toolChoice?: ChatAdapterToolChoice
 }

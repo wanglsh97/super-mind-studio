@@ -38,6 +38,17 @@ describeAgentToolCallingContract({
 })
 
 describe('MockChatAdapter agent mode', () => {
+  it('suppresses reasoning events in fast mode while preserving tool calls', async () => {
+    const adapter = new MockChatAdapter({ chunks: ['unused'], delayMs: 0 })
+    const events = await collect(adapter, {
+      ...agentRequest([{ role: 'user', content: '请阅读 https://news.test/article' }]),
+      thinkingEffort: 'fast',
+    })
+
+    expect(events.some((event) => event.type === 'reasoning')).toBe(false)
+    expect(events.some((event) => event.type === 'tool-call')).toBe(true)
+  })
+
   it('emits reasoning then a web_fetch tool call on the first turn', async () => {
     const adapter = new MockChatAdapter({ chunks: ['unused'], delayMs: 0 })
     const events = await collect(

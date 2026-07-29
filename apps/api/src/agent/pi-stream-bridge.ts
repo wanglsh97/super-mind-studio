@@ -1,4 +1,4 @@
-import type { ChatFinishReason } from '@supermind/sdk'
+import type { AgentThinkingEffort, ChatFinishReason } from '@supermind/sdk'
 import type {
   Api,
   AssistantMessage,
@@ -276,6 +276,7 @@ function errorMessage(error: unknown): string {
 export interface PiStreamFnDeps {
   port: ModelInvocationPort
   createRequestId: () => string
+  thinkingEffort?: AgentThinkingEffort
   toolChoice?: ChatAdapterToolChoice
   temperature?: number
   topP?: number
@@ -310,6 +311,7 @@ export function createPiStreamFn(deps: PiStreamFnDeps): StreamFn {
         messages,
         tools,
         signal,
+        ...(deps.thinkingEffort === undefined ? {} : { thinkingEffort: deps.thinkingEffort }),
         ...(deps.toolChoice === undefined ? {} : { toolChoice: deps.toolChoice }),
         ...(deps.temperature === undefined ? {} : { temperature: deps.temperature }),
         ...(deps.topP === undefined ? {} : { topP: deps.topP }),

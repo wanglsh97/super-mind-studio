@@ -63,6 +63,9 @@ export class ModelInvocationService implements ModelInvocationPort {
           ...(request.temperature === undefined ? {} : { temperature: request.temperature }),
           ...(request.topP === undefined ? {} : { topP: request.topP }),
           ...(request.maxTokens === undefined ? {} : { maxTokens: request.maxTokens }),
+          ...(request.thinkingEffort === undefined
+            ? {}
+            : { thinkingEffort: request.thinkingEffort }),
           ...(request.tools === undefined ? {} : { tools: request.tools }),
           ...(request.toolChoice === undefined ? {} : { toolChoice: request.toolChoice }),
         })) {

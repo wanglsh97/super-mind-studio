@@ -4,6 +4,24 @@ import { validate } from 'class-validator'
 import { CreateAgentRunDto } from './create-agent-run.dto'
 
 describe('CreateAgentRunDto', () => {
+  it.each(['fast', 'balanced', 'deep'] as const)(
+    'accepts the normalized %s thinking effort',
+    async (thinkingEffort) => {
+      const dto = plainToInstance(CreateAgentRunDto, { input: '执行任务', thinkingEffort })
+      await expect(validate(dto)).resolves.toEqual([])
+    },
+  )
+
+  it('rejects vendor-specific or unknown thinking effort values', async () => {
+    const dto = plainToInstance(CreateAgentRunDto, {
+      input: '执行任务',
+      thinkingEffort: 'max',
+    })
+    expect(await validate(dto)).toEqual(
+      expect.arrayContaining([expect.objectContaining({ property: 'thinkingEffort' })]),
+    )
+  })
+
   it('accepts up to 50 globally named manual Skills', async () => {
     const dto = plainToInstance(CreateAgentRunDto, {
       input: '执行任务',

@@ -1,8 +1,9 @@
-import type { CreateAgentRunRequest } from '@supermind/sdk'
+import type { AgentThinkingEffort, CreateAgentRunRequest } from '@supermind/sdk'
 import { Type } from 'class-transformer'
 import {
   ArrayMaxSize,
   IsArray,
+  IsIn,
   IsOptional,
   IsString,
   Matches,
@@ -23,6 +24,10 @@ export class CreateAgentRunDto implements CreateAgentRunRequest {
   @MinLength(1)
   @MaxLength(8_000)
   declare input: string
+
+  @IsOptional()
+  @IsIn(['fast', 'balanced', 'deep'])
+  declare thinkingEffort?: AgentThinkingEffort
 
   @IsOptional()
   @IsArray()

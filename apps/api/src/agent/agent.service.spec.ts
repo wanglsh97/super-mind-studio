@@ -360,6 +360,7 @@ describe('AgentService', () => {
         threadId: 'thread-1',
         userId: 'user-a',
         modelId: 'qwen3.7-plus',
+        thinkingEffort: 'balanced',
         activeRunLockToken: expect.any(String),
         selectedSkillNames: [],
       }),
@@ -407,10 +408,13 @@ describe('AgentService', () => {
       startedAt: null,
       completedAt: null,
     })
-    await service.createRun(user, 'thread-1', '清洗数据', [{ name: 'mock-data-cleaner' }])
+    await service.createRun(user, 'thread-1', '清洗数据', [{ name: 'mock-data-cleaner' }], 'deep')
 
     expect(runService.execute).toHaveBeenCalledWith(
-      expect.objectContaining({ selectedSkillNames: ['mock-data-cleaner'] }),
+      expect.objectContaining({
+        thinkingEffort: 'deep',
+        selectedSkillNames: ['mock-data-cleaner'],
+      }),
     )
   })
 

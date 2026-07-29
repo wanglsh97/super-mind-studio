@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto'
 
 import { Injectable } from '@nestjs/common'
+import type { AgentThinkingEffort } from '@supermind/sdk'
 
 import type { ChatAdapterMessage, ChatAdapterUsage } from '../../chat/adapters/chat-adapter'
 import type { ModelInvocationPort } from '../../chat/model-invocation.port'
@@ -41,6 +42,7 @@ export class AgentContextSummaryService {
   async generate(input: {
     port: ModelInvocationPort
     modelId: string
+    thinkingEffort?: AgentThinkingEffort
     messages: readonly ChatAdapterMessage[]
     previousSummary?: AgentContextSummaryV1
     signal: AbortSignal
@@ -63,6 +65,7 @@ export class AgentContextSummaryService {
     input: {
       port: ModelInvocationPort
       modelId: string
+      thinkingEffort?: AgentThinkingEffort
       messages: readonly ChatAdapterMessage[]
       previousSummary?: AgentContextSummaryV1
       signal: AbortSignal
@@ -102,6 +105,7 @@ export class AgentContextSummaryService {
       temperature: 0,
       maxTokens: 4096,
       allowFailover: false,
+      ...(input.thinkingEffort === undefined ? {} : { thinkingEffort: input.thinkingEffort }),
       signal: input.signal,
     })) {
       if (event.type === 'text') text += event.delta

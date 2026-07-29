@@ -52,6 +52,8 @@ export class GlmChatAdapter implements ChatAdapter {
     let usage: ChatAdapterUsage | undefined
     let providerRequestId: string | undefined
     const toolCalls = new OpenAICompatibleToolCallAssembler('GLM', protocolError)
+    const thinkingEffort = request.thinkingEffort ?? 'balanced'
+    const enableThinking = thinkingEffort !== 'fast'
 
     try {
       for await (const event of this.transport.stream({
@@ -59,10 +61,13 @@ export class GlmChatAdapter implements ChatAdapter {
         headers: { authorization: `Bearer ${this.apiKey}` },
         body: {
           model: request.resolvedModel,
-          messages: toOpenAICompatibleMessages(request.messages),
+          messages: toOpenAICompatibleMessages(request.messages, {
+            includeReasoningContent: enableThinking,
+          }),
           stream: true,
-          thinking: { type: 'enabled' },
-          reasoning_effort: 'max',
+          thinking: { type: enableThinking ? 'enabled' : 'disabled' },
+          ...(thinkingEffort === 'balanced' ? { reasoning_effort: 'high' } : {}),
+          ...(thinkingEffort === 'deep' ? { reasoning_effort: 'max' } : {}),
           ...(request.temperature === undefined ? {} : { temperature: request.temperature }),
           ...(request.topP === undefined ? {} : { top_p: request.topP }),
           ...(request.maxTokens === undefined ? {} : { max_tokens: request.maxTokens }),

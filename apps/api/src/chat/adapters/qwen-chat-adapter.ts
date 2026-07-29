@@ -121,12 +121,19 @@ export class QwenChatAdapter implements ChatAdapter {
   }
 
   private requestBody(request: ChatAdapterRequest): Record<string, unknown> {
+    const thinkingEffort = request.thinkingEffort ?? 'balanced'
+    const enableThinking = thinkingEffort !== 'fast'
     return {
       model: request.resolvedModel,
-      messages: toOpenAICompatibleMessages(request.messages),
+      messages: toOpenAICompatibleMessages(request.messages, {
+        includeReasoningContent: enableThinking,
+      }),
       stream: true,
       stream_options: { include_usage: true },
-      enable_thinking: true,
+      enable_thinking: enableThinking,
+      ...(thinkingEffort === 'balanced' ? { thinking_budget: 4_096 } : {}),
+      ...(thinkingEffort === 'deep' ? { thinking_budget: 16_384 } : {}),
+      ...(enableThinking ? { preserve_thinking: true } : {}),
       ...(request.temperature === undefined ? {} : { temperature: request.temperature }),
       ...(request.topP === undefined ? {} : { top_p: request.topP }),
       ...(request.maxTokens === undefined ? {} : { max_tokens: request.maxTokens }),

@@ -1,4 +1,4 @@
-import type { ChatFinishReason, TextModelAlias } from '@supermind/sdk'
+import type { AgentThinkingEffort, ChatFinishReason, TextModelAlias } from '@supermind/sdk'
 
 import type {
   ChatAdapterMessage,
@@ -26,6 +26,8 @@ export interface ModelInvocationRequest {
   temperature?: number
   topP?: number
   maxTokens?: number
+  /** Provider-neutral 的 run 级思考强度；省略时按 `balanced` 处理。 */
+  thinkingEffort?: AgentThinkingEffort
   signal: AbortSignal
   /** 是否允许在首个内容事件前做一次 failover，默认 true。 */
   allowFailover?: boolean

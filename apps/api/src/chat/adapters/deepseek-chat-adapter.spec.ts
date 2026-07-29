@@ -45,7 +45,7 @@ describeChatAdapterContract({
             stream: true,
             stream_options: { include_usage: true },
             thinking: { type: 'enabled' },
-            reasoning_effort: 'max',
+            reasoning_effort: 'high',
             temperature: 0.7,
             top_p: 0.8,
             max_tokens: 321,
@@ -74,4 +74,35 @@ describeChatAdapterContract({
         }),
     ),
   }),
+})
+
+describe('DeepSeekChatAdapter thinking effort', () => {
+  it.each([
+    ['fast', 'disabled', undefined],
+    ['balanced', 'enabled', 'high'],
+    ['deep', 'enabled', 'max'],
+  ] as const)(
+    'maps %s to DeepSeek thinking controls',
+    async (thinkingEffort, thinkingType, reasoningEffort) => {
+      let body: Record<string, unknown> | undefined
+      const subject = adapter(async (_input, init) => {
+        body = JSON.parse(String(init?.body)) as Record<string, unknown>
+        return new Response(fixture, { headers: { 'content-type': 'text/event-stream' } })
+      })
+      for await (const _event of subject.stream({
+        requestId: '00000000-0000-4000-8000-000000000127',
+        modelAlias: 'deepseek',
+        resolvedModel: 'deepseek-fixture',
+        messages: [{ role: 'user', content: 'test' }],
+        thinkingEffort,
+        signal: new AbortController().signal,
+      })) {
+        // Consume the stream so the request body is captured.
+        void _event
+      }
+      expect(body).toHaveProperty('thinking.type', thinkingType)
+      if (reasoningEffort === undefined) expect(body).not.toHaveProperty('reasoning_effort')
+      else expect(body).toHaveProperty('reasoning_effort', reasoningEffort)
+    },
+  )
 })

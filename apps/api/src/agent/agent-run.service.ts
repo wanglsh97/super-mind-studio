@@ -1,6 +1,10 @@
 import { randomUUID } from 'node:crypto'
 
-import type { AgentExecutionError, AgentRunTerminalStatus } from '@supermind/sdk'
+import type {
+  AgentExecutionError,
+  AgentRunTerminalStatus,
+  AgentThinkingEffort,
+} from '@supermind/sdk'
 import { Inject, Injectable, Logger } from '@nestjs/common'
 
 import type { Message, Usage as PiUsage } from '@earendil-works/pi-ai'
@@ -48,6 +52,7 @@ export interface ExecuteAgentRunInput {
   provider: string
   contextWindowTokens: number
   input: string
+  thinkingEffort: AgentThinkingEffort
   selectedSkillNames: readonly string[]
   /** createRun 持有的用户级 Redis 锁 token，终态 finally 中释放。 */
   activeRunLockToken: string
@@ -242,6 +247,7 @@ export class AgentRunService {
         streamFn: createPiStreamFn({
           port: boundPort,
           createRequestId: () => randomUUID(),
+          thinkingEffort: input.thinkingEffort,
           prepareMessages: async (currentMessages, tools) => {
             try {
               const assembled = assembleAgentHistory({
@@ -301,6 +307,7 @@ export class AgentRunService {
                 generated = await this.contextSummaryService.generate({
                   port: boundPort,
                   modelId: input.modelId,
+                  thinkingEffort: input.thinkingEffort,
                   messages: candidates.flatMap((message) => persistedMessageToAdapter(message)),
                   ...(activeSummary === null
                     ? {}

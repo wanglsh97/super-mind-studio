@@ -44,7 +44,7 @@ describeChatAdapterContract({
             ],
             stream: true,
             stream_options: { include_usage: true },
-            reasoning_effort: 'max',
+            reasoning_effort: 'high',
             temperature: 0.7,
             top_p: 0.8,
             max_tokens: 321,
@@ -81,6 +81,31 @@ describeChatAdapterContract({
 })
 
 describe('KimiChatAdapter', () => {
+  it.each([
+    ['fast', 'low'],
+    ['balanced', 'high'],
+    ['deep', 'max'],
+  ] as const)('maps %s thinking effort to Kimi K3 %s', async (thinkingEffort, expected) => {
+    let body: Record<string, unknown> | undefined
+    const subject = adapter(async (_input, init) => {
+      body = JSON.parse(String(init?.body)) as Record<string, unknown>
+      return new Response(fixture, { headers: { 'content-type': 'text/event-stream' } })
+    })
+    for await (const _event of subject.stream({
+      requestId: '00000000-0000-4000-8000-000000000128',
+      modelAlias: 'kimi',
+      resolvedModel: 'kimi-k3',
+      messages: [{ role: 'user', content: 'test' }],
+      thinkingEffort,
+      signal: new AbortController().signal,
+    })) {
+      // Consume the stream so the request body is captured.
+      void _event
+    }
+    expect(body).toHaveProperty('reasoning_effort', expected)
+    expect(body).not.toHaveProperty('thinking')
+  })
+
   it('uses non-thinking provider defaults for K2.5 and K2.6 fixed sampling models', async () => {
     let body: Record<string, unknown> | undefined
     const kimi = new KimiChatAdapter(

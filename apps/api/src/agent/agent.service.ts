@@ -1,5 +1,6 @@
 import type {
   AgentRunSummary,
+  AgentThinkingEffort,
   AgentThread,
   AgentThreadListPage,
   AgentThreadSummary,
@@ -158,6 +159,7 @@ export class AgentService {
     threadId: string,
     input: string,
     skills: readonly { name: string }[] = [],
+    thinkingEffort: AgentThinkingEffort = 'balanced',
   ): Promise<AgentRunSummary> {
     const thread = await this.threads.findSummaryForOwner(threadId, user.id)
     if (!thread) throw new NotFoundException('Agent 会话不存在')
@@ -199,6 +201,7 @@ export class AgentService {
           provider: model.provider,
           contextWindowTokens: model.contextWindowTokens,
           input,
+          thinkingEffort,
           selectedSkillNames: skills.map((skill) => skill.name),
           activeRunLockToken: lockToken,
         })

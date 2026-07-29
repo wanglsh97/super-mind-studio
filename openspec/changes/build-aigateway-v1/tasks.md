@@ -88,6 +88,7 @@
 - [x] 1.67 按工具复杂度整理 Agent tools 目录：单文件工具平铺，多文件 web-fetch/web-search 工具归入同名目录
 - [x] 1.68 移除公开 Chat completions Controller、DTO、SSE、SDK `chat.*` 契约及专属测试，将保留的模型基础设施收敛为 Agent 使用的 `ModelGatewayModule`
 - [x] 1.69 为 Qwen3.7-Plus、GLM-5.2、DeepSeek-V4-Pro、Kimi K3 显式配置 thinking，并将 `reasoning_content` 规范化为 Agent reasoning 事件，覆盖工具调用历史回灌
+- [x] 1.70 为 Agent run 增加 `thinkingEffort=fast|balanced|deep` 契约并贯通工具循环、上下文摘要和四个 Provider Adapter，覆盖校验与协议映射测试
 
 ## 2. 管理员中后台
 
@@ -174,3 +175,4 @@
 - [x] 3.35 将 MCP 状态从 Composer 迁入右上角运行环境浮层，统一展示 Sandbox、MCP、Skills 与上下文占用
 - [x] 3.36 移除运行环境的重复入口浮层，将详情面板改为可直接折叠和恢复的单层组件
 - [x] 3.37 移除 `/chat/compare`、Agent 中的对比入口及相关 C 端状态代码，只保留 `/chat` 到根 Agent 的旧链接兼容跳转
+- [ ] 3.38 在运行模型浮层加入统一的快速/均衡/深度思考强度选择，并将选择传入当前 Agent run

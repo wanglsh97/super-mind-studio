@@ -360,12 +360,17 @@ describe('AgentClient threads and runs', () => {
 
     const run = await client.agent.runs.create(threadId, {
       input: '你好',
+      thinkingEffort: 'deep',
       skills: [{ name: 'mock-data-cleaner' }],
     })
     assert.equal(run.status, 'running')
     assert.equal(
       bodies[0],
-      JSON.stringify({ input: '你好', skills: [{ name: 'mock-data-cleaner' }] }),
+      JSON.stringify({
+        input: '你好',
+        thinkingEffort: 'deep',
+        skills: [{ name: 'mock-data-cleaner' }],
+      }),
     )
     await client.agent.runs.cancel(runId)
     assert.ok(calls[0]?.endsWith(`/api/v1/agent/threads/${threadId}/runs`))

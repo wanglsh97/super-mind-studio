@@ -40,6 +40,20 @@ Qwen3.7-Plus, GLM-5.2, DeepSeek-V4-Pro and Kimi K3 SHALL run with their document
 - **THEN** the complete associated reasoning content and tool call are replayed in provider-compatible fields
 - **AND** the provider can continue without a missing-reasoning protocol error
 
+### Requirement: Agent users control run-level thinking intensity
+The Agent run contract SHALL accept only the provider-neutral `thinkingEffort` values `fast`, `balanced`, and `deep`. The three user-facing levels SHALL remain identical for every model while each Adapter maps them to supported vendor controls: Qwen SHALL use non-thinking or tiered `thinking_budget`; GLM and DeepSeek SHALL use non-thinking, `high`, or `max`; Kimi K3 SHALL use `low`, `high`, or `max` because it cannot disable thinking. The selected effort SHALL apply to every model invocation within the run, including tool follow-ups and context summarization, and vendor-specific fields SHALL remain confined to Adapters.
+
+#### Scenario: User selects a thinking effort
+- **GIVEN** an authenticated user selects `balanced` before sending an Agent task
+- **WHEN** the Agent performs one or more model calls for that run
+- **THEN** every invocation carries `thinkingEffort=balanced`
+- **AND** each Adapter maps it to the provider's supported effort or budget control
+- **AND** the UI keeps the same three effort choices when the selected model changes
+
+#### Scenario: Invalid thinking effort is submitted
+- **WHEN** a client submits a value other than `fast`, `balanced`, or `deep`
+- **THEN** the Agent run API rejects it before creating or invoking the run
+
 ### Requirement: Agent model failover is bounded by the first content event
 The model gateway SHALL attempt at most one configured fallback for an eligible timeout or upstream 5xx before any reasoning, text or tool-call event is emitted. It MUST NOT switch providers after the first content event.
 

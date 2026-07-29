@@ -52,6 +52,12 @@ export class KimiChatAdapter implements ChatAdapter {
     let usage: ChatAdapterUsage | undefined
     let providerRequestId: string | undefined
     const useK2Defaults = usesK2FixedSampling(request.resolvedModel)
+    const thinkingEffort = request.thinkingEffort ?? 'balanced'
+    const reasoningEffort = {
+      fast: 'low',
+      balanced: 'high',
+      deep: 'max',
+    }[thinkingEffort]
     const toolCalls = new OpenAICompatibleToolCallAssembler('Kimi', protocolError)
 
     try {
@@ -60,10 +66,14 @@ export class KimiChatAdapter implements ChatAdapter {
         headers: { authorization: `Bearer ${this.apiKey}` },
         body: {
           model: request.resolvedModel,
-          messages: toOpenAICompatibleMessages(request.messages),
+          messages: toOpenAICompatibleMessages(request.messages, {
+            includeReasoningContent: !useK2Defaults,
+          }),
           stream: true,
           stream_options: { include_usage: true },
-          ...(useK2Defaults ? { thinking: { type: 'disabled' } } : { reasoning_effort: 'max' }),
+          ...(useK2Defaults
+            ? { thinking: { type: 'disabled' } }
+            : { reasoning_effort: reasoningEffort }),
           ...(useK2Defaults || request.temperature === undefined
             ? {}
             : { temperature: request.temperature }),

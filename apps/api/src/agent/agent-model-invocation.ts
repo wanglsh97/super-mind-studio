@@ -1,7 +1,11 @@
 import type { Prisma } from '../generated/prisma/client'
 import type { ChatAdapterId } from '../chat/chat.constants'
 import type { ChatAdapterUsage } from '../chat/adapters/chat-adapter'
-import type { ModelInvocationPort, ModelInvocationRequest, ModelStreamEvent } from '../chat/model-invocation.port'
+import type {
+  ModelInvocationPort,
+  ModelInvocationRequest,
+  ModelStreamEvent,
+} from '../chat/model-invocation.port'
 import { PricingService } from '../billing/pricing.service'
 import type { RequestLifecycleService } from '../request-lifecycle/request-lifecycle.service'
 
@@ -35,7 +39,10 @@ export function createAgentModelInvocationPort(
         userId: context.userId,
         requestId: request.requestId,
         capability: 'agent',
-        prompt: { messages: request.messages } as unknown as Prisma.InputJsonValue,
+        prompt: {
+          messages: request.messages,
+          thinkingEffort: request.thinkingEffort ?? 'balanced',
+        } as unknown as Prisma.InputJsonValue,
         modelAlias: request.modelId,
         stream: true,
         agentRunId: context.agentRunId,
@@ -53,7 +60,10 @@ export function createAgentModelInvocationPort(
           if (event.type === 'usage') usage = event.usage
           if (event.type === 'finish') {
             finished = true
-            const priced = pricing.calculate(event.provider as ChatAdapterId, usage ?? UNKNOWN_USAGE)
+            const priced = pricing.calculate(
+              event.provider as ChatAdapterId,
+              usage ?? UNKNOWN_USAGE,
+            )
             await lifecycle.finish({
               requestLogId: started.id,
               requestId: request.requestId,

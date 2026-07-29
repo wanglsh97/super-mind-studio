@@ -42,6 +42,7 @@ describe('AgentContextSummaryService', () => {
     const result = await new AgentContextSummaryService().generate({
       port: port(['not-json', valid], requests),
       modelId: 'qwen',
+      thinkingEffort: 'deep',
       messages: [{ role: 'user', content: 'history' }],
       signal: new AbortController().signal,
     })
@@ -50,7 +51,12 @@ describe('AgentContextSummaryService', () => {
       requests.every((request) => request.toolChoice === 'none' && request.tools?.length === 0),
     ).toBe(true)
     expect(
-      requests.every((request) => request.modelId === 'qwen' && request.allowFailover === false),
+      requests.every(
+        (request) =>
+          request.modelId === 'qwen' &&
+          request.thinkingEffort === 'deep' &&
+          request.allowFailover === false,
+      ),
     ).toBe(true)
     expect(
       requests.every((request) => !/[\u3400-\u9fff]/u.test(request.messages[0]?.content ?? '')),

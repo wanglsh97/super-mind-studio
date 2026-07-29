@@ -245,7 +245,13 @@ export class AgentController {
     @Body() body: CreateAgentRunDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.agent.createRun(user, threadId, body.input, body.skills ?? [])
+    return this.agent.createRun(
+      user,
+      threadId,
+      body.input,
+      body.skills ?? [],
+      body.thinkingEffort ?? 'balanced',
+    )
   }
 
   @Post('runs/:runId/cancel')

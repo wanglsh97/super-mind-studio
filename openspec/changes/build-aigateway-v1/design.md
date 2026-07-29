@@ -277,6 +277,8 @@ Chat 客户端提交公开模型实例 ID，而不是厂商 alias。服务端 `M
 
 四个真实模型均在 Adapter 层显式启用或配置 thinking：Qwen 使用 `enable_thinking`，GLM/DeepSeek 使用 `thinking.type` 与 `reasoning_effort`，Kimi K3 使用 `reasoning_effort` 且保持其强制 thinking 语义。Adapter 必须把 `reasoning_content` 映射为平台 `reasoning` 事件；Agent tool loop 必须完整回灌与工具调用关联的 reasoning 历史。
 
+Agent Composer 的模型浮层提供统一的 run 级思考强度选择，并通过 SDK `thinkingEffort=fast|balanced|deep` 传入服务端。三个档位在所有模型上保持相同的用户表达，Adapter 再映射厂商能力：Qwen 使用关闭或分档 `thinking_budget`；GLM/DeepSeek 使用关闭、`high`、`max`；Kimi K3 因始终思考而使用 `low`、`high`、`max`。该值作用于一次 run 内的首轮回答、工具 follow-up 和上下文摘要调用，不写入 thread 模型绑定，也不允许客户端直接提交厂商参数。
+
 ## Failure Handling
 
 | Failure | Platform behavior | Persistence |

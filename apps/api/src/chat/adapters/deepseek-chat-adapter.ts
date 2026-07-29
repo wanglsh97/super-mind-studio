@@ -52,17 +52,22 @@ export class DeepSeekChatAdapter implements ChatAdapter {
     let usage: ChatAdapterUsage | undefined
     let providerRequestId: string | undefined
     const toolCalls = new OpenAICompatibleToolCallAssembler('DeepSeek', protocolError)
+    const thinkingEffort = request.thinkingEffort ?? 'balanced'
+    const enableThinking = thinkingEffort !== 'fast'
     try {
       for await (const event of this.transport.stream({
         url: this.endpoint,
         headers: { authorization: `Bearer ${this.apiKey}` },
         body: {
           model: request.resolvedModel,
-          messages: toOpenAICompatibleMessages(request.messages),
+          messages: toOpenAICompatibleMessages(request.messages, {
+            includeReasoningContent: enableThinking,
+          }),
           stream: true,
           stream_options: { include_usage: true },
-          thinking: { type: 'enabled' },
-          reasoning_effort: 'max',
+          thinking: { type: enableThinking ? 'enabled' : 'disabled' },
+          ...(thinkingEffort === 'balanced' ? { reasoning_effort: 'high' } : {}),
+          ...(thinkingEffort === 'deep' ? { reasoning_effort: 'max' } : {}),
           ...(request.temperature === undefined ? {} : { temperature: request.temperature }),
           ...(request.topP === undefined ? {} : { top_p: request.topP }),
           ...(request.maxTokens === undefined ? {} : { max_tokens: request.maxTokens }),

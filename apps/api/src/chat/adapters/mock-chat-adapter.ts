@@ -133,7 +133,11 @@ export class MockChatAdapter implements ChatAdapter {
         })
       }
 
-      if (this.options.emitReasoning !== false && completedFetches === 0) {
+      if (
+        this.options.emitReasoning !== false &&
+        request.thinkingEffort !== 'fast' &&
+        completedFetches === 0
+      ) {
         await this.waitForDelay(request.signal)
         yield { type: 'reasoning', content: '需要联网获取实时信息以回答问题。', providerRequestId }
         await maybeFailAfterFirst()
@@ -154,7 +158,7 @@ export class MockChatAdapter implements ChatAdapter {
       return
     }
 
-    if (this.options.emitReasoning !== false) {
+    if (this.options.emitReasoning !== false && request.thinkingEffort !== 'fast') {
       await this.waitForDelay(request.signal)
       yield { type: 'reasoning', content: '已获得检索结果，正在整理答案。', providerRequestId }
       await maybeFailAfterFirst()
