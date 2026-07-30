@@ -24,12 +24,13 @@ For every Agent model invocation whose provider supplies usage, the platform SHA
 - **THEN** the unavailable dimensions remain distinguishable from a reported value of zero
 
 ### Requirement: User analytics show a one-year daily Token calendar
-The authenticated user analytics experience SHALL show a GitHub-contribution-style calendar heatmap for the most recent year. Each cell SHALL represent one local calendar day for the current user, and its intensity SHALL represent the sum of that day's total Tokens across the user's Agent Runs. Heat levels SHALL use stable boundaries: zero, below 50,000,000, below 100,000,000, below 1,000,000,000, and at least 1,000,000,000 Tokens. Month labels, weekday rows, and a threshold legend SHALL make the calendar chronology and intensity scale legible.
+The authenticated user analytics experience SHALL show the selected-period total, input, output, Prompt Cache, and reasoning Token summaries inside the Token usage header module, followed by a GitHub-contribution-style calendar heatmap for the most recent year. Each cell SHALL represent one local calendar day for the current user, and its intensity SHALL represent the sum of that day's total Tokens across the user's Agent Runs. Heat levels SHALL use stable boundaries: zero, below 50,000,000, below 100,000,000, below 1,000,000,000, and at least 1,000,000,000 Tokens. Month labels, weekday rows, and a threshold legend SHALL make the calendar chronology and intensity scale legible.
 
 #### Scenario: A user opens token analytics
 - **GIVEN** the user has Agent Run Token records within the most recent year
 - **WHEN** the analytics page loads
-- **THEN** it renders one heatmap cell per day in that period
+- **THEN** the Token usage header contains total, input, output, Prompt Cache, and reasoning summaries
+- **AND** it renders one heatmap cell per day in that period
 - **AND** each day uses the fixed Token threshold level containing its total rather than a level relative to the period maximum
 - **AND** hovering any populated date cell shows that date and its exact total Token count
 

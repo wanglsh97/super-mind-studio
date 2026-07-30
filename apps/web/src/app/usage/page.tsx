@@ -71,13 +71,13 @@ function UsageAnalytics() {
   )
 
   return (
-    <main className="min-h-screen px-8 py-10 lg:px-12 lg:py-12">
+    <main className="min-h-screen px-4 py-8 sm:px-8 lg:px-12 lg:py-12">
       <div className="mx-auto w-full max-w-[76rem]">
-        <header className="overflow-hidden rounded-[2rem] border border-line/80 bg-surface-card/72 px-8 py-8 shadow-[0_30px_90px_rgb(45_60_105/0.1)] backdrop-blur-2xl dark:border-line-soft dark:bg-surface-card/50">
+        <header className="overflow-hidden rounded-[2rem] border border-line/80 bg-surface-card/72 px-6 py-7 shadow-[0_30px_90px_rgb(45_60_105/0.1)] backdrop-blur-2xl sm:px-8 sm:py-8 dark:border-line-soft dark:bg-surface-card/50">
           <p className="font-mono text-[0.66rem] font-bold tracking-[0.2em] text-brand uppercase">
             Agent usage ledger
           </p>
-          <div className="mt-3 flex items-end justify-between gap-8">
+          <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between sm:gap-8">
             <div>
               <h1 className="font-display text-3xl font-semibold tracking-[-0.04em]">Token 用量</h1>
               <p className="mt-3 text-sm leading-6 text-ink-secondary dark:text-ink-dark-muted">
@@ -90,9 +90,21 @@ function UsageAnalytics() {
               </span>
             ) : null}
           </div>
+          {state === 'loading' ? <LoadingState /> : null}
+          {totals ? (
+            <section
+              className="mt-7 grid grid-cols-2 gap-2 border-t border-line/70 pt-5 sm:grid-cols-3 xl:grid-cols-5 dark:border-line-soft"
+              aria-label="Token 汇总"
+            >
+              <MetricCard label="总量" value={totals.totalTokens} accent />
+              <MetricCard label="输入" value={totals.inputTokens} />
+              <MetricCard label="输出" value={totals.outputTokens} />
+              <MetricCard label="缓存" value={totals.cachedInputTokens} />
+              <MetricCard label="思考" value={totals.reasoningTokens} />
+            </section>
+          ) : null}
         </header>
 
-        {state === 'loading' ? <LoadingState /> : null}
         {state === 'error' ? (
           <div className="mt-6 rounded-2xl border border-danger/20 bg-danger/7 px-5 py-4 text-sm text-danger">
             {error}
@@ -104,14 +116,6 @@ function UsageAnalytics() {
 
         {data && totals ? (
           <>
-            <section className="mt-6 grid grid-cols-5 gap-3" aria-label="Token 汇总">
-              <MetricCard label="总量" value={totals.totalTokens} accent />
-              <MetricCard label="输入" value={totals.inputTokens} />
-              <MetricCard label="输出" value={totals.outputTokens} />
-              <MetricCard label="缓存" value={totals.cachedInputTokens} />
-              <MetricCard label="思考" value={totals.reasoningTokens} />
-            </section>
-
             <section className="mt-6 rounded-[1.6rem] border border-line bg-surface-card/72 p-6 dark:border-line-soft dark:bg-surface-card/50">
               <div className="mb-5">
                 <h2 className="font-display text-lg font-semibold">每日总量</h2>
@@ -161,10 +165,10 @@ function MetricCard({
 }) {
   return (
     <div
-      className={`rounded-2xl border p-5 ${
+      className={`rounded-xl px-4 py-3.5 ${
         accent
-          ? 'border-emerald-200 bg-emerald-50/80 dark:border-emerald-800 dark:bg-emerald-950/30'
-          : 'border-line bg-surface-card/72 dark:border-line-soft dark:bg-surface-card/50'
+          ? 'bg-emerald-50/90 ring-1 ring-emerald-200/80 dark:bg-emerald-950/35 dark:ring-emerald-800/80'
+          : 'bg-surface-inset/65 dark:bg-surface-inset/35'
       }`}
     >
       <p className="text-xs font-semibold text-ink-faint">{label}</p>
@@ -195,9 +199,12 @@ function ChartCard({
 
 function LoadingState() {
   return (
-    <div className="mt-6 grid animate-pulse grid-cols-5 gap-3" aria-label="正在加载 Token 用量">
+    <div
+      className="mt-7 grid animate-pulse grid-cols-2 gap-2 border-t border-line/70 pt-5 sm:grid-cols-3 xl:grid-cols-5 dark:border-line-soft"
+      aria-label="正在加载 Token 用量"
+    >
       {Array.from({ length: 5 }, (_, index) => (
-        <div key={index} className="h-24 rounded-2xl bg-surface-inset" />
+        <div key={index} className="h-[4.75rem] rounded-xl bg-surface-inset" />
       ))}
     </div>
   )
