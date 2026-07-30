@@ -328,35 +328,42 @@ export default function SkillsPage() {
           </p>
         </section>
       ) : (
-        <section className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {items.map((skill, index) => (
+        <section className="mt-8 grid gap-3 sm:grid-cols-2">
+          {items.map((skill) => (
             <article
               key={skill.id}
-              className="liquid-glass group flex min-h-72 flex-col rounded-[1.7rem] p-5 transition hover:-translate-y-1 hover:border-brand/25 hover:shadow-[0_24px_60px_rgb(44_74_120/0.14)]"
+              className="liquid-glass group flex min-h-40 flex-col rounded-2xl px-4 py-4 transition-colors hover:border-ink-faint/35 focus-within:border-ink-faint/45"
             >
-              <div className="flex items-start justify-between">
-                <span className="grid size-12 place-items-center rounded-2xl bg-[linear-gradient(135deg,#2764ff,#8b7cff)] font-mono text-xs font-black text-white shadow-[0_10px_24px_rgb(39_100_255/0.2)]">
-                  {String(index + 1).padStart(2, '0')}
+              <div className="flex min-w-0 gap-3">
+                <span
+                  aria-hidden="true"
+                  className="grid size-11 shrink-0 place-items-center rounded-xl bg-surface-inset text-sm font-semibold text-ink-secondary"
+                >
+                  {skill.title.slice(0, 1).toUpperCase()}
                 </span>
-                <span className="font-mono text-[0.62rem] text-ink-faint">+{skill.addCount}</span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-3">
+                    <h2 className="truncate text-base font-semibold tracking-tight text-ink-primary">
+                      {skill.title}
+                    </h2>
+                    <span className="shrink-0 font-mono text-[0.62rem] text-ink-faint">+{skill.addCount}</span>
+                  </div>
+                  <p className="mt-1 text-xs text-ink-muted">{categoryLabels[skill.category]}</p>
+                  <p className="mt-3 line-clamp-2 text-sm leading-5 text-ink-secondary">
+                    {skill.description}
+                  </p>
+                </div>
               </div>
-              <div className="mt-7 flex-1">
-                <p className="font-mono text-[0.6rem] tracking-widest text-brand">
-                  {categoryLabels[skill.category]}
-                </p>
-                <h2 className="mt-2 text-xl font-bold tracking-tight">{skill.title}</h2>
-                <p className="mt-3 line-clamp-3 text-sm leading-6 text-ink-muted">
-                  {skill.description}
-                </p>
-              </div>
-              <div className="mt-6 flex items-center justify-between border-t border-line pt-4">
+              <div className="mt-auto flex items-center justify-between pt-3">
                 <span className="font-mono text-xs text-ink-faint">{skill.name}</span>
                 {session.status === 'authenticated' ? (
                   <button
                     type="button"
                     disabled={busy === skill.name}
                     onClick={() => void toggle(skill.name)}
-                    className={added.has(skill.name) ? secondaryButton : primaryButton}
+                    className={cn(
+                      added.has(skill.name) ? compactSecondaryButton : compactPrimaryButton,
+                    )}
                   >
                     {busy === skill.name
                       ? '处理中…'
@@ -365,7 +372,7 @@ export default function SkillsPage() {
                         : '添加'}
                   </button>
                 ) : (
-                  <Link className={secondaryButton} href="/login?returnTo=%2Fskills">
+                  <Link className={compactSecondaryButton} href="/login?returnTo=%2Fskills">
                     登录后添加
                   </Link>
                 )}
@@ -417,6 +424,10 @@ const primaryButton =
   'liquid-button inline-flex min-h-10 items-center justify-center rounded-xl px-4 text-xs font-bold text-white transition hover:-translate-y-0.5 disabled:opacity-50'
 const secondaryButton =
   'liquid-glass-soft inline-flex min-h-10 items-center justify-center rounded-xl px-4 text-xs font-bold text-ink-muted transition hover:border-brand/30 hover:text-brand disabled:opacity-40'
+const compactPrimaryButton =
+  'inline-flex h-8 items-center justify-center rounded-lg bg-ink-primary px-3 text-xs font-semibold text-surface-page transition-colors hover:bg-ink-secondary disabled:opacity-50'
+const compactSecondaryButton =
+  'inline-flex h-8 items-center justify-center rounded-lg bg-surface-inset px-3 text-xs font-semibold text-ink-secondary transition-colors hover:bg-surface-inset/70 disabled:opacity-50'
 
 interface DirectoryPickerWindow extends Window {
   showDirectoryPicker?(options?: { mode?: 'read' | 'readwrite' }): Promise<DirectoryHandle>
