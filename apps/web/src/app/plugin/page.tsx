@@ -101,6 +101,8 @@ function McpSettings() {
     [category, servers],
   )
 
+  if (loadState === 'loading') return <PluginPageLoading />
+
   return (
     <main className="min-h-screen px-8 py-10 lg:px-12 lg:py-12">
       <div className="mx-auto w-full max-w-[70rem]">
@@ -180,12 +182,7 @@ function McpSettings() {
             })}
           </div>
 
-          {loadState === 'loading' ? (
-            <div className="grid gap-4 md:grid-cols-2" aria-label="正在加载插件">
-              <ServerSkeleton />
-              <ServerSkeleton />
-            </div>
-          ) : visibleServers.length === 0 ? (
+          {visibleServers.length === 0 ? (
             <div className="rounded-[1.6rem] border border-dashed border-line bg-surface-card/55 px-8 py-14 text-center dark:border-line-soft">
               <h3 className="font-display text-lg font-semibold">
                 {servers.length === 0 ? '暂时没有内置插件' : '该分类暂时没有插件'}
@@ -364,9 +361,22 @@ function ServerDatum({ label, value }: Readonly<{ label: string; value: string }
   )
 }
 
-function ServerSkeleton() {
+function PluginPageLoading() {
   return (
-    <div className="h-64 animate-pulse rounded-[1.6rem] border border-line/70 bg-surface-card/60 dark:border-line-soft" />
+    <main
+      aria-busy="true"
+      aria-live="polite"
+      className="grid min-h-screen place-items-center px-8 py-10 lg:px-12 lg:py-12"
+    >
+      <div className="w-full max-w-sm rounded-[1.75rem] border border-line/80 bg-surface-card/72 px-8 py-10 text-center shadow-[0_24px_70px_rgb(45_60_105/0.1)] backdrop-blur-2xl dark:border-line-soft dark:bg-surface-card/50">
+        <span
+          aria-hidden="true"
+          className="mx-auto block size-8 animate-spin rounded-full border-2 border-brand/20 border-t-brand motion-reduce:animate-none"
+        />
+        <p className="mt-5 font-display text-lg font-semibold tracking-[-0.03em]">正在加载插件</p>
+        <p className="mt-2 text-sm text-ink-faint">正在同步可用插件与当前设置。</p>
+      </div>
+    </main>
   )
 }
 
