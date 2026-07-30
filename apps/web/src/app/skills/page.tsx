@@ -4,6 +4,8 @@ import {
   AGENT_SKILL_CATEGORIES,
   createAIGatewayClient,
   type AgentSkillCategory,
+  type AgentSkillFileEntry,
+  type AgentSkillMarketDetail,
   type AgentSkillMarketSummary,
   type OwnerSkillRecord,
 } from '@supermind/sdk'
@@ -47,6 +49,8 @@ export default function SkillsPage() {
   const [busy, setBusy] = useState('')
   const [error, setError] = useState('')
   const [uploadFiles, setUploadFiles] = useState<SkillFolderFile[] | null>(null)
+  const [selectedSkill, setSelectedSkill] = useState<AgentSkillMarketDetail | null>(null)
+  const [openingSkill, setOpeningSkill] = useState('')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -144,6 +148,20 @@ export default function SkillsPage() {
       }
     } finally {
       setBusy('')
+    }
+  }
+
+  async function openSkillFiles(name: string) {
+    setOpeningSkill(name)
+    setError('')
+    try {
+      setSelectedSkill(await client.skills.detail(name))
+    } catch (cause) {
+      if (!handleAuthenticationFailure(cause)) {
+        setError(cause instanceof Error ? cause.message : '无法加载技能文件目录')
+      }
+    } finally {
+      setOpeningSkill('')
     }
   }
 
@@ -332,9 +350,16 @@ export default function SkillsPage() {
           {items.map((skill) => (
             <article
               key={skill.id}
-              className="liquid-glass group flex min-h-40 flex-col rounded-2xl px-4 py-4 transition-colors hover:border-ink-faint/35 focus-within:border-ink-faint/45"
+              className="liquid-glass group relative flex min-h-40 flex-col overflow-hidden rounded-2xl px-4 py-4 transition-[border-color,background-color,transform] hover:-translate-y-0.5 hover:border-ink-faint/45 hover:bg-surface-card focus-within:border-ink-faint/45 dark:hover:bg-surface-card"
             >
-              <div className="flex min-w-0 gap-3">
+              <button
+                type="button"
+                aria-label={`查看 ${skill.title} 的文件目录`}
+                disabled={openingSkill === skill.name}
+                onClick={() => void openSkillFiles(skill.name)}
+                className="absolute inset-0 z-0 cursor-pointer rounded-2xl focus-visible:outline-2 focus-visible:outline-brand-focus focus-visible:outline-offset-[-3px] disabled:cursor-wait"
+              />
+              <div className="pointer-events-none relative z-10 flex min-w-0 gap-3">
                 <span
                   aria-hidden="true"
                   className="grid size-11 shrink-0 place-items-center rounded-xl bg-surface-inset text-sm font-semibold text-ink-secondary"
@@ -346,7 +371,9 @@ export default function SkillsPage() {
                     <h2 className="truncate text-base font-semibold tracking-tight text-ink-primary">
                       {skill.title}
                     </h2>
-                    <span className="shrink-0 font-mono text-[0.62rem] text-ink-faint">+{skill.addCount}</span>
+                    <span className="shrink-0 font-mono text-[0.62rem] text-ink-faint">
+                      +{skill.addCount}
+                    </span>
                   </div>
                   <p className="mt-1 text-xs text-ink-muted">{categoryLabels[skill.category]}</p>
                   <p className="mt-3 line-clamp-2 text-sm leading-5 text-ink-secondary">
@@ -354,7 +381,7 @@ export default function SkillsPage() {
                   </p>
                 </div>
               </div>
-              <div className="mt-auto flex items-center justify-between pt-3">
+              <div className="pointer-events-none relative z-10 mt-auto flex items-center justify-between pt-3">
                 <span className="font-mono text-xs text-ink-faint">{skill.name}</span>
                 {session.status === 'authenticated' ? (
                   <button
@@ -362,17 +389,17 @@ export default function SkillsPage() {
                     disabled={busy === skill.name}
                     onClick={() => void toggle(skill.name)}
                     className={cn(
+                      'pointer-events-auto',
                       added.has(skill.name) ? compactSecondaryButton : compactPrimaryButton,
                     )}
                   >
-                    {busy === skill.name
-                      ? '处理中…'
-                      : added.has(skill.name)
-                        ? '移除'
-                        : '添加'}
+                    {busy === skill.name ? '处理中…' : added.has(skill.name) ? '移除' : '添加'}
                   </button>
                 ) : (
-                  <Link className={compactSecondaryButton} href="/login?returnTo=%2Fskills">
+                  <Link
+                    className={cn('pointer-events-auto', compactSecondaryButton)}
+                    href="/login?returnTo=%2Fskills"
+                  >
                     登录后添加
                   </Link>
                 )}
@@ -413,6 +440,9 @@ export default function SkillsPage() {
           onClose={() => setUploadFiles(null)}
         />
       ) : null}
+      {selectedSkill ? (
+        <SkillFilesDialog skill={selectedSkill} onClose={() => setSelectedSkill(null)} />
+      ) : null}
     </main>
   )
 }
@@ -428,6 +458,101 @@ const compactPrimaryButton =
   'inline-flex h-8 cursor-pointer items-center justify-center rounded-lg bg-[#3a3a3c] px-3 text-xs font-semibold text-white transition-colors hover:bg-[#242426] hover:text-white focus-visible:outline-2 focus-visible:outline-brand-focus focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-[#ebebf5] dark:text-[#1c1c1e] dark:hover:bg-white dark:hover:text-[#1c1c1e]'
 const compactSecondaryButton =
   'inline-flex h-8 cursor-pointer items-center justify-center rounded-lg bg-surface-inset px-3 text-xs font-semibold text-ink-secondary transition-colors hover:bg-surface-inset/70 disabled:cursor-not-allowed disabled:opacity-50'
+
+function SkillFilesDialog({
+  skill,
+  onClose,
+}: {
+  skill: AgentSkillMarketDetail
+  onClose: () => void
+}) {
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [onClose])
+
+  return (
+    <div
+      className="fixed inset-0 z-50 grid place-items-center bg-black/20 px-4 py-6 backdrop-blur-[2px] dark:bg-black/45"
+      role="presentation"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose()
+      }}
+    >
+      <section
+        aria-labelledby="skill-files-title"
+        aria-modal="true"
+        className="liquid-glass-soft w-full max-w-lg rounded-2xl p-5 shadow-[0_20px_50px_rgb(0_0_0/0.12)] dark:shadow-[0_20px_50px_rgb(0_0_0/0.35)]"
+        role="dialog"
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <p className="font-mono text-[0.65rem] font-semibold tracking-[0.12em] text-ink-faint">
+              技能文件目录
+            </p>
+            <h2
+              id="skill-files-title"
+              className="mt-1 truncate text-lg font-semibold text-ink-primary"
+            >
+              {skill.title}
+            </h2>
+            <p className="mt-1 font-mono text-xs text-ink-muted">{skill.name}</p>
+          </div>
+          <button type="button" className={dialogCloseButton} onClick={onClose}>
+            关闭
+          </button>
+        </div>
+        <div className="mt-5 max-h-[min(24rem,60vh)] overflow-y-auto rounded-xl bg-surface-inset/65 p-2">
+          {skill.files.length === 0 ? (
+            <p className="px-3 py-8 text-center text-sm text-ink-muted">此技能未提供文件目录。</p>
+          ) : (
+            <ul className="space-y-0.5" aria-label={`${skill.title} 文件目录`}>
+              {skill.files.map((file) => (
+                <SkillFileRow key={`${file.type}-${file.path}`} file={file} />
+              ))}
+            </ul>
+          )}
+        </div>
+      </section>
+    </div>
+  )
+}
+
+function SkillFileRow({ file }: { file: AgentSkillFileEntry }) {
+  const parts = file.path.split('/').filter(Boolean)
+  const name = parts.at(-1) ?? file.path
+  const depth = Math.max(0, parts.length - 1)
+  const isDirectory = file.type === 'directory'
+
+  return (
+    <li
+      className="flex min-w-0 items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-ink-secondary"
+      style={{ paddingLeft: `${0.5 + depth * 1}rem` }}
+    >
+      <span aria-hidden="true" className="w-4 shrink-0 text-center text-ink-muted">
+        {isDirectory ? '▸' : '·'}
+      </span>
+      <span className="truncate font-mono text-xs">{name}</span>
+      {!isDirectory && file.size !== null ? (
+        <span className="ml-auto shrink-0 text-[0.65rem] text-ink-faint">
+          {formatFileSize(file.size)}
+        </span>
+      ) : null}
+    </li>
+  )
+}
+
+function formatFileSize(size: number) {
+  if (size < 1024) return `${size} B`
+  if (size < 1024 * 1024) return `${Math.round(size / 102.4) / 10} KB`
+  return `${Math.round(size / (1024 * 102.4)) / 10} MB`
+}
+
+const dialogCloseButton =
+  'inline-flex h-8 cursor-pointer items-center justify-center rounded-lg bg-surface-inset px-3 text-xs font-semibold text-ink-secondary transition-colors hover:bg-surface-card hover:text-ink-primary focus-visible:outline-2 focus-visible:outline-brand-focus focus-visible:outline-offset-2'
 
 interface DirectoryPickerWindow extends Window {
   showDirectoryPicker?(options?: { mode?: 'read' | 'readwrite' }): Promise<DirectoryHandle>
