@@ -25,6 +25,14 @@ export interface AgentSkillFileEntry {
   size: number | null
 }
 
+/** 已发布 Skill 中单个文件的受限文本预览。 */
+export interface AgentSkillFilePreview {
+  path: string
+  content: string | null
+  previewable: boolean
+  truncated: boolean
+}
+
 /**
  * 公开市场与“我的 Skill”共用的摘要。
  *
@@ -48,7 +56,7 @@ export interface AgentSkillMarketSummary {
 export interface AgentSkillMarketDetail extends AgentSkillMarketSummary {
   /** 已消毒的 SKILL.md 渲染源；不得包含 OSS 签名地址。 */
   skillMarkdown: string
-  /** 只包含路径、类型和大小，不返回脚本正文或原始 ZIP。 */
+  /** 只包含路径、类型和大小；文件正文需按路径单独请求预览。 */
   files: AgentSkillFileEntry[]
 }
 

@@ -3,6 +3,7 @@ import {
   AGENT_SKILL_PUBLICATION_STATUSES,
   type AgentSkillCategory,
   type AgentSkillFileEntry,
+  type AgentSkillFilePreview,
   type AgentSkillMarketDetail,
   type AgentSkillMarketSummary,
   type AgentSkillPublicationStatus,
@@ -67,6 +68,11 @@ export interface AdminSkillReviewRecord {
 export interface SkillMarketClient {
   list(options?: SkillMarketListOptions): Promise<SkillMarketPage>
   detail(name: string, options?: SkillMarketRequestOptions): Promise<AgentSkillMarketDetail>
+  file(
+    name: string,
+    path: string,
+    options?: SkillMarketRequestOptions,
+  ): Promise<AgentSkillFilePreview>
   add(name: string, options?: SkillMarketRequestOptions): Promise<void>
   remove(name: string, options?: SkillMarketRequestOptions): Promise<void>
   owner: {
@@ -128,6 +134,16 @@ export function createSkillMarketClient(
           fetchImplementation,
           'GET',
           `${baseUrl}/api/v1/skills/${encodeURIComponent(name)}`,
+          undefined,
+          options,
+        ),
+      ),
+    file: async (name, path, options) =>
+      decodeFilePreview(
+        await requestJson(
+          fetchImplementation,
+          'GET',
+          `${baseUrl}/api/v1/skills/${encodeURIComponent(name)}/files?path=${encodeURIComponent(path)}`,
           undefined,
           options,
         ),
@@ -321,6 +337,20 @@ function decodeFile(value: unknown): AgentSkillFileEntry {
     malformed('Skill file')
   }
   return record as unknown as AgentSkillFileEntry
+}
+
+function decodeFilePreview(value: unknown): AgentSkillFilePreview {
+  const record = object(value)
+  if (
+    !record ||
+    typeof record.path !== 'string' ||
+    (record.content !== null && typeof record.content !== 'string') ||
+    typeof record.previewable !== 'boolean' ||
+    typeof record.truncated !== 'boolean'
+  ) {
+    malformed('Skill file preview')
+  }
+  return record as unknown as AgentSkillFilePreview
 }
 
 function decodeArray<T>(value: unknown, decode: (item: unknown) => T): T[] {

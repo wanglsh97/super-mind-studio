@@ -120,6 +120,11 @@ export class SkillMarketController {
     await this.executable.remove(user.id, name)
   }
 
+  @Get(':name/files')
+  filePreview(@Param('name') name: string, @Query('path') path: string) {
+    return this.market.filePreview(name, path)
+  }
+
   @Get(':name')
   detail(@Param('name') name: string) {
     return this.market.detail(name)

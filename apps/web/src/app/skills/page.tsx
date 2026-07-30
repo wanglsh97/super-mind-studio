@@ -5,6 +5,7 @@ import {
   createAIGatewayClient,
   type AgentSkillCategory,
   type AgentSkillFileEntry,
+  type AgentSkillFilePreview,
   type AgentSkillMarketDetail,
   type AgentSkillMarketSummary,
   type OwnerSkillRecord,
@@ -282,6 +283,7 @@ export default function SkillsPage() {
             <div
               key={index}
               className="h-44 w-full animate-pulse rounded-2xl bg-surface-inset sm:w-[17rem]"
+            />
           ))}
         </section>
       ) : session.status !== 'authenticated' && view !== 'market' ? (
@@ -472,6 +474,17 @@ function SkillFilesDialog({
   skill: AgentSkillMarketDetail
   onClose: () => void
 }) {
+  const fileEntries = skill.files.filter((file) => file.type === 'file')
+  const [selectedPath, setSelectedPath] = useState(
+    fileEntries.find((file) => file.path === 'SKILL.md')?.path ?? fileEntries[0]?.path ?? '',
+  )
+  const [expandedPaths, setExpandedPaths] = useState<Set<string>>(
+    () => new Set(skill.files.filter((file) => file.type === 'directory').map((file) => file.path)),
+  )
+  const [preview, setPreview] = useState<AgentSkillFilePreview | null>(null)
+  const [previewError, setPreviewError] = useState('')
+  const [previewLoading, setPreviewLoading] = useState(false)
+
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose()
@@ -479,6 +492,33 @@ function SkillFilesDialog({
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [onClose])
+
+  useEffect(() => {
+    if (!selectedPath) return
+    let active = true
+    setPreviewLoading(true)
+    setPreviewError('')
+    void client.skills
+      .file(skill.name, selectedPath)
+      .then((result) => {
+        if (active) setPreview(result)
+      })
+      .catch((cause) => {
+        if (active) {
+          setPreview(null)
+          setPreviewError(cause instanceof Error ? cause.message : '无法加载文件预览')
+        }
+      })
+      .finally(() => {
+        if (active) setPreviewLoading(false)
+      })
+    return () => {
+      active = false
+    }
+  }, [selectedPath, skill.name])
+
+  const tree = createSkillFileTree(skill.files)
+  const selectedName = selectedPath.split('/').at(-1) ?? '文件预览'
 
   return (
     <div
@@ -491,64 +531,192 @@ function SkillFilesDialog({
       <section
         aria-labelledby="skill-files-title"
         aria-modal="true"
-        className="w-full max-w-lg rounded-2xl border border-line bg-surface-card p-5 shadow-[0_20px_50px_rgb(0_0_0/0.12)] dark:border-line-soft dark:bg-surface-card dark:shadow-[0_20px_50px_rgb(0_0_0/0.35)]"
+        className="max-h-[calc(100dvh-2rem)] w-full max-w-5xl overflow-hidden rounded-2xl border border-line bg-surface-card shadow-[0_20px_50px_rgb(0_0_0/0.12)] dark:border-line-soft dark:bg-surface-card dark:shadow-[0_20px_50px_rgb(0_0_0/0.35)]"
         role="dialog"
       >
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex items-center justify-between gap-4 border-b border-line px-5 py-4">
           <div className="min-w-0">
-            <p className="font-mono text-[0.65rem] font-semibold tracking-[0.12em] text-ink-faint">
-              技能文件目录
-            </p>
             <h2
               id="skill-files-title"
-              className="mt-1 truncate text-lg font-semibold text-ink-primary"
+              className="truncate text-lg font-semibold tracking-tight text-ink-primary"
             >
               {skill.title}
             </h2>
-            <p className="mt-1 font-mono text-xs text-ink-muted">{skill.name}</p>
+            <p className="mt-0.5 text-xs text-ink-muted">技能文件</p>
           </div>
-          <button type="button" className={dialogCloseButton} onClick={onClose}>
-            关闭
+          <button
+            type="button"
+            className={dialogCloseButton}
+            onClick={onClose}
+            aria-label="关闭文件预览"
+          >
+            ×
           </button>
         </div>
-        <div className="mt-5 max-h-[min(24rem,60vh)] overflow-y-auto rounded-xl bg-surface-inset/65 p-2">
-          {skill.files.length === 0 ? (
-            <p className="px-3 py-8 text-center text-sm text-ink-muted">此技能未提供文件目录。</p>
-          ) : (
-            <ul className="space-y-0.5" aria-label={`${skill.title} 文件目录`}>
-              {skill.files.map((file) => (
-                <SkillFileRow key={`${file.type}-${file.path}`} file={file} />
-              ))}
-            </ul>
-          )}
+        <div className="grid h-[min(36rem,calc(100dvh-7rem))] min-h-[28rem] grid-rows-[minmax(12rem,34dvh)_minmax(18rem,1fr)] md:grid-cols-[15rem_minmax(0,1fr)] md:grid-rows-1">
+          <aside className="overflow-y-auto border-b border-line bg-surface-inset/45 px-3 py-4 md:border-r md:border-b-0">
+            <p className="px-2 pb-2 text-xs font-semibold text-ink-muted">文件</p>
+            {tree.length === 0 ? (
+              <p className="px-2 py-6 text-sm text-ink-muted">此技能未提供文件目录。</p>
+            ) : (
+              <ul aria-label={`${skill.title} 文件目录`}>
+                {tree.map((node) => (
+                  <SkillFileTreeNode
+                    key={node.path}
+                    node={node}
+                    expandedPaths={expandedPaths}
+                    selectedPath={selectedPath}
+                    onSelect={setSelectedPath}
+                    onToggle={(path) =>
+                      setExpandedPaths((current) => {
+                        const next = new Set(current)
+                        if (next.has(path)) next.delete(path)
+                        else next.add(path)
+                        return next
+                      })
+                    }
+                  />
+                ))}
+              </ul>
+            )}
+          </aside>
+          <div className="flex min-w-0 flex-col bg-surface-card">
+            <div className="flex min-h-13 items-center border-b border-line px-5">
+              <span className="truncate text-sm font-medium text-ink-primary">{selectedName}</span>
+            </div>
+            <div className="min-h-0 flex-1 overflow-auto px-5 py-5">
+              {!selectedPath ? (
+                <p className="py-12 text-center text-sm text-ink-muted">选择一个文件以预览内容。</p>
+              ) : previewLoading ? (
+                <p className="py-12 text-center text-sm text-ink-muted">正在加载预览…</p>
+              ) : previewError ? (
+                <p className="py-12 text-center text-sm text-rose-600">{previewError}</p>
+              ) : preview?.previewable && preview.content !== null ? (
+                <>
+                  <pre className="m-0 whitespace-pre-wrap break-words font-mono text-xs leading-6 text-ink-secondary">
+                    {preview.content}
+                  </pre>
+                  {preview.truncated ? (
+                    <p className="mt-5 border-t border-line pt-3 text-xs text-ink-muted">
+                      文件较大，当前仅显示前 256 KB。
+                    </p>
+                  ) : null}
+                </>
+              ) : (
+                <p className="py-12 text-center text-sm text-ink-muted">
+                  此文件为二进制文件，暂不支持文本预览。
+                </p>
+              )}
+            </div>
+          </div>
         </div>
       </section>
     </div>
   )
 }
 
-function SkillFileRow({ file }: { file: AgentSkillFileEntry }) {
-  const parts = file.path.split('/').filter(Boolean)
-  const name = parts.at(-1) ?? file.path
-  const depth = Math.max(0, parts.length - 1)
-  const isDirectory = file.type === 'directory'
+interface SkillTreeNode {
+  name: string
+  path: string
+  type: 'file' | 'directory'
+  size: number | null
+  children: SkillTreeNode[]
+}
+
+function SkillFileTreeNode({
+  node,
+  expandedPaths,
+  selectedPath,
+  onSelect,
+  onToggle,
+  depth = 0,
+}: {
+  node: SkillTreeNode
+  expandedPaths: Set<string>
+  selectedPath: string
+  onSelect: (path: string) => void
+  onToggle: (path: string) => void
+  depth?: number
+}) {
+  const expanded = expandedPaths.has(node.path)
+  const directory = node.type === 'directory'
 
   return (
-    <li
-      className="flex min-w-0 items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-ink-secondary"
-      style={{ paddingLeft: `${0.5 + depth * 1}rem` }}
-    >
-      <span aria-hidden="true" className="w-4 shrink-0 text-center text-ink-muted">
-        {isDirectory ? '▸' : '·'}
-      </span>
-      <span className="truncate font-mono text-xs">{name}</span>
-      {!isDirectory && file.size !== null ? (
-        <span className="ml-auto shrink-0 text-[0.65rem] text-ink-faint">
-          {formatFileSize(file.size)}
+    <li>
+      <button
+        type="button"
+        aria-expanded={directory ? expanded : undefined}
+        className={cn(
+          'flex w-full cursor-pointer items-center gap-2 rounded-lg py-1.5 pr-2 text-left text-xs transition-colors focus-visible:outline-2 focus-visible:outline-brand-focus focus-visible:outline-offset-[-2px]',
+          directory
+            ? 'text-ink-secondary hover:bg-surface-muted'
+            : 'text-ink-muted hover:bg-surface-muted',
+          !directory &&
+            selectedPath === node.path &&
+            'bg-surface-muted font-medium text-ink-primary',
+        )}
+        style={{ paddingLeft: `${0.5 + depth * 0.9}rem` }}
+        onClick={() => (directory ? onToggle(node.path) : onSelect(node.path))}
+      >
+        <span aria-hidden="true" className="w-3 shrink-0 text-center text-ink-muted">
+          {directory ? (expanded ? '⌄' : '›') : '·'}
         </span>
+        <span className="truncate">{node.name}</span>
+      </button>
+      {directory && expanded ? (
+        <ul>
+          {node.children.map((child) => (
+            <SkillFileTreeNode
+              key={child.path}
+              node={child}
+              expandedPaths={expandedPaths}
+              selectedPath={selectedPath}
+              onSelect={onSelect}
+              onToggle={onToggle}
+              depth={depth + 1}
+            />
+          ))}
+        </ul>
       ) : null}
     </li>
   )
+}
+
+function createSkillFileTree(files: AgentSkillFileEntry[]): SkillTreeNode[] {
+  const root: SkillTreeNode = { name: '', path: '', type: 'directory', size: null, children: [] }
+  const nodes = new Map<string, SkillTreeNode>([['', root]])
+  for (const file of files) {
+    const parts = file.path.split('/').filter(Boolean)
+    let parent = root
+    let parentPath = ''
+    for (const [index, part] of parts.entries()) {
+      const path = parentPath ? `${parentPath}/${part}` : part
+      const terminal = index === parts.length - 1
+      let node = nodes.get(path)
+      if (!node) {
+        node = {
+          name: part,
+          path,
+          type: terminal ? file.type : 'directory',
+          size: terminal ? file.size : null,
+          children: [],
+        }
+        nodes.set(path, node)
+        parent.children.push(node)
+      }
+      parent = node
+      parentPath = path
+    }
+  }
+  const sort = (nodesToSort: SkillTreeNode[]) => {
+    nodesToSort.sort((left, right) => {
+      if (left.type !== right.type) return left.type === 'directory' ? -1 : 1
+      return left.name.localeCompare(right.name)
+    })
+    nodesToSort.forEach((node) => sort(node.children))
+  }
+  sort(root.children)
+  return root.children
 }
 
 function formatFileSize(size: number) {
@@ -558,7 +726,7 @@ function formatFileSize(size: number) {
 }
 
 const dialogCloseButton =
-  'inline-flex h-8 cursor-pointer items-center justify-center rounded-lg bg-surface-inset px-3 text-xs font-semibold text-ink-secondary transition-colors hover:bg-surface-card hover:text-ink-primary focus-visible:outline-2 focus-visible:outline-brand-focus focus-visible:outline-offset-2'
+  'inline-flex size-8 cursor-pointer items-center justify-center rounded-lg text-2xl leading-none text-ink-secondary transition-colors hover:bg-surface-inset hover:text-ink-primary focus-visible:outline-2 focus-visible:outline-brand-focus focus-visible:outline-offset-2'
 
 interface DirectoryPickerWindow extends Window {
   showDirectoryPicker?(options?: { mode?: 'read' | 'readwrite' }): Promise<DirectoryHandle>

@@ -53,6 +53,7 @@ export type {
   AgentSkillAddState,
   AgentSkillCategory,
   AgentSkillFileEntry,
+  AgentSkillFilePreview,
   AgentSkillMarketDetail,
   AgentSkillMarketItem,
   AgentSkillMarketSummary,
