@@ -2,14 +2,24 @@
 
 import { createAIGatewayClient } from '@supermind/sdk'
 import type { AgentMcpServerStatus } from '@supermind/sdk'
+import Image, { type StaticImageData } from 'next/image'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { ProtectedUserPage } from '../../components/protected-user-page'
 import { useAuthenticationFailure } from '../../components/use-authentication-failure'
 import { cn } from '../../lib/cn'
+import context7Logo from '../../config/Context7_192.png'
+import deepWikiLogo from '../../config/DeepWiki_Logo_1024.png'
+import qichachaLogo from '../../config/企查查_Logo_93.png'
 import { mcpConnectionLabel, replaceMcpServerStatus } from './mcp-settings-state'
 
 const client = createAIGatewayClient()
+
+const MCP_LOGOS: Readonly<Record<string, { alt: string; src: StaticImageData }>> = {
+  context7: { alt: 'Context7', src: context7Logo },
+  deepwiki: { alt: 'DeepWiki', src: deepWikiLogo },
+  qichacha: { alt: '企查查', src: qichachaLogo },
+}
 
 export default function McpSettingsPage() {
   return (
@@ -71,10 +81,10 @@ function McpSettings() {
           <CircuitBackdrop />
           <div className="relative max-w-3xl">
             <p className="font-mono text-[0.66rem] font-bold tracking-[0.2em] text-brand uppercase">
-              Agent capability routing
+              Agent plugins
             </p>
             <p className="mt-5 max-w-2xl text-[0.92rem] leading-7 text-ink-secondary dark:text-ink-dark-muted">
-              管理平台内置 MCP。关闭后，新的 Agent 任务不会连接该服务，也不会看到它的工具；
+              管理平台内置插件。关闭后，新的 Agent 任务不会连接该服务，也不会看到它的工具；
               已经开始的任务保持原有能力不变。
             </p>
           </div>
@@ -102,30 +112,27 @@ function McpSettings() {
           </div>
         ) : null}
 
-        <section className="mt-7" aria-labelledby="built-in-mcp-title">
+        <section className="mt-7" aria-labelledby="built-in-plugin-title">
           <div className="mb-4 flex items-end justify-between gap-4 px-1">
             <div>
               <h2
-                id="built-in-mcp-title"
+                id="built-in-plugin-title"
                 className="font-display text-xl font-semibold tracking-[-0.03em]"
               >
-                内置连接
+                内置插件
               </h2>
             </div>
-            <span className="rounded-full border border-line px-3 py-1 font-mono text-[0.62rem] font-bold tracking-[0.12em] text-ink-subtle uppercase dark:border-line-soft">
-              Read-only tools
-            </span>
           </div>
 
           {loadState === 'loading' ? (
-            <div className="grid gap-4 md:grid-cols-2" aria-label="正在加载 MCP 配置">
+            <div className="grid gap-4 md:grid-cols-2" aria-label="正在加载插件">
               <ServerSkeleton />
               <ServerSkeleton />
             </div>
           ) : servers.length === 0 ? (
             <div className="rounded-[1.6rem] border border-dashed border-line bg-surface-card/55 px-8 py-14 text-center dark:border-line-soft">
-              <h3 className="font-display text-lg font-semibold">暂时没有内置 MCP</h3>
-              <p className="mt-2 text-sm text-ink-faint">平台配置连接后，它们会自动出现在这里。</p>
+              <h3 className="font-display text-lg font-semibold">暂时没有内置插件</h3>
+              <p className="mt-2 text-sm text-ink-faint">平台配置插件后，它们会自动出现在这里。</p>
             </div>
           ) : (
             <div className="grid gap-4 md:grid-cols-2">
@@ -145,7 +152,7 @@ function McpSettings() {
         <footer className="mt-7 flex items-start gap-3 rounded-2xl border border-line/70 bg-surface-card/45 px-5 py-4 text-xs leading-5 text-ink-faint dark:border-line-soft">
           <ShieldIcon />
           <p>
-            MCP 地址、认证信息和远端工具白名单由平台维护，不会发送到浏览器。用户设置按账户隔离，
+            插件地址、认证信息和远端工具白名单由平台维护，不会发送到浏览器。用户设置按账户隔离，
             匿名账户更换后不会继承之前的开关。
           </p>
         </footer>
@@ -167,7 +174,7 @@ function McpServerCard({
 }>) {
   const connectionLabel = mcpConnectionLabel(server)
   const healthy = server.status === 'ready'
-  const serverMark = server.id === 'context7' ? 'C7' : server.id === 'deepwiki' ? 'DW' : 'MCP'
+  const logo = MCP_LOGOS[server.id] ?? (server.name.includes('企查查') ? MCP_LOGOS.qichacha : undefined)
 
   return (
     <article
@@ -195,7 +202,11 @@ function McpServerCard({
               : 'border-line bg-surface-inset text-ink-faint dark:border-line-soft',
           )}
         >
-          {serverMark}
+          {logo ? (
+            <Image src={logo.src} alt={logo.alt} className="size-7 object-contain" />
+          ) : (
+            <span aria-label={server.name}>MCP</span>
+          )}
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
@@ -227,7 +238,7 @@ function McpServerCard({
           className={cn(
             'relative h-7 w-12 shrink-0 rounded-full border transition-colors focus-visible:outline-3 focus-visible:outline-brand-focus focus-visible:outline-offset-3 disabled:cursor-wait disabled:opacity-55',
             server.enabled
-              ? 'border-brand bg-brand'
+              ? 'border-[#20a95a] bg-[#20a95a] hover:border-[#178746] hover:bg-[#178746] dark:border-[#30d158] dark:bg-[#30d158] dark:hover:border-[#35dc66] dark:hover:bg-[#35dc66]'
               : 'border-line bg-surface-inset dark:border-line-soft',
           )}
         >

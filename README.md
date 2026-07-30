@@ -102,22 +102,21 @@ pnpm test:smoke:web-search
 
 Agent 支持由平台管理员在 API 服务端配置远程 MCP Server。每次 Agent run 开始前，API 会通过 Streamable HTTP 发现允许的工具，并把 built-in 与 MCP 工具集合冻结到本次运行；远程工具统一命名为 `mcp__<server-id>__<tool-name>`。浏览器只能读取脱敏后的 Server 状态和工具数量，不会收到 endpoint、Authorization header 或 token。登录用户可以在 `/mcp` 启用或禁用内置 Server，偏好按账户保存并只影响之后启动的 Agent run。
 
-本地 `.env.example` 默认启用只读 Context7 与 DeepWiki；生产模板仍保持
-`AGENT_MCP_SERVERS_JSON=[]`，需要完成外部服务审核后显式启用。若接入需要 Bearer Token 的
-其他 Server，可以按下面方式引用服务端环境变量：
+平台 MCP 端点定义在 `apps/api/src/agent/mcp/agent-mcp.config.ts`，需要完成外部服务审核后随代码发布。需要 Bearer Token 的 Server 只从服务端环境变量读取凭证，例如：
 
 ```dotenv
 DOCS_MCP_TOKEN=<仅保存在服务端的 token>
-AGENT_MCP_SERVERS_JSON=[{"id":"docs","name":"Docs","url":"https://mcp.example.com/mcp","auth":{"type":"bearer","tokenEnv":"DOCS_MCP_TOKEN"},"tools":[{"name":"lookup","description":"Search approved docs","riskLevel":"read"}]}]
 ```
 
-V1 只支持 Streamable HTTP、静态工具白名单以及 `read`/`external_send` 风险级别；不支持浏览器自助添加 Server、OAuth、stdio、resources、prompts、sampling、elicitation 或破坏性工具。生产环境只允许 HTTPS endpoint，本地开发和测试可使用 loopback HTTP。配置中的工具必须同时存在于远端 `tools/list` 与平台白名单中才会注册。
+V1 只支持 Streamable HTTP，以及 `read`/`external_send` 风险级别；不支持浏览器自助添加 Server、OAuth、stdio、resources、prompts、sampling、elicitation 或破坏性工具。生产环境只允许 HTTPS endpoint，本地开发和测试可使用 loopback HTTP。配置声明了工具白名单时，工具必须同时存在于远端 `tools/list` 与该白名单中才会注册；未声明时注册安全发现到的全部工具。
+
+本地开发可选接入企查查企业数据 MCP：在未提交的 `.env` 中设置 `QCC_API_KEY`。所有平台 MCP 默认关闭，用户在 `/mcp` 手动开启后才会参与新的 Agent 运行；如果端点配置未声明工具白名单，则会向 Agent 提供该 MCP 安全发现到的全部工具。浏览器页面仅显示状态与工具数量，绝不会返回 Key 或服务端地址。
 
 相关接口与验证命令：
 
 - `GET /api/v1/agent/mcp/servers`：要求用户 Session，只返回脱敏状态与当前用户开关。
 - `PATCH /api/v1/agent/mcp/servers/:serverId`：只接受 `{ "enabled": boolean }`，不能新增或修改 Server。
-- 本地 `.env` 默认配置 Context7 与 DeepWiki；启动 dev 服务后可在 Agent 右上角运行环境面板确认两个 Server 的就绪状态与 4 个只读工具。
+- 平台预置 Context7、DeepWiki 和企查查企业数据；启动 dev 服务后可在 Agent 右上角运行环境面板确认用户已开启的 Server 状态和工具数量。
 
 ## 阿里云 ECS 生产部署
 

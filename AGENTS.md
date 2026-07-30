@@ -246,3 +246,16 @@ V1 为联调和诊断在 PostgreSQL 与 Pino 中保存完整 Prompt，暂不自�
 - 不覆盖或删除用户已有改动；发现工作区存在无关修改时应保留并绕开。
 - 不执行破坏性数据库、Git 或部署操作，除非用户明确授权且已有可恢复方案。
 - API 行为、数据结构或部署方式发生变化时，同步更新测试、`.env.example`、Swagger/README 和 OpenSpec artifact。
+
+
+## assistant-ui
+
+This project uses assistant-ui for chat interfaces.
+
+Documentation: https://www.assistant-ui.com/llms-full.txt
+
+Key patterns:
+- Use AssistantRuntimeProvider at the app root
+- Thread component for full chat interface
+- AssistantModal for floating chat widget
+- useChatRuntime hook with AI SDK transport

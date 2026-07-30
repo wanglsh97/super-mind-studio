@@ -404,7 +404,7 @@ function AgentConsole() {
                   placeholder={
                     submitBlocked && !modelDisabled
                       ? '已有进行中的 Agent 运行，请等待结束后再提交…'
-                      : '描述你想让 Agent 完成的任务…'
+                      : '有什么问题冲我来...'
                   }
                   disabled={submitBlocked}
                   maxLength={8000}
@@ -628,7 +628,8 @@ function AgentEnvironmentPanel({
             />
             <EnvironmentRow
               icon={<McpIcon />}
-              label="MCP"
+              label="插件"
+              detail=''
               value={
                 mcpLoadState === 'loading'
                   ? '检查中'
@@ -639,11 +640,6 @@ function AgentEnvironmentPanel({
                       : `${mcpSummary.readyCount}/${mcpSummary.serverCount} 就绪`
               }
               valueClassName={mcpLoadState === 'failed' ? 'text-danger' : 'text-ink'}
-              detail={
-                mcpLoadState === 'ready'
-                  ? `${mcpSummary.registeredToolCount} 个工具`
-                  : '平台服务连接状态'
-              }
               dotClassName={
                 mcpLoadState === 'failed'
                   ? 'bg-danger'
@@ -653,30 +649,18 @@ function AgentEnvironmentPanel({
               }
             >
               {mcpLoadState === 'ready' && mcpServers.length === 0 ? (
-                <p className="mt-2 text-[0.68rem] text-ink-subtle">未配置平台 MCP Server。</p>
-              ) : null}
-              {mcpServers.length > 0 ? (
-                <ul className="mt-2 space-y-1.5 border-t border-line/70 pt-2">
-                  {mcpServers.map((server) => (
-                    <li key={server.id} className="flex items-center justify-between gap-3 text-xs">
-                      <span className="truncate font-semibold text-ink">{server.name}</span>
-                      <span className="shrink-0 font-mono text-[0.62rem] text-ink-subtle">
-                        {server.registeredToolCount}/{server.allowedToolCount} tools
-                      </span>
-                    </li>
-                  ))}
-                </ul>
+                <p className="mt-2 text-[0.68rem] text-ink-subtle">未配置平台插件。</p>
               ) : null}
             </EnvironmentRow>
             <EnvironmentRow
               icon={<SkillIcon />}
-              label="Skills"
+              label="技能"
               value={
                 skillLoadState === 'loading'
                   ? '加载中'
                   : skillLoadState === 'failed'
                     ? '加载失败'
-                    : `${selectedSkillNames.length} 个已选择`
+                    : `${selectedSkillNames.length} 个`
               }
               valueClassName={skillLoadState === 'failed' ? 'text-danger' : 'text-ink'}
               detail={

@@ -201,6 +201,27 @@ describe('validateEnvironment', () => {
     }
   })
 
+  it('accepts a bearer token loaded from the environment-file configuration', () => {
+    const token = 'mcp-dotenv-secret-never-print'
+    const key = 'TEST_DOTENV_MCP_TOKEN'
+
+    expect(() =>
+      validateEnvironment({
+        ...requiredEnvironment,
+        [key]: token,
+        AGENT_MCP_SERVERS_JSON: JSON.stringify([
+          {
+            id: 'dotenv-docs',
+            name: 'Dotenv docs',
+            url: 'https://example.com/mcp',
+            auth: { type: 'bearer', tokenEnv: key },
+            tools: [{ name: 'lookup' }],
+          },
+        ]),
+      }),
+    ).not.toThrow()
+  })
+
   it('always requires the OpenSandbox connection settings', () => {
     expect(() =>
       validateEnvironment({

@@ -16,6 +16,16 @@ The C-end SHALL use the authenticated persistent Agent thread/run/event APIs for
 - **THEN** no Chat controller handles the request
 - **AND** the response is the platform's normalized not-found error
 
+### Requirement: Reviewed remote MCP tools are exposed through the Agent only
+The API SHALL define reviewed Streamable HTTP MCP endpoints in release-controlled code and resolve credentials only from server-side environment variables. Each MCP Server MUST be disabled for a user until that user explicitly enables it. The Web MCP settings page MUST expose only sanitized server status and tool counts. A Server manifest MAY declare an explicit tool allowlist; when it does not, the Agent SHALL expose every safely discovered tool from that enabled Server, subject to the configured discovery limits. Neither the browser nor persisted Agent events may contain an MCP endpoint or credential.
+
+#### Scenario: User enables QCC enterprise data
+- **GIVEN** release-controlled configuration defines the reviewed `qcc-company` Server and the API environment provides its `QCC_API_KEY`
+- **WHEN** an authenticated user opens `/mcp` or starts a subsequent Agent run with the Server enabled
+- **THEN** the user can see the sanitized “企查查企业数据” Server status and discovered tool count
+- **AND** the Agent receives every safely discovered tool because the Server configuration declares no explicit tool allowlist
+- **AND** neither the browser nor persisted Agent events contain the MCP endpoint or bearer token
+
 ### Requirement: Selectable model instances are resolved through a repository catalog
 The model gateway SHALL resolve stable public model instance IDs through a version-controlled repository catalog to a display name, provider adapter and upstream model ID. Runtime environment variables MUST NOT replace or mutate the catalog. Model discovery MAY expose reviewed metadata but MUST NOT expose credentials.
 

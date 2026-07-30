@@ -49,7 +49,7 @@ export function LoginContent() {
   return (
     <main className="grid min-h-screen place-items-center px-10 py-12">
       <section
-        className="liquid-glass relative w-full max-w-[38rem] overflow-hidden rounded-[2.2rem] p-10"
+        className="liquid-glass relative w-full max-w-[38rem] overflow-hidden rounded-2xl p-10"
         aria-labelledby="login-options-title"
       >
         <div className="relative z-1">
@@ -82,7 +82,7 @@ export function LoginContent() {
               aria-disabled={loginDisabled}
               onClick={() => setLeaving('github')}
               className={cn(
-                'group flex min-h-[5.5rem] items-center gap-5 rounded-2xl border border-line bg-surface-card/76 px-5 text-left transition-[transform,border-color,box-shadow] hover:-translate-y-0.5 hover:border-brand/30 hover:shadow-[0_14px_32px_rgb(39_100_255/0.1)] dark:bg-white/[0.04]',
+                'group flex min-h-[5.5rem] items-center gap-5 rounded-xl border border-line bg-surface-card px-5 text-left transition-[background,border-color] hover:border-brand/45 hover:bg-brand-subtle',
                 loginDisabled && 'pointer-events-none opacity-60',
                 focusRing,
               )}
@@ -110,7 +110,7 @@ export function LoginContent() {
               aria-disabled={loginDisabled}
               onClick={() => setLeaving('google')}
               className={cn(
-                'group flex min-h-[5.5rem] items-center gap-5 rounded-2xl border border-line bg-surface-card/76 px-5 text-left transition-[transform,border-color,box-shadow] hover:-translate-y-0.5 hover:border-brand/30 hover:shadow-[0_14px_32px_rgb(39_100_255/0.1)] dark:bg-white/[0.04]',
+                'group flex min-h-[5.5rem] items-center gap-5 rounded-xl border border-line bg-surface-card px-5 text-left transition-[background,border-color] hover:border-brand/45 hover:bg-brand-subtle',
                 loginDisabled && 'pointer-events-none opacity-60',
                 focusRing,
               )}

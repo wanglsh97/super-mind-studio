@@ -16,11 +16,8 @@ apps/api/src/generated/prisma/
 .DS_Store
 .idea/
 .vscode/
+.codex/
 
 postgres-data/
 redis-data/
 backups/
-
-# Local requirements and OpenSpec planning artifacts
-openspec/
-spec/

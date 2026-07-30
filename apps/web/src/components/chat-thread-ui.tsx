@@ -32,7 +32,7 @@ export function AgentPageShell({
     <main
       {...props}
       className={cn(
-        'relative flex h-[calc(100dvh-4.5rem)] min-h-[34rem] flex-col overflow-hidden p-[clamp(0.65rem,2vw,1.4rem)] md:h-dvh md:p-[clamp(0.8rem,2vw,1.4rem)]',
+        'relative flex h-[calc(100dvh-4.5rem)] min-h-[34rem] flex-col overflow-hidden p-3 pt-14 md:h-dvh md:p-[clamp(0.8rem,2vw,1.4rem)]',
         props.className,
       )}
     >
@@ -48,7 +48,7 @@ export function AgentConsolePanel({
   return (
     <section
       aria-label={label}
-      className="liquid-glass relative flex h-full min-h-0 flex-1 flex-col overflow-hidden rounded-[1.8rem] md:rounded-[2.2rem]"
+      className="agent-console-surface relative flex h-full min-h-0 flex-1 flex-col overflow-hidden"
     >
       {children}
     </section>
@@ -82,7 +82,7 @@ export function AgentScrollToBottom() {
     <ThreadPrimitive.ScrollToBottom
       aria-label="滚动到底部"
       className={cn(
-        'absolute bottom-48 left-1/2 z-5 grid size-9 -translate-x-1/2 cursor-pointer place-items-center rounded-full border border-line bg-surface-card text-brand shadow-[0_8px_24px_rgb(46_32_76/0.12)] dark:bg-surface-muted dark:text-brand-light',
+        'absolute bottom-48 left-1/2 z-5 grid size-9 -translate-x-1/2 cursor-pointer place-items-center rounded-full border border-line bg-surface-card text-brand dark:bg-surface-muted dark:text-brand-light',
         focusRing,
       )}
     >
@@ -93,18 +93,32 @@ export function AgentScrollToBottom() {
 
 export function AgentComposerDock({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <div className="sticky bottom-0 z-3 bg-linear-to-b from-transparent via-white/70 via-28% to-white/80 px-3 pt-7 pb-2.5 backdrop-blur-[2px] md:px-4.5 md:pb-2.5 dark:via-surface-raised/90 dark:to-surface-raised/96">
+    <div className="sticky bottom-0 z-3 bg-linear-to-b from-transparent via-surface/85 via-28% to-surface px-1 pt-5 pb-2 md:px-4.5 md:pt-7 md:pb-2.5">
       {children}
     </div>
   )
 }
 
 export function AgentComposerRoot({ children }: Readonly<{ children: ReactNode }>) {
+  const [hasFocus, setHasFocus] = useState(false)
+
   return (
     <ComposerPrimitive.Unstable_TriggerPopoverRoot>
       <ComposerPrimitive.Root
+        style={
+          hasFocus
+            ? {
+                borderColor: 'rgb(60 60 67 / 0.58)',
+                boxShadow: '0 0 0 1px rgb(60 60 67 / 0.16)',
+              }
+            : undefined
+        }
+        onFocusCapture={() => setHasFocus(true)}
+        onBlurCapture={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget)) setHasFocus(false)
+        }}
         className={cn(
-          'liquid-glass relative mx-auto w-full max-w-[58rem] rounded-[1.4rem] p-2.5 pb-3 transition-[border-color,box-shadow,transform] focus-within:border-brand/35 focus-within:shadow-[0_18px_48px_rgb(39_100_255/0.16)]',
+          'liquid-glass relative mx-auto w-full max-w-[58rem] rounded-2xl p-2.5 pb-3 transition-[border-color,box-shadow]',
         )}
       >
         {children}
@@ -130,7 +144,7 @@ export function AgentComposerInput(
 
 export function AgentComposerFooter({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <div className="flex items-center justify-between gap-2 border-t border-line-soft pt-2 dark:border-line">
+    <div className="flex items-center justify-between gap-2 dark:border-line">
       {children}
     </div>
   )
@@ -557,7 +571,7 @@ export function ThinkingEffortSelect({
         <div
           role="listbox"
           aria-label="选择思考强度"
-          className="liquid-glass absolute right-0 bottom-[calc(100%+0.45rem)] z-10 w-44 rounded-xl p-1 shadow-[0_14px_34px_rgb(39_59_112/0.16)]"
+          className="liquid-glass absolute right-0 bottom-[calc(100%+0.4rem)] z-10 w-40 rounded-lg p-0.5"
         >
           {THINKING_EFFORT_OPTIONS.map((option) => {
             const isSelected = option.value === value
@@ -572,27 +586,27 @@ export function ThinkingEffortSelect({
                   setOpen(false)
                 }}
                 className={cn(
-                  'flex min-h-11 w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left transition-[background,color] hover:bg-surface-inset/45',
+                  'flex h-8 w-full items-center gap-1.5 rounded-md px-2 text-left transition-[background,color] hover:bg-surface-inset/45',
                   isSelected && 'bg-surface-inset/55',
                 )}
               >
-                <span className="min-w-0 flex-1">
+                <span className="flex min-w-0 flex-1 items-baseline gap-1.5 whitespace-nowrap">
                   <span
                     className={cn(
-                      'block text-[0.68rem] font-semibold text-ink-muted',
+                      'text-[0.66rem] font-semibold text-ink-muted',
                       isSelected && 'text-ink',
                     )}
                   >
                     {option.label}
                   </span>
-                  <span className="mt-0.5 block text-[0.55rem] leading-3.5 text-ink-subtle">
+                  <span className="text-[0.55rem] text-ink-subtle">
                     {option.note}
                   </span>
                 </span>
                 <span
                   aria-hidden="true"
                   className={cn(
-                    'grid size-4 shrink-0 place-items-center rounded-full text-[0.62rem] font-bold',
+                    'grid size-3.5 shrink-0 place-items-center text-[0.62rem] font-bold',
                     isSelected ? 'text-brand' : 'text-transparent',
                   )}
                 >

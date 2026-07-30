@@ -177,20 +177,8 @@ const environmentSchema = z
     KIMI_INPUT_PRICE_CNY_PER_MILLION: optionalNonNegativeDecimal,
     KIMI_OUTPUT_PRICE_CNY_PER_MILLION: optionalNonNegativeDecimal,
   })
+  .passthrough()
   .superRefine((env, context) => {
-    try {
-      assertAgentMcpEnvironment(
-        env.AGENT_MCP_SERVERS_JSON as ReturnType<typeof parseAgentMcpServersJson>,
-        process.env,
-        env.NODE_ENV,
-      )
-    } catch (error) {
-      context.addIssue({
-        code: 'custom',
-        path: ['AGENT_MCP_SERVERS_JSON'],
-        message: error instanceof Error ? error.message : 'MCP Server 配置无效',
-      })
-    }
     if (env.USER_SESSION_TTL_SECONDS !== 2_592_000) {
       context.addIssue({
         code: 'custom',
@@ -332,7 +320,19 @@ export type Environment = z.infer<typeof environmentSchema>
 export function validateEnvironment(input: Record<string, unknown>): Environment {
   const result = environmentSchema.safeParse(input)
 
-  if (result.success) return result.data
+  if (result.success) {
+    try {
+      assertAgentMcpEnvironment(
+        result.data.AGENT_MCP_SERVERS_JSON as ReturnType<typeof parseAgentMcpServersJson>,
+        { ...process.env, ...input },
+        result.data.NODE_ENV,
+      )
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'MCP Server 配置无效'
+      throw new Error(`环境变量校验失败：AGENT_MCP_SERVERS_JSON: ${message}`)
+    }
+    return result.data
+  }
 
   const reasons = result.error.issues
     .map((issue) => `${issue.path.join('.') || 'environment'}: ${issue.message}`)

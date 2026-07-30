@@ -310,7 +310,7 @@ Agent Composer 将运行模型与思考强度呈现为两个独立的轻量选�
 
 1. **API 网关服务建设**：包含工程骨架、统一 SDK/协议、四张数据库表、Redis 限流、Mock/真实 Adapter、Agent 模型事件流、Image 任务、Prompt 优化、日志计费、测试和 ECS 部署基础。
 2. **管理员中后台**：包含固定管理员认证、Dashboard、请求日志、完整 Prompt 详情、数据库白名单编辑/删除和不可变审计日志。
-3. **用户端网页**：包含登录页、通用 User Session 保护的根 Agent 工作台、Skill/MCP 辅助页面、PC-only 桌面布局和主题。独立 Chat/Compare/Image/Prompt 页面不属于当前 C 端契约。
+3. **用户端网页**：包含登录页、通用 User Session 保护的根 Agent 工作台、Skill/MCP 辅助页面、响应式桌面与移动端布局和主题。独立 Chat/Compare/Image/Prompt 页面不属于当前 C 端契约。
 
 三个板块是任务归类，不代表必须把一个板块全部做完才开始下一个。实际实施仍按以下波次推进：
 

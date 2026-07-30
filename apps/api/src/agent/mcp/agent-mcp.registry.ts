@@ -2,7 +2,7 @@ import { Inject, Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 
 import type { AgentToolDefinition, AgentToolResult } from '../tools/agent-tool'
-import type { AgentMcpServerConfig } from './agent-mcp.config'
+import { PLATFORM_MCP_SERVERS, type AgentMcpServerConfig } from './agent-mcp.config'
 import { AgentMcpClientError, AgentMcpSdkClient, type AgentMcpRemoteTool } from './agent-mcp.client'
 import { AgentMcpPreferenceRepository } from './agent-mcp-preference.repository'
 
@@ -108,7 +108,7 @@ export class PlatformAgentMcpRegistry implements AgentMcpRegistry {
     @Inject(AgentMcpPreferenceRepository)
     private readonly preferences: AgentMcpPreferenceRepository,
   ) {
-    this.servers = config.get<AgentMcpServerConfig[]>('AGENT_MCP_SERVERS_JSON', [])
+    this.servers = PLATFORM_MCP_SERVERS
     this.discoveryTimeoutMs = config.get<number>('AGENT_MCP_DISCOVERY_TIMEOUT_MS', 10_000)
     this.callTimeoutMs = config.get<number>('AGENT_MCP_CALL_TIMEOUT_MS', 30_000)
     this.maxToolsPerServer = config.get<number>('AGENT_MCP_MAX_TOOLS_PER_SERVER', 50)
@@ -155,9 +155,9 @@ export class PlatformAgentMcpRegistry implements AgentMcpRegistry {
     const preferences = await this.preferences.listForUser(userId)
     const snapshots = await Promise.all(
       this.servers.map((server) =>
-        preferences.get(server.id) === false
-          ? Promise.resolve(this.disabledServer(server))
-          : this.discoverServer(server, signal),
+        preferences.get(server.id) === true
+          ? this.discoverServer(server, signal)
+          : Promise.resolve(this.disabledServer(server)),
       ),
     )
     for (const snapshot of snapshots) this.lastStatuses.set(snapshot.status.id, snapshot.status)
@@ -185,7 +185,7 @@ export class PlatformAgentMcpRegistry implements AgentMcpRegistry {
 
   private async enabledServers(userId: string): Promise<readonly AgentMcpServerConfig[]> {
     const preferences = await this.preferences.listForUser(userId)
-    return this.servers.filter((server) => preferences.get(server.id) !== false)
+    return this.servers.filter((server) => preferences.get(server.id) === true)
   }
 
   private disabledServer(server: AgentMcpServerConfig): DiscoverySnapshot {
@@ -201,7 +201,7 @@ export class PlatformAgentMcpRegistry implements AgentMcpRegistry {
         ...descriptor,
         enabled: false,
         status: 'disabled',
-        allowedToolCount: server.tools.length,
+        allowedToolCount: server.tools?.length ?? 0,
         discoveredToolCount: 0,
         registeredToolCount: 0,
         errorCode: null,
@@ -235,7 +235,12 @@ export class PlatformAgentMcpRegistry implements AgentMcpRegistry {
         version: truncate(discovered.serverVersion, 40),
       }
       const discoveredByName = new Map(discovered.tools.map((tool) => [tool.name, tool]))
-      const tools = server.tools.flatMap((allowed) => {
+      const allowedTools = server.tools ?? discovered.tools.map((tool) => ({
+        name: tool.name,
+        description: tool.description,
+        riskLevel: 'read' as const,
+      }))
+      const tools = allowedTools.flatMap((allowed) => {
         const remote = discoveredByName.get(allowed.name)
         if (!remote) return []
         const parameters = sanitizeMcpInputSchema(remote)
@@ -250,7 +255,7 @@ export class PlatformAgentMcpRegistry implements AgentMcpRegistry {
           ...descriptor,
           enabled: true,
           status: 'ready',
-          allowedToolCount: server.tools.length,
+          allowedToolCount: allowedTools.length,
           discoveredToolCount: discovered.tools.length,
           registeredToolCount: tools.length,
           errorCode: null,
@@ -265,7 +270,7 @@ export class PlatformAgentMcpRegistry implements AgentMcpRegistry {
           ...baseDescriptor,
           enabled: true,
           status: 'error',
-          allowedToolCount: server.tools.length,
+          allowedToolCount: server.tools?.length ?? 0,
           discoveredToolCount: 0,
           registeredToolCount: 0,
           errorCode,
@@ -277,7 +282,7 @@ export class PlatformAgentMcpRegistry implements AgentMcpRegistry {
 
   private createToolDefinition(
     server: AgentMcpServerConfig,
-    allowed: AgentMcpServerConfig['tools'][number],
+    allowed: NonNullable<AgentMcpServerConfig['tools']>[number],
     remote: AgentMcpRemoteTool,
     parameters: Record<string, unknown>,
   ): AgentToolDefinition {
@@ -359,8 +364,10 @@ export class PlatformAgentMcpRegistry implements AgentMcpRegistry {
 
   private resolveBearerToken(server: AgentMcpServerConfig): string | undefined {
     if (server.auth.type !== 'bearer') return undefined
-    const token = process.env[server.auth.tokenEnv]
-    return token || undefined
+    const configuredToken = this.config.get<unknown>(server.auth.tokenEnv)
+    if (typeof configuredToken === 'string' && configuredToken.length > 0) return configuredToken
+    const processToken = process.env[server.auth.tokenEnv]
+    return processToken || undefined
   }
 }
 

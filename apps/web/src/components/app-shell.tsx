@@ -26,7 +26,7 @@ const focusRing =
   'focus-visible:outline-3 focus-visible:outline-brand-focus focus-visible:outline-offset-3'
 
 const shellIconButtonClass =
-  'liquid-glass-soft grid size-9 shrink-0 place-items-center rounded-xl text-ink-muted transition-[background,color,transform] hover:-translate-y-0.5 hover:text-brand-hover dark:hover:text-ink [&_svg]:size-4'
+  'liquid-glass-soft grid size-9 shrink-0 place-items-center rounded-lg text-ink-muted transition-[background,color] hover:bg-surface-muted hover:text-brand-hover dark:hover:text-ink [&_svg]:size-4'
 
 export function AppShell({ children }: Readonly<{ children: ReactNode }>) {
   const pathname = usePathname()
@@ -45,6 +45,9 @@ function UserWorkspace({ children }: Readonly<{ children: ReactNode }>) {
   const userMenuRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => setAvatarFailed(false), [session.user?.avatarUrl])
+  useEffect(() => {
+    if (window.matchMedia('(max-width: 767px)').matches) setCollapsed(true)
+  }, [])
   useEffect(() => {
     if (!userMenuOpen) return
     function closeMenu(event: MouseEvent | KeyboardEvent) {
@@ -74,11 +77,22 @@ function UserWorkspace({ children }: Readonly<{ children: ReactNode }>) {
   }
 
   return (
-    <div className="relative min-h-screen min-w-[1366px]">
+    <div className="relative min-h-screen">
+      {!collapsed ? (
+        <button
+          type="button"
+          aria-label="关闭导航菜单"
+          className="fixed inset-0 z-50 bg-black/20 md:hidden"
+          onClick={() => setCollapsed(true)}
+        />
+      ) : null}
       <aside
+        style={{ background: 'var(--theme-sidebar)' }}
         className={cn(
-          'liquid-glass fixed inset-y-0 left-0 z-[60] flex flex-col rounded-r-[2rem] border-y-0 border-l-0 p-4 transition-[width,transform] duration-200',
-          collapsed ? 'w-[5.25rem]' : 'w-[17rem]',
+          'agent-sidebar-surface fixed inset-y-0 left-0 z-[60] flex flex-col rounded-none border-y-0 border-l-0 p-4 transition-[width,transform] duration-200',
+          collapsed
+            ? 'w-[5.25rem] max-md:w-[17rem] max-md:-translate-x-full'
+            : 'w-[17rem] max-md:translate-x-0',
         )}
       >
         <div
@@ -96,7 +110,7 @@ function UserWorkspace({ children }: Readonly<{ children: ReactNode }>) {
               onClick={() => setCollapsed(false)}
             >
               <LogoMark className="transition-[opacity,transform] duration-150 group-hover:scale-90 group-hover:opacity-0 group-focus-visible:scale-90 group-focus-visible:opacity-0" />
-              <span className="absolute grid size-10 place-items-center rounded-xl border border-line bg-surface-inset text-brand-hover opacity-0 transition-[opacity,transform] duration-150 group-hover:scale-100 group-hover:opacity-100 group-focus-visible:scale-100 group-focus-visible:opacity-100 dark:border-line-soft dark:bg-brand-muted dark:text-brand-light [&_svg]:size-4">
+              <span className="absolute grid size-10 place-items-center rounded-lg border border-line bg-surface-inset text-brand-hover opacity-0 transition-[opacity,transform] duration-150 group-hover:scale-100 group-hover:opacity-100 group-focus-visible:scale-100 group-focus-visible:opacity-100 dark:border-line-soft dark:bg-brand-muted dark:text-brand-light [&_svg]:size-4">
                 <CollapseIcon collapsed />
               </span>
             </button>
@@ -117,23 +131,26 @@ function UserWorkspace({ children }: Readonly<{ children: ReactNode }>) {
         </div>
 
         <NewConversationButton collapsed={collapsed} />
+        <SidebarCapabilityLinks collapsed={collapsed} pathname={pathname} />
 
-        <nav className="flex flex-1 flex-col overflow-y-auto pt-7" aria-label="工作区导航">
+        <nav className="flex min-h-0 flex-1 flex-col pt-5" aria-label="工作区导航">
           {!collapsed && (
             <p className="mb-2 px-2 font-mono text-[0.61rem] font-bold tracking-[0.16em] text-ink-subtle uppercase">
               对话
             </p>
           )}
-          {!collapsed ? (
-            <Suspense fallback={null}>
-              <AgentThreadLinks />
-            </Suspense>
-          ) : null}
+          <div className="max-h-[calc(100vh-22rem)] min-h-0 overflow-y-auto pr-1">
+            {!collapsed ? (
+              <Suspense fallback={null}>
+                <AgentThreadLinks />
+              </Suspense>
+            ) : null}
+          </div>
         </nav>
 
         <div
           className={cn(
-            'relative grid gap-3 border-t border-line-soft pt-4',
+            'relative grid gap-3',
             collapsed && 'justify-items-center',
           )}
           ref={userMenuRef}
@@ -157,24 +174,6 @@ function UserWorkspace({ children }: Readonly<{ children: ReactNode }>) {
                   >
                     <UsageIcon />
                     <span>Token 用量</span>
-                  </Link>
-                  <Link
-                    href="/skills"
-                    role="menuitem"
-                    onClick={() => setUserMenuOpen(false)}
-                    className={menuItemClass}
-                  >
-                    <SparkIcon />
-                    <span>技能中心</span>
-                  </Link>
-                  <Link
-                    href="/mcp"
-                    role="menuitem"
-                    onClick={() => setUserMenuOpen(false)}
-                    className={menuItemClass}
-                  >
-                    <McpIcon />
-                    <span>MCP 设置</span>
                   </Link>
                   <ThemeToggle variant="menu" />
                   <Link
@@ -256,10 +255,18 @@ function UserWorkspace({ children }: Readonly<{ children: ReactNode }>) {
 
       <div
         className={cn(
-          'min-h-screen transition-[margin-left] duration-200',
+          'min-h-screen transition-[margin-left] duration-200 max-md:ml-0',
           collapsed ? 'ml-[5.25rem]' : 'ml-[17rem]',
         )}
       >
+        <button
+          type="button"
+          aria-label="打开导航菜单"
+          className="fixed top-3 left-3 z-40 grid size-9 place-items-center rounded-lg border border-line bg-surface-card text-ink-secondary md:hidden"
+          onClick={() => setCollapsed(false)}
+        >
+          <span aria-hidden="true">☰</span>
+        </button>
         {children}
       </div>
     </div>
@@ -268,6 +275,56 @@ function UserWorkspace({ children }: Readonly<{ children: ReactNode }>) {
 
 const menuItemClass =
   'flex min-h-[2.65rem] w-full items-center gap-3 rounded-xl border-0 bg-transparent px-3 py-2 text-left text-[0.78rem] font-semibold text-ink-secondary shadow-none transition-[background,color] hover:bg-surface-inset hover:text-brand-hover dark:text-[#d8d1e3] dark:hover:bg-[#352d45] dark:hover:text-ink [&_svg]:size-4 [&_svg]:shrink-0'
+
+function SidebarCapabilityLinks({
+  collapsed,
+  pathname,
+}: Readonly<{ collapsed: boolean; pathname: string }>) {
+  return (
+    <nav
+      aria-label="能力入口"
+      className={cn(
+        'mt-4 grid gap-1 border-y border-line-soft py-3 dark:border-line-soft',
+        collapsed && 'justify-items-center',
+      )}
+    >
+      <Link
+        href="/mcp"
+        aria-current={pathname === '/mcp' ? 'page' : undefined}
+        title={collapsed ? '插件' : undefined}
+        className={cn(
+          capabilityLinkClass,
+          pathname === '/mcp' && capabilityLinkActiveClass,
+          collapsed && 'size-10 justify-center px-0',
+          focusRing,
+        )}
+      >
+        <PluginIcon />
+        {!collapsed && <span>插件</span>}
+      </Link>
+      <Link
+        href="/skills"
+        aria-current={pathname === '/skills' || pathname.startsWith('/skills/') ? 'page' : undefined}
+        title={collapsed ? '技能中心' : undefined}
+        className={cn(
+          capabilityLinkClass,
+          (pathname === '/skills' || pathname.startsWith('/skills/')) && capabilityLinkActiveClass,
+          collapsed && 'size-10 justify-center px-0',
+          focusRing,
+        )}
+      >
+        <SparkIcon />
+        {!collapsed && <span>技能中心</span>}
+      </Link>
+    </nav>
+  )
+}
+
+const capabilityLinkClass =
+  'flex min-h-10 items-center gap-2.5 rounded-xl px-3 text-[0.76rem] font-semibold text-ink-secondary transition-[background,color,transform] hover:bg-brand/8 hover:text-brand-hover dark:text-ink-dark-muted dark:hover:bg-brand/14 dark:hover:text-brand-light [&_svg]:size-4'
+
+const capabilityLinkActiveClass =
+  'bg-brand/12 text-brand-hover shadow-[inset_0_1px_0_rgb(255_255_255/0.76)] dark:bg-brand/18 dark:text-brand-light'
 
 function NewConversationButton({ collapsed }: Readonly<{ collapsed: boolean }>) {
   return (
@@ -670,7 +727,7 @@ function SparkIcon() {
     </Icon>
   )
 }
-function McpIcon() {
+function PluginIcon() {
   return (
     <Icon>
       <circle cx="6" cy="6" r="2" />
