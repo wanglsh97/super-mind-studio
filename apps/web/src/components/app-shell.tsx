@@ -135,7 +135,7 @@ function UserWorkspace({ children }: Readonly<{ children: ReactNode }>) {
 
         <nav className="flex min-h-0 flex-1 flex-col pt-5" aria-label="工作区导航">
           {!collapsed && (
-            <p className="mb-2 px-2 font-mono text-[0.61rem] font-bold tracking-[0.16em] text-ink-subtle uppercase">
+            <p className="mb-2 px-2 font-mono text-[0.7rem] font-bold tracking-[0.14em] text-ink-subtle uppercase">
               对话
             </p>
           )}
@@ -488,7 +488,7 @@ function AgentThreadLinks() {
                     title={thread.title}
                     aria-current={isActive ? 'page' : undefined}
                     className={cn(
-                      'block min-w-0 truncate rounded-lg px-2.5 py-2 text-left text-[0.78rem] text-ink-secondary transition-colors dark:text-ink-dark-muted dark:hover:text-ink',
+                      'block min-w-0 truncate rounded-lg px-2.5 py-2 text-left text-[0.875rem] text-ink-secondary transition-colors dark:text-ink-dark-muted dark:hover:text-ink',
                       isActive && 'font-semibold text-ink-secondary dark:text-ink',
                     )}
                   >

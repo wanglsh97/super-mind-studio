@@ -199,7 +199,7 @@ function McpSettings() {
               id="plugin-catalog"
               role="tabpanel"
               aria-labelledby={`plugin-category-${category}`}
-              className="grid gap-4 md:grid-cols-2"
+              className="grid gap-3 sm:grid-cols-[repeat(auto-fill,17rem)]"
             >
               {visibleServers.map((server) => (
                 <McpServerCard
@@ -249,7 +249,7 @@ function McpServerCard({
   return (
     <article
       className={cn(
-        'group relative overflow-hidden rounded-[1.6rem] border bg-surface-card/78 p-6 shadow-[0_18px_55px_rgb(42_58_98/0.08)] transition-[border-color,transform,opacity] duration-200 motion-reduce:transition-none dark:bg-surface-card/55',
+        'group relative flex h-44 w-full flex-col overflow-hidden rounded-2xl border bg-surface-card/78 p-4 shadow-[0_14px_40px_rgb(42_58_98/0.07)] transition-[border-color,transform,opacity] duration-200 motion-reduce:transition-none sm:w-[17rem] dark:bg-surface-card/55',
         server.enabled
           ? 'border-brand/22 hover:-translate-y-0.5 hover:border-brand/40'
           : 'border-line/75 opacity-72 dark:border-line-soft',
@@ -263,24 +263,24 @@ function McpServerCard({
             : 'bg-line',
         )}
       />
-      <div className="flex items-start gap-4">
+      <div className="flex items-start gap-3">
         <div
           className={cn(
-            'grid size-12 shrink-0 place-items-center rounded-2xl border font-mono text-xs font-black tracking-[-0.04em]',
+            'grid size-10 shrink-0 place-items-center rounded-xl border font-mono text-xs font-black tracking-[-0.04em]',
             server.enabled
               ? 'border-brand/20 bg-brand/10 text-brand-hover dark:text-brand-light'
               : 'border-line bg-surface-inset text-ink-faint dark:border-line-soft',
           )}
         >
           {logo ? (
-            <Image src={logo.src} alt={logo.alt} className="size-7 object-contain" />
+            <Image src={logo.src} alt={logo.alt} className="size-6 object-contain" />
           ) : (
             <span aria-label={server.name}>MCP</span>
           )}
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <h3 className="truncate font-display text-lg font-semibold tracking-[-0.03em]">
+            <h3 className="truncate font-display text-base font-semibold tracking-[-0.03em]">
               {server.name}
             </h3>
             <span
@@ -294,7 +294,7 @@ function McpServerCard({
               )}
             />
           </div>
-          <p className="mt-1 font-mono text-[0.62rem] text-ink-faint">
+          <p className="mt-0.5 font-mono text-[0.62rem] text-ink-faint">
             {connectionLabel} · v{server.version}
           </p>
         </div>
@@ -325,11 +325,11 @@ function McpServerCard({
         </button>
       </div>
 
-      <p className="mt-5 min-h-12 text-[0.82rem] leading-6 text-ink-secondary dark:text-ink-dark-muted">
+      <p className="mt-3 line-clamp-2 min-h-10 text-xs leading-5 text-ink-secondary dark:text-ink-dark-muted">
         {server.description}
       </p>
 
-      <div className="mt-5 grid grid-cols-2 gap-2 border-t border-line-soft pt-4">
+      <div className="mt-auto grid grid-cols-2 gap-2 border-t border-line-soft pt-3">
         <ServerDatum label="平台允许" value={`${server.allowedToolCount} 个工具`} />
         <ServerDatum
           label="本次可用"
