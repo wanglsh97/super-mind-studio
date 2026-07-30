@@ -273,9 +273,15 @@ export default function SkillsPage() {
       ) : null}
 
       {loading ? (
-        <section aria-busy="true" className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <section
+          aria-busy="true"
+          aria-label="正在加载技能"
+          className="mt-8 grid gap-3 sm:grid-cols-[repeat(auto-fill,17rem)]"
+        >
           {Array.from({ length: 6 }, (_, index) => (
-            <div key={index} className="h-72 animate-pulse rounded-3xl bg-surface-inset" />
+            <div
+              key={index}
+              className="h-44 w-full animate-pulse rounded-2xl bg-surface-inset sm:w-[17rem]"
           ))}
         </section>
       ) : session.status !== 'authenticated' && view !== 'market' ? (
@@ -346,11 +352,11 @@ export default function SkillsPage() {
           </p>
         </section>
       ) : (
-        <section className="mt-8 grid gap-3 sm:grid-cols-2">
+        <section className="mt-8 grid gap-3 sm:grid-cols-[repeat(auto-fill,17rem)]">
           {items.map((skill) => (
             <article
               key={skill.id}
-              className="liquid-glass group relative flex min-h-40 flex-col overflow-hidden rounded-2xl px-4 py-4 transition-[border-color,background-color,transform] hover:-translate-y-0.5 hover:border-ink-faint/45 hover:bg-surface-card focus-within:border-ink-faint/45 dark:hover:bg-surface-card"
+              className="liquid-glass group relative flex h-44 w-full flex-col overflow-hidden rounded-2xl px-4 py-4 transition-[border-color,background-color,transform] hover:-translate-y-0.5 hover:border-ink-faint/45 hover:bg-surface-card focus-within:border-ink-faint/45 sm:w-[17rem] dark:hover:bg-surface-card"
             >
               <button
                 type="button"
