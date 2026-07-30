@@ -425,7 +425,7 @@ const primaryButton =
 const secondaryButton =
   'liquid-glass-soft inline-flex min-h-10 items-center justify-center rounded-xl px-4 text-xs font-bold text-ink-muted transition hover:border-brand/30 hover:text-brand disabled:opacity-40'
 const compactPrimaryButton =
-  'inline-flex h-8 items-center justify-center rounded-lg bg-ink-primary px-3 text-xs font-semibold text-surface-page transition-colors hover:bg-ink-secondary disabled:opacity-50'
+  'inline-flex h-8 items-center justify-center rounded-lg bg-[#3a3a3c] px-3 text-xs font-semibold text-white transition-colors hover:bg-[#242426] hover:text-white focus-visible:outline-2 focus-visible:outline-brand-focus focus-visible:outline-offset-2 disabled:opacity-50 dark:bg-[#ebebf5] dark:text-[#1c1c1e] dark:hover:bg-white dark:hover:text-[#1c1c1e]'
 const compactSecondaryButton =
   'inline-flex h-8 items-center justify-center rounded-lg bg-surface-inset px-3 text-xs font-semibold text-ink-secondary transition-colors hover:bg-surface-inset/70 disabled:opacity-50'
 
