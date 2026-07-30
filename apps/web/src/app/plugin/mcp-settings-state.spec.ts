@@ -18,7 +18,7 @@ const server: AgentMcpServerStatus = {
   errorCode: null,
 }
 
-describe('/mcp settings state', () => {
+describe('/plugin settings state', () => {
   it('replaces only the updated server', () => {
     const deepwiki = { ...server, id: 'deepwiki', name: 'DeepWiki' }
     const disabled = {

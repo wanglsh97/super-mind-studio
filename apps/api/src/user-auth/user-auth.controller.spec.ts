@@ -152,7 +152,7 @@ describe('UserAuthController', () => {
     const { authenticateGoogle, controller, create } = setup()
     const beginResponse = responseDouble()
 
-    await controller.beginGoogleLogin('/mcp', loggedOutRequest(), beginResponse)
+    await controller.beginGoogleLogin('/plugin', loggedOutRequest(), beginResponse)
 
     expect(beginResponse.cookie).toHaveBeenCalledWith(
       GOOGLE_OAUTH_STATE_COOKIE,
@@ -183,7 +183,7 @@ describe('UserAuthController', () => {
     expect(create).toHaveBeenCalledWith(
       expect.objectContaining({ authProvider: 'GOOGLE', providerUserId: 'google-subject' }),
     )
-    expect(response.redirect).toHaveBeenCalledWith(302, 'http://localhost:3000/mcp')
+    expect(response.redirect).toHaveBeenCalledWith(302, 'http://localhost:3000/plugin')
   })
 
   it('returns a normalized disabled-provider error', async () => {

@@ -1,6 +1,6 @@
 import type { AgentMcpServerStatus } from '@supermind/sdk'
 
-/** Replaces the status returned by the user-facing /mcp route. */
+/** Replaces the status returned by the user-facing /plugin route. */
 export function replaceMcpServerStatus(
   servers: readonly AgentMcpServerStatus[],
   updated: AgentMcpServerStatus,

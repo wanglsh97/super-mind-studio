@@ -149,10 +149,7 @@ function UserWorkspace({ children }: Readonly<{ children: ReactNode }>) {
         </nav>
 
         <div
-          className={cn(
-            'relative grid gap-3',
-            collapsed && 'justify-items-center',
-          )}
+          className={cn('relative grid gap-3', collapsed && 'justify-items-center')}
           ref={userMenuRef}
         >
           {session.status === 'authenticated' && session.user ? (
@@ -289,12 +286,12 @@ function SidebarCapabilityLinks({
       )}
     >
       <Link
-        href="/mcp"
-        aria-current={pathname === '/mcp' ? 'page' : undefined}
+        href="/plugin"
+        aria-current={pathname === '/plugin' ? 'page' : undefined}
         title={collapsed ? '插件' : undefined}
         className={cn(
           capabilityLinkClass,
-          pathname === '/mcp' && capabilityLinkActiveClass,
+          pathname === '/plugin' && capabilityLinkActiveClass,
           collapsed && 'size-10 justify-center px-0',
           focusRing,
         )}
@@ -304,7 +301,9 @@ function SidebarCapabilityLinks({
       </Link>
       <Link
         href="/skills"
-        aria-current={pathname === '/skills' || pathname.startsWith('/skills/') ? 'page' : undefined}
+        aria-current={
+          pathname === '/skills' || pathname.startsWith('/skills/') ? 'page' : undefined
+        }
         title={collapsed ? '技能中心' : undefined}
         className={cn(
           capabilityLinkClass,

@@ -21,6 +21,25 @@ const MCP_LOGOS: Readonly<Record<string, { alt: string; src: StaticImageData }>>
   qichacha: { alt: '企查查', src: qichachaLogo },
 }
 
+const PLUGIN_CATEGORIES = [
+  { id: 'all', label: '全部' },
+  { id: 'development', label: '开发工具' },
+  { id: 'business', label: '商业运营' },
+  { id: 'travel', label: '旅行出行' },
+  { id: 'other', label: '其他' },
+] as const
+
+type PluginCategoryId = (typeof PLUGIN_CATEGORIES)[number]['id']
+
+const PLUGIN_CATEGORY_BY_ID: Readonly<Record<string, Exclude<PluginCategoryId, 'all' | 'other'>>> =
+  {
+    context7: 'development',
+    deepwiki: 'development',
+    'qcc-company': 'business',
+    'rollinggo-hotel': 'travel',
+    'rollinggo-flight': 'travel',
+  }
+
 export default function McpSettingsPage() {
   return (
     <ProtectedUserPage>
@@ -35,6 +54,7 @@ function McpSettings() {
   const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>('loading')
   const [error, setError] = useState('')
   const [savingId, setSavingId] = useState<string | null>(null)
+  const [category, setCategory] = useState<PluginCategoryId>('all')
 
   const load = useCallback(async () => {
     setLoadState('loading')
@@ -72,6 +92,13 @@ function McpSettings() {
   const toolCount = useMemo(
     () => servers.reduce((total, server) => total + server.registeredToolCount, 0),
     [servers],
+  )
+  const visibleServers = useMemo(
+    () =>
+      category === 'all'
+        ? servers
+        : servers.filter((server) => pluginCategory(server) === category),
+    [category, servers],
   )
 
   return (
@@ -124,19 +151,59 @@ function McpSettings() {
             </div>
           </div>
 
+          <div
+            role="tablist"
+            aria-label="插件分类"
+            className="-mx-1 mb-5 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
+            {PLUGIN_CATEGORIES.map((item) => {
+              const selected = item.id === category
+              return (
+                <button
+                  key={item.id}
+                  id={`plugin-category-${item.id}`}
+                  type="button"
+                  role="tab"
+                  aria-selected={selected}
+                  aria-controls="plugin-catalog"
+                  onClick={() => setCategory(item.id)}
+                  className={cn(
+                    'shrink-0 rounded-xl px-4 py-2 text-sm font-semibold transition-colors focus-visible:outline-3 focus-visible:outline-brand-focus focus-visible:outline-offset-2',
+                    selected
+                      ? 'bg-ink text-white shadow-sm dark:bg-white dark:text-[#251e32]'
+                      : 'text-ink-faint hover:bg-surface-inset hover:text-ink-secondary dark:hover:bg-white/8 dark:hover:text-ink-dark-muted',
+                  )}
+                >
+                  {item.label}
+                </button>
+              )
+            })}
+          </div>
+
           {loadState === 'loading' ? (
             <div className="grid gap-4 md:grid-cols-2" aria-label="正在加载插件">
               <ServerSkeleton />
               <ServerSkeleton />
             </div>
-          ) : servers.length === 0 ? (
+          ) : visibleServers.length === 0 ? (
             <div className="rounded-[1.6rem] border border-dashed border-line bg-surface-card/55 px-8 py-14 text-center dark:border-line-soft">
-              <h3 className="font-display text-lg font-semibold">暂时没有内置插件</h3>
-              <p className="mt-2 text-sm text-ink-faint">平台配置插件后，它们会自动出现在这里。</p>
+              <h3 className="font-display text-lg font-semibold">
+                {servers.length === 0 ? '暂时没有内置插件' : '该分类暂时没有插件'}
+              </h3>
+              <p className="mt-2 text-sm text-ink-faint">
+                {servers.length === 0
+                  ? '平台配置插件后，它们会自动出现在这里。'
+                  : '试试切换到其他分类。'}
+              </p>
             </div>
           ) : (
-            <div className="grid gap-4 md:grid-cols-2">
-              {servers.map((server) => (
+            <div
+              id="plugin-catalog"
+              role="tabpanel"
+              aria-labelledby={`plugin-category-${category}`}
+              className="grid gap-4 md:grid-cols-2"
+            >
+              {visibleServers.map((server) => (
                 <McpServerCard
                   key={server.id}
                   server={server}
@@ -161,6 +228,10 @@ function McpSettings() {
   )
 }
 
+function pluginCategory(server: AgentMcpServerStatus): Exclude<PluginCategoryId, 'all'> {
+  return PLUGIN_CATEGORY_BY_ID[server.id] ?? 'other'
+}
+
 function McpServerCard({
   server,
   saving,
@@ -174,7 +245,8 @@ function McpServerCard({
 }>) {
   const connectionLabel = mcpConnectionLabel(server)
   const healthy = server.status === 'ready'
-  const logo = MCP_LOGOS[server.id] ?? (server.name.includes('企查查') ? MCP_LOGOS.qichacha : undefined)
+  const logo =
+    MCP_LOGOS[server.id] ?? (server.name.includes('企查查') ? MCP_LOGOS.qichacha : undefined)
 
   return (
     <article

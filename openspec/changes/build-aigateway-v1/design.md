@@ -39,7 +39,7 @@ Super Mind Studio 定位为 AI 灵感创作平台，由两个认证边界组成�
 flowchart LR
     U["GitHub-authenticated user"] --> N["Nginx :80/:443"]
     M["Administrator"] --> N
-    N -->|"/, /login, /skills, /mcp, /admin"| W["Next.js Web"]
+    N -->|"/, /login, /skills, /plugin, /admin"| W["Next.js Web"]
     W -->|"Browser + @supermind/sdk /api/v1"| N
     N -->|"/api/v1, /api-docs, /health"| A["NestJS API"]
     A --> P[("PostgreSQL")]

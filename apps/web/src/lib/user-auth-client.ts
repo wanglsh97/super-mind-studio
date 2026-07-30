@@ -1,4 +1,4 @@
-export const USER_RETURN_PATHS = ['/', '/mcp', '/usage'] as const
+export const USER_RETURN_PATHS = ['/', '/plugin', '/usage'] as const
 export type AuthProvider = 'ANONYMOUS' | 'GITHUB' | 'GOOGLE'
 
 export interface UserSessionProfile {

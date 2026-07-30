@@ -25,14 +25,15 @@ describe('user auth login helpers', () => {
       '/agent',
       '/image',
       '/prompt',
+      '/mcp',
     ]) {
       assert.equal(sanitizeUserReturnTo(unsafe), '/')
     }
     assert.equal(sanitizeUserReturnTo(null), '/')
-    assert.equal(sanitizeUserReturnTo('/mcp'), '/mcp')
+    assert.equal(sanitizeUserReturnTo('/plugin'), '/plugin')
     assert.equal(sanitizeUserReturnTo('/usage'), '/usage')
-    assert.equal(githubLoginUrl('/mcp'), '/api/v1/auth/github?returnTo=%2Fmcp')
-    assert.equal(googleLoginUrl('/mcp'), '/api/v1/auth/google?returnTo=%2Fmcp')
+    assert.equal(githubLoginUrl('/plugin'), '/api/v1/auth/github?returnTo=%2Fplugin')
+    assert.equal(googleLoginUrl('/plugin'), '/api/v1/auth/google?returnTo=%2Fplugin')
   })
 
   it('maps callback errors without exposing provider details', () => {
@@ -67,7 +68,7 @@ describe('user auth session client', () => {
 
   it('posts anonymous login and returns the sanitized return path', async () => {
     const mockFetch: typeof fetch = async (input, init) => {
-      assert.equal(String(input), '/api/v1/auth/anonymous?returnTo=%2Fmcp')
+      assert.equal(String(input), '/api/v1/auth/anonymous?returnTo=%2Fplugin')
       assert.equal(init?.method, 'POST')
       assert.equal(init?.credentials, 'same-origin')
       assert.equal(init?.body, undefined)
@@ -78,18 +79,18 @@ describe('user auth session client', () => {
           userName: 'Anonymous User',
           avatarUrl: null,
         },
-        returnTo: '/mcp',
+        returnTo: '/plugin',
       })
     }
 
-    await assert.deepEqual(await loginAnonymously('/mcp', mockFetch), {
+    await assert.deepEqual(await loginAnonymously('/plugin', mockFetch), {
       user: {
         id: 'anon-1',
         authProvider: 'ANONYMOUS',
         userName: 'Anonymous User',
         avatarUrl: null,
       },
-      returnTo: '/mcp',
+      returnTo: '/plugin',
     })
   })
 
