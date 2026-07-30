@@ -13,7 +13,7 @@ export type SkillCategory = (typeof SKILL_CATEGORIES)[number]['value']
 
 export const MAX_SKILL_PACKAGE_BYTES = 20 * 1024 * 1024
 export const SKILL_TITLE_MAX_LENGTH = 60
-export const SKILL_DESCRIPTION_MAX_LENGTH = 240
+export const SKILL_DESCRIPTION_MAX_LENGTH = 300
 
 export function validateSkillMetadata(input: {
   name: string
@@ -31,7 +31,7 @@ export function validateSkillMetadata(input: {
   }
   const description = input.description.trim()
   if (!description || description.length > SKILL_DESCRIPTION_MAX_LENGTH) {
-    errors.description = `简介须为 1–${SKILL_DESCRIPTION_MAX_LENGTH} 个字符`
+    errors.description = `描述须为 1–${SKILL_DESCRIPTION_MAX_LENGTH} 个字符`
   }
   if (!SKILL_CATEGORIES.some((category) => category.value === input.category)) {
     errors.category = '请选择平台分类'

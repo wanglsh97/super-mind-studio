@@ -18,7 +18,7 @@ export class SubmitSkillDto {
 
   @IsString()
   @MinLength(1)
-  @MaxLength(240)
+  @MaxLength(300)
   declare description: string
 
   @IsIn(SKILL_CATEGORIES)
@@ -36,7 +36,7 @@ export class UpdatePublishedSkillDto {
 
   @IsString()
   @MinLength(1)
-  @MaxLength(240)
+  @MaxLength(300)
   declare description: string
 
   @IsIn(SKILL_CATEGORIES)

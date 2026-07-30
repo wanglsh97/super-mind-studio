@@ -12,7 +12,7 @@ import {
 
 export const SKILL_NAME_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$/
 export const SKILL_TITLE_MAX_LENGTH = 60
-export const SKILL_DESCRIPTION_MAX_LENGTH = 240
+export const SKILL_DESCRIPTION_MAX_LENGTH = 300
 export const SKILL_CATEGORIES = [
   'development',
   'data',
@@ -131,7 +131,7 @@ function validateSubmission(input: SubmitSkillInput): SubmitSkillInput {
     !description ||
     description.length > SKILL_DESCRIPTION_MAX_LENGTH
   ) {
-    throw new SkillPublishingError('SKILL_METADATA_INVALID', 'Skill 标题或简介长度无效')
+    throw new SkillPublishingError('SKILL_METADATA_INVALID', 'Skill 标题或描述长度无效')
   }
   return { ...input, title, description }
 }
