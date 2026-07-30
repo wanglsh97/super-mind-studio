@@ -9,7 +9,7 @@ export function replaceMcpServerStatus(
 }
 
 export function mcpConnectionLabel(server: AgentMcpServerStatus): string {
-  if (!server.enabled || server.status === 'disabled') return '已停用'
+  if (!server.enabled || server.status === 'disabled') return '待启用'
   if (server.status === 'ready') return '连接正常'
   if (server.status === 'error') return '连接异常'
   return '等待连接'

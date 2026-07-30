@@ -288,7 +288,7 @@ function SidebarCapabilityLinks({
       <Link
         href="/plugin"
         aria-current={pathname === '/plugin' ? 'page' : undefined}
-        title={collapsed ? '插件' : undefined}
+        title={collapsed ? '插件市场' : undefined}
         className={cn(
           capabilityLinkClass,
           pathname === '/plugin' && capabilityLinkActiveClass,
@@ -297,7 +297,7 @@ function SidebarCapabilityLinks({
         )}
       >
         <PluginIcon />
-        {!collapsed && <span>插件</span>}
+        {!collapsed && <span>插件市场</span>}
       </Link>
       <Link
         href="/skills"

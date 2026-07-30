@@ -719,12 +719,6 @@ function createSkillFileTree(files: AgentSkillFileEntry[]): SkillTreeNode[] {
   return root.children
 }
 
-function formatFileSize(size: number) {
-  if (size < 1024) return `${size} B`
-  if (size < 1024 * 1024) return `${Math.round(size / 102.4) / 10} KB`
-  return `${Math.round(size / (1024 * 102.4)) / 10} MB`
-}
-
 const dialogCloseButton =
   'inline-flex size-8 cursor-pointer items-center justify-center rounded-lg text-2xl leading-none text-ink-secondary transition-colors hover:bg-surface-inset hover:text-ink-primary focus-visible:outline-2 focus-visible:outline-brand-focus focus-visible:outline-offset-2'
 

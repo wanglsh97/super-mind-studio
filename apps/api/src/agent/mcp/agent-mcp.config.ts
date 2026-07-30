@@ -17,8 +17,8 @@ const configuredToolSchema = z.object({
 const authSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('none') }),
   z.object({ type: z.literal('bearer'), tokenEnv: tokenEnvironmentName }),
+  z.object({ type: z.literal('query'), tokenEnv: tokenEnvironmentName, parameter: remoteToolName }),
 ])
-  z.object({ type: 'query', tokenEnv: tokenEnvironmentName, parameter: remoteToolName }),
 
 const configuredServerSchema = z
   .object({
@@ -64,10 +64,34 @@ export type AgentMcpServerConfig = z.infer<typeof configuredServerSchema>
 
 /** Reviewed MCP endpoints are release-controlled; credentials remain environment-only. */
 export const PLATFORM_MCP_SERVERS = [
-  { id: 'context7', name: 'Context7', description: '查询最新的软件库和框架文档', url: 'https://mcp.context7.com/mcp', auth: { type: 'none' } },
-  { id: 'deepwiki', name: 'DeepWiki', description: '读取公开 GitHub 仓库文档', url: 'https://mcp.deepwiki.com/mcp', auth: { type: 'none' } },
-  { id: 'qcc-company', name: '企查查', description: '查询企业实体、工商登记、企业简介、股东和实际控制人信息', url: 'https://agent.qcc.com/mcp/company/stream', auth: { type: 'bearer', tokenEnv: 'QCC_API_KEY' } },
-  { id: 'amap-maps', name: '高德地图', description: '查询地点、路线、天气与出行信息', url: 'https://mcp.amap.com/mcp', auth: { type: 'query', parameter: 'key', tokenEnv: 'AMAP_MCP_API_KEY' } },
+  {
+    id: 'context7',
+    name: 'Context7',
+    description: '查询最新的软件库和框架文档',
+    url: 'https://mcp.context7.com/mcp',
+    auth: { type: 'none' },
+  },
+  {
+    id: 'deepwiki',
+    name: 'DeepWiki',
+    description: '读取公开 GitHub 仓库文档',
+    url: 'https://mcp.deepwiki.com/mcp',
+    auth: { type: 'none' },
+  },
+  {
+    id: 'qcc-company',
+    name: '企查查',
+    description: '查询企业实体、工商登记、企业简介、股东和实际控制人信息',
+    url: 'https://agent.qcc.com/mcp/company/stream',
+    auth: { type: 'bearer', tokenEnv: 'QCC_API_KEY' },
+  },
+  {
+    id: 'amap-maps',
+    name: '高德地图',
+    description: '查询地点、路线、天气与出行信息',
+    url: 'https://mcp.amap.com/mcp',
+    auth: { type: 'query', parameter: 'key', tokenEnv: 'AMAP_MCP_API_KEY' },
+  },
   // Temporarily disabled: the documented HTTPS endpoint redirects to HTTP.
   // {
   //   id: 'variflight-aviation',
@@ -76,8 +100,14 @@ export const PLATFORM_MCP_SERVERS = [
   //   url: 'https://ai.variflight.com/servers/aviation/mcp/',
   //   auth: { type: 'query', parameter: 'api_key', tokenEnv: 'VARIFLIGHT_MCP_API_KEY' },
   // },
-  { id: 'rollinggo-hotel', name: 'RollingGo', description: '连接全球酒店、机票等旅行资源', url: 'https://mcp.rollinggo.ai/mcp', auth: { type: 'bearer', tokenEnv: 'ROLLINGGO_MCP_API_KEY' } },
-  { id: 'rollinggo-flight', name: 'RollingGo 机票', description: '查询机场与航班资源', url: 'https://mcp.rollinggo.cn/mcp/flight', auth: { type: 'bearer', tokenEnv: 'ROLLINGGO_MCP_API_KEY' } },
+  {
+    id: 'rollinggo-hotel',
+    name: '酒店查询',
+    description: '查酒店, 覆盖全球200万家以上酒店资源',
+    url: 'https://mcp.rollinggo.ai/mcp',
+    auth: { type: 'bearer', tokenEnv: 'ROLLINGGO_MCP_API_KEY' },
+  },
+  // { id: 'rollinggo-flight', name: '旅行-机票', description: '查机票，覆盖多航线、多舱等和多旅客场景', url: 'https://mcp.rollinggo.cn/mcp/flight', auth: { type: 'bearer', tokenEnv: 'ROLLINGGO_MCP_API_KEY' } },
 ] satisfies readonly AgentMcpServerConfig[]
 
 export function parseAgentMcpServersJson(value: unknown): AgentMcpServerConfig[] {

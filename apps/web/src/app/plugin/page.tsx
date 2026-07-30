@@ -10,7 +10,10 @@ import { useAuthenticationFailure } from '../../components/use-authentication-fa
 import { cn } from '../../lib/cn'
 import context7Logo from '../../config/Context7_192.png'
 import deepWikiLogo from '../../config/DeepWiki_Logo_1024.png'
-import qichachaLogo from '../../config/企查查_Logo_93.png'
+import qichachaLogo from '../../config/qcc_Logo_93.png'
+import rollinggoHotelLogo from '../../config/RollingGo_Logo.png'
+import amapMapsLogo from '../../config/amap_Logo.png'
+
 import { mcpConnectionLabel, replaceMcpServerStatus } from './mcp-settings-state'
 
 const client = createAIGatewayClient()
@@ -18,7 +21,9 @@ const client = createAIGatewayClient()
 const MCP_LOGOS: Readonly<Record<string, { alt: string; src: StaticImageData }>> = {
   context7: { alt: 'Context7', src: context7Logo },
   deepwiki: { alt: 'DeepWiki', src: deepWikiLogo },
-  qichacha: { alt: '企查查', src: qichachaLogo },
+  'qcc-company': { alt: '企查查', src: qichachaLogo },
+  'rollinggo-hotel': { alt: 'RollingGo 酒店', src: rollinggoHotelLogo },
+  'amap-maps': { alt: '高德地图', src: amapMapsLogo },
 }
 
 const PLUGIN_CATEGORIES = [
@@ -215,14 +220,6 @@ function McpSettings() {
             </div>
           )}
         </section>
-
-        <footer className="mt-7 flex items-start gap-3 rounded-2xl border border-line/70 bg-surface-card/45 px-5 py-4 text-xs leading-5 text-ink-faint dark:border-line-soft">
-          <ShieldIcon />
-          <p>
-            插件地址、认证信息和远端工具白名单由平台维护，不会发送到浏览器。用户设置按账户隔离，
-            匿名账户更换后不会继承之前的开关。
-          </p>
-        </footer>
       </div>
     </main>
   )
@@ -424,22 +421,6 @@ function CircuitBackdrop() {
         <circle cx="532" cy="190" r="4" />
         <circle cx="484" cy="188" r="4" />
       </g>
-    </svg>
-  )
-}
-
-function ShieldIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      aria-hidden="true"
-      className="mt-0.5 size-4 shrink-0 text-brand"
-    >
-      <path d="M12 3 20 6v5c0 5-3.4 8.4-8 10-4.6-1.6-8-5-8-10V6l8-3Z" />
-      <path d="m9 12 2 2 4-4" />
     </svg>
   )
 }

@@ -143,11 +143,7 @@ export function AgentComposerInput(
 }
 
 export function AgentComposerFooter({ children }: Readonly<{ children: ReactNode }>) {
-  return (
-    <div className="flex items-center justify-between gap-2 dark:border-line">
-      {children}
-    </div>
-  )
+  return <div className="flex items-center justify-between gap-2 dark:border-line">{children}</div>
 }
 
 export function AgentComposerActions({ children }: Readonly<{ children: ReactNode }>) {
@@ -599,9 +595,7 @@ export function ThinkingEffortSelect({
                   >
                     {option.label}
                   </span>
-                  <span className="text-[0.55rem] text-ink-subtle">
-                    {option.note}
-                  </span>
+                  <span className="text-[0.55rem] text-ink-subtle">{option.note}</span>
                 </span>
                 <span
                   aria-hidden="true"
@@ -658,7 +652,6 @@ export function UserMessage() {
 
 export function AssistantMessage({
   label,
-  metadata,
   renderPart,
 }: Readonly<{
   label: string
@@ -702,7 +695,6 @@ export function AssistantMessage({
           </ErrorPrimitive.Root>
         </MessagePrimitive.Error>
         <div className="mt-3 flex min-h-7 items-center justify-between gap-4 font-mono text-[0.56rem] text-ink-subtle">
-          {/* {metadata} */}
           <ActionBarPrimitive.Root className="flex items-center gap-1">
             <ActionBarPrimitive.Copy
               aria-label="复制回复"

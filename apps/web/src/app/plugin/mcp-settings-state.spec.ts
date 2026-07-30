@@ -33,7 +33,7 @@ describe('/plugin settings state', () => {
 
   it('maps enabled and disabled connection states to user-facing labels', () => {
     assert.equal(mcpConnectionLabel(server), '连接正常')
-    assert.equal(mcpConnectionLabel({ ...server, enabled: false, status: 'disabled' }), '已停用')
+    assert.equal(mcpConnectionLabel({ ...server, enabled: false, status: 'disabled' }), '待启用')
     assert.equal(mcpConnectionLabel({ ...server, status: 'error' }), '连接异常')
   })
 })
