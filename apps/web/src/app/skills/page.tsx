@@ -304,12 +304,6 @@ export default function SkillsPage() {
                 </div>
                 {item.publicationStatus === 'published' ? (
                   <div className="flex gap-2">
-                    <Link
-                      href={`/skills/${encodeURIComponent(item.name)}`}
-                      className={secondaryButton}
-                    >
-                      查看
-                    </Link>
                     <button
                       type="button"
                       disabled={busy === item.name}
@@ -350,22 +344,13 @@ export default function SkillsPage() {
                 <p className="font-mono text-[0.6rem] tracking-widest text-brand">
                   {categoryLabels[skill.category]}
                 </p>
-                <Link href={`/skills/${encodeURIComponent(skill.name)}`}>
-                  <h2 className="mt-2 text-xl font-bold tracking-tight group-hover:text-brand">
-                    {skill.title}
-                  </h2>
-                </Link>
+                <h2 className="mt-2 text-xl font-bold tracking-tight">{skill.title}</h2>
                 <p className="mt-3 line-clamp-3 text-sm leading-6 text-ink-muted">
                   {skill.description}
                 </p>
               </div>
               <div className="mt-6 flex items-center justify-between border-t border-line pt-4">
-                <Link
-                  href={`/skills/${encodeURIComponent(skill.name)}`}
-                  className="font-mono text-xs text-ink-faint hover:text-brand"
-                >
-                  {skill.name}
-                </Link>
+                <span className="font-mono text-xs text-ink-faint">{skill.name}</span>
                 {session.status === 'authenticated' ? (
                   <button
                     type="button"
