@@ -68,7 +68,14 @@ export const PLATFORM_MCP_SERVERS = [
   { id: 'deepwiki', name: 'DeepWiki', description: '读取公开 GitHub 仓库文档', url: 'https://mcp.deepwiki.com/mcp', auth: { type: 'none' } },
   { id: 'qcc-company', name: '企查查', description: '查询企业实体、工商登记、企业简介、股东和实际控制人信息', url: 'https://agent.qcc.com/mcp/company/stream', auth: { type: 'bearer', tokenEnv: 'QCC_API_KEY' } },
   { id: 'amap-maps', name: '高德地图', description: '查询地点、路线、天气与出行信息', url: 'https://mcp.amap.com/mcp', auth: { type: 'query', parameter: 'key', tokenEnv: 'AMAP_MCP_API_KEY' } },
-  { id: 'variflight-aviation', name: '航旅-航班', description: '查询航班、机场与航空出行信息', url: 'https://ai.variflight.com/servers/aviation/mcp/', auth: { type: 'query', parameter: 'api_key', tokenEnv: 'VARIFLIGHT_MCP_API_KEY' } },
+  // Temporarily disabled: the documented HTTPS endpoint redirects to HTTP.
+  // {
+  //   id: 'variflight-aviation',
+  //   name: '航班查询',
+  //   description: '查询航班、机场与航空出行信息',
+  //   url: 'https://ai.variflight.com/servers/aviation/mcp/',
+  //   auth: { type: 'query', parameter: 'api_key', tokenEnv: 'VARIFLIGHT_MCP_API_KEY' },
+  // },
   { id: 'rollinggo-hotel', name: 'RollingGo', description: '连接全球酒店、机票等旅行资源', url: 'https://mcp.rollinggo.ai/mcp', auth: { type: 'bearer', tokenEnv: 'ROLLINGGO_MCP_API_KEY' } },
   { id: 'rollinggo-flight', name: 'RollingGo 机票', description: '查询机场与航班资源', url: 'https://mcp.rollinggo.cn/mcp/flight', auth: { type: 'bearer', tokenEnv: 'ROLLINGGO_MCP_API_KEY' } },
 ] satisfies readonly AgentMcpServerConfig[]
