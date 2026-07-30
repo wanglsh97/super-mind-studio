@@ -177,9 +177,9 @@ function requestOptions(options: Pick<AgentMcpConnectionOptions, 'signal' | 'tim
   }
 }
 
-function createBoundedFetch(maxResponseBytes: number, onTooLarge: () => void): typeof fetch {
+export function createBoundedFetch(maxResponseBytes: number, onTooLarge: () => void): typeof fetch {
   return (async (input: Parameters<typeof fetch>[0], init?: RequestInit) => {
-    const response = await fetch(input, init)
+    const response = await fetch(input, { ...init, redirect: 'error' })
     const declaredLength = Number(response.headers.get('content-length'))
     if (Number.isFinite(declaredLength) && declaredLength > maxResponseBytes) {
       onTooLarge()

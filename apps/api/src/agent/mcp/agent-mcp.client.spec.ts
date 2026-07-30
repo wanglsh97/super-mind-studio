@@ -1,4 +1,25 @@
-import { AgentMcpClientError, normalizeMcpToolResult } from './agent-mcp.client'
+import { AgentMcpClientError, createBoundedFetch, normalizeMcpToolResult } from './agent-mcp.client'
+
+describe('createBoundedFetch', () => {
+  it('refuses redirects so credentials cannot be downgraded to an insecure endpoint', async () => {
+    const originalFetch = globalThis.fetch
+    const fetchMock = jest.fn(async () => new Response('ok'))
+    globalThis.fetch = fetchMock as typeof fetch
+
+    try {
+      await createBoundedFetch(1_024, () => undefined)('https://mcp.example.test', {
+        method: 'POST',
+      })
+
+      expect(fetchMock).toHaveBeenCalledWith(
+        'https://mcp.example.test',
+        expect.objectContaining({ method: 'POST', redirect: 'error' }),
+      )
+    } finally {
+      globalThis.fetch = originalFetch
+    }
+  })
+})
 
 describe('normalizeMcpToolResult', () => {
   it('normalizes text, resource links and embedded text resources', () => {
