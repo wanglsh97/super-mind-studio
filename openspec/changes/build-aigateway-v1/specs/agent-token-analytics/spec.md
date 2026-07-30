@@ -55,12 +55,13 @@ The user analytics experience SHALL provide a paginated daily-detail table for t
 - **THEN** the reasoning value is rendered as `0`
 
 ### Requirement: User analytics include a model total comparison
-The authenticated user analytics experience SHALL provide one comparison chart that shows each model's total Token usage over the selected analysis period. The model comparison MUST use actual resolved model invocations, not only the model initially selected for a Run.
+The authenticated user analytics experience SHALL provide one pie chart that shows each model's share of total Token usage over the selected analysis period. The model comparison MUST use actual resolved model invocations, not only the model initially selected for a Run.
 
 #### Scenario: A Run invokes more than one resolved model
 - **GIVEN** an Agent Run has usage records for two resolved models
 - **WHEN** the user views the model total comparison
 - **THEN** each model's total reflects only its own invocation records
+- **AND** each model is represented as a slice of the model-total pie chart
 
 ### Requirement: Token consumption values use compact Chinese display units
 User and administrator analytics views SHALL display Token consumption values below 10,000 as their original numeric value. Values from 10,000 through 99,999,999 SHALL be divided by 10,000 and displayed with the `万` unit. Values at or above 100,000,000 SHALL be divided by 100,000,000 and displayed with the `亿` unit. Compact values SHALL use at most two fractional digits. This presentation rule MUST NOT alter stored values or API aggregate precision.

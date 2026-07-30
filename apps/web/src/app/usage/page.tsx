@@ -2,7 +2,6 @@
 
 import { createAIGatewayClient } from '@supermind/sdk'
 import type { AgentTokenAnalytics, AgentTokenDailyUsage } from '@supermind/sdk'
-import type { EChartsOption } from 'echarts'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { AnalyticsChart } from '../../components/analytics-chart'
@@ -10,7 +9,8 @@ import { ProtectedUserPage } from '../../components/protected-user-page'
 import { TokenCalendarHeatmap } from '../../components/token-calendar-heatmap'
 import { useAuthenticationFailure } from '../../components/use-authentication-failure'
 import { paginateTokenDailyUsage } from '../../lib/token-daily-table'
-import { formatTokenChartValue, formatTokenValue } from '../../lib/token-display'
+import { formatTokenValue } from '../../lib/token-display'
+import { modelTokenPieOption } from '../../lib/token-model-chart'
 
 const client = createAIGatewayClient()
 
@@ -137,7 +137,7 @@ function UsageAnalytics() {
                 ) : (
                   <AnalyticsChart
                     label="每个模型的 Token 总量"
-                    option={modelOption(data)}
+                    option={modelTokenPieOption(data.models)}
                     height={310}
                   />
                 )}
@@ -292,29 +292,4 @@ function PaginationButton({
       {label}
     </button>
   )
-}
-
-function modelOption(data: AgentTokenAnalytics): EChartsOption {
-  return {
-    color: ['#10b981'],
-    tooltip: {
-      trigger: 'axis',
-      axisPointer: { type: 'shadow' },
-      valueFormatter: formatTokenChartValue,
-    },
-    grid: { left: 112, right: 16, top: 8, bottom: 28 },
-    xAxis: { type: 'value', axisLabel: { formatter: formatTokenChartValue } },
-    yAxis: {
-      type: 'category',
-      data: data.models.map(({ model }) => model),
-      axisLabel: { width: 104, overflow: 'truncate' },
-    },
-    series: [
-      {
-        type: 'bar',
-        data: data.models.map(({ totalTokens }) => totalTokens),
-        barMaxWidth: 18,
-      },
-    ],
-  }
 }
