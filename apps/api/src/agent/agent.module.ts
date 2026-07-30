@@ -33,8 +33,6 @@ import type { SandboxRuntimePort } from './sandbox/sandbox-runtime.port'
 import { AGENT_SKILL_REGISTRY } from './skills/agent-skill.registry'
 import { AgentSkillRepository } from './skills/agent-skill.repository'
 import { AgentSkillService } from './skills/agent-skill.service'
-import { ExecutableSkillBootstrap } from './skills/executable-skill.bootstrap'
-import { MOCK_EXECUTABLE_SKILL_PACKAGE } from './skills/executable-skill.fixture'
 import { ExecutableSkillRepository } from './skills/executable-skill.repository'
 import { ExecutableSkillService } from './skills/executable-skill.service'
 import { SkillMarketController } from './skills/market/skill-market.controller'
@@ -149,7 +147,6 @@ export function createSandboxRuntime(config: ConfigService): SandboxRuntimePort 
     { provide: AGENT_SKILL_REGISTRY, useExisting: ExecutableSkillService },
     ExecutableSkillRepository,
     ExecutableSkillService,
-    ExecutableSkillBootstrap,
     SkillMarketRepository,
     SkillMarketService,
     SkillPublishingRepository,
@@ -159,9 +156,7 @@ export function createSandboxRuntime(config: ConfigService): SandboxRuntimePort 
       inject: [ConfigService],
       useFactory: (config: ConfigService) => {
         if (config.get<string>('SKILL_OBJECT_STORE_DRIVER') !== 'oss') {
-          return new InMemorySkillObjectStore({
-            skillPackages: [MOCK_EXECUTABLE_SKILL_PACKAGE],
-          })
+          return new InMemorySkillObjectStore()
         }
         const { client, bucket } = createAliyunOssClient(config)
         return new AliyunOssSkillObjectStore(client, bucket)
