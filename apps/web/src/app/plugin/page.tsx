@@ -38,6 +38,7 @@ const PLUGIN_CATEGORY_BY_ID: Readonly<Record<string, Exclude<PluginCategoryId, '
     'qcc-company': 'business',
     'rollinggo-hotel': 'travel',
     'rollinggo-flight': 'travel',
+    'amap-maps': 'travel',
   }
 
 export default function McpSettingsPage() {

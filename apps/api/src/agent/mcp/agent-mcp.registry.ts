@@ -221,10 +221,9 @@ export class PlatformAgentMcpRegistry implements AgentMcpRegistry {
       description: server.description,
     }
     try {
-      const bearerToken = this.resolveBearerToken(server)
+      const connection = this.resolveConnection(server)
       const discovered = await this.client.discover({
-        url: server.url,
-        ...(bearerToken ? { bearerToken } : {}),
+        ...connection,
         signal,
         timeoutMs: this.discoveryTimeoutMs,
         maxResponseBytes: this.maxResponseBytes,
@@ -235,11 +234,13 @@ export class PlatformAgentMcpRegistry implements AgentMcpRegistry {
         version: truncate(discovered.serverVersion, 40),
       }
       const discoveredByName = new Map(discovered.tools.map((tool) => [tool.name, tool]))
-      const allowedTools = server.tools ?? discovered.tools.map((tool) => ({
-        name: tool.name,
-        description: tool.description,
-        riskLevel: 'read' as const,
-      }))
+      const allowedTools =
+        server.tools ??
+        discovered.tools.map((tool) => ({
+          name: tool.name,
+          description: tool.description,
+          riskLevel: 'read' as const,
+        }))
       const tools = allowedTools.flatMap((allowed) => {
         const remote = discoveredByName.get(allowed.name)
         if (!remote) return []
@@ -300,10 +301,9 @@ export class PlatformAgentMcpRegistry implements AgentMcpRegistry {
         const started = Date.now()
         context.onProgress?.(`正在调用 ${server.name}…`)
         try {
-          const bearerToken = this.resolveBearerToken(server)
+          const connection = this.resolveConnection(server)
           const result = await this.client.callTool({
-            url: server.url,
-            ...(bearerToken ? { bearerToken } : {}),
+            ...connection,
             signal: context.signal,
             timeoutMs: this.callTimeoutMs,
             maxResponseBytes: this.maxResponseBytes,
@@ -362,12 +362,18 @@ export class PlatformAgentMcpRegistry implements AgentMcpRegistry {
     }
   }
 
-  private resolveBearerToken(server: AgentMcpServerConfig): string | undefined {
-    if (server.auth.type !== 'bearer') return undefined
+  private resolveConnection(server: AgentMcpServerConfig): { url: string; bearerToken?: string } {
+    if (server.auth.type === 'none') return { url: server.url }
     const configuredToken = this.config.get<unknown>(server.auth.tokenEnv)
-    if (typeof configuredToken === 'string' && configuredToken.length > 0) return configuredToken
-    const processToken = process.env[server.auth.tokenEnv]
-    return processToken || undefined
+    const token =
+      typeof configuredToken === 'string' && configuredToken.length > 0
+        ? configuredToken
+        : process.env[server.auth.tokenEnv]
+    if (!token) return { url: server.url }
+    if (server.auth.type === 'bearer') return { url: server.url, bearerToken: token }
+    const url = new URL(server.url)
+    url.searchParams.set(server.auth.parameter, token)
+    return { url: url.toString() }
   }
 }
 

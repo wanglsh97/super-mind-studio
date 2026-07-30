@@ -132,6 +132,7 @@ const environmentSchema = z
     AGENT_MAX_CONCURRENT_RUNS_PER_USER: z.coerce.number().int().min(1).max(5).default(3),
     EXA_API_KEY: optionalSecret,
     PARALLEL_API_KEY: optionalSecret,
+    AMAP_MCP_API_KEY: optionalSecret,
     MOCK_PROVIDER_ENABLED: booleanFromEnv.default(true),
     QWEN_ENABLED: booleanFromEnv.default(false),
     GLM_ENABLED: booleanFromEnv.default(false),

@@ -139,6 +139,31 @@ describe('PlatformAgentMcpRegistry', () => {
     expect(JSON.stringify(await registry.listStatuses('user-1'))).not.toContain(server.url)
   })
 
+  it('adds a query credential server-side without exposing it in the plugin status', async () => {
+    const client = {
+      discover: jest.fn(async () => ({ serverName: 'Amap', serverVersion: '1.0.0', tools: [] })),
+    } as unknown as AgentMcpSdkClient
+    const registry = createRegistry(
+      {
+        ...server,
+        id: 'amap',
+        auth: { type: 'query' as const, parameter: 'key', tokenEnv: 'AMAP_MCP_API_KEY' },
+      },
+      client,
+      new Map([['amap', true]]),
+      undefined,
+      { AMAP_MCP_API_KEY: 'test-map-key' },
+    )
+
+    const [status] = await registry.listStatuses('user-1')
+
+    expect(status).toMatchObject({ id: 'amap', status: 'ready' })
+    expect(client.discover).toHaveBeenCalledWith(
+      expect.objectContaining({ url: 'https://mcp.example.test/mcp?key=test-map-key' }),
+    )
+    expect(JSON.stringify(status)).not.toContain('test-map-key')
+  })
+
   it('does not discover or expose a server disabled by the current user', async () => {
     const client = {
       discover: jest.fn(),
@@ -214,10 +239,13 @@ describe('MCP tool safety helpers', () => {
 function createRegistry(
   server: object,
   client: AgentMcpSdkClient,
-  userPreferences: ReadonlyMap<string, boolean> = new Map(),
+  userPreferences?: ReadonlyMap<string, boolean>,
   preferenceRepository?: AgentMcpPreferenceRepository,
+  environment: Record<string, unknown> = {},
 ): PlatformAgentMcpRegistry {
-  return new PlatformAgentMcpRegistry(
+  const serverId = 'id' in server && typeof server.id === 'string' ? server.id : ''
+  const preferences = userPreferences ?? new Map([[serverId, true]])
+  const registry = new PlatformAgentMcpRegistry(
     new ConfigService({
       AGENT_MCP_SERVERS_JSON: [server],
       AGENT_MCP_DISCOVERY_TIMEOUT_MS: 1_000,
@@ -225,12 +253,15 @@ function createRegistry(
       AGENT_MCP_MAX_TOOLS_PER_SERVER: 10,
       AGENT_MCP_MAX_RESPONSE_BYTES: 100_000,
       AGENT_MCP_MAX_OUTPUT_CHARS: 10_000,
+      ...environment,
     }),
     client,
     preferenceRepository ??
       ({
-        listForUser: async () => userPreferences,
+        listForUser: async () => preferences,
         setEnabled: async () => undefined,
       } as unknown as AgentMcpPreferenceRepository),
   )
+  ;(registry as unknown as { servers: readonly object[] }).servers = [server]
+  return registry
 }
