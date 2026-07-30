@@ -89,7 +89,7 @@ GitHub 和 Google OAuth 可独立启用：启用对应 provider 时设置 `GITHU
 
 私有 OSS Bucket 必须配置浏览器直传 CORS：Origin 精确填写 `WEB_ORIGIN`，允许 `PUT`，Allowed Headers 至少覆盖 `content-type`、`x-oss-object-acl`、`x-oss-meta-kind` 和 `x-oss-meta-sha256`（也可按 OSS 官方建议设为 `*`）。不要把 Bucket 改为 public-read；上传权限来自短时单对象签名。AccessKey 必须属于最小权限 RAM 用户，泄漏后立即轮换。生产发布脚本会拒绝缺少 OSS 配置、空 Region、非 HTTPS Endpoint 或 `OSS_INTERNAL=true`。
 
-首次部署时，所有 MCP 对每位用户均保持关闭。启用前应审核 Server 身份、工具语义、数据出境和外部副作用；端点定义随代码发布，Bearer Token 只保存在 ECS 的 `.env.production` 并由 Compose 显式注入 API。例如，企查查使用 `QCC_API_KEY`；不要把 endpoint 或 token 交给浏览器，也不要使用 `env_file` 把整份生产配置无差别注入 API。
+首次部署时，所有 MCP 对每位用户均保持关闭。启用前应审核 Server 身份、工具语义、数据出境和外部副作用；端点定义随代码发布，Bearer Token 只保存在 ECS 的 `.env.production` 并由 Compose 显式注入 API。例如，企查查使用 `QCC_API_KEY`，RollingGo 酒店使用 `ROLLINGGO_MCP_API_KEY`；不要把 endpoint 或 token 交给浏览器，也不要使用 `env_file` 把整份生产配置无差别注入 API。
 
 不要把 `.env.production`、API Key、数据库密码、Cookie secret、证书私钥或数据库备份提交到 Git。
 

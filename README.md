@@ -110,7 +110,7 @@ DOCS_MCP_TOKEN=<仅保存在服务端的 token>
 
 V1 只支持 Streamable HTTP，以及 `read`/`external_send` 风险级别；不支持浏览器自助添加 Server、OAuth、stdio、resources、prompts、sampling、elicitation 或破坏性工具。生产环境只允许 HTTPS endpoint，本地开发和测试可使用 loopback HTTP。配置声明了工具白名单时，工具必须同时存在于远端 `tools/list` 与该白名单中才会注册；未声明时注册安全发现到的全部工具。
 
-本地开发可选接入企查查企业数据 MCP：在未提交的 `.env` 中设置 `QCC_API_KEY`。所有平台 MCP 默认关闭，用户在 `/mcp` 手动开启后才会参与新的 Agent 运行；如果端点配置未声明工具白名单，则会向 Agent 提供该 MCP 安全发现到的全部工具。浏览器页面仅显示状态与工具数量，绝不会返回 Key 或服务端地址。
+本地开发可选接入企查查企业数据 MCP：在未提交的 `.env` 中设置 `QCC_API_KEY`；接入 RollingGo 酒店 MCP 时设置 `ROLLINGGO_MCP_API_KEY`。所有平台 MCP 默认关闭，用户在 `/mcp` 手动开启后才会参与新的 Agent 运行；如果端点配置未声明工具白名单，则会向 Agent 提供该 MCP 安全发现到的全部工具。浏览器页面仅显示状态与工具数量，绝不会返回 Key 或服务端地址。
 
 相关接口与验证命令：
 
