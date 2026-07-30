@@ -66,7 +66,7 @@ export function TokenCalendarHeatmap({
                           })
                         }}
                         onMouseLeave={() => setHoveredDay(null)}
-                        className={`size-3 cursor-help rounded-[3px] transition-[box-shadow,transform] hover:scale-110 hover:ring-2 hover:ring-emerald-500/35 ${heatClass(day.totalTokens, calendar.max)}`}
+                        className={`size-3 cursor-help rounded-[3px] transition-[box-shadow,transform] hover:scale-110 hover:ring-2 hover:ring-emerald-500/35 ${levelClass(tokenHeatLevel(day.totalTokens))}`}
                       />
                     ) : (
                       <span key={`empty-${index}`} className="size-3" />
@@ -76,12 +76,13 @@ export function TokenCalendarHeatmap({
               ))}
             </div>
           </div>
-          <div className="mt-3 flex items-center justify-end gap-1 text-[10px] text-slate-400">
-            <span className="mr-1">少</span>
-            {[0, 1, 2, 3, 4].map((level) => (
-              <span key={level} className={`size-3 rounded-[3px] ${levelClass(level)}`} />
+          <div className="mt-3 flex flex-wrap items-center justify-end gap-x-3 gap-y-1 text-[10px] text-slate-400">
+            {HEAT_LEGEND.map(({ label, level }) => (
+              <span key={level} className="flex items-center gap-1 whitespace-nowrap">
+                <span className={`size-3 rounded-[3px] ${levelClass(level)}`} />
+                {label}
+              </span>
             ))}
-            <span className="ml-1">多</span>
           </div>
         </div>
       </div>
@@ -130,20 +131,26 @@ function buildCalendar(from: string, to: string, values: readonly TokenCalendarD
   return {
     weeks,
     monthLabels,
-    max: Math.max(0, ...values.map((day) => day.totalTokens)),
   }
 }
 
-function heatClass(value: number, max: number): string {
-  if (value <= 0 || max <= 0) return levelClass(0)
-  const ratio = value / max
-  if (ratio <= 0.25) return levelClass(1)
-  if (ratio <= 0.5) return levelClass(2)
-  if (ratio <= 0.75) return levelClass(3)
-  return levelClass(4)
+export function tokenHeatLevel(value: number): 0 | 1 | 2 | 3 | 4 {
+  if (value <= 0) return 0
+  if (value < 50_000_000) return 1
+  if (value < 100_000_000) return 2
+  if (value < 1_000_000_000) return 3
+  return 4
 }
 
-function levelClass(level: number): string {
+const HEAT_LEGEND = [
+  { level: 0, label: '0' },
+  { level: 1, label: '< 5千万' },
+  { level: 2, label: '< 1亿' },
+  { level: 3, label: '< 10亿' },
+  { level: 4, label: '≥ 10亿' },
+] as const
+
+function levelClass(level: 0 | 1 | 2 | 3 | 4): string {
   return [
     'bg-slate-100 dark:bg-white/[0.06]',
     'bg-emerald-100 dark:bg-emerald-950',
