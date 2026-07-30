@@ -133,6 +133,7 @@ const environmentSchema = z
     EXA_API_KEY: optionalSecret,
     PARALLEL_API_KEY: optionalSecret,
     AMAP_MCP_API_KEY: optionalSecret,
+    VARIFLIGHT_MCP_API_KEY: optionalSecret,
     MOCK_PROVIDER_ENABLED: booleanFromEnv.default(true),
     QWEN_ENABLED: booleanFromEnv.default(false),
     GLM_ENABLED: booleanFromEnv.default(false),

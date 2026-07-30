@@ -39,6 +39,7 @@ const PLUGIN_CATEGORY_BY_ID: Readonly<Record<string, Exclude<PluginCategoryId, '
     'rollinggo-hotel': 'travel',
     'rollinggo-flight': 'travel',
     'amap-maps': 'travel',
+    'variflight-aviation': 'travel',
   }
 
 export default function McpSettingsPage() {

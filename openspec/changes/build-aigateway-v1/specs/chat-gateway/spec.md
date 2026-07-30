@@ -26,6 +26,12 @@ The API SHALL define reviewed Streamable HTTP MCP endpoints in release-controlle
 - **AND** the Agent receives every safely discovered tool because the Server configuration declares no explicit tool allowlist
 - **AND** neither the browser nor persisted Agent events contain the MCP endpoint or bearer token
 
+#### Scenario: User enables VariFlight aviation data
+- **GIVEN** release-controlled configuration defines the reviewed `variflight-aviation` Server and the API environment provides its `VARIFLIGHT_MCP_API_KEY`
+- **WHEN** an authenticated user enables the Server from `/plugin`
+- **THEN** the platform appends the credential as the server-side `api_key` query parameter and exposes only its sanitized status and discovered tool count
+- **AND** neither the browser nor persisted Agent events contain the MCP endpoint or credential
+
 ### Requirement: Selectable model instances are resolved through a repository catalog
 The model gateway SHALL resolve stable public model instance IDs through a version-controlled repository catalog to a display name, provider adapter and upstream model ID. Runtime environment variables MUST NOT replace or mutate the catalog. Model discovery MAY expose reviewed metadata but MUST NOT expose credentials.
 

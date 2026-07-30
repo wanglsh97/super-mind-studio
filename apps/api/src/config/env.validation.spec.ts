@@ -55,6 +55,7 @@ describe('validateEnvironment', () => {
     expect(environment.EXA_API_KEY).toBeUndefined()
     expect(environment.PARALLEL_API_KEY).toBeUndefined()
     expect(environment.AMAP_MCP_API_KEY).toBeUndefined()
+    expect(environment.VARIFLIGHT_MCP_API_KEY).toBeUndefined()
     expect(environment.AGENT_MCP_SERVERS_JSON).toEqual([])
     expect(environment.AGENT_MCP_DISCOVERY_TIMEOUT_MS).toBe(10_000)
     expect(environment.AGENT_MCP_CALL_TIMEOUT_MS).toBe(30_000)
