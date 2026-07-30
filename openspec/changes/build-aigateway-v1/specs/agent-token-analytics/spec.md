@@ -34,7 +34,14 @@ The authenticated user analytics experience SHALL show a GitHub-contribution-sty
 - **AND** hovering any populated date cell shows that date and its exact total Token count
 
 ### Requirement: User daily details distinguish input, output, cache, and reasoning Tokens
-The user analytics experience SHALL provide a daily-detail visualization for the selected analysis period that presents input Token, output Token, Prompt Cache Token, and reasoning Token values. It SHALL communicate that cache and reasoning are component metrics rather than additional consumption. A model that does not provide cache or reasoning usage SHALL render and aggregate the corresponding displayed value as `0`.
+The user analytics experience SHALL provide a paginated daily-detail table for the selected analysis period. Rows SHALL be ordered by date descending and present date, total Token, input Token, output Token, Prompt Cache Token, and reasoning Token values. It SHALL communicate that cache and reasoning are component metrics rather than additional consumption. A model that does not provide cache or reasoning usage SHALL render and aggregate the corresponding displayed value as `0`.
+
+#### Scenario: A user opens daily details
+- **GIVEN** the selected analysis period contains more daily rows than one table page
+- **WHEN** the daily-detail section is rendered
+- **THEN** the newest dates appear first
+- **AND** the user can paginate through all remaining daily rows
+- **AND** every row contains total, input, output, cache, and reasoning Token values
 
 #### Scenario: A daily aggregate mixes supported and unsupported models
 - **GIVEN** a user's daily records include one model with reported Prompt Cache Tokens and one model without that metric
@@ -44,7 +51,7 @@ The user analytics experience SHALL provide a daily-detail visualization for the
 
 #### Scenario: A user inspects one unsupported model
 - **GIVEN** all selected records belong to a model that does not report reasoning Token usage
-- **WHEN** its daily detail is displayed
+- **WHEN** its daily-detail table row is displayed
 - **THEN** the reasoning value is rendered as `0`
 
 ### Requirement: User analytics include a model total comparison

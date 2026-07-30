@@ -9,6 +9,7 @@ import { AnalyticsChart } from '../../components/analytics-chart'
 import { ProtectedUserPage } from '../../components/protected-user-page'
 import { TokenCalendarHeatmap } from '../../components/token-calendar-heatmap'
 import { useAuthenticationFailure } from '../../components/use-authentication-failure'
+import { paginateTokenDailyUsage } from '../../lib/token-daily-table'
 import { formatTokenChartValue, formatTokenValue } from '../../lib/token-display'
 
 const client = createAIGatewayClient()
@@ -124,13 +125,9 @@ function UsageAnalytics() {
               />
             </section>
 
-            <section className="mt-6 grid grid-cols-[minmax(0,1.55fr)_minmax(22rem,0.85fr)] gap-6">
-              <ChartCard title="每日明细" description="输入与输出是总量组成；缓存与思考为细分。">
-                <AnalyticsChart
-                  label="每日输入输出缓存和思考 Token"
-                  option={dailyOption(data.daily)}
-                  height={310}
-                />
+            <section className="mt-6 grid grid-cols-1 gap-6">
+              <ChartCard title="每日明细" description="按日期倒序；缓存与推理分别属于输入与输出。">
+                <DailyUsageTable rows={data.daily} />
               </ChartCard>
               <ChartCard title="模型总量" description="按每次实际调用的模型归因。">
                 {data.models.length === 0 ? (
@@ -206,37 +203,95 @@ function LoadingState() {
   )
 }
 
-function dailyOption(rows: AgentTokenDailyUsage[]): EChartsOption {
-  return {
-    color: ['#4f46e5', '#8b5cf6', '#10b981', '#f59e0b'],
-    tooltip: { trigger: 'axis', valueFormatter: formatTokenChartValue },
-    legend: { data: ['输入', '输出', '缓存', '思考'], top: 0 },
-    grid: { left: 58, right: 16, top: 42, bottom: 48 },
-    xAxis: {
-      type: 'category',
-      data: rows.map(({ date }) => date.slice(5)),
-      axisLabel: { rotate: 45, interval: Math.max(0, Math.floor(rows.length / 12)) },
-    },
-    yAxis: { type: 'value', axisLabel: { formatter: formatTokenChartValue } },
-    series: [
-      { name: '输入', type: 'bar', stack: 'total', data: rows.map((row) => row.inputTokens) },
-      { name: '输出', type: 'bar', stack: 'total', data: rows.map((row) => row.outputTokens) },
-      {
-        name: '缓存',
-        type: 'line',
-        smooth: true,
-        symbol: 'none',
-        data: rows.map((row) => row.cachedInputTokens),
-      },
-      {
-        name: '思考',
-        type: 'line',
-        smooth: true,
-        symbol: 'none',
-        data: rows.map((row) => row.reasoningTokens),
-      },
-    ],
-  }
+function DailyUsageTable({ rows }: { rows: readonly AgentTokenDailyUsage[] }) {
+  const [requestedPage, setRequestedPage] = useState(1)
+  const page = useMemo(() => paginateTokenDailyUsage(rows, requestedPage), [requestedPage, rows])
+
+  return (
+    <div>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[42rem] border-collapse text-left text-sm">
+          <thead>
+            <tr className="border-b border-line text-xs font-semibold text-ink-faint dark:border-line-soft">
+              <th className="px-3 py-3 font-semibold">日期 ▼</th>
+              {['总计', '输入', '输出', '缓存', '推理'].map((label) => (
+                <th key={label} className="px-3 py-3 text-right font-semibold">
+                  {label}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {page.rows.map((row) => (
+              <tr
+                key={row.date}
+                className="border-b border-line/70 transition-colors last:border-b-0 hover:bg-surface-inset/65 dark:border-line-soft"
+              >
+                <td className="px-3 py-3.5 font-mono text-ink-secondary dark:text-ink-dark-muted">
+                  {row.date}
+                </td>
+                <TokenCell value={row.totalTokens} strong />
+                <TokenCell value={row.inputTokens} />
+                <TokenCell value={row.outputTokens} />
+                <TokenCell value={row.cachedInputTokens} />
+                <TokenCell value={row.reasoningTokens} />
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="mt-4 flex items-center justify-between border-t border-line/70 pt-4 text-xs text-ink-faint dark:border-line-soft">
+        <span>
+          第 {page.page} / {page.totalPages} 页
+        </span>
+        <div className="flex gap-2">
+          <PaginationButton
+            label="上一页"
+            disabled={page.page === 1}
+            onClick={() => setRequestedPage(page.page - 1)}
+          />
+          <PaginationButton
+            label="下一页"
+            disabled={page.page === page.totalPages}
+            onClick={() => setRequestedPage(page.page + 1)}
+          />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function TokenCell({ value, strong = false }: { value: number; strong?: boolean }) {
+  return (
+    <td
+      className={`px-3 py-3.5 text-right font-mono tabular-nums ${
+        strong ? 'font-semibold text-ink' : 'text-ink-secondary dark:text-ink-dark-muted'
+      }`}
+    >
+      {formatTokenValue(value)}
+    </td>
+  )
+}
+
+function PaginationButton({
+  label,
+  disabled,
+  onClick,
+}: {
+  label: string
+  disabled: boolean
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      className="rounded-lg border border-line px-3 py-1.5 font-semibold text-ink-secondary transition-colors hover:bg-surface-inset disabled:cursor-not-allowed disabled:opacity-35 dark:border-line-soft dark:text-ink-dark-muted"
+    >
+      {label}
+    </button>
+  )
 }
 
 function modelOption(data: AgentTokenAnalytics): EChartsOption {
