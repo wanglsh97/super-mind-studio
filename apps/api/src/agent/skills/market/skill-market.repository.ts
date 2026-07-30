@@ -20,6 +20,7 @@ export interface PublicSkillMarketRecord {
   category: string
   addCount: number
   updatedAt: Date
+  packageObjectKey: string | null
   skillMarkdown: string | null
   fileTree: unknown
 }
@@ -42,6 +43,7 @@ const PUBLIC_SKILL_SELECT = {
   category: true,
   addCount: true,
   updatedAt: true,
+  packageObjectKey: true,
   skillMarkdown: true,
   fileTree: true,
 } as const

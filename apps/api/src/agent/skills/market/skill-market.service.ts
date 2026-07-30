@@ -13,6 +13,10 @@ import {
   type SkillMarketQuery,
   type SkillMarketRepositoryPort,
 } from './skill-market.repository'
+import {
+  SKILL_OBJECT_STORE_PORT,
+  type SkillObjectStorePort,
+} from '../storage/skill-object-store.port'
 
 export interface PublicSkillMarketPage {
   items: AgentSkillMarketSummary[]
@@ -27,6 +31,8 @@ export class SkillMarketService {
   constructor(
     @Inject(SkillMarketRepository)
     private readonly repository: SkillMarketRepositoryPort,
+    @Inject(SKILL_OBJECT_STORE_PORT)
+    private readonly objects: SkillObjectStorePort,
   ) {}
 
   async list(query: SkillMarketQuery): Promise<PublicSkillMarketPage> {
@@ -54,10 +60,22 @@ export class SkillMarketService {
         retryable: false,
       })
     }
+    const storedPackage = await this.loadPackageProjection(skill.packageObjectKey)
+    const persistedFiles = publicFileTree(skill.fileTree)
     return {
       ...toSummary(skill),
-      skillMarkdown: skill.skillMarkdown ?? '',
-      files: publicFileTree(skill.fileTree),
+      skillMarkdown: skill.skillMarkdown || storedPackage?.skillMarkdown || '',
+      files: persistedFiles.length > 0 ? persistedFiles : (storedPackage?.files ?? []),
+    }
+  }
+
+  private async loadPackageProjection(objectKey: string | null) {
+    if (!objectKey) return null
+    try {
+      return await this.objects.loadSkillPackage(objectKey)
+    } catch {
+      // 历史记录可能没有可访问的对象包；详情仍应返回已持久化的安全投影。
+      return null
     }
   }
 }

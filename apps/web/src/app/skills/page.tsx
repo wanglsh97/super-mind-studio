@@ -485,7 +485,7 @@ function SkillFilesDialog({
       <section
         aria-labelledby="skill-files-title"
         aria-modal="true"
-        className="liquid-glass-soft w-full max-w-lg rounded-2xl p-5 shadow-[0_20px_50px_rgb(0_0_0/0.12)] dark:shadow-[0_20px_50px_rgb(0_0_0/0.35)]"
+        className="w-full max-w-lg rounded-2xl border border-line bg-surface-card p-5 shadow-[0_20px_50px_rgb(0_0_0/0.12)] dark:border-line-soft dark:bg-surface-card dark:shadow-[0_20px_50px_rgb(0_0_0/0.35)]"
         role="dialog"
       >
         <div className="flex items-start justify-between gap-4">
