@@ -102,7 +102,7 @@ function McpSettings() {
     [category, servers],
   )
 
-  if (loadState === 'loading') return <PluginPageLoading />
+  const loading = loadState === 'loading'
 
   return (
     <main className="min-h-screen px-8 py-10 lg:px-12 lg:py-12">
@@ -183,7 +183,9 @@ function McpSettings() {
             })}
           </div>
 
-          {visibleServers.length === 0 ? (
+          {loading ? (
+            <PluginCatalogLoading />
+          ) : visibleServers.length === 0 ? (
             <div className="rounded-[1.6rem] border border-dashed border-line bg-surface-card/55 px-8 py-14 text-center dark:border-line-soft">
               <h3 className="font-display text-lg font-semibold">
                 {servers.length === 0 ? '暂时没有内置插件' : '该分类暂时没有插件'}
@@ -362,22 +364,39 @@ function ServerDatum({ label, value }: Readonly<{ label: string; value: string }
   )
 }
 
-function PluginPageLoading() {
+function PluginCatalogLoading() {
   return (
-    <main
+    <div
       aria-busy="true"
       aria-live="polite"
-      className="grid min-h-screen place-items-center px-8 py-10 lg:px-12 lg:py-12"
+      className="grid gap-3 sm:grid-cols-[repeat(auto-fill,17rem)]"
     >
-      <div className="w-full max-w-sm rounded-[1.75rem] border border-line/80 bg-surface-card/72 px-8 py-10 text-center shadow-[0_24px_70px_rgb(45_60_105/0.1)] backdrop-blur-2xl dark:border-line-soft dark:bg-surface-card/50">
-        <span
+      <span className="sr-only">正在加载插件目录</span>
+      {Array.from({ length: 5 }, (_, index) => (
+        <div
+          key={index}
           aria-hidden="true"
-          className="mx-auto block size-8 animate-spin rounded-full border-2 border-brand/20 border-t-brand motion-reduce:animate-none"
-        />
-        <p className="mt-5 font-display text-lg font-semibold tracking-[-0.03em]">正在加载插件</p>
-        <p className="mt-2 text-sm text-ink-faint">正在同步可用插件与当前设置。</p>
-      </div>
-    </main>
+          className="h-44 w-full overflow-hidden rounded-2xl border border-line/75 bg-surface-card/78 p-4 sm:w-[17rem] dark:border-line-soft dark:bg-surface-card/55"
+        >
+          <div className="flex items-start gap-3">
+            <div className="size-10 animate-pulse rounded-xl bg-surface-inset" />
+            <div className="flex-1 space-y-2 pt-1">
+              <div className="h-4 w-24 animate-pulse rounded bg-surface-inset" />
+              <div className="h-2.5 w-16 animate-pulse rounded bg-surface-inset" />
+            </div>
+            <div className="h-7 w-12 animate-pulse rounded-full bg-surface-inset" />
+          </div>
+          <div className="mt-4 space-y-2">
+            <div className="h-3 w-full animate-pulse rounded bg-surface-inset" />
+            <div className="h-3 w-3/5 animate-pulse rounded bg-surface-inset" />
+          </div>
+          <div className="mt-5 grid grid-cols-2 gap-2 border-t border-line-soft pt-3">
+            <div className="h-7 animate-pulse rounded bg-surface-inset" />
+            <div className="h-7 animate-pulse rounded bg-surface-inset" />
+          </div>
+        </div>
+      ))}
+    </div>
   )
 }
 
