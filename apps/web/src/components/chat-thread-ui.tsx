@@ -693,7 +693,7 @@ export function AssistantMessage({
             <ActionBarPrimitive.Copy
               aria-label="复制回复"
               title="复制"
-              className="group/copy grid size-7 cursor-pointer place-items-center rounded-md opacity-25 transition-[background,color,opacity] group-hover:opacity-100 hover:bg-brand-subtle hover:text-brand-hover focus-visible:opacity-100 disabled:cursor-not-allowed dark:hover:bg-brand-subtle dark:hover:text-brand-light"
+              className="group/copy grid size-7 cursor-pointer place-items-center rounded-md transition-[background,color,opacity] hover:bg-brand-subtle hover:text-brand-hover disabled:cursor-not-allowed dark:hover:bg-brand-subtle dark:hover:text-brand-light"
             >
               <CopyIcon
                 aria-hidden="true"
@@ -709,14 +709,14 @@ export function AssistantMessage({
             <ActionBarPrimitive.FeedbackPositive
               aria-label="有帮助"
               title="有帮助"
-              className="grid size-7 cursor-pointer place-items-center rounded-md opacity-25 transition-[background,color,opacity] group-hover:opacity-100 hover:bg-brand-subtle hover:text-brand-hover focus-visible:opacity-100 disabled:cursor-not-allowed disabled:opacity-25 data-[submitted=true]:bg-brand-subtle data-[submitted=true]:text-brand dark:hover:bg-brand-subtle dark:hover:text-brand-light"
+              className="grid size-7 cursor-pointer place-items-center rounded-md transition-[background,color,opacity] hover:bg-brand-subtle hover:text-brand-hover disabled:cursor-not-allowed disabled:opacity-25 data-[submitted=true]:bg-brand-subtle data-[submitted=true]:text-brand dark:hover:bg-brand-subtle dark:hover:text-brand-light"
             >
               <ThumbsUpIcon aria-hidden="true" className="size-3.5" strokeWidth={1.8} />
             </ActionBarPrimitive.FeedbackPositive>
             <ActionBarPrimitive.FeedbackNegative
               aria-label="没帮助"
               title="没帮助"
-              className="grid size-7 cursor-pointer place-items-center rounded-md opacity-25 transition-[background,color,opacity] group-hover:opacity-100 hover:bg-brand-subtle hover:text-brand-hover focus-visible:opacity-100 disabled:cursor-not-allowed disabled:opacity-25 data-[submitted=true]:bg-brand-subtle data-[submitted=true]:text-brand dark:hover:bg-brand-subtle dark:hover:text-brand-light"
+              className="grid size-7 cursor-pointer place-items-center rounded-md transition-[background,color,opacity] hover:bg-brand-subtle hover:text-brand-hover disabled:cursor-not-allowed disabled:opacity-25 data-[submitted=true]:bg-brand-subtle data-[submitted=true]:text-brand dark:hover:bg-brand-subtle dark:hover:text-brand-light"
             >
               <ThumbsDownIcon aria-hidden="true" className="size-3.5" strokeWidth={1.8} />
             </ActionBarPrimitive.FeedbackNegative>

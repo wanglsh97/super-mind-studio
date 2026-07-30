@@ -79,10 +79,9 @@ export function TokenCalendarHeatmap({
             </div>
           </div>
           <div className="mt-3 flex flex-wrap items-center justify-end gap-x-3 gap-y-1 text-[10px] text-slate-400">
-            {HEAT_LEGEND.map(({ label, level }) => (
+            {HEAT_LEGEND.map(({ level }) => (
               <span key={level} className="flex items-center gap-1 whitespace-nowrap">
                 <span className={`size-3 rounded-[3px] ${levelClass(level)}`} />
-                {label}
               </span>
             ))}
           </div>

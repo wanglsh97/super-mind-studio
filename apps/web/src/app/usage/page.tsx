@@ -119,7 +119,6 @@ function UsageAnalytics() {
             <section className="mt-6 rounded-[1.6rem] border border-line bg-surface-card/72 p-6 dark:border-line-soft dark:bg-surface-card/50">
               <div className="mb-5">
                 <h2 className="font-display text-lg font-semibold">每日总量</h2>
-                <p className="mt-1 text-xs text-ink-faint">颜色越深，当天使用的 Token 越多。</p>
               </div>
               <TokenCalendarHeatmap
                 from={data.from}
@@ -130,7 +129,7 @@ function UsageAnalytics() {
             </section>
 
             <section className="mt-6 grid grid-cols-1 gap-6">
-              <ChartCard title="每日明细" description="按日期倒序；缓存与推理分别属于输入与输出。">
+              <ChartCard title="每日明细" description="按日期倒序；缓存与思考分别属于输入与输出。">
                 <DailyUsageTable rows={data.daily} />
               </ChartCard>
               <ChartCard title="模型总量" description="按每次实际调用的模型归因。">
@@ -221,7 +220,7 @@ function DailyUsageTable({ rows }: { rows: readonly AgentTokenDailyUsage[] }) {
           <thead>
             <tr className="border-b border-line text-xs font-semibold text-ink-faint dark:border-line-soft">
               <th className="px-3 py-3 font-semibold">日期 ▼</th>
-              {['总计', '输入', '输出', '缓存', '推理'].map((label) => (
+              {['总计', '输入', '输出', '缓存', '思考'].map((label) => (
                 <th key={label} className="px-3 py-3 text-right font-semibold">
                   {label}
                 </th>
