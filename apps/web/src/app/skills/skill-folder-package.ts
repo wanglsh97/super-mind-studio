@@ -30,6 +30,7 @@ export interface PreparedSkillFolder {
 interface SkillFrontmatter {
   description: string
   name: string
+  title: string
 }
 
 export async function prepareSkillFolder(
@@ -80,7 +81,7 @@ export async function prepareSkillFolder(
     folderName,
     name: metadata.name,
     sourceBytes,
-    title: metadata.name,
+    title: metadata.title,
   }
 }
 
@@ -99,19 +100,51 @@ export function parseSkillFrontmatter(markdown: string): SkillFrontmatter {
   try {
     document = parse(lines.slice(1, closingIndex).join('\n'), { maxAliasCount: 20 })
   } catch {
-    throw new Error('SKILL.md 的 YAML frontmatter 无法解析')
+    try {
+      document = parse(normalizeLegacyFrontmatter(lines.slice(1, closingIndex)), {
+        maxAliasCount: 20,
+      })
+    } catch {
+      throw new Error('SKILL.md 的 YAML frontmatter 无法解析')
+    }
   }
   if (!isRecord(document)) throw new Error('SKILL.md 的 YAML frontmatter 必须是对象')
 
-  const name = typeof document.name === 'string' ? document.name.trim() : ''
+  const declaredName = typeof document.name === 'string' ? document.name.trim() : ''
+  const metadata = isRecord(document.metadata) ? document.metadata : undefined
+  const openclaw = metadata && isRecord(metadata.openclaw) ? metadata.openclaw : undefined
+  const fallbackName = typeof openclaw?.skillKey === 'string' ? openclaw.skillKey.trim() : ''
+  const name = SKILL_NAME_PATTERN.test(declaredName) ? declaredName : fallbackName
   const description = typeof document.description === 'string' ? document.description.trim() : ''
   if (!name) throw new Error('SKILL.md 的 YAML frontmatter 缺少 name')
   if (!SKILL_NAME_PATTERN.test(name)) {
-    throw new Error('SKILL.md 的 name 须为 1–64 位小写字母、数字或连字符')
+    throw new Error(
+      'SKILL.md 的 name 须为 1–64 位小写字母、数字或连字符；中文展示名请设置 metadata.openclaw.skillKey',
+    )
   }
   if (!description) throw new Error('SKILL.md 的 YAML frontmatter 缺少 description')
 
-  return { description, name }
+  const displayName = typeof metadata?.displayName === 'string' ? metadata.displayName.trim() : ''
+  return { description, name, title: displayName || declaredName || name }
+}
+
+/**
+ * 一些早期 OpenClaw Skill 把 version / description 误缩进到标量 name 下。
+ * 只在严格 YAML 解析失败后处理这两个已知顶级字段，避免容忍任意畸形 YAML。
+ */
+function normalizeLegacyFrontmatter(lines: readonly string[]): string {
+  const nameIndex = lines.findIndex((line) => /^name:\s*\S/.test(line))
+  if (nameIndex < 0) return lines.join('\n')
+  let repairLegacyRootFields = true
+  return lines
+    .map((line, index) => {
+      if (index <= nameIndex) return line
+      if (/^\S/.test(line)) repairLegacyRootFields = false
+      return repairLegacyRootFields && /^ {2}(version|description):/.test(line)
+        ? line.slice(2)
+        : line
+    })
+    .join('\n')
 }
 
 function selectedFolderName(files: readonly SkillFolderFile[]): string {
