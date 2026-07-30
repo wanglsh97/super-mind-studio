@@ -10,6 +10,7 @@ import { AnalyticsChart } from '../../../components/analytics-chart'
 import { TokenCalendarHeatmap } from '../../../components/token-calendar-heatmap'
 import { redirectToAdminLogin } from '../../../lib/admin-auth-client'
 import { loadDashboard } from '../../../lib/admin-dashboard-data'
+import { formatTokenChartValue, formatTokenValue } from '../../../lib/token-display'
 import type {
   DashboardData,
   DashboardErrors,
@@ -188,19 +189,19 @@ function TokenAnalyticsSection({
         }}
       >
         <Card size="small">
-          <Statistic title="今日总量" value={data.today.totalTokens} />
+          <Statistic title="今日总量" value={formatTokenValue(data.today.totalTokens)} />
         </Card>
         <Card size="small">
-          <Statistic title="输入" value={data.today.inputTokens} />
+          <Statistic title="输入" value={formatTokenValue(data.today.inputTokens)} />
         </Card>
         <Card size="small">
-          <Statistic title="输出" value={data.today.outputTokens} />
+          <Statistic title="输出" value={formatTokenValue(data.today.outputTokens)} />
         </Card>
         <Card size="small">
-          <Statistic title="缓存" value={data.today.cachedInputTokens} />
+          <Statistic title="缓存" value={formatTokenValue(data.today.cachedInputTokens)} />
         </Card>
         <Card size="small">
-          <Statistic title="思考" value={data.today.reasoningTokens} />
+          <Statistic title="思考" value={formatTokenValue(data.today.reasoningTokens)} />
         </Card>
       </div>
 
@@ -303,11 +304,11 @@ const errorColumns: ColumnsType<DashboardErrors[number]> = [
 
 const tokenModelColumns: ColumnsType<DashboardTokenAnalytics['models'][number]> = [
   { title: '模型', dataIndex: 'model', key: 'model' },
-  { title: '总量', dataIndex: 'totalTokens', align: 'right' },
-  { title: '输入', dataIndex: 'inputTokens', align: 'right' },
-  { title: '输出', dataIndex: 'outputTokens', align: 'right' },
-  { title: '缓存', dataIndex: 'cachedInputTokens', align: 'right' },
-  { title: '思考', dataIndex: 'reasoningTokens', align: 'right' },
+  { title: '总量', dataIndex: 'totalTokens', align: 'right', render: formatTokenValue },
+  { title: '输入', dataIndex: 'inputTokens', align: 'right', render: formatTokenValue },
+  { title: '输出', dataIndex: 'outputTokens', align: 'right', render: formatTokenValue },
+  { title: '缓存', dataIndex: 'cachedInputTokens', align: 'right', render: formatTokenValue },
+  { title: '思考', dataIndex: 'reasoningTokens', align: 'right', render: formatTokenValue },
   {
     title: 'Cache 率',
     dataIndex: 'cacheRate',
@@ -364,9 +365,13 @@ function latencyOption(rows: DashboardLatencies): EChartsOption {
 function modelTokenOption(rows: DashboardTokenAnalytics['models']): EChartsOption {
   return {
     color: ['#10b981'],
-    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: { type: 'shadow' },
+      valueFormatter: formatTokenChartValue,
+    },
     grid: { left: 110, right: 16, top: 8, bottom: 24 },
-    xAxis: { type: 'value' },
+    xAxis: { type: 'value', axisLabel: { formatter: formatTokenChartValue } },
     yAxis: {
       type: 'category',
       data: rows.map(({ model }) => model),
@@ -380,9 +385,13 @@ function attributionOption(rows: Array<{ name: string; totalTokens: number }>): 
   const top = rows.slice(0, 8).reverse()
   return {
     color: ['#6366f1'],
-    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: { type: 'shadow' },
+      valueFormatter: formatTokenChartValue,
+    },
     grid: { left: 112, right: 18, top: 8, bottom: 24 },
-    xAxis: { type: 'value' },
+    xAxis: { type: 'value', axisLabel: { formatter: formatTokenChartValue } },
     yAxis: {
       type: 'category',
       data: top.map(({ name }) => name),

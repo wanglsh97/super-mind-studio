@@ -3,6 +3,8 @@
 import { useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 
+import { formatTokenValue } from '../lib/token-display'
+
 export interface TokenCalendarDay {
   date: string
   totalTokens: number
@@ -95,7 +97,7 @@ export function TokenCalendarHeatmap({
             >
               <span className="block font-mono text-[10px] text-slate-400">{hoveredDay.date}</span>
               <strong className="mt-0.5 block whitespace-nowrap font-mono text-xs font-semibold">
-                {hoveredDay.totalTokens.toLocaleString('zh-CN')} Tokens
+                {formatTokenValue(hoveredDay.totalTokens)} Tokens
               </strong>
             </div>,
             document.body,

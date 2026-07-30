@@ -9,6 +9,7 @@ import { AnalyticsChart } from '../../components/analytics-chart'
 import { ProtectedUserPage } from '../../components/protected-user-page'
 import { TokenCalendarHeatmap } from '../../components/token-calendar-heatmap'
 import { useAuthenticationFailure } from '../../components/use-authentication-failure'
+import { formatTokenChartValue, formatTokenValue } from '../../lib/token-display'
 
 const client = createAIGatewayClient()
 
@@ -171,7 +172,7 @@ function MetricCard({
     >
       <p className="text-xs font-semibold text-ink-faint">{label}</p>
       <strong className="mt-2 block font-mono text-xl tracking-[-0.04em]">
-        {value.toLocaleString('zh-CN')}
+        {formatTokenValue(value)}
       </strong>
     </div>
   )
@@ -208,7 +209,7 @@ function LoadingState() {
 function dailyOption(rows: AgentTokenDailyUsage[]): EChartsOption {
   return {
     color: ['#4f46e5', '#8b5cf6', '#10b981', '#f59e0b'],
-    tooltip: { trigger: 'axis' },
+    tooltip: { trigger: 'axis', valueFormatter: formatTokenChartValue },
     legend: { data: ['输入', '输出', '缓存', '思考'], top: 0 },
     grid: { left: 58, right: 16, top: 42, bottom: 48 },
     xAxis: {
@@ -216,7 +217,7 @@ function dailyOption(rows: AgentTokenDailyUsage[]): EChartsOption {
       data: rows.map(({ date }) => date.slice(5)),
       axisLabel: { rotate: 45, interval: Math.max(0, Math.floor(rows.length / 12)) },
     },
-    yAxis: { type: 'value' },
+    yAxis: { type: 'value', axisLabel: { formatter: formatTokenChartValue } },
     series: [
       { name: '输入', type: 'bar', stack: 'total', data: rows.map((row) => row.inputTokens) },
       { name: '输出', type: 'bar', stack: 'total', data: rows.map((row) => row.outputTokens) },
@@ -241,9 +242,13 @@ function dailyOption(rows: AgentTokenDailyUsage[]): EChartsOption {
 function modelOption(data: AgentTokenAnalytics): EChartsOption {
   return {
     color: ['#10b981'],
-    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: { type: 'shadow' },
+      valueFormatter: formatTokenChartValue,
+    },
     grid: { left: 112, right: 16, top: 8, bottom: 28 },
-    xAxis: { type: 'value' },
+    xAxis: { type: 'value', axisLabel: { formatter: formatTokenChartValue } },
     yAxis: {
       type: 'category',
       data: data.models.map(({ model }) => model),

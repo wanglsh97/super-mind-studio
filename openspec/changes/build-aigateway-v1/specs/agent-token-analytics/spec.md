@@ -55,6 +55,15 @@ The authenticated user analytics experience SHALL provide one comparison chart t
 - **WHEN** the user views the model total comparison
 - **THEN** each model's total reflects only its own invocation records
 
+### Requirement: Token consumption values use a compact ten-thousand display unit
+User and administrator analytics views SHALL display Token consumption values below 10,000 as their original numeric value. Values at or above 10,000 SHALL be divided by 10,000 and displayed with the `万` unit, using at most two fractional digits. This presentation rule MUST NOT alter stored values or API aggregate precision.
+
+#### Scenario: Analytics contain small and large Token values
+- **GIVEN** one displayed Token value is 9,999 and another is 51,672
+- **WHEN** either analytics view renders those values
+- **THEN** the small value is displayed as `9,999`
+- **AND** the large value is displayed as `5.17万`
+
 ### Requirement: Administrators receive aggregate Token observability without user-content exposure
 Authenticated administrators SHALL receive dashboard-ready aggregate charts for Agent Run Token consumption by resolved model, Skill, and Tool, including Prompt Cache Token and Prompt Cache rate where the required input usage is known. These analytics endpoints MUST NOT return complete Prompts, messages, tool arguments, tool results, or any other user content. The initial administrator analytics view SHALL not require interactive business filters.
 
