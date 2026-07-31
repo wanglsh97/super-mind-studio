@@ -24,6 +24,7 @@ import { CHAT_PROVIDER_BRANDING } from '@/const/branding/chat-provider-branding'
 import chatLogo from '@/const/chat-logo.png';
 import { AssistantMarkdown } from '@/components/chat/assistant-markdown';
 import { AgentRunProgressIndicator } from '@/components/agent-run-progress-indicator';
+import ShimmerText from '@/components/shimmer-text';
 import type { AgentRunProgressStage } from '@/utils/agent/agent-run-adapter';
 import { cn } from '@/utils/cn';
 
@@ -1077,7 +1078,7 @@ export function AgentReasoning({
       onToggle={(event) => setOpen(event.currentTarget.open)}
     >
       <summary className="flex cursor-pointer list-none items-center py-1 font-normal tracking-[0.02em] [&::-webkit-details-marker]:hidden">
-        <span>{title}</span>
+        {running ? <ShimmerText>{title}</ShimmerText> : <span>{title}</span>}
         <AgentDisclosureChevron />
       </summary>
       <div className="mt-1.5 space-y-1 border-l border-current/15 pl-3 whitespace-pre-wrap">
