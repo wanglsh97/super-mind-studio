@@ -80,11 +80,7 @@ import {
 import { activeRunForThread } from '@/utils/agent/agent-active-runs';
 import { initialAgentRunViewState } from '@/utils/agent/agent-run-reducer';
 import { threadTokenUsagePercentage } from '@/utils/agent/agent-thread-token-usage';
-import {
-  AGENT_TOOL_ACTIVITY_LABELS,
-  resolveAgentToolActivityState,
-  type AgentToolActivityState,
-} from '@/utils/agent/agent-tool-activity';
+import { resolveAgentToolActivityState, type AgentToolActivityState } from '@/utils/agent/agent-tool-activity';
 import { parseNamespacedMcpToolName, summarizeAgentMcpStatuses } from '@/utils/agent/agent-mcp-status';
 
 const client = createAIGatewayClient();
@@ -1329,19 +1325,17 @@ function SandboxToolActivityCard({
   });
   const exitCode = typeof result?.audit?.exitCode === 'number' ? result.audit.exitCode : undefined;
   const size = typeof result?.audit?.size === 'number' ? result.audit.size : undefined;
+  const label = toolInvocationLabel(toolName, state);
   return (
-    <details className={cn('group my-2 text-sm', toolStateClassName(state))}>
+    <details className="group my-2 text-sm text-ink-muted">
       <summary className="flex cursor-pointer list-none items-center justify-between gap-3 py-1.5 [&::-webkit-details-marker]:hidden">
         <span className="flex min-w-0 flex-wrap items-center gap-2">
-        <span className="font-mono text-xs font-bold">{toolName}</span>
-        <span className="rounded-full bg-current/8 px-2 py-0.5 text-[0.68rem] font-bold">
-          {AGENT_TOOL_ACTIVITY_LABELS[state]}
-        </span>
+        <span className="font-mono text-xs font-medium">{label}</span>
         {exitCode !== undefined ? (
-          <span className="font-mono text-[0.7rem] opacity-70">exit {exitCode}</span>
+          <span className="font-mono text-[0.7rem] text-ink-subtle">exit {exitCode}</span>
         ) : null}
         {size !== undefined ? (
-          <span className="font-mono text-[0.7rem] opacity-70">{size} B</span>
+          <span className="font-mono text-[0.7rem] text-ink-subtle">{size} B</span>
         ) : null}
         </span>
         <ToolDisclosureChevron />
@@ -1353,7 +1347,7 @@ function SandboxToolActivityCard({
           </code>
         ) : null}
         {detail ? <p className="font-mono text-[0.68rem] text-ink-subtle">{detail}</p> : null}
-        {result?.summary ? <p className="text-xs text-ink-muted">{result.summary}</p> : null}
+        <ToolExecutionResult result={result} />
       </div>
     </details>
   );
@@ -1380,16 +1374,12 @@ function McpToolActivityCard({
     isError,
     audit: result?.audit,
   });
+  const label = toolInvocationLabel(`${serverId} · ${remoteToolName}`, state);
   return (
-    <details className={cn('group my-2 text-sm', toolStateClassName(state))}>
+    <details className="group my-2 text-sm text-ink-muted">
       <summary className="flex cursor-pointer list-none items-center justify-between gap-3 py-1.5 [&::-webkit-details-marker]:hidden">
         <span className="flex min-w-0 flex-wrap items-center gap-2">
-          <span className="font-mono text-xs font-bold">
-            {serverId} · {remoteToolName}
-          </span>
-          <span className="rounded-full bg-current/8 px-2 py-0.5 text-[0.68rem] font-bold">
-            {AGENT_TOOL_ACTIVITY_LABELS[state]}
-          </span>
+          <span className="font-mono text-xs font-medium">{label}</span>
         </span>
         <ToolDisclosureChevron />
       </summary>
@@ -1397,7 +1387,7 @@ function McpToolActivityCard({
         <code className="block max-h-24 overflow-auto whitespace-pre-wrap break-all text-xs text-ink">
           {JSON.stringify(args)}
         </code>
-        {result?.summary ? <p className="text-xs text-ink-muted">{result.summary}</p> : null}
+        <ToolExecutionResult result={result} />
       </div>
     </details>
   );
@@ -1418,12 +1408,30 @@ function ToolDisclosureChevron() {
   );
 }
 
-function toolStateClassName(state: AgentToolActivityState): string {
-  if (state === 'failed') return 'border-[#e3b3b3] text-[#a63d3d]';
-  if (state === 'cancelled') return 'border-ink-subtle/30 text-ink-subtle';
-  if (state === 'limit') return 'border-[#d7b56d] text-[#8b6418]';
-  if (state === 'success') return 'border-[#9dc7ae] text-[#2f7a4d]';
-  return 'border-brand/30 text-brand';
+function ToolExecutionResult({ result }: Readonly<{ result?: SandboxToolResult | undefined }>) {
+  const summary = result?.summary;
+  const audit = result?.audit;
+  const hasAudit = audit !== undefined && Object.keys(audit).length > 0;
+
+  if (!summary && !hasAudit) return null;
+
+  return (
+    <div className="space-y-1.5 pt-1">
+      <p className="text-[0.68rem] font-medium text-ink-subtle">调用结果</p>
+      {summary ? <p className="text-xs leading-relaxed text-ink-muted">{summary}</p> : null}
+      {hasAudit ? (
+        <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-all rounded-lg bg-surface-muted px-2.5 py-2 font-mono text-[0.7rem] leading-relaxed text-ink-secondary">
+          {JSON.stringify(audit, null, 2)}
+        </pre>
+      ) : null}
+    </div>
+  );
+}
+
+function toolInvocationLabel(toolName: string, state: AgentToolActivityState): string {
+  if (state === 'running') return `正在调用 ${toolName}`;
+  if (state === 'success') return `${toolName} 调用完成`;
+  return `${toolName} 调用失败`;
 }
 
 function AgentMessageMetadata() {
