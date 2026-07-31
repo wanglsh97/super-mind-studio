@@ -852,11 +852,7 @@ export function AgentReasoning({ text }: Readonly<{ text: string }>) {
     <details className="group my-2 text-[0.97rem] leading-7 text-ink opacity-55 transition-opacity duration-150 hover:opacity-85 open:opacity-75">
       <summary className="flex cursor-pointer list-none items-center py-1 font-normal tracking-[0.02em] [&::-webkit-details-marker]:hidden">
         <span>思考过程</span>
-        <ChevronRightIcon
-          aria-hidden="true"
-          className="size-4 shrink-0 opacity-75 transition-[opacity,transform] duration-150 group-hover:opacity-100 group-open:rotate-90 motion-reduce:transition-none"
-          strokeWidth={2}
-        />
+        <AgentDisclosureChevron />
       </summary>
       <div className="mt-2 whitespace-pre-wrap">
         {text}
@@ -872,7 +868,17 @@ export function AgentToolCall({ url }: Readonly<{ url?: string }>) {
       {url ? <span className="break-all">{url}</span> : null}
       <span>调用中…</span>
     </div>
-  )
+  );
+}
+
+export function AgentDisclosureChevron() {
+  return (
+    <ChevronRightIcon
+      aria-hidden="true"
+      className="size-4 shrink-0 opacity-75 transition-[opacity,transform] duration-150 group-hover:opacity-100 group-open:rotate-90 motion-reduce:transition-none"
+      strokeWidth={2}
+    />
+  );
 }
 
 export function AgentToolResult({

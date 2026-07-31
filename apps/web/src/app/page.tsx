@@ -39,6 +39,7 @@ import {
   AgentConsolePanel,
   AgentDictationButton,
   AgentDictationTranscript,
+  AgentDisclosureChevron,
   AgentEmptyState,
   AgentInterruptedBanner,
   AgentPageShell,
@@ -1338,7 +1339,7 @@ function SandboxToolActivityCard({
             <span className="font-sans">{size} B</span>
           ) : null}
         </span>
-        <ToolDisclosureChevron />
+        <AgentDisclosureChevron />
       </summary>
       <div className="mt-1.5 space-y-1 border-l border-current/15 pl-3">
         {subject ? (
@@ -1381,7 +1382,7 @@ function McpToolActivityCard({
         <span className="flex min-w-0 flex-wrap items-center gap-2">
           <span className="font-sans font-normal">{label}</span>
         </span>
-        <ToolDisclosureChevron />
+        <AgentDisclosureChevron />
       </summary>
       <div className="mt-1.5 space-y-1 border-l border-current/15 pl-3">
         <code className="block max-h-24 overflow-auto whitespace-pre-wrap break-all font-sans text-inherit">
@@ -1390,21 +1391,6 @@ function McpToolActivityCard({
         <ToolExecutionResult result={result} />
       </div>
     </details>
-  );
-}
-
-function ToolDisclosureChevron() {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 16 16"
-      className="size-4 shrink-0 opacity-75 transition-[opacity,transform] duration-150 group-hover:opacity-100 group-open:rotate-90 motion-reduce:transition-none"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-    >
-      <path d="m6 3 5 5-5 5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
   );
 }
 
