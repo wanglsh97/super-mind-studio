@@ -700,7 +700,7 @@ export function AgentEmptyState({
 export function UserMessage() {
   return (
     <MessagePrimitive.Root className="group flex flex-col items-end gap-1 py-4">
-      <div className="liquid-glass-soft max-w-[min(82%,38rem)] rounded-2xl px-4 py-3 text-[0.97rem] leading-7 text-ink-secondary transition-[box-shadow,transform] hover:-translate-y-px hover:shadow-[0_10px_28px_rgb(37_57_103/0.1)] max-md:max-w-[92%] dark:text-ink-secondary">
+      <div className="max-w-[min(82%,38rem)] rounded-2xl bg-surface-muted px-4 py-3 text-[0.95rem] leading-7 text-ink max-md:max-w-[92%] dark:text-ink">
         <MessagePrimitive.Parts />
       </div>
     </MessagePrimitive.Root>
