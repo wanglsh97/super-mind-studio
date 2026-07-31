@@ -66,8 +66,8 @@ export function AgentWorkspaceProvider({ children }: Readonly<{ children: ReactN
   const [activeRuns, setActiveRuns] = useState<AgentRunSummary[]>([])
 
   const refreshThreads = useCallback(async () => {
-    const threadPage = await listAllAgentThreads()
-    setThreads(threadPage.threads)
+    const threadPage = await client.agent.threads.list()
+    setThreads(threadPage.items)
     setActiveRuns(threadPage.activeRuns)
   }, [])
 
@@ -79,11 +79,11 @@ export function AgentWorkspaceProvider({ children }: Readonly<{ children: ReactN
     void (async () => {
       try {
         const [threadPage, modelList] = await Promise.all([
-          listAllAgentThreads(),
+          client.agent.threads.list(),
           client.models.list(),
         ])
         if (cancelled) return
-        setThreads(threadPage.threads)
+        setThreads(threadPage.items)
         setActiveRuns(threadPage.activeRuns)
         const usable = modelList.filter(
           (model) => model.enabled && model.capabilities.includes('agent'),
@@ -199,28 +199,4 @@ export function AgentWorkspaceProvider({ children }: Readonly<{ children: ReactN
   )
 
   return <AgentWorkspaceContext.Provider value={value}>{children}</AgentWorkspaceContext.Provider>
-}
-
-/**
- * 侧栏是用户进入历史会话的唯一入口，因此合并所有分页结果，而不是仅显示 API 的默认首页。
- * 每页 100 条与服务端限制一致；随后仍由侧栏自己的滚动区域承载长列表。
- */
-async function listAllAgentThreads(): Promise<{
-  threads: AgentThreadSummary[]
-  activeRuns: AgentRunSummary[]
-}> {
-  const firstPage = await client.agent.threads.list({ page: 1, pageSize: 100 })
-  if (firstPage.pageCount <= 1) {
-    return { threads: firstPage.items, activeRuns: firstPage.activeRuns }
-  }
-
-  const remainingPages = await Promise.all(
-    Array.from({ length: firstPage.pageCount - 1 }, (_, index) =>
-      client.agent.threads.list({ page: index + 2, pageSize: 100 }),
-    ),
-  )
-  return {
-    threads: [firstPage, ...remainingPages].flatMap((page) => page.items),
-    activeRuns: firstPage.activeRuns,
-  }
 }

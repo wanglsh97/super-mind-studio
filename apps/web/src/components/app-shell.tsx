@@ -9,6 +9,11 @@ import type { AgentThreadSummary } from '@supermind/sdk'
 import { logoutUser, sanitizeUserReturnTo } from '@/utils/auth/user-auth-client'
 import { cn } from '@/utils/cn'
 import { AGENT_THREAD_TITLE_MAX_LENGTH } from './agent-workspace-provider'
+import {
+  AGENT_THREAD_PREVIEW_LIMIT,
+  hiddenAgentThreadCount,
+  visibleAgentThreads,
+} from '@/utils/agent/agent-thread-list'
 import { useAgentActiveThreadId } from '@/hooks/use-agent-active-thread-id'
 import { useAgentWorkspace } from '@/hooks/use-agent-workspace'
 import { BrandMark } from './brand-mark'
@@ -132,7 +137,7 @@ function UserWorkspace({ children }: Readonly<{ children: ReactNode }>) {
               对话
             </p>
           )}
-          <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+          <div className="max-h-[calc(100vh-22rem)] min-h-0 overflow-y-auto pr-1">
             {!collapsed ? (
               <Suspense fallback={null}>
                 <AgentThreadLinks />
@@ -358,6 +363,7 @@ function AgentThreadLinks() {
   const [pendingDelete, setPendingDelete] = useState<AgentThreadSummary | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [expanded, setExpanded] = useState(false)
   const [openActionsId, setOpenActionsId] = useState<string | null>(null)
   const openActionsRef = useRef<HTMLDivElement | null>(null)
 
@@ -379,6 +385,9 @@ function AgentThreadLinks() {
   }, [openActionsId])
 
   if (session.status !== 'authenticated') return null
+
+  const visibleThreads = visibleAgentThreads(threads, expanded)
+  const hiddenCount = hiddenAgentThreadCount(threads, expanded)
 
   async function submitRename(threadId: string, title: string) {
     const trimmed = title.trim()
@@ -425,7 +434,7 @@ function AgentThreadLinks() {
         </p>
       ) : null}
       <ul className="m-0 flex list-none flex-col gap-0.5 p-0">
-        {threads.map((thread) => {
+        {visibleThreads.map((thread) => {
           const href = `/?thread=${encodeURIComponent(thread.id)}`
           const isActive = thread.id === activeThreadId
           const isRenaming = renamingId === thread.id
@@ -560,6 +569,23 @@ function AgentThreadLinks() {
           )
         })}
       </ul>
+      {threads.length > AGENT_THREAD_PREVIEW_LIMIT ? (
+        <button
+          type="button"
+          className={cn(
+            'mt-1 flex min-h-9 w-full items-center justify-between rounded-xl px-2.5 text-[0.7rem] font-semibold text-ink-faint transition-[background,color] hover:bg-brand/6 hover:text-brand-hover dark:hover:bg-brand/12 dark:hover:text-brand-light',
+            focusRing,
+          )}
+          aria-expanded={expanded}
+          onClick={() => setExpanded((current) => !current)}
+        >
+          <span>{expanded ? '收起' : `展开其余 ${hiddenCount} 条`}</span>
+          <ChevronIcon
+            className={cn('size-3.5 transition-transform', expanded ? '-rotate-90' : 'rotate-90')}
+          />
+        </button>
+      ) : null}
+
       {pendingDelete ? (
         <div
           className="fixed inset-0 z-[80] grid place-items-center bg-[rgb(15_10_25/0.45)] p-4"
