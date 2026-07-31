@@ -26,7 +26,6 @@ import {
 } from '@assistant-ui/react';
 import { Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
-import { useAgentActiveThreadId, useAgentWorkspace } from '@/components/agent-workspace-provider';
 import { AgentSkillSlashPicker } from '@/components/agent-skill-slash-picker';
 import {
   AgentActiveRunHint,
@@ -58,6 +57,8 @@ import {
 } from '@/components/chat-thread-ui';
 import { AssistantMarkdown } from '@/components/chat/assistant-markdown';
 import { ProtectedUserPage } from '@/components/protected-user-page';
+import { useAgentActiveThreadId } from '@/hooks/use-agent-active-thread-id';
+import { useAgentWorkspace } from '@/hooks/use-agent-workspace';
 import { useAuthenticationFailure } from '@/hooks/use-authentication-failure';
 import { cn } from '@/utils/cn';
 import {

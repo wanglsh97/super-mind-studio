@@ -7,11 +7,10 @@ import type {
   AgentThreadSummary,
   ModelSummary,
 } from '@supermind/sdk'
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import {
   createContext,
   useCallback,
-  useContext,
   useEffect,
   useMemo,
   useState,
@@ -29,7 +28,7 @@ const client = createAIGatewayClient()
 /** 与 API `AGENT_THREAD_TITLE_MAX_LENGTH` 对齐。 */
 export const AGENT_THREAD_TITLE_MAX_LENGTH = 200
 
-type AgentWorkspaceValue = {
+export type AgentWorkspaceValue = {
   threads: AgentThreadSummary[]
   models: ModelSummary[]
   selectedModel: string
@@ -50,7 +49,7 @@ type AgentWorkspaceValue = {
   deleteThread: (threadId: string) => Promise<void>
 }
 
-const AgentWorkspaceContext = createContext<AgentWorkspaceValue | null>(null)
+export const AgentWorkspaceContext = createContext<AgentWorkspaceValue | null>(null)
 
 export function AgentWorkspaceProvider({ children }: Readonly<{ children: ReactNode }>) {
   const session = useUserSession()
@@ -200,20 +199,4 @@ export function AgentWorkspaceProvider({ children }: Readonly<{ children: ReactN
   )
 
   return <AgentWorkspaceContext.Provider value={value}>{children}</AgentWorkspaceContext.Provider>
-}
-
-export function useAgentWorkspace(): AgentWorkspaceValue {
-  const value = useContext(AgentWorkspaceContext)
-  if (!value) {
-    throw new Error('useAgentWorkspace 必须在 AgentWorkspaceProvider 内使用')
-  }
-  return value
-}
-
-/** 仅在已挂起 Suspense 的叶子组件中使用，避免根布局被 searchParams 整树 CSR。 */
-export function useAgentActiveThreadId(): string | null {
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
-  if (pathname !== '/') return null
-  return searchParams.get('thread')
 }

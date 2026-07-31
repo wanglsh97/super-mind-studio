@@ -8,16 +8,14 @@ import type { AgentThreadSummary } from '@supermind/sdk'
 
 import { logoutUser, sanitizeUserReturnTo } from '@/utils/auth/user-auth-client'
 import { cn } from '@/utils/cn'
-import {
-  AGENT_THREAD_TITLE_MAX_LENGTH,
-  useAgentActiveThreadId,
-  useAgentWorkspace,
-} from './agent-workspace-provider'
+import { AGENT_THREAD_TITLE_MAX_LENGTH } from './agent-workspace-provider'
 import {
   AGENT_THREAD_PREVIEW_LIMIT,
   hiddenAgentThreadCount,
   visibleAgentThreads,
 } from '@/utils/agent/agent-thread-list'
+import { useAgentActiveThreadId } from '@/hooks/use-agent-active-thread-id'
+import { useAgentWorkspace } from '@/hooks/use-agent-workspace'
 import { BrandMark } from './brand-mark'
 import { ThemeToggle } from './theme-toggle'
 import { useUserSession } from './user-session-provider'
