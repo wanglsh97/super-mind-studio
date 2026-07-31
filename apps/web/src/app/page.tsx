@@ -629,7 +629,7 @@ function AgentEnvironmentPanel({
             <EnvironmentRow
               icon={<McpIcon />}
               label="插件"
-              detail=''
+              detail=""
               value={
                 mcpLoadState === 'loading'
                   ? '检查中'

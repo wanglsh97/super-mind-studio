@@ -58,7 +58,9 @@ describe('ChatModelCatalog', () => {
   })
 
   it('resolveForAgent allows Mock-backed and configured real providers', () => {
-    const mockCatalog = new ChatModelCatalog(new ChatAdapterRegistry([adapter('mock', 'mock-chat')]))
+    const mockCatalog = new ChatModelCatalog(
+      new ChatAdapterRegistry([adapter('mock', 'mock-chat')]),
+    )
     expect(mockCatalog.resolveForAgent('qwen3.7-plus')).toEqual(
       expect.objectContaining({ id: 'qwen3.7-plus', provider: 'qwen' }),
     )

@@ -1,6 +1,17 @@
 import js from '@eslint/js'
+import nextPlugin from '@next/eslint-plugin-next'
 import globals from 'globals'
+import importX from 'eslint-plugin-import-x'
+import jest from 'eslint-plugin-jest'
+import jsxA11y from 'eslint-plugin-jsx-a11y'
+import reactHooks from 'eslint-plugin-react-hooks'
 import tseslint from 'typescript-eslint'
+
+const typescriptFiles = ['**/*.{ts,tsx}']
+const javascriptFiles = ['**/*.{js,mjs,cjs,jsx}']
+const webSourceFiles = ['apps/web/src/**/*.{ts,tsx}']
+const webComponentFiles = ['apps/web/src/**/*.{tsx,jsx}']
+const apiJestFiles = ['apps/api/**/*.spec.ts', 'apps/api/**/*.e2e-spec.ts']
 
 export default tseslint.config(
   {
@@ -9,24 +20,84 @@ export default tseslint.config(
       '**/.next/**',
       '**/dist/**',
       '**/coverage/**',
+      '**/generated/**',
       'apps/api/src/generated/prisma/**',
+      '.agents/**',
+      '.codex/**',
+      'artifacts/**',
+      'openspec/**',
     ],
   },
   js.configs.recommended,
-  ...tseslint.configs.recommended,
+  ...tseslint.configs.recommendedTypeChecked,
+  ...tseslint.configs.stylisticTypeChecked,
   {
-    files: ['**/*.{ts,tsx}'],
+    ...tseslint.configs.disableTypeChecked,
+    files: javascriptFiles,
+  },
+  {
+    files: typescriptFiles,
     languageOptions: {
       globals: {
         ...globals.node,
         ...globals.browser,
         ...globals.jest,
       },
+      parserOptions: {
+        projectService: {
+          allowDefaultProject: ['prisma.config.ts'],
+        },
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+    settings: {
+      'import-x/resolver-next': [
+        {
+          typescript: {
+            project: ['apps/*/tsconfig.json', 'packages/*/tsconfig.json'],
+          },
+        },
+      ],
     },
     rules: {
       '@typescript-eslint/consistent-type-imports': 'error',
       '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-import-type-side-effects': 'error',
+      'import-x/consistent-type-specifier-style': ['error', 'prefer-top-level'],
+      'import-x/no-duplicates': 'error',
+      'import-x/order': [
+        'error',
+        {
+          alphabetize: { caseInsensitive: true, order: 'asc' },
+          groups: ['builtin', 'external', 'internal', 'parent', 'sibling', 'index', 'type'],
+          'newlines-between': 'always',
+          pathGroupsExcludedImportTypes: ['builtin'],
+        },
+      ],
     },
+  },
+  {
+    files: typescriptFiles,
+    ...importX.flatConfigs.recommended,
+    ...importX.flatConfigs.typescript,
+  },
+  {
+    files: webSourceFiles,
+    plugins: {
+      '@next/next': nextPlugin,
+    },
+    rules: {
+      ...nextPlugin.configs['core-web-vitals'].rules,
+    },
+  },
+  {
+    files: webComponentFiles,
+    ...jsxA11y.flatConfigs.recommended,
+    ...reactHooks.configs.flat.recommended,
+  },
+  {
+    ...jest.configs['flat/recommended'],
+    files: apiJestFiles,
   },
   {
     files: ['apps/api/**/*.ts'],

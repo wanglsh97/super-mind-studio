@@ -14,13 +14,7 @@ import {
 export const REQUEST_LOG_CAPABILITIES = ['chat', 'image', 'prompt'] as const
 export const REQUEST_LOG_STATUSES = ['pending', 'succeeded', 'failed', 'cancelled'] as const
 export const AUTH_PROVIDERS = ['ANONYMOUS', 'GITHUB', 'GOOGLE'] as const
-export const REQUEST_LOG_MODELS = [
-  'qwen',
-  'glm',
-  'deepseek',
-  'kimi',
-  'mock-image',
-] as const
+export const REQUEST_LOG_MODELS = ['qwen', 'glm', 'deepseek', 'kimi', 'mock-image'] as const
 
 export class RequestLogQueryDto {
   @IsOptional()

@@ -17,9 +17,9 @@ describe('AdminTableAllowlist', () => {
         'agent-runs',
       ]),
     )
-    expect(tables.every(({ operations }) => operations.length === 1 && operations[0] === 'query')).toBe(
-      true,
-    )
+    expect(
+      tables.every(({ operations }) => operations.length === 1 && operations[0] === 'query'),
+    ).toBe(true)
     expect(tables.every(({ physicalName }) => typeof physicalName === 'string')).toBe(true)
     expect(tables.find(({ name }) => name === 'users')?.physicalName).toBe('User')
     expect(tables.every(({ fields }) => fields.every(({ editable }) => !editable))).toBe(true)

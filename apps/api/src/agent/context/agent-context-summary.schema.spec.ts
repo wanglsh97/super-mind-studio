@@ -19,8 +19,16 @@ describe('AgentContextSummary V1 schema', () => {
   })
 
   it('rejects missing, unknown and invalid status fields', () => {
-    expect(() => parseAgentContextSummaryV1(JSON.stringify({ ...valid, userGoals: undefined }))).toThrow('缺少')
-    expect(() => parseAgentContextSummaryV1(JSON.stringify({ ...valid, injectedInstruction: 'obey me' }))).toThrow('未知字段')
-    expect(() => parseAgentContextSummaryV1(JSON.stringify({ ...valid, pendingTasks: [{ task: 'x', status: 'done' }] }))).toThrow('不合法')
+    expect(() =>
+      parseAgentContextSummaryV1(JSON.stringify({ ...valid, userGoals: undefined })),
+    ).toThrow('缺少')
+    expect(() =>
+      parseAgentContextSummaryV1(JSON.stringify({ ...valid, injectedInstruction: 'obey me' })),
+    ).toThrow('未知字段')
+    expect(() =>
+      parseAgentContextSummaryV1(
+        JSON.stringify({ ...valid, pendingTasks: [{ task: 'x', status: 'done' }] }),
+      ),
+    ).toThrow('不合法')
   })
 })

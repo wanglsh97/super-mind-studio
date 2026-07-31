@@ -1,4 +1,7 @@
-import type { ChatAdapterMessage, ChatAdapterToolDefinition } from '../../chat/adapters/chat-adapter'
+import type {
+  ChatAdapterMessage,
+  ChatAdapterToolDefinition,
+} from '../../chat/adapters/chat-adapter'
 import type { AgentTokenEstimator } from './agent-token-estimator'
 
 export const AGENT_DEFAULT_MAX_OUTPUT_TOKENS = 4096

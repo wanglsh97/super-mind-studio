@@ -26,9 +26,8 @@ export function compressAgentContext(
   const compressed = messages.map((message, index) => {
     const next = clone(message)
     if (next.role === 'assistant' && next.reasoningContent) {
-      const removeReasoning = level === 'moderate'
-        ? index < currentTurnStart
-        : index < protectedTurnStart
+      const removeReasoning =
+        level === 'moderate' ? index < currentTurnStart : index < protectedTurnStart
       if (removeReasoning) {
         delete next.reasoningContent
         notes.add(level === 'moderate' ? 'removed-completed-reasoning' : 'removed-old-reasoning')
@@ -61,12 +60,14 @@ function compactToolResult(content: string): string {
   }
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return bounded(content)
   const record = parsed as Record<string, unknown>
-  return bounded(JSON.stringify({
-    trust: 'untrusted-tool-output',
-    status: record.status,
-    isError: record.isError,
-    summary: record.summary,
-  }))
+  return bounded(
+    JSON.stringify({
+      trust: 'untrusted-tool-output',
+      status: record.status,
+      isError: record.isError,
+      summary: record.summary,
+    }),
+  )
 }
 
 function bounded(value: string): string {
@@ -76,7 +77,7 @@ function bounded(value: string): string {
 
 function recentTurnStart(messages: readonly ChatAdapterMessage[], count: number): number {
   const indexes = messages
-    .map((message, index) => message.role === 'user' ? index : -1)
+    .map((message, index) => (message.role === 'user' ? index : -1))
     .filter((index) => index >= 0)
   return indexes.at(-count) ?? 0
 }
@@ -91,6 +92,13 @@ function lastUserIndex(messages: readonly ChatAdapterMessage[]): number {
 function clone(message: ChatAdapterMessage): ChatAdapterMessage {
   return {
     ...message,
-    ...(message.toolCalls ? { toolCalls: message.toolCalls.map((call) => ({ ...call, arguments: { ...call.arguments } })) } : {}),
+    ...(message.toolCalls
+      ? {
+          toolCalls: message.toolCalls.map((call) => ({
+            ...call,
+            arguments: { ...call.arguments },
+          })),
+        }
+      : {}),
   }
 }

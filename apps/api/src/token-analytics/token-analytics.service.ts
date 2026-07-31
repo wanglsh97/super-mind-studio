@@ -204,10 +204,7 @@ function groupByModel(rows: readonly InvocationRow[]) {
 }
 
 function groupAttributions(rows: readonly InvocationRow[], kind: 'SKILL' | 'TOOL') {
-  const groups = new Map<
-    string,
-    TokenMetrics & { modelCalls: number; cacheInputTokens: number }
-  >()
+  const groups = new Map<string, TokenMetrics & { modelCalls: number; cacheInputTokens: number }>()
   for (const row of rows) {
     for (const attribution of row.attributions ?? []) {
       if (attribution.kind !== kind) continue
@@ -234,11 +231,7 @@ function groupAttributions(rows: readonly InvocationRow[], kind: 'SKILL' | 'TOOL
     .sort((left, right) => right.totalTokens - left.totalTokens)
 }
 
-function recentCalendarPeriod(
-  now: Date,
-  timezoneOffsetMinutes: number,
-  months: number,
-) {
+function recentCalendarPeriod(now: Date, timezoneOffsetMinutes: number, months: number) {
   const shifted = new Date(now.getTime() - timezoneOffsetMinutes * 60_000)
   const fromLocal = new Date(
     Date.UTC(shifted.getUTCFullYear(), shifted.getUTCMonth() - months, shifted.getUTCDate()),

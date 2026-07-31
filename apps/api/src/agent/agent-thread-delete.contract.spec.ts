@@ -18,12 +18,8 @@ describe('Agent thread delete cascade contract', () => {
     expect(migration).toContain(
       'FOREIGN KEY ("threadId") REFERENCES "AgentThread"("id") ON DELETE CASCADE',
     )
-    expect(migration).toMatch(
-      /"AgentEvent".*REFERENCES "AgentRun"\("id"\) ON DELETE CASCADE/s,
-    )
-    expect(migration).toMatch(
-      /"AgentToolCall".*REFERENCES "AgentRun"\("id"\) ON DELETE CASCADE/s,
-    )
+    expect(migration).toMatch(/"AgentEvent".*REFERENCES "AgentRun"\("id"\) ON DELETE CASCADE/s)
+    expect(migration).toMatch(/"AgentToolCall".*REFERENCES "AgentRun"\("id"\) ON DELETE CASCADE/s)
   })
 
   it('nulls RequestLog.agentRunId instead of deleting billing audit rows', () => {

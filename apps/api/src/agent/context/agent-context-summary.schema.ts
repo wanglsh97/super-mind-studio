@@ -39,7 +39,9 @@ export function parseAgentContextSummaryV1(text: string): AgentContextSummaryV1 
     userConstraints: strings(root.userConstraints, 'userConstraints'),
     decisions: records(root.decisions, ['decision', 'rationale'], 'decisions').map((item) => ({
       decision: requiredString(item.decision, 'decisions.decision'),
-      ...(item.rationale === undefined ? {} : { rationale: requiredString(item.rationale, 'decisions.rationale') }),
+      ...(item.rationale === undefined
+        ? {}
+        : { rationale: requiredString(item.rationale, 'decisions.rationale') }),
     })),
     facts: records(root.facts, ['statement', 'source'], 'facts').map((item) => ({
       statement: requiredString(item.statement, 'facts.statement'),
@@ -48,14 +50,24 @@ export function parseAgentContextSummaryV1(text: string): AgentContextSummaryV1 
     openQuestions: strings(root.openQuestions, 'openQuestions'),
     pendingTasks: records(root.pendingTasks, ['task', 'status'], 'pendingTasks').map((item) => {
       const status = requiredString(item.status, 'pendingTasks.status')
-      if (!['pending', 'in_progress', 'blocked'].includes(status)) invalid('pendingTasks.status 不合法')
-      return { task: requiredString(item.task, 'pendingTasks.task'), status: status as 'pending' | 'in_progress' | 'blocked' }
+      if (!['pending', 'in_progress', 'blocked'].includes(status))
+        invalid('pendingTasks.status 不合法')
+      return {
+        task: requiredString(item.task, 'pendingTasks.task'),
+        status: status as 'pending' | 'in_progress' | 'blocked',
+      }
     }),
-    toolFindings: records(root.toolFindings, ['toolName', 'finding'], 'toolFindings').map((item) => ({
-      toolName: requiredString(item.toolName, 'toolFindings.toolName'),
-      finding: requiredString(item.finding, 'toolFindings.finding'),
-    })),
-    referencedArtifacts: records(root.referencedArtifacts, ['name', 'reference'], 'referencedArtifacts').map((item) => ({
+    toolFindings: records(root.toolFindings, ['toolName', 'finding'], 'toolFindings').map(
+      (item) => ({
+        toolName: requiredString(item.toolName, 'toolFindings.toolName'),
+        finding: requiredString(item.finding, 'toolFindings.finding'),
+      }),
+    ),
+    referencedArtifacts: records(
+      root.referencedArtifacts,
+      ['name', 'reference'],
+      'referencedArtifacts',
+    ).map((item) => ({
       name: requiredString(item.name, 'referencedArtifacts.name'),
       reference: requiredString(item.reference, 'referencedArtifacts.reference'),
     })),
@@ -71,7 +83,11 @@ export class AgentContextSummaryValidationError extends Error {
   }
 }
 
-function strictRecord(value: unknown, keys: readonly string[], name: string): Record<string, unknown> {
+function strictRecord(
+  value: unknown,
+  keys: readonly string[],
+  name: string,
+): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) invalid(`${name} 必须是 object`)
   const record = value as Record<string, unknown>
   const actual = Object.keys(record)
@@ -93,7 +109,8 @@ function strings(value: unknown, name: string): string[] {
 }
 
 function requiredString(value: unknown, name: string, allowEmpty = false): string {
-  if (typeof value !== 'string' || (!allowEmpty && !value.trim())) invalid(`${name} 必须是非空 string`)
+  if (typeof value !== 'string' || (!allowEmpty && !value.trim()))
+    invalid(`${name} 必须是非空 string`)
   if (value.length > 4000) invalid(`${name} 超过长度限制`)
   return value
 }

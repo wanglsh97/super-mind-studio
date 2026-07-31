@@ -23,9 +23,7 @@
   align-items: center;
   justify-content: center;
   padding: 48px 24px;
-  background:
-    linear-gradient(135deg, rgba(22, 119, 255, 0.08), rgba(22, 119, 255, 0)),
-    #f5f5f5;
+  background: linear-gradient(135deg, rgba(22, 119, 255, 0.08), rgba(22, 119, 255, 0)), #f5f5f5;
 }
 
 .aigateway-admin-login-card {
@@ -143,8 +141,9 @@
 
 .aigateway-admin-menu .ant-menu-sub .ant-menu-item {
   padding-left: 40px !important;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
-    'Courier New', monospace;
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+    monospace;
   font-size: 12px;
 }
 

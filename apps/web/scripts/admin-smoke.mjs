@@ -20,7 +20,13 @@ try {
   console.log('1. Login page')
   await page.goto(`${baseUrl}/admin/login`, { waitUntil: 'networkidle' })
   await page.getByRole('heading', { name: '管理员登录' }).waitFor()
-  assert(!(await page.getByText('V1 固定账号').isVisible().catch(() => false)), '联调警告应已移除')
+  assert(
+    !(await page
+      .getByText('V1 固定账号')
+      .isVisible()
+      .catch(() => false)),
+    '联调警告应已移除',
+  )
 
   console.log('2. Login')
   await page.getByLabel('密码').fill('123456')
@@ -47,7 +53,9 @@ try {
   await page.waitForURL('**/admin/database?table=users**')
   await page.waitForTimeout(1000)
   await page.getByText('只读').waitFor()
-  const tableMenuCount = await page.locator('.aigateway-admin-menu .ant-menu-sub .ant-menu-item').count()
+  const tableMenuCount = await page
+    .locator('.aigateway-admin-menu .ant-menu-sub .ant-menu-item')
+    .count()
   assert(tableMenuCount >= 11, `数据库子菜单应展示 11 张表，实际 ${tableMenuCount}`)
   await page.screenshot({ path: 'apps/web/tmp/ui-smoke/admin-database.png' })
 
@@ -66,10 +74,27 @@ try {
   assert(Array.isArray(schema.tables) && schema.tables.length >= 11, 'schema 表数量不足')
   assert(Array.isArray(schema.relations) && schema.relations.length > 0, 'schema 关联为空')
 
-  console.log(JSON.stringify({ ok: true, url: page.url(), tables: schema.tables.length, relations: schema.relations.length, pageErrors: errors }))
+  console.log(
+    JSON.stringify({
+      ok: true,
+      url: page.url(),
+      tables: schema.tables.length,
+      relations: schema.relations.length,
+      pageErrors: errors,
+    }),
+  )
 } catch (error) {
-  console.error(JSON.stringify({ ok: false, error: error instanceof Error ? error.message : String(error), pageErrors: errors, url: page.url() }))
-  await page.screenshot({ path: 'apps/web/tmp/ui-smoke/admin-failure.png', fullPage: true }).catch(() => {})
+  console.error(
+    JSON.stringify({
+      ok: false,
+      error: error instanceof Error ? error.message : String(error),
+      pageErrors: errors,
+      url: page.url(),
+    }),
+  )
+  await page
+    .screenshot({ path: 'apps/web/tmp/ui-smoke/admin-failure.png', fullPage: true })
+    .catch(() => {})
   process.exitCode = 1
 } finally {
   await browser.close()

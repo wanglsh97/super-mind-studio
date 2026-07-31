@@ -47,12 +47,8 @@ export interface DashboardTokenAnalytics {
     to: string
     daily: Array<{ date: string; totalTokens: number }>
   }
-  skills: Array<
-    DashboardTokenMetrics & { name: string; modelCalls: number; cacheRate: number }
-  >
-  tools: Array<
-    DashboardTokenMetrics & { name: string; modelCalls: number; cacheRate: number }
-  >
+  skills: Array<DashboardTokenMetrics & { name: string; modelCalls: number; cacheRate: number }>
+  tools: Array<DashboardTokenMetrics & { name: string; modelCalls: number; cacheRate: number }>
 }
 
 export type DashboardSection<T> =

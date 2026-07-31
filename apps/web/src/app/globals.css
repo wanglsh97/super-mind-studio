@@ -200,8 +200,9 @@
     background: var(--theme-sidebar) !important;
   }
 
-
-  .liquid-glass::before { content: none; }
+  .liquid-glass::before {
+    content: none;
+  }
 
   .liquid-glass-soft {
     border: 1px solid transparent;
@@ -233,8 +234,14 @@
     background: var(--theme-brand);
   }
 
-  .dark .liquid-glass { border-color: var(--theme-line-soft); background: var(--theme-surface-card); }
-  .dark .liquid-glass-soft { border-color: transparent; background: transparent; }
+  .dark .liquid-glass {
+    border-color: var(--theme-line-soft);
+    background: var(--theme-surface-card);
+  }
+  .dark .liquid-glass-soft {
+    border-color: transparent;
+    background: transparent;
+  }
 }
 
 @keyframes agent-pulse {

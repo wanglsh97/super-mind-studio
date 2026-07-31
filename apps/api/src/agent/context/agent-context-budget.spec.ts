@@ -1,4 +1,7 @@
-import type { ChatAdapterMessage, ChatAdapterToolDefinition } from '../../chat/adapters/chat-adapter'
+import type {
+  ChatAdapterMessage,
+  ChatAdapterToolDefinition,
+} from '../../chat/adapters/chat-adapter'
 import {
   AGENT_CONTEXT_SAFETY_RESERVE_MIN_TOKENS,
   calculateAgentContextBudget,
@@ -48,7 +51,12 @@ describe('Agent context budget', () => {
 
   it('rejects invalid context configuration', () => {
     expect(() =>
-      calculateAgentContextBudget({ contextWindowTokens: 0, messages, tools, estimator: new AgentTokenEstimator() }),
+      calculateAgentContextBudget({
+        contextWindowTokens: 0,
+        messages,
+        tools,
+        estimator: new AgentTokenEstimator(),
+      }),
     ).toThrow('contextWindowTokens')
     expect(() => compressionLevel(Number.NaN)).toThrow('usageRatio')
   })

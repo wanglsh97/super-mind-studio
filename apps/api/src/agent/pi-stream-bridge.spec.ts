@@ -41,7 +41,12 @@ describe('piContextToInvocationMessages', () => {
           content: [
             { type: 'text', text: '好的' },
             { type: 'thinking', thinking: '先检查来源' },
-            { type: 'toolCall', id: 'call_1', name: 'web_fetch', arguments: { url: 'https://a.test' } },
+            {
+              type: 'toolCall',
+              id: 'call_1',
+              name: 'web_fetch',
+              arguments: { url: 'https://a.test' },
+            },
           ],
           api: 'openai-completions',
           provider: 'mock',
@@ -125,7 +130,11 @@ describe('mapModelStreamToPiEvents', () => {
       'text_end',
       'done',
     ])
-    const done = events.at(-1) as { type: 'done'; reason: string; message: { content: unknown[]; usage: { totalTokens: number }; stopReason: string } }
+    const done = events.at(-1) as {
+      type: 'done'
+      reason: string
+      message: { content: unknown[]; usage: { totalTokens: number }; stopReason: string }
+    }
     expect(done.reason).toBe('stop')
     expect(done.message.stopReason).toBe('stop')
     expect(done.message.usage.totalTokens).toBe(5)
@@ -186,7 +195,11 @@ describe('mapModelStreamToPiEvents', () => {
       ),
     )
 
-    const last = events.at(-1) as { type: string; reason: string; error: { stopReason: string; errorMessage: string } }
+    const last = events.at(-1) as {
+      type: string
+      reason: string
+      error: { stopReason: string; errorMessage: string }
+    }
     expect(last.type).toBe('error')
     expect(last.reason).toBe('error')
     expect(last.error.stopReason).toBe('error')

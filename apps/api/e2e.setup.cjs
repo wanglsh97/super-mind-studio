@@ -5,11 +5,7 @@ if (!databaseUrl || (!databaseUrl.includes('_test') && !databaseUrl.includes('te
   throw new Error('TEST_DATABASE_URL 必须指向名称包含 _test 或 test_ 的 PostgreSQL 测试库')
 }
 
-for (const key of [
-  'QWEN_API_KEY',
-  'GLM_API_KEY',
-  'DEEPSEEK_API_KEY',
-]) {
+for (const key of ['QWEN_API_KEY', 'GLM_API_KEY', 'DEEPSEEK_API_KEY']) {
   delete process.env[key]
 }
 

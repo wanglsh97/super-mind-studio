@@ -24,7 +24,9 @@ import { webFetchFixtureTool } from '../src/agent/tools/web-fetch-fixture.tool'
  * 通过 `pnpm test:agent-harness` 执行。
  */
 function buildModelInvocation(): ModelInvocationService {
-  const registry = new ChatAdapterRegistry([new MockChatAdapter({ chunks: ['未使用'], delayMs: 0 })])
+  const registry = new ChatAdapterRegistry([
+    new MockChatAdapter({ chunks: ['未使用'], delayMs: 0 }),
+  ])
   const catalog = new ChatModelCatalog(registry)
   const failover = { resolve: () => undefined } as unknown as ChatFailoverService
   const providerHealth = {
@@ -65,7 +67,9 @@ async function main(): Promise<void> {
   assert.equal(toolEnds[0]?.isError, false)
 
   const assistantTexts = agent.state.messages
-    .filter((message): message is Extract<Message, { role: 'assistant' }> => message.role === 'assistant')
+    .filter(
+      (message): message is Extract<Message, { role: 'assistant' }> => message.role === 'assistant',
+    )
     .map((message) =>
       message.content
         .filter((part) => part.type === 'text')
@@ -81,7 +85,8 @@ async function main(): Promise<void> {
   assert.equal(toolResults.length, 1, '应有一条工具结果进入转录')
 
   const toolCallTurns = agent.state.messages.filter(
-    (message) => message.role === 'assistant' && message.content.some((part) => part.type === 'toolCall'),
+    (message) =>
+      message.role === 'assistant' && message.content.some((part) => part.type === 'toolCall'),
   )
   assert.equal(toolCallTurns.length, 1, '应有一轮 assistant 发起工具调用')
 

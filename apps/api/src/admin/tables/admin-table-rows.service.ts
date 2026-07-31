@@ -58,11 +58,7 @@ export class AdminTableRowsService {
     }
   }
 
-  async create(
-    tableName: string,
-    rawBody: Record<string, unknown>,
-    context: AdminMutationContext,
-  ) {
+  async create(tableName: string, rawBody: Record<string, unknown>, context: AdminMutationContext) {
     const capability = this.allowlist.assertCreatableBody(tableName, rawBody)
     const body = normalizeBody(capability, rawBody)
     return this.prisma.$transaction(async (transaction) => {

@@ -1,4 +1,7 @@
-import { resolveChatModelCapabilities, canAdvertiseAgentCapability } from './chat-model-capabilities'
+import {
+  resolveChatModelCapabilities,
+  canAdvertiseAgentCapability,
+} from './chat-model-capabilities'
 
 describe('chat model capabilities', () => {
   it('includes chat, prompt, and agent for configured real providers', () => {
