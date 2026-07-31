@@ -345,12 +345,12 @@ function AgentConsole() {
           />
           <AgentThreadRoot>
             <AgentThreadViewport>
-              <ThreadPrimitive.Empty>
+              <AuiIf condition={(state) => state.thread.isEmpty}>
                 <AgentEmptyState
                   kicker="AGENT THREAD · EMPTY"
                   title="交给 Agent 一个可执行的任务"
                 />
-              </ThreadPrimitive.Empty>
+              </AuiIf>
               <ThreadPrimitive.Messages>
                 {({ message }) =>
                   message.role === 'user' ? (
