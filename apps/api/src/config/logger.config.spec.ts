@@ -78,3 +78,32 @@ describe('authentication log redaction', () => {
     }
   })
 })
+
+describe('HTTP access-log levels', () => {
+  const request = {} as IncomingMessage
+
+  it('suppresses successful access logs without affecting business logger output', () => {
+    expect(
+      createPinoHttpOptions().customLogLevel(request, { statusCode: 200 } as ServerResponse),
+    ).toBe('silent')
+    expect(
+      createPinoHttpOptions().customLogLevel(request, { statusCode: 304 } as ServerResponse),
+    ).toBe('silent')
+  })
+
+  it('keeps client and server failures visible', () => {
+    expect(
+      createPinoHttpOptions().customLogLevel(request, { statusCode: 401 } as ServerResponse),
+    ).toBe('warn')
+    expect(
+      createPinoHttpOptions().customLogLevel(request, { statusCode: 500 } as ServerResponse),
+    ).toBe('error')
+    expect(
+      createPinoHttpOptions().customLogLevel(
+        request,
+        { statusCode: 200 } as ServerResponse,
+        new Error('connection reset'),
+      ),
+    ).toBe('error')
+  })
+})

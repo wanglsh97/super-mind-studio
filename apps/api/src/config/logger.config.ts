@@ -36,7 +36,8 @@ export function createPinoHttpOptions() {
     customLogLevel(_request: IncomingMessage, response: ServerResponse, error?: Error) {
       if (error || response.statusCode >= 500) return 'error' as const
       if (response.statusCode >= 400) return 'warn' as const
-      return 'info' as const
+      // 成功请求会在页面初始化和轮询期间大量出现；业务生命周期日志仍由 Nest Logger 保留。
+      return 'silent' as const
     },
   }
 }

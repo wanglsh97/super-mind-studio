@@ -26,12 +26,17 @@ V1 SHALL store complete Prompt/messages in PostgreSQL and Pino structured logs w
 - **THEN** its selected fields and serialized response exclude Prompt content
 
 ### Requirement: Structured logs correlate the request path
-Pino logs SHALL include request ID, capability, model alias, provider, status, duration, usage, estimated cost, failover metadata, error code, and complete Prompt where applicable. API access logs and provider logs SHALL reuse the same request ID and SHALL never print API keys, session secrets, or authorization headers.
+Pino logs SHALL include request ID, capability, model alias, provider, status, duration, usage, estimated cost, failover metadata, error code, and complete Prompt where applicable. API access logs and provider logs SHALL reuse the same request ID and SHALL never print API keys, session secrets, or authorization headers. Automatic HTTP access logs for successful responses MAY be suppressed to keep business lifecycle logs visible; 4xx and 5xx responses MUST remain visible at warning or error level.
 
 #### Scenario: One failed request is diagnosed
 - **GIVEN** a failed request ID from the dashboard
 - **WHEN** an operator searches container logs by that ID
 - **THEN** validation, adapter selection, upstream failure, persistence finalization, and response events can be correlated
+
+#### Scenario: Successful page initialization does not flood the console
+- **WHEN** the Web application makes successful API requests during page initialization or polling
+- **THEN** automatic HTTP access logs for those responses are suppressed
+- **AND** business lifecycle logs and failed HTTP responses remain visible
 
 ### Requirement: Redis limits and provider health are observable but disposable
 Redis SHALL store per-IP rolling-window counters and short-lived provider health state with TTL. Redis persistence SHALL be disabled for V1; after restart the API SHALL rebuild health state from probes and subsequent calls without treating Redis as the source of billing or audit truth.
