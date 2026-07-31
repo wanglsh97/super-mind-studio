@@ -54,7 +54,7 @@
   --animate-pulse-brand: agent-pulse 1.8s ease-in-out infinite;
   --animate-blink: agent-blink 0.9s steps(1) infinite;
   --animate-status-breathe: status-breathe 2s ease-in-out infinite;
-  --animate-progress-shimmer: progress-shimmer 2.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  --animate-text-shimmer-sweep: text-shimmer-sweep 2.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
   --animate-caret-blink: caret-blink 1s step-end infinite;
   --animate-gateway-float: gateway-float 4s ease-in-out infinite;
   --animate-login-orbit: login-orbit 12s linear infinite;
@@ -272,7 +272,7 @@
   }
 }
 
-@keyframes progress-shimmer {
+@keyframes text-shimmer-sweep {
   0%,
   20% {
     background-position: 200% 0;
@@ -284,7 +284,7 @@
 }
 
 @layer utilities {
-  .agent-progress-shimmer {
+  .text-shimmer-sweep {
     color: transparent;
     background-image: linear-gradient(
       105deg,
@@ -298,11 +298,11 @@
     background-position: 200% 0;
     background-clip: text;
     -webkit-background-clip: text;
-    animation: var(--animate-progress-shimmer);
+    animation: var(--animate-text-shimmer-sweep);
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .agent-progress-shimmer {
+    .text-shimmer-sweep {
       color: var(--theme-ink-muted);
       background-image: none;
       animation: none;

@@ -2,6 +2,8 @@
 
 import type { AgentRunProgressStage } from '@/utils/agent/agent-run-adapter'
 
+import { ShimmerText } from '@/components/shimmer-text'
+
 const STAGE_COPY: Record<AgentRunProgressStage, string> = {
   'creating-thread': '正在创建会话…',
   'starting-run': '正在提交任务…',
@@ -18,7 +20,7 @@ export function AgentRunProgressIndicator({ stage }: Readonly<{ stage: AgentRunP
         aria-hidden="true"
         className="size-2 animate-status-breathe rounded-full bg-brand motion-reduce:animate-none"
       />
-      <span className="agent-progress-shimmer">{STAGE_COPY[stage]}</span>
+      <ShimmerText>{STAGE_COPY[stage]}</ShimmerText>
     </div>
   )
 }
