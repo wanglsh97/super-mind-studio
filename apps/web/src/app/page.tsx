@@ -1330,7 +1330,7 @@ function SandboxToolActivityCard({
     <details className="group my-2 text-[0.97rem] leading-7 text-ink opacity-55 transition-opacity duration-150 hover:opacity-85 open:opacity-75">
       <summary className="flex cursor-pointer list-none items-center py-1.5 [&::-webkit-details-marker]:hidden">
         <span className="flex min-w-0 flex-wrap items-center gap-2">
-          <span className="font-sans font-medium">{label}</span>
+          <span className="font-sans font-normal">{label}</span>
           {exitCode !== undefined ? (
             <span className="font-sans">exit {exitCode}</span>
           ) : null}
@@ -1379,7 +1379,7 @@ function McpToolActivityCard({
     <details className="group my-2 text-[0.97rem] leading-7 text-ink opacity-55 transition-opacity duration-150 hover:opacity-85 open:opacity-75">
       <summary className="flex cursor-pointer list-none items-center py-1.5 [&::-webkit-details-marker]:hidden">
         <span className="flex min-w-0 flex-wrap items-center gap-2">
-          <span className="font-sans font-medium">{label}</span>
+          <span className="font-sans font-normal">{label}</span>
         </span>
         <ToolDisclosureChevron />
       </summary>
@@ -1417,7 +1417,7 @@ function ToolExecutionResult({ result }: Readonly<{ result?: SandboxToolResult |
 
   return (
     <div className="space-y-1.5 pt-1">
-      <p className="font-medium">调用结果</p>
+      <p className="font-normal">调用结果</p>
       {summary ? <p>{summary}</p> : null}
       {hasAudit ? (
         <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-all rounded-lg bg-surface-muted px-2.5 py-2 font-sans text-inherit leading-7">

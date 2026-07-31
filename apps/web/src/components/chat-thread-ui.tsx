@@ -850,7 +850,7 @@ export function AgentRunMetadata({
 export function AgentReasoning({ text }: Readonly<{ text: string }>) {
   return (
     <details className="group my-2 text-[0.97rem] leading-7 text-ink opacity-55 transition-opacity duration-150 hover:opacity-85 open:opacity-75">
-      <summary className="flex cursor-pointer list-none items-center py-1 font-medium tracking-[0.02em] [&::-webkit-details-marker]:hidden">
+      <summary className="flex cursor-pointer list-none items-center py-1 font-normal tracking-[0.02em] [&::-webkit-details-marker]:hidden">
         <span>思考过程</span>
         <ChevronRightIcon
           aria-hidden="true"
