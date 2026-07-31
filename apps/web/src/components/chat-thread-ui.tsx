@@ -156,10 +156,7 @@ export function AgentThreadNavigator() {
                       .getElementById(`agent-message-${entry.id}`)
                       ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                   }}
-                  className={cn(
-                    'group flex h-5 w-full items-center pl-2.5 text-left',
-                    focusRing,
-                  )}
+                  className={cn('group flex h-5 w-full items-center pl-2.5 text-left', focusRing)}
                 >
                   <span
                     aria-hidden="true"
@@ -181,9 +178,6 @@ export function AgentThreadNavigator() {
           className="pointer-events-none absolute left-[calc(100%+0.65rem)] z-20 w-72 -translate-y-1/2 rounded-2xl border border-line-soft bg-surface-card px-4 py-3 text-[0.82rem] leading-6 text-ink-secondary shadow-[0_12px_28px_rgb(15_15_20/0.12)] dark:text-ink"
           style={{ top: hoveredTitle.top }}
         >
-          <p className="mb-1 text-[0.6rem] font-bold tracking-[0.1em] text-ink-subtle uppercase">
-            原问题
-          </p>
           <p className="line-clamp-4">{hoveredTitle.label}</p>
         </div>
       ) : null}

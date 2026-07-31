@@ -361,7 +361,10 @@ function AgentConsole() {
               <AgentThreadNavigator />
               <AgentThreadViewport>
                 <AuiIf condition={(state) => state.thread.isEmpty}>
-                  <AgentEmptyState kicker="AGENT THREAD · EMPTY" title="描述你的目标，Agent 来推进" />
+                  <AgentEmptyState
+                    kicker="AGENT THREAD · EMPTY"
+                    title="描述你的目标，Agent 来推进"
+                  />
                 </AuiIf>
                 <ThreadPrimitive.Messages>
                   {({ message }) =>
@@ -1356,7 +1359,7 @@ function SandboxToolActivityCard({
     >
       <summary className="flex cursor-pointer list-none items-center py-1.5 [&::-webkit-details-marker]:hidden">
         <span className="flex min-w-0 flex-wrap items-center gap-2">
-          <span className={cn('font-sans font-normal', toolActivityTextClassName(state))}>
+          <span className="font-sans font-normal">
             {running ? <ShimmerText>{label}</ShimmerText> : label}
           </span>
           {exitCode !== undefined ? <span className="font-sans">exit {exitCode}</span> : null}
@@ -1410,7 +1413,7 @@ function McpToolActivityCard({
     >
       <summary className="flex cursor-pointer list-none items-center py-1.5 [&::-webkit-details-marker]:hidden">
         <span className="flex min-w-0 flex-wrap items-center gap-2">
-          <span className={cn('font-sans font-normal', toolActivityTextClassName(state))}>
+          <span className="font-sans font-normal">
             {running ? <ShimmerText>{label}</ShimmerText> : label}
           </span>
         </span>
@@ -1447,16 +1450,16 @@ function ToolExecutionResult({ result }: Readonly<{ result?: SandboxToolResult |
 }
 
 function toolCallLabel(toolName: string): string {
-  return `Tool-Call · ${toolName}`;
+  return `ToolCall · ${toolName}`;
 }
 
-function toolActivityTextClassName(state: AgentToolActivityState): string {
-  if (state === 'loading' || state === 'running') return 'text-brand';
-  if (state === 'success') return 'text-success';
-  if (state === 'failed') return 'text-danger';
-  if (state === 'limit') return 'text-warning';
-  return 'text-ink-subtle';
-}
+// function toolActivityTextClassName(state: AgentToolActivityState): string {
+//   if (state === 'loading' || state === 'running') return 'text-brand';
+//   if (state === 'success') return 'text-success';
+//   if (state === 'failed') return 'text-danger';
+//   if (state === 'limit') return 'text-warning';
+//   return 'text-ink-subtle';
+// }
 
 function AgentMessageMetadata() {
   const custom = useAuiState(({ message }) => message.metadata.custom) as AgentRunMetadataType;

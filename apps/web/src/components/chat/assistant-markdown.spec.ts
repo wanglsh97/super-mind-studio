@@ -52,7 +52,6 @@ describe('AssistantMarkdown security', () => {
     assert.match(markup, /target="_blank"/)
     assert.match(markup, /group\/link/)
     assert.match(markup, /text-\[#2878d4\]/)
-    assert.match(markup, /<svg[^>]+aria-hidden="true"/)
   })
 
   it('renders a completed fenced SVG block as a sanitized preview', () => {

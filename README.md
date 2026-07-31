@@ -199,3 +199,13 @@ DATABASE_URL=postgresql://aigateway:password@localhost:5432/aigateway_test pnpm 
 
 1. `/admin` 后台能看，但不能改数据。
 2. Prisma Studio：先执行 `pnpm infra:up`，然后执行 `pnpm exec prisma studio`。
+
+## ECS 发布步骤
+
+```shell
+    cd super-mind-studio/
+    git fetch origin
+    git rev-parse HEAD
+    nano .env.production
+    ENV_FILE="$PWD/.env.production" ./infra/scripts/deploy-production.sh
+```

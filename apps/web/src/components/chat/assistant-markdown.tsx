@@ -1,12 +1,12 @@
-import DOMPurify from 'isomorphic-dompurify'
-import { Link2Icon } from 'lucide-react'
-import React from 'react'
-import type { ComponentProps, ReactElement, ReactNode } from 'react'
-import Markdown from 'react-markdown'
-import type { ExtraProps } from 'react-markdown'
-import remarkGfm from 'remark-gfm'
+import DOMPurify from 'isomorphic-dompurify';
+import { Link2Icon } from 'lucide-react';
+import React from 'react';
+import type { ComponentProps, ReactElement, ReactNode } from 'react';
+import Markdown from 'react-markdown';
+import type { ExtraProps } from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
-import { CodeBlock } from './code-block'
+import { CodeBlock } from './code-block';
 
 const allowedElements = [
   'p',
@@ -32,7 +32,7 @@ const allowedElements = [
   'tr',
   'th',
   'td',
-] as const
+] as const;
 
 const allowedSvgTags = [
   'svg',
@@ -54,7 +54,7 @@ const allowedSvgTags = [
   'stop',
   'clipPath',
   'mask',
-] as const
+] as const;
 
 const allowedSvgAttributes = [
   'xmlns',
@@ -111,10 +111,10 @@ const allowedSvgAttributes = [
   'clip-path',
   'clip-rule',
   'mask',
-] as const
+] as const;
 
-const localPaintReference = /^url\(\s*#[A-Za-z_][\w:.-]*\s*\)$/i
-const paintReferenceAttributes = new Set(['fill', 'stroke', 'clip-path', 'mask'])
+const localPaintReference = /^url\(\s*#[A-Za-z_][\w:.-]*\s*\)$/i;
+const paintReferenceAttributes = new Set(['fill', 'stroke', 'clip-path', 'mask']);
 
 DOMPurify.addHook('uponSanitizeAttribute', (_node, data) => {
   if (
@@ -122,12 +122,12 @@ DOMPurify.addHook('uponSanitizeAttribute', (_node, data) => {
     /url\s*\(/i.test(data.attrValue) &&
     !localPaintReference.test(data.attrValue)
   ) {
-    data.keepAttr = false
+    data.keepAttr = false;
   }
-})
+});
 
 export function AssistantMarkdown({ children }: { children: string }) {
-  const completedSvgBlocks = findCompletedSvgBlocks(children)
+  const completedSvgBlocks = findCompletedSvgBlocks(children);
 
   return (
     <div className="space-y-3 break-words [&_:not(pre)>code]:rounded [&_:not(pre)>code]:bg-slate-100 [&_:not(pre)>code]:px-1 [&_table]:block [&_table]:overflow-x-auto [&_td]:border [&_td]:border-slate-200 [&_td]:p-2 [&_th]:border [&_th]:border-slate-200 [&_th]:p-2 dark:[&_a]:text-cyan-300 dark:[&_:not(pre)>code]:bg-white/10 dark:[&_td]:border-white/10 dark:[&_th]:border-white/10">
@@ -145,13 +145,13 @@ export function AssistantMarkdown({ children }: { children: string }) {
         {children}
       </Markdown>
     </div>
-  )
+  );
 }
 
 type MarkdownCodeElement = ReactElement<{
-  className?: string
-  children?: ReactNode
-}>
+  className?: string;
+  children?: ReactNode;
+}>;
 
 function SvgAwarePre({
   children,
@@ -159,12 +159,12 @@ function SvgAwarePre({
   node: _node,
   ...props
 }: ComponentProps<'pre'> & ExtraProps & { completedSvgBlocks: ReadonlySet<string> }) {
-  void _node
-  const child = React.Children.count(children) === 1 ? React.Children.only(children) : null
+  void _node;
+  const child = React.Children.count(children) === 1 ? React.Children.only(children) : null;
 
   if (isSvgCodeElement(child)) {
-    const source = normalizeSvgSource(child.props.children)
-    const sanitized = completedSvgBlocks.has(source) ? sanitizeSvg(source) : null
+    const source = normalizeSvgSource(child.props.children);
+    const sanitized = completedSvgBlocks.has(source) ? sanitizeSvg(source) : null;
 
     if (sanitized) {
       return (
@@ -175,64 +175,64 @@ function SvgAwarePre({
           className="my-3 overflow-auto rounded-xl border border-line bg-white p-4 shadow-sm dark:border-line-soft dark:bg-surface-inset [&_svg]:mx-auto [&_svg]:block [&_svg]:h-auto [&_svg]:max-h-[32rem] [&_svg]:max-w-full"
           dangerouslySetInnerHTML={{ __html: sanitized }}
         />
-      )
+      );
     }
   }
 
   if (isCodeElement(child)) {
-    const language = getCodeLanguage(child.props.className)
+    const language = getCodeLanguage(child.props.className);
     return (
       <CodeBlock
         code={normalizeCodeSource(child.props.children)}
         {...(language ? { language } : {})}
       />
-    )
+    );
   }
 
-  return <pre {...props}>{children}</pre>
+  return <pre {...props}>{children}</pre>;
 }
 
 function isSvgCodeElement(value: ReactNode): value is MarkdownCodeElement {
   return (
     React.isValidElement<{ className?: string }>(value) &&
     value.props.className?.split(/\s+/).includes('language-svg') === true
-  )
+  );
 }
 
 function isCodeElement(value: ReactNode): value is MarkdownCodeElement {
-  return React.isValidElement<{ className?: string }>(value)
+  return React.isValidElement<{ className?: string }>(value);
 }
 
 function getCodeLanguage(className?: string): string | undefined {
   return className
     ?.split(/\s+/)
     .find((name) => name.startsWith('language-'))
-    ?.slice('language-'.length)
+    ?.slice('language-'.length);
 }
 
 function normalizeSvgSource(value: ReactNode): string {
-  return String(value ?? '').trim()
+  return String(value ?? '').trim();
 }
 
 function normalizeCodeSource(value: ReactNode): string {
-  return String(value ?? '').replace(/\n$/, '')
+  return String(value ?? '').replace(/\n$/, '');
 }
 
 export function findCompletedSvgBlocks(markdown: string): ReadonlySet<string> {
-  const completed = new Set<string>()
-  const blockPattern = /(?:^|\n)(`{3,}|~{3,})[ \t]*svg[ \t]*\n([\s\S]*?)\n\1[ \t]*(?=\n|$)/gi
+  const completed = new Set<string>();
+  const blockPattern = /(?:^|\n)(`{3,}|~{3,})[ \t]*svg[ \t]*\n([\s\S]*?)\n\1[ \t]*(?=\n|$)/gi;
 
   for (const match of markdown.matchAll(blockPattern)) {
-    completed.add(normalizeSvgSource(match[2]))
+    completed.add(normalizeSvgSource(match[2]));
   }
 
-  return completed
+  return completed;
 }
 
 export function sanitizeSvg(source: string): string | null {
-  const normalized = source.trim()
-  const openingTags = normalized.match(/<svg(?:\s|>)/gi)?.length ?? 0
-  const closingTags = normalized.match(/<\/svg\s*>/gi)?.length ?? 0
+  const normalized = source.trim();
+  const openingTags = normalized.match(/<svg(?:\s|>)/gi)?.length ?? 0;
+  const closingTags = normalized.match(/<\/svg\s*>/gi)?.length ?? 0;
 
   if (
     openingTags !== 1 ||
@@ -240,7 +240,7 @@ export function sanitizeSvg(source: string): string | null {
     !/^<svg(?:\s|>)/i.test(normalized) ||
     !/<\/svg\s*>$/i.test(normalized)
   ) {
-    return null
+    return null;
   }
 
   const sanitized = DOMPurify.sanitize(normalized, {
@@ -250,35 +250,34 @@ export function sanitizeSvg(source: string): string | null {
     ALLOW_ARIA_ATTR: true,
     FORBID_TAGS: ['script', 'foreignObject', 'style', 'a', 'image', 'use', 'animate', 'set'],
     FORBID_ATTR: ['style', 'href', 'xlink:href'],
-  }).trim()
+  }).trim();
 
-  return /^<svg(?:\s|>)/i.test(sanitized) && /<\/svg\s*>$/i.test(sanitized) ? sanitized : null
+  return /^<svg(?:\s|>)/i.test(sanitized) && /<\/svg\s*>$/i.test(sanitized) ? sanitized : null;
 }
 
 function SafeLink({ href, children, node: _node, ...props }: ComponentProps<'a'> & ExtraProps) {
-  void _node
+  void _node;
   return (
     <a
       {...props}
       href={href}
       target="_blank"
       rel="noreferrer noopener"
-      className="group/link inline-flex items-center gap-1 font-medium text-[#2878d4] no-underline transition-colors hover:text-[#1265bf] hover:underline hover:decoration-[#2878d4]/55 hover:underline-offset-3 focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus dark:text-[#63afff] dark:hover:text-[#8ac4ff]"
+      className="group/link inline-flex items-center gap-1 text-[#2878d4] no-underline transition-colors hover:text-[#1265bf] hover:underline hover:decoration-[#2878d4]/55 hover:underline-offset-3 focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus dark:text-[#63afff] dark:hover:text-[#8ac4ff]"
     >
-      <Link2Icon aria-hidden="true" className="size-[0.95em] shrink-0 stroke-[2.4]" />
       {children}
     </a>
-  )
+  );
 }
 
 export function safeMarkdownUrl(value: string): string {
   const normalized = [...value.trim()]
     .filter((character) => {
-      const code = character.charCodeAt(0)
-      return code > 31 && code !== 127 && !/\s/.test(character)
+      const code = character.charCodeAt(0);
+      return code > 31 && code !== 127 && !/\s/.test(character);
     })
-    .join('')
-  const protocol = /^([a-z][a-z\d+.-]*):/i.exec(normalized)?.[1]?.toLowerCase()
-  if (protocol && !['http', 'https', 'mailto'].includes(protocol)) return ''
-  return value
+    .join('');
+  const protocol = /^([a-z][a-z\d+.-]*):/i.exec(normalized)?.[1]?.toLowerCase();
+  if (protocol && !['http', 'https', 'mailto'].includes(protocol)) return '';
+  return value;
 }
