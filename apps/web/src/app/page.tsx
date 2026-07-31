@@ -1330,13 +1330,9 @@ function SandboxToolActivityCard({
   const exitCode = typeof result?.audit?.exitCode === 'number' ? result.audit.exitCode : undefined;
   const size = typeof result?.audit?.size === 'number' ? result.audit.size : undefined;
   return (
-    <div
-      className={cn(
-        'my-2 overflow-hidden rounded-xl border bg-surface text-sm',
-        toolStateClassName(state),
-      )}
-    >
-      <div className="flex flex-wrap items-center gap-2 border-b border-current/10 px-3 py-2">
+    <details className={cn('group my-2 text-sm', toolStateClassName(state))}>
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 py-1.5 [&::-webkit-details-marker]:hidden">
+        <span className="flex min-w-0 flex-wrap items-center gap-2">
         <span className="font-mono text-xs font-bold">{toolName}</span>
         <span className="rounded-full bg-current/8 px-2 py-0.5 text-[0.68rem] font-bold">
           {AGENT_TOOL_ACTIVITY_LABELS[state]}
@@ -1347,8 +1343,10 @@ function SandboxToolActivityCard({
         {size !== undefined ? (
           <span className="font-mono text-[0.7rem] opacity-70">{size} B</span>
         ) : null}
-      </div>
-      <div className="space-y-1 px-3 py-2">
+        </span>
+        <ToolDisclosureChevron />
+      </summary>
+      <div className="mt-1.5 space-y-1 border-l border-current/15 pl-3 text-ink-muted">
         {subject ? (
           <code className="block max-h-24 overflow-auto whitespace-pre-wrap break-all text-xs text-ink">
             {subject}
@@ -1357,7 +1355,7 @@ function SandboxToolActivityCard({
         {detail ? <p className="font-mono text-[0.68rem] text-ink-subtle">{detail}</p> : null}
         {result?.summary ? <p className="text-xs text-ink-muted">{result.summary}</p> : null}
       </div>
-    </div>
+    </details>
   );
 }
 
@@ -1383,27 +1381,40 @@ function McpToolActivityCard({
     audit: result?.audit,
   });
   return (
-    <div
-      className={cn(
-        'my-2 overflow-hidden rounded-xl border bg-surface text-sm',
-        toolStateClassName(state),
-      )}
-    >
-      <div className="flex flex-wrap items-center gap-2 border-b border-current/10 px-3 py-2">
-        <span className="font-mono text-xs font-bold">
-          {serverId} · {remoteToolName}
+    <details className={cn('group my-2 text-sm', toolStateClassName(state))}>
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 py-1.5 [&::-webkit-details-marker]:hidden">
+        <span className="flex min-w-0 flex-wrap items-center gap-2">
+          <span className="font-mono text-xs font-bold">
+            {serverId} · {remoteToolName}
+          </span>
+          <span className="rounded-full bg-current/8 px-2 py-0.5 text-[0.68rem] font-bold">
+            {AGENT_TOOL_ACTIVITY_LABELS[state]}
+          </span>
         </span>
-        <span className="rounded-full bg-current/8 px-2 py-0.5 text-[0.68rem] font-bold">
-          {AGENT_TOOL_ACTIVITY_LABELS[state]}
-        </span>
-      </div>
-      <div className="space-y-1 px-3 py-2">
+        <ToolDisclosureChevron />
+      </summary>
+      <div className="mt-1.5 space-y-1 border-l border-current/15 pl-3 text-ink-muted">
         <code className="block max-h-24 overflow-auto whitespace-pre-wrap break-all text-xs text-ink">
           {JSON.stringify(args)}
         </code>
         {result?.summary ? <p className="text-xs text-ink-muted">{result.summary}</p> : null}
       </div>
-    </div>
+    </details>
+  );
+}
+
+function ToolDisclosureChevron() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 16 16"
+      className="size-4 shrink-0 opacity-75 transition-[opacity,transform] duration-150 group-hover:opacity-100 group-open:rotate-90 motion-reduce:transition-none"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
+      <path d="m6 3 5 5-5 5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   );
 }
 
