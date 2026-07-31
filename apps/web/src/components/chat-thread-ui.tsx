@@ -699,16 +699,34 @@ export function AgentEmptyState({
 
 export function UserMessage() {
   return (
-    <MessagePrimitive.Root className="flex flex-col items-end gap-2 py-4">
-      <div className="liquid-glass-soft max-w-[min(82%,38rem)] rounded-2xl px-4 py-3 text-[0.97rem] leading-7 text-ink-secondary max-md:max-w-[92%] dark:text-ink-secondary">
+    <MessagePrimitive.Root className="group flex flex-col items-end gap-1 py-4">
+      <div className="liquid-glass-soft max-w-[min(82%,38rem)] rounded-2xl px-4 py-3 text-[0.97rem] leading-7 text-ink-secondary transition-[box-shadow,transform] hover:-translate-y-px hover:shadow-[0_10px_28px_rgb(37_57_103/0.1)] max-md:max-w-[92%] dark:text-ink-secondary">
         <MessagePrimitive.Parts />
       </div>
     </MessagePrimitive.Root>
-  )
+  );
 }
 
 export function AssistantMessage({
   label,
+      <ActionBarPrimitive.Root className="flex h-7 items-center opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100">
+        <ActionBarPrimitive.Copy
+          aria-label="复制消息"
+          title="复制"
+          className="group/copy grid size-7 cursor-pointer place-items-center rounded-md text-ink-subtle transition-[background,color] hover:bg-brand-subtle hover:text-brand-hover disabled:cursor-not-allowed dark:hover:bg-brand-subtle dark:hover:text-brand-light"
+        >
+          <CopyIcon
+            aria-hidden="true"
+            className="size-3.5 group-data-[copied=true]/copy:hidden"
+            strokeWidth={1.8}
+          />
+          <CheckIcon
+            aria-hidden="true"
+            className="hidden size-3.5 group-data-[copied=true]/copy:block"
+            strokeWidth={1.8}
+          />
+        </ActionBarPrimitive.Copy>
+      </ActionBarPrimitive.Root>
   renderPart,
   runProgress,
 }: Readonly<{
