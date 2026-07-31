@@ -1347,7 +1347,7 @@ function SandboxToolActivityCard({
     >
       <summary className="flex cursor-pointer list-none items-center py-1.5 [&::-webkit-details-marker]:hidden">
         <span className="flex min-w-0 flex-wrap items-center gap-2">
-          <span className={cn('font-sans font-normal', state === 'failed' && 'text-danger')}>
+          <span className={cn('font-sans font-normal', toolActivityTextClassName(state))}>
             {label}
           </span>
           {exitCode !== undefined ? <span className="font-sans">exit {exitCode}</span> : null}
@@ -1404,7 +1404,7 @@ function McpToolActivityCard({
     >
       <summary className="flex cursor-pointer list-none items-center py-1.5 [&::-webkit-details-marker]:hidden">
         <span className="flex min-w-0 flex-wrap items-center gap-2">
-          <span className={cn('font-sans font-normal', state === 'failed' && 'text-danger')}>
+          <span className={cn('font-sans font-normal', toolActivityTextClassName(state))}>
             {label}
           </span>
         </span>
@@ -1452,6 +1452,14 @@ function AgentMessageMetadata() {
     <AgentRunMetadata
       model={custom.model}
       runStatus={custom.runStatus}
+function toolActivityTextClassName(state: AgentToolActivityState): string {
+  if (state === 'loading' || state === 'running') return 'text-brand';
+  if (state === 'success') return 'text-success';
+  if (state === 'failed') return 'text-danger';
+  if (state === 'limit') return 'text-warning';
+  return 'text-ink-subtle';
+}
+
       totalTokens={custom.totalTokens}
       modelCalls={custom.modelCalls}
       toolCalls={custom.toolCalls}
