@@ -28,7 +28,14 @@ export interface AgentRunAdapterContext {
   onContextBudget?: (budget: AgentContextBudgetState) => void
   onContextCompressed?: (event: Extract<AgentStreamEvent, { type: 'context-compressed' }>) => void
   onSandboxStatus?: (status: AgentSandboxStatus, sandboxId?: string) => void
+  onRunProgressChange?: (stage: AgentRunProgressStage | null) => void
 }
+
+export type AgentRunProgressStage =
+  | 'creating-thread'
+  | 'starting-run'
+  | 'preparing-sandbox'
+  | 'thinking'
 
 export interface AgentRunMetadata extends Record<string, unknown> {
   model?: string
@@ -74,11 +81,13 @@ export function createAgentRunAdapter(
       let threadId = context.threadId
       if (!threadId) {
         if (!context.model) throw new Error('没有可用的 Agent 模型')
+        context.onRunProgressChange?.('creating-thread')
         const created = await client.agent.threads.create({ model: context.model })
         threadId = created.id
         context.onThreadCreated(created)
       }
 
+      context.onRunProgressChange?.('starting-run')
       const run = await client.agent.runs.create(threadId, {
         input,
         thinkingEffort: context.thinkingEffort,
@@ -87,6 +96,7 @@ export function createAgentRunAdapter(
           : { skills: context.selectedSkillNames.map((name) => ({ name })) }),
       })
       context.onRunCreated?.({ id: run.id, threadId })
+      context.onRunProgressChange?.('preparing-sandbox')
       const metadata: AgentRunMetadata = { model: context.model, runId: run.id }
       const parts: MutablePart[] = []
       let runError: Error | null = null
@@ -102,7 +112,11 @@ export function createAgentRunAdapter(
           if (event.type === 'context-compressed') context.onContextCompressed?.(event)
           if (event.type === 'sandbox-status') {
             context.onSandboxStatus?.(event.status, event.sandboxId)
+            context.onRunProgressChange?.(
+              event.status === 'ready' ? 'thinking' : 'preparing-sandbox',
+            )
           }
+          if (isRenderableAgentEvent(event)) context.onRunProgressChange?.(null)
           applyAgentEvent(parts, metadata, event)
           const content = toAssistantParts(parts)
           if (event.type === 'run-terminal') {
@@ -125,6 +139,7 @@ export function createAgentRunAdapter(
                     : { type: 'complete', reason: 'stop' },
             }
             yield result
+            context.onRunProgressChange?.(null)
             context.onRunFinished?.(event.status)
             return
           }
@@ -144,11 +159,16 @@ export function createAgentRunAdapter(
           }
           return
         }
+        context.onRunProgressChange?.(null)
         onError?.(error)
         throw error
       }
     },
   }
+}
+
+function isRenderableAgentEvent(event: AgentStreamEvent): boolean {
+  return event.type === 'reasoning-delta' || event.type === 'text-delta' || event.type === 'tool-call'
 }
 
 export function agentMessagesToThreadMessages(

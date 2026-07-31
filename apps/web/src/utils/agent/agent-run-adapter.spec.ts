@@ -252,6 +252,57 @@ test('forwards live Sandbox status events to the workspace status module', async
   assert.deepEqual(received, [{ status: 'creating' }, { status: 'ready', sandboxId: 'sandbox-1' }])
 })
 
+test('reports progress until the first renderable Agent event arrives', async () => {
+  const progress: Array<string | null> = []
+  const client = {
+    agent: {
+      runs: {
+        create: async () => ({ id: 'run-1', threadId: 'thread-1' }),
+        subscribe: async function* () {
+          yield {
+            type: 'sandbox-status',
+            sequence: 0,
+            runId: 'run-1',
+            status: 'ready',
+            sandboxId: 'sandbox-1',
+          } as const
+          yield {
+            type: 'text-delta',
+            sequence: 1,
+            runId: 'run-1',
+            messageId: 'message-1',
+            delta: '已开始处理。',
+          } as const
+          yield {
+            type: 'run-terminal',
+            sequence: 2,
+            runId: 'run-1',
+            status: 'succeeded',
+            limitReason: null,
+          } as const
+        },
+      },
+    },
+  } as unknown as AIGatewayClient
+  const adapter = createAgentRunAdapter(client, () => ({
+    threadId: 'thread-1',
+    model: 'mock',
+    thinkingEffort: 'balanced',
+    selectedSkillNames: [],
+    onThreadCreated: () => undefined,
+    onRunProgressChange: (stage) => progress.push(stage),
+  }))
+
+  for await (const chunk of adapter.run({
+    messages: [{ role: 'user', content: [{ type: 'text', text: '执行' }] }],
+    abortSignal: new AbortController().signal,
+  } as never) as AsyncGenerator<unknown>) {
+    void chunk
+  }
+
+  assert.deepEqual(progress, ['starting-run', 'preparing-sandbox', 'thinking', null, null])
+})
+
 test('waits for limit terminal after a context error and releases the active run', async () => {
   let finished = 0
   let createInput: unknown

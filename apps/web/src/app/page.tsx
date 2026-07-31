@@ -28,6 +28,7 @@ import {
 import { Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
 import { AgentSkillSlashPicker } from '@/components/agent-skill-slash-picker';
+import { AgentRunProgressIndicator } from '@/components/agent-run-progress-indicator';
 import {
   AgentActiveRunHint,
   AgentComposerActions,
@@ -68,6 +69,7 @@ import {
   agentMessagesToThreadMessages,
   createAgentRunAdapter,
   type AgentRunMetadata as AgentRunMetadataType,
+  type AgentRunProgressStage,
 } from '@/utils/agent/agent-run-adapter';
 import { shouldStartNewThreadOnModelChange } from '@/utils/agent/agent-model-policy';
 import { resetThreadIfIdle } from '@/utils/agent/agent-thread-hydration';
@@ -132,6 +134,7 @@ function AgentConsole() {
   const [mcpServers, setMcpServers] = useState<AgentMcpServerStatus[]>([]);
   const [mcpLoadState, setMcpLoadState] = useState<'loading' | 'ready' | 'failed'>('loading');
   const [sandboxTelemetry, setSandboxTelemetry] = useState<SandboxTelemetry>({ status: 'idle' });
+  const [runProgress, setRunProgress] = useState<AgentRunProgressStage | null>(null);
 
   const skipHydrationRef = useRef(false);
   const contextRef = useRef({
@@ -146,6 +149,7 @@ function AgentConsole() {
       event: Extract<AgentStreamEvent, { type: 'context-compressed' }>,
     ) => void,
     onSandboxStatus: (() => undefined) as (status: AgentSandboxStatus, sandboxId?: string) => void,
+    onRunProgressChange: (() => undefined) as (stage: AgentRunProgressStage | null) => void,
   });
 
   contextRef.current.threadId = activeThreadId;
@@ -184,6 +188,7 @@ function AgentConsole() {
     });
   };
   contextRef.current.onRunFinished = () => {
+    setRunProgress(null);
     setSandboxTelemetry((current) =>
       current.status === 'failed'
         ? current
@@ -222,6 +227,7 @@ function AgentConsole() {
       ...(sandboxId === undefined ? {} : { sandboxId }),
     });
   };
+  contextRef.current.onRunProgressChange = setRunProgress;
 
   const loadSkillCandidates = () => {
     setSkillLoadState('loading');
@@ -396,6 +402,7 @@ function AgentConsole() {
                   )
                 }
               </ThreadPrimitive.Messages>
+              <AgentRunProgressIndicator stage={runProgress} />
               <AgentContextTimeline events={compressionEvents} summary={contextSummary} />
             </AgentThreadViewport>
             <AgentScrollToBottom />
