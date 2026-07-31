@@ -43,6 +43,18 @@ describe('AssistantMarkdown security', () => {
     assert.doesNotMatch(markup, /<script|<img|javascript:/i)
   })
 
+  it('renders Markdown links with the branded link treatment and icon', () => {
+    const markup = renderToStaticMarkup(
+      createElement(AssistantMarkdown, null, '[assistant-ui Markdown 文档索引](https://www.assistant-ui.com)'),
+    )
+
+    assert.match(markup, /href="https:\/\/www\.assistant-ui\.com"/)
+    assert.match(markup, /target="_blank"/)
+    assert.match(markup, /group\/link/)
+    assert.match(markup, /text-\[#2878d4\]/)
+    assert.match(markup, /<svg[^>]+aria-hidden="true"/)
+  })
+
   it('renders a completed fenced SVG block as a sanitized preview', () => {
     const markup = renderToStaticMarkup(
       createElement(

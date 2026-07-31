@@ -1,4 +1,5 @@
 import DOMPurify from 'isomorphic-dompurify'
+import { Link2Icon } from 'lucide-react'
 import React from 'react'
 import type { ComponentProps, ReactElement, ReactNode } from 'react'
 import Markdown from 'react-markdown'
@@ -257,7 +258,14 @@ export function sanitizeSvg(source: string): string | null {
 function SafeLink({ href, children, node: _node, ...props }: ComponentProps<'a'> & ExtraProps) {
   void _node
   return (
-    <a {...props} href={href} target="_blank" rel="noreferrer noopener">
+    <a
+      {...props}
+      href={href}
+      target="_blank"
+      rel="noreferrer noopener"
+      className="group/link inline-flex items-center gap-1 font-medium text-[#2878d4] no-underline transition-colors hover:text-[#1265bf] hover:underline hover:decoration-[#2878d4]/55 hover:underline-offset-3 focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus dark:text-[#63afff] dark:hover:text-[#8ac4ff]"
+    >
+      <Link2Icon aria-hidden="true" className="size-[0.95em] shrink-0 stroke-[2.4]" />
       {children}
     </a>
   )
