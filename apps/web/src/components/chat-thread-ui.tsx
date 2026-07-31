@@ -84,6 +84,8 @@ export function AgentThreadNavigator() {
   const messages = useAuiState(({ thread }) => thread.messages);
   const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const [hoveredTitle, setHoveredTitle] = useState<{ label: string; top: number } | null>(null);
+  const navigatorRef = useRef<HTMLElement>(null);
   const entries = messages.reduce<Array<{ id: string; label: string; index: number }>>(
     (current, message) => {
       if (message.role !== 'user') return current;
@@ -97,7 +99,7 @@ export function AgentThreadNavigator() {
     [],
   );
 
-  if (entries.length === 0) return null;
+  if (entries.length < 2) return null;
 
   const barWidth = (index: number) => {
     if (hoveredIndex === null) return 12;
@@ -110,13 +112,17 @@ export function AgentThreadNavigator() {
 
   return (
     <aside
+      ref={navigatorRef}
       aria-label="当前会话导航"
-      className="hidden min-h-0 w-14 shrink-0 flex-col md:flex"
+      className="relative hidden min-h-0 w-14 shrink-0 flex-col justify-center md:flex"
     >
       <nav
-        className="min-h-0 flex-1 overflow-y-auto pt-14"
+        className="max-h-full overflow-y-auto"
         aria-label="历史对话定位"
-        onMouseLeave={() => setHoveredIndex(null)}
+        onMouseLeave={() => {
+          setHoveredIndex(null);
+          setHoveredTitle(null);
+        }}
       >
         <ol className="m-0 flex list-none flex-col gap-0.5 p-0">
           {entries.map((entry) => {
@@ -125,12 +131,24 @@ export function AgentThreadNavigator() {
               <li key={entry.id}>
                 <button
                   type="button"
-                  title={entry.label}
                   aria-label={`定位到第 ${entry.index} 轮对话：${entry.label}`}
                   aria-current={selected ? 'location' : undefined}
-                  onMouseEnter={() => setHoveredIndex(entry.index - 1)}
+                  onMouseEnter={(event) => {
+                    setHoveredIndex(entry.index - 1);
+                    const container = navigatorRef.current?.getBoundingClientRect();
+                    const target = event.currentTarget.getBoundingClientRect();
+                    if (container) {
+                      setHoveredTitle({
+                        label: entry.label,
+                        top: target.top - container.top + target.height / 2,
+                      });
+                    }
+                  }}
                   onFocus={() => setHoveredIndex(entry.index - 1)}
-                  onBlur={() => setHoveredIndex(null)}
+                  onBlur={() => {
+                    setHoveredIndex(null);
+                    setHoveredTitle(null);
+                  }}
                   onClick={() => {
                     setSelectedMessageId(entry.id);
                     document
@@ -156,6 +174,18 @@ export function AgentThreadNavigator() {
           })}
         </ol>
       </nav>
+      {hoveredTitle ? (
+        <div
+          role="tooltip"
+          className="pointer-events-none absolute left-[calc(100%+0.65rem)] z-20 w-72 -translate-y-1/2 rounded-2xl border border-line-soft bg-surface-card px-4 py-3 text-[0.82rem] leading-6 text-ink-secondary shadow-[0_12px_28px_rgb(15_15_20/0.12)] dark:text-ink"
+          style={{ top: hoveredTitle.top }}
+        >
+          <p className="mb-1 text-[0.6rem] font-bold tracking-[0.1em] text-ink-subtle uppercase">
+            原问题
+          </p>
+          <p className="line-clamp-4">{hoveredTitle.label}</p>
+        </div>
+      ) : null}
     </aside>
   );
 }
