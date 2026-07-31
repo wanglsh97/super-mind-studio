@@ -23,6 +23,7 @@ import {
   useAui,
   useAuiState,
   useLocalRuntime,
+  WebSpeechDictationAdapter,
 } from '@assistant-ui/react';
 import { Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
@@ -36,6 +37,8 @@ import {
   AgentComposerRoot,
   AgentComposerSubmitGroup,
   AgentConsolePanel,
+  AgentDictationButton,
+  AgentDictationTranscript,
   AgentEmptyState,
   AgentInterruptedBanner,
   AgentPageShell,
@@ -289,7 +292,23 @@ function AgentConsole() {
     }),
     [],
   );
-  const runtime = useLocalRuntime(adapter, { adapters: { feedback: feedbackAdapter } });
+  // TODO(api): 接入服务端 STT 后，以自定义 DictationAdapter 替换浏览器 Web Speech 实现。
+  const dictationAdapter = useMemo(
+    () => new WebSpeechDictationAdapter({ language: 'zh-CN', continuous: true, interimResults: true }),
+    [],
+  );
+  const [dictationSupported, setDictationSupported] = useState(false);
+  useEffect(() => {
+    setDictationSupported(WebSpeechDictationAdapter.isSupported());
+  }, []);
+  const runtimeAdapters = useMemo(
+    () => ({
+      feedback: feedbackAdapter,
+      dictation: dictationAdapter,
+    }),
+    [dictationAdapter, feedbackAdapter],
+  );
+  const runtime = useLocalRuntime(adapter, { adapters: runtimeAdapters });
   const aui = useAui({ tools: Tools({ toolkit: agentToolUiToolkit }) });
   const modelDisabled = modelOptions.length === 0;
   const currentActiveRun = activeRunForThread(activeRuns, activeThreadId);
@@ -408,6 +427,7 @@ function AgentConsole() {
                   disabled={submitBlocked}
                   maxLength={8000}
                 />
+                <AgentDictationTranscript />
                 <AgentComposerFooter>
                   <AgentComposerActions>
                     <NewThreadButton onNewThread={startNewThread} />
@@ -427,6 +447,7 @@ function AgentConsole() {
                       boundHint={activeThreadId !== null}
                       onChange={handleModelChange}
                     />
+                    {dictationSupported ? <AgentDictationButton disabled={submitBlocked} /> : null}
                     <AgentStopButton />
                     <AuiIf condition={({ thread }) => !thread.isRunning && !submitBlocked}>
                       <AgentSendButton />

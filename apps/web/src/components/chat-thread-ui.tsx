@@ -142,6 +142,23 @@ export function AgentComposerInput(
   )
 }
 
+export function AgentDictationTranscript() {
+  const dictation = useAuiState(({ composer }) => composer.dictation)
+  if (!dictation) return null
+
+  return (
+    <div
+      className="flex items-center gap-2 px-2.5 pb-1 text-xs text-brand"
+      role="status"
+      aria-live="polite"
+    >
+      <span aria-hidden="true" className="size-2 animate-pulse rounded-full bg-current" />
+      <span className="font-semibold">正在聆听</span>
+      <ComposerPrimitive.DictationTranscript className="min-w-0 truncate text-ink-muted" />
+    </div>
+  )
+}
+
 export function AgentComposerFooter({ children }: Readonly<{ children: ReactNode }>) {
   return <div className="flex items-center justify-between gap-2 dark:border-line">{children}</div>
 }
@@ -183,6 +200,43 @@ export function AgentComposerSubmitGroup({ children }: Readonly<{ children: Reac
   return <div className="flex min-w-0 items-center gap-1.5">{children}</div>
 }
 
+export function AgentDictationButton({
+  disabled,
+}: Readonly<{
+  disabled?: boolean
+}>) {
+  const dictationActive = useAuiState(({ composer }) => composer.dictation !== undefined)
+  const className = cn(
+    'grid size-9 shrink-0 place-items-center rounded-full text-ink-muted transition-[background,color,transform] hover:-translate-y-px hover:bg-brand-subtle hover:text-brand disabled:cursor-not-allowed disabled:opacity-40 disabled:transform-none',
+    focusRing,
+  )
+
+  if (dictationActive) {
+    return (
+      <ComposerPrimitive.StopDictation
+        className={cn(className, 'bg-brand-subtle text-brand')}
+        aria-label="停止语音输入"
+        title="停止语音输入"
+      >
+        <span aria-hidden="true" className="size-3 rounded-[0.2rem] bg-current" />
+      </ComposerPrimitive.StopDictation>
+    )
+  }
+
+  return (
+    <ComposerPrimitive.Dictate
+      className={className}
+      disabled={disabled}
+      aria-label="开始语音输入"
+      title="开始语音输入"
+    >
+      <svg aria-hidden="true" viewBox="0 0 20 20" className="size-4 fill-none stroke-current stroke-1.8">
+        <rect x="7" y="2.5" width="6" height="9" rx="3" />
+        <path d="M4.75 9.25a5.25 5.25 0 0 0 10.5 0M10 14.5v3M7 17.5h6" strokeLinecap="round" />
+      </svg>
+    </ComposerPrimitive.Dictate>
+  )
+}
 export function AgentSendButton({
   children,
   disabled,
