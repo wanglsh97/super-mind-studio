@@ -217,6 +217,8 @@ export function AgentComposerDock({ children }: Readonly<{ children: ReactNode }
 }
 
 export function AgentComposerRoot({ children }: Readonly<{ children: ReactNode }>) {
+  const aui = useAui();
+  const composerText = useAuiState(({ composer }) => composer.text);
   const [hasFocus, setHasFocus] = useState(false);
 
   return (
@@ -234,6 +236,15 @@ export function AgentComposerRoot({ children }: Readonly<{ children: ReactNode }
         onFocusCapture={() => setHasFocus(true)}
         onBlurCapture={(event) => {
           if (!event.currentTarget.contains(event.relatedTarget)) setHasFocus(false);
+        }}
+        onSubmit={(event) => {
+          const trimmedText = composerText.trim();
+          if (!trimmedText) {
+            event.preventDefault();
+            return;
+          }
+
+          if (trimmedText !== composerText) aui.composer().setText(trimmedText);
         }}
         className={cn(
           'liquid-glass relative mx-auto w-full max-w-[58rem] rounded-2xl p-2.5 pb-3 transition-[border-color,box-shadow]',
