@@ -88,6 +88,7 @@ export function createAgentRunAdapter(
       }
 
       context.onRunProgressChange?.('starting-run')
+      const streamStartTime = Date.now()
       const run = await client.agent.runs.create(threadId, {
         input,
         thinkingEffort: context.thinkingEffort,
@@ -126,7 +127,15 @@ export function createAgentRunAdapter(
               event.status === 'limit_reached'
             const result: ChatModelRunResult = {
               content,
-              metadata: { custom: { ...metadata } },
+              metadata: {
+                custom: { ...metadata },
+                timing: {
+                  streamStartTime,
+                  totalStreamTime: Date.now() - streamStartTime,
+                  totalChunks: 0,
+                  toolCallCount: metadata.toolCalls ?? 0,
+                },
+              },
               status:
                 event.status === 'cancelled'
                   ? { type: 'incomplete', reason: 'cancelled' }

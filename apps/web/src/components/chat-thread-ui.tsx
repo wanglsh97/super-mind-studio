@@ -11,6 +11,7 @@ import {
   ThreadPrimitive,
   useAui,
   useAuiState,
+  useMessageTiming,
   useThreadViewport,
 } from '@assistant-ui/react'
 import { CheckIcon, ChevronRightIcon, CopyIcon, ThumbsDownIcon, ThumbsUpIcon } from 'lucide-react'
@@ -816,12 +817,29 @@ export function AssistantMessage({
               <ThumbsDownIcon aria-hidden="true" className="size-3.5" strokeWidth={1.8} />
             </ActionBarPrimitive.FeedbackNegative>
           </ActionBarPrimitive.Root>
+          <AgentMessageDuration />
           </div>
         ) : null}
       </div>
     </MessagePrimitive.Root>
   )
 }
+function AgentMessageDuration() {
+  const timing = useMessageTiming();
+  if (timing?.totalStreamTime === undefined) return null;
+
+  return (
+    <span aria-label={`模型总耗时 ${formatDuration(timing.totalStreamTime)}`}>
+      总耗时 {formatDuration(timing.totalStreamTime)}
+    </span>
+  );
+}
+
+function formatDuration(durationMs: number): string {
+  if (durationMs < 1_000) return `${Math.max(1, Math.round(durationMs))}ms`;
+  return `${(durationMs / 1_000).toFixed(durationMs >= 10_000 ? 1 : 2)}s`;
+}
+
 
 function AgentActivityDisclosure({
   children,
