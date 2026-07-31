@@ -12,7 +12,7 @@ import {
   useAuiState,
   useThreadViewport,
 } from '@assistant-ui/react'
-import { CheckIcon, CopyIcon, ThumbsDownIcon, ThumbsUpIcon } from 'lucide-react'
+import { CheckIcon, ChevronRightIcon, CopyIcon, ThumbsDownIcon, ThumbsUpIcon } from 'lucide-react'
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { useEffect, useRef, useState } from 'react'
@@ -849,9 +849,15 @@ export function AgentRunMetadata({
 
 export function AgentReasoning({ text }: Readonly<{ text: string }>) {
   return (
-    <details className="my-2 rounded-xl border border-dashed border-line px-3 py-2 text-[0.85rem] text-ink-muted dark:border-line-soft">
-      <summary className="cursor-pointer">思考过程</summary>
-      <div className="mt-2 whitespace-pre-wrap">{text}</div>
+    <details className="group my-2 text-ink-muted">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 py-1 text-xs font-medium tracking-[0.02em] opacity-45 transition-opacity hover:opacity-80 [&::-webkit-details-marker]:hidden">
+        <span>思考过程</span>
+        <ChevronRightIcon
+          aria-hidden="true"
+          className="size-3 shrink-0 transition-transform duration-150 group-open:rotate-90 motion-reduce:transition-none"
+        />
+      </summary>
+      <div className="mt-2 whitespace-pre-wrap text-[0.82rem] leading-relaxed text-ink-muted">{text}</div>
     </details>
   )
 }
