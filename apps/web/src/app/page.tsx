@@ -1332,7 +1332,7 @@ function SandboxToolActivityCard({
   });
   const exitCode = typeof result?.audit?.exitCode === 'number' ? result.audit.exitCode : undefined;
   const size = typeof result?.audit?.size === 'number' ? result.audit.size : undefined;
-  const label = toolInvocationLabel(toolName, state);
+  const label = toolCallLabel(toolName);
   const [open, setOpen] = useState(running);
 
   useEffect(() => {
@@ -1389,7 +1389,7 @@ function McpToolActivityCard({
     isError,
     audit: result?.audit,
   });
-  const label = toolInvocationLabel(`${serverId} · ${remoteToolName}`, state);
+  const label = toolCallLabel(`${serverId} · ${remoteToolName}`);
   const [open, setOpen] = useState(running);
 
   useEffect(() => {
@@ -1440,18 +1440,10 @@ function ToolExecutionResult({ result }: Readonly<{ result?: SandboxToolResult |
   );
 }
 
-function toolInvocationLabel(toolName: string, state: AgentToolActivityState): string {
-  if (state === 'running') return `正在调用 ${toolName}`;
-  if (state === 'success') return `${toolName} 调用完成`;
-  return `${toolName} 调用失败`;
+function toolCallLabel(toolName: string): string {
+  return `Tool-Call · ${toolName}`;
 }
 
-function AgentMessageMetadata() {
-  const custom = useAuiState(({ message }) => message.metadata.custom) as AgentRunMetadataType;
-  return (
-    <AgentRunMetadata
-      model={custom.model}
-      runStatus={custom.runStatus}
 function toolActivityTextClassName(state: AgentToolActivityState): string {
   if (state === 'loading' || state === 'running') return 'text-brand';
   if (state === 'success') return 'text-success';
@@ -1466,6 +1458,12 @@ function toolActivityTextClassName(state: AgentToolActivityState): string {
     />
   );
 }
+function AgentMessageMetadata() {
+  const custom = useAuiState(({ message }) => message.metadata.custom) as AgentRunMetadataType;
+  return (
+    <AgentRunMetadata
+      model={custom.model}
+      runStatus={custom.runStatus}
 
 function isTextModelAlias(value: string): value is TextModelAlias {
   return ['qwen', 'glm', 'deepseek', 'kimi'].includes(value);
