@@ -50,6 +50,7 @@ import {
   AgentSendButton,
   AgentSendButtonDisabled,
   AgentThreadRoot,
+  AgentThreadNavigator,
   AgentThreadViewport,
   AgentToolCall,
   AgentToolResult,
@@ -355,65 +356,68 @@ function AgentConsole() {
             tokenUsage={threadTokenUsage}
           />
           <AgentThreadRoot>
-            <AgentThreadViewport>
-              <AuiIf condition={(state) => state.thread.isEmpty}>
-                <AgentEmptyState kicker="AGENT THREAD · EMPTY" title="描述你的目标，Agent 来推进" />
-              </AuiIf>
-              <ThreadPrimitive.Messages>
-                {({ message }) =>
-                  message.role === 'user' ? (
-                    <UserMessage />
-                  ) : (
-                    <AssistantMessage
-                      runProgress={runProgress}
-                      metadata={<AgentMessageMetadata />}
-                      renderPart={(part) => {
-                        if (part.type === 'tool-call') {
-                          if (part.toolUI) return part.toolUI;
-                          const toolPart = part as typeof part & {
-                            toolName?: unknown;
-                            args?: unknown;
-                            result?: unknown;
-                            isError?: unknown;
-                          };
-                          if (typeof toolPart.toolName !== 'string') return null;
-                          const parsed = parseNamespacedMcpToolName(toolPart.toolName);
-                          if (parsed) {
-                            const result = isSandboxToolResult(toolPart.result)
-                              ? toolPart.result
-                              : undefined;
+            <div className="flex min-h-0 flex-1">
+              <AgentThreadNavigator />
+              <AgentThreadViewport>
+                <AuiIf condition={(state) => state.thread.isEmpty}>
+                  <AgentEmptyState kicker="AGENT THREAD · EMPTY" title="描述你的目标，Agent 来推进" />
+                </AuiIf>
+                <ThreadPrimitive.Messages>
+                  {({ message }) =>
+                    message.role === 'user' ? (
+                      <UserMessage messageId={message.id} />
+                    ) : (
+                      <AssistantMessage
+                        runProgress={runProgress}
+                        metadata={<AgentMessageMetadata />}
+                        renderPart={(part) => {
+                          if (part.type === 'tool-call') {
+                            if (part.toolUI) return part.toolUI;
+                            const toolPart = part as typeof part & {
+                              toolName?: unknown;
+                              args?: unknown;
+                              result?: unknown;
+                              isError?: unknown;
+                            };
+                            if (typeof toolPart.toolName !== 'string') return null;
+                            const parsed = parseNamespacedMcpToolName(toolPart.toolName);
+                            if (parsed) {
+                              const result = isSandboxToolResult(toolPart.result)
+                                ? toolPart.result
+                                : undefined;
+                              return (
+                                <McpToolActivityCard
+                                  serverId={parsed.serverId}
+                                  remoteToolName={parsed.remoteToolName}
+                                  args={isRecord(toolPart.args) ? toolPart.args : {}}
+                                  result={result}
+                                  running={part.status?.type === 'running'}
+                                  isError={toolPart.isError === true}
+                                />
+                              );
+                            }
+                            return null;
+                          }
+                          if (part.type === 'text')
+                            return <AssistantMarkdown>{part.text ?? ''}</AssistantMarkdown>;
+                          if (part.type === 'reasoning') {
                             return (
-                              <McpToolActivityCard
-                                serverId={parsed.serverId}
-                                remoteToolName={parsed.remoteToolName}
-                                args={isRecord(toolPart.args) ? toolPart.args : {}}
-                                result={result}
+                              <AgentReasoning
+                                title="Reasoning"
+                                text={part.text ?? ''}
                                 running={part.status?.type === 'running'}
-                                isError={toolPart.isError === true}
                               />
                             );
                           }
                           return null;
-                        }
-                        if (part.type === 'text')
-                          return <AssistantMarkdown>{part.text ?? ''}</AssistantMarkdown>;
-                        if (part.type === 'reasoning') {
-                          return (
-                            <AgentReasoning
-                              title="Reasoning"
-                              text={part.text ?? ''}
-                              running={part.status?.type === 'running'}
-                            />
-                          );
-                        }
-                        return null;
-                      }}
-                    />
-                  )
-                }
-              </ThreadPrimitive.Messages>
-              <AgentContextTimeline events={compressionEvents} summary={contextSummary} />
-            </AgentThreadViewport>
+                        }}
+                      />
+                    )
+                  }
+                </ThreadPrimitive.Messages>
+                <AgentContextTimeline events={compressionEvents} summary={contextSummary} />
+              </AgentThreadViewport>
+            </div>
             <AgentScrollToBottom />
             <AgentComposerDock>
               {activeRuns.some((run) => run.threadId !== activeThreadId) ? (

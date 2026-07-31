@@ -79,6 +79,80 @@ export function AgentThreadViewport({ children }: Readonly<{ children: ReactNode
   );
 }
 
+/** 当前 Thread 的轮次索引；点击后定位到对应的用户提问。 */
+export function AgentThreadNavigator() {
+  const messages = useAuiState(({ thread }) => thread.messages);
+  const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
+  const entries = messages.reduce<Array<{ id: string; label: string; index: number }>>(
+    (current, message) => {
+      if (message.role !== 'user') return current;
+      const label = message.content
+        .flatMap((part) => (part.type === 'text' ? [part.text] : []))
+        .join(' ')
+        .trim();
+      if (label) current.push({ id: message.id, label, index: current.length + 1 });
+      return current;
+    },
+    [],
+  );
+
+  if (entries.length === 0) return null;
+
+  return (
+    <aside
+      aria-label="当前会话导航"
+      className="hidden min-h-0 w-[8.25rem] shrink-0 flex-col border-r border-line-soft pr-2.5 pb-4 md:flex"
+    >
+      <p className="px-2.5 pt-6 pb-2 font-mono text-[0.58rem] font-bold tracking-[0.14em] text-ink-subtle uppercase">
+        此会话
+      </p>
+      <nav className="min-h-0 flex-1 overflow-y-auto" aria-label="历史对话定位">
+        <ol className="m-0 flex list-none flex-col gap-1 p-0">
+          {entries.map((entry) => {
+            const selected = entry.id === selectedMessageId;
+            return (
+              <li key={entry.id}>
+                <button
+                  type="button"
+                  title={entry.label}
+                  aria-current={selected ? 'location' : undefined}
+                  onClick={() => {
+                    setSelectedMessageId(entry.id);
+                    document
+                      .getElementById(`agent-message-${entry.id}`)
+                      ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  }}
+                  className={cn(
+                    'group flex w-full items-start gap-2 rounded-lg px-2.5 py-2 text-left transition-[background,color] hover:bg-surface-muted',
+                    selected && 'bg-surface-muted',
+                    focusRing,
+                  )}
+                >
+                  <span
+                    aria-hidden="true"
+                    className={cn(
+                      'mt-1.5 size-1.5 shrink-0 rounded-full bg-ink-faint transition-colors group-hover:bg-ink-muted',
+                      selected && 'bg-brand',
+                    )}
+                  />
+                  <span className="min-w-0">
+                    <span className="mb-0.5 block font-mono text-[0.56rem] font-bold tracking-[0.08em] text-ink-subtle">
+                      {String(entry.index).padStart(2, '0')}
+                    </span>
+                    <span className="block line-clamp-2 text-[0.68rem] leading-4 text-ink-muted group-hover:text-ink-secondary">
+                      {entry.label}
+                    </span>
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ol>
+      </nav>
+    </aside>
+  );
+}
+
 export function AgentScrollToBottom() {
   const isAtBottom = useThreadViewport((viewport) => viewport.isAtBottom);
 
@@ -704,9 +778,12 @@ export function AgentEmptyState({
   );
 }
 
-export function UserMessage() {
+export function UserMessage({ messageId }: Readonly<{ messageId: string }>) {
   return (
-    <MessagePrimitive.Root className="group flex flex-col items-end gap-1 py-4">
+    <MessagePrimitive.Root
+      id={`agent-message-${messageId}`}
+      className="group flex flex-col items-end gap-1 py-4"
+    >
       <div className="max-w-[min(82%,38rem)] rounded-2xl bg-surface-muted px-4 py-3 text-[0.95rem] leading-7 text-ink max-md:max-w-[92%] dark:text-ink">
         <MessagePrimitive.Parts />
       </div>
