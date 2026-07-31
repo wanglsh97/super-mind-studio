@@ -868,7 +868,7 @@ export function AgentReasoning({ text }: Readonly<{ text: string }>) {
 export function AgentToolCall({ url }: Readonly<{ url?: string }>) {
   return (
     <div className="my-2 flex flex-wrap items-center gap-2 text-[0.97rem] leading-7 text-ink opacity-55 transition-opacity duration-150 hover:opacity-85">
-      <span className="font-mono font-semibold">web_fetch</span>
+      <span className="font-sans font-semibold">web_fetch</span>
       {url ? <span className="break-all">{url}</span> : null}
       <span>调用中…</span>
     </div>
@@ -891,7 +891,7 @@ export function AgentToolResult({
   return (
     <div className="my-2 text-[0.97rem] leading-7 text-ink opacity-55 transition-opacity duration-150 hover:opacity-85">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="font-mono font-semibold">web_fetch</span>
+        <span className="font-sans font-semibold">web_fetch</span>
         <span>{status ?? (isError ? 'failed' : 'succeeded')}</span>
         {httpStatus ? (
           <span>HTTP {httpStatus}</span>

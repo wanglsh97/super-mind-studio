@@ -1330,23 +1330,23 @@ function SandboxToolActivityCard({
     <details className="group my-2 text-[0.97rem] leading-7 text-ink opacity-55 transition-opacity duration-150 hover:opacity-85 open:opacity-75">
       <summary className="flex cursor-pointer list-none items-center py-1.5 [&::-webkit-details-marker]:hidden">
         <span className="flex min-w-0 flex-wrap items-center gap-2">
-          <span className="font-mono font-medium">{label}</span>
+          <span className="font-sans font-medium">{label}</span>
           {exitCode !== undefined ? (
-            <span className="font-mono">exit {exitCode}</span>
+            <span className="font-sans">exit {exitCode}</span>
           ) : null}
           {size !== undefined ? (
-            <span className="font-mono">{size} B</span>
+            <span className="font-sans">{size} B</span>
           ) : null}
         </span>
         <ToolDisclosureChevron />
       </summary>
       <div className="mt-1.5 space-y-1 border-l border-current/15 pl-3">
         {subject ? (
-          <code className="block max-h-24 overflow-auto whitespace-pre-wrap break-all font-mono text-inherit">
+          <code className="block max-h-24 overflow-auto whitespace-pre-wrap break-all font-sans text-inherit">
             {subject}
           </code>
         ) : null}
-        {detail ? <p className="font-mono">{detail}</p> : null}
+        {detail ? <p className="font-sans">{detail}</p> : null}
         <ToolExecutionResult result={result} />
       </div>
     </details>
@@ -1379,12 +1379,12 @@ function McpToolActivityCard({
     <details className="group my-2 text-[0.97rem] leading-7 text-ink opacity-55 transition-opacity duration-150 hover:opacity-85 open:opacity-75">
       <summary className="flex cursor-pointer list-none items-center py-1.5 [&::-webkit-details-marker]:hidden">
         <span className="flex min-w-0 flex-wrap items-center gap-2">
-          <span className="font-mono font-medium">{label}</span>
+          <span className="font-sans font-medium">{label}</span>
         </span>
         <ToolDisclosureChevron />
       </summary>
       <div className="mt-1.5 space-y-1 border-l border-current/15 pl-3">
-        <code className="block max-h-24 overflow-auto whitespace-pre-wrap break-all font-mono text-inherit">
+        <code className="block max-h-24 overflow-auto whitespace-pre-wrap break-all font-sans text-inherit">
           {JSON.stringify(args)}
         </code>
         <ToolExecutionResult result={result} />
@@ -1420,7 +1420,7 @@ function ToolExecutionResult({ result }: Readonly<{ result?: SandboxToolResult |
       <p className="font-medium">调用结果</p>
       {summary ? <p>{summary}</p> : null}
       {hasAudit ? (
-        <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-all rounded-lg bg-surface-muted px-2.5 py-2 font-mono text-inherit leading-7">
+        <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-all rounded-lg bg-surface-muted px-2.5 py-2 font-sans text-inherit leading-7">
           {JSON.stringify(audit, null, 2)}
         </pre>
       ) : null}
