@@ -1327,26 +1327,26 @@ function SandboxToolActivityCard({
   const size = typeof result?.audit?.size === 'number' ? result.audit.size : undefined;
   const label = toolInvocationLabel(toolName, state);
   return (
-    <details className="group my-2 text-sm text-ink-muted">
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 py-1.5 [&::-webkit-details-marker]:hidden">
+    <details className="group my-2 text-[0.97rem] leading-7 text-ink opacity-55 transition-opacity duration-150 hover:opacity-85 open:opacity-75">
+      <summary className="flex cursor-pointer list-none items-center py-1.5 [&::-webkit-details-marker]:hidden">
         <span className="flex min-w-0 flex-wrap items-center gap-2">
-        <span className="font-mono text-xs font-medium">{label}</span>
-        {exitCode !== undefined ? (
-          <span className="font-mono text-[0.7rem] text-ink-subtle">exit {exitCode}</span>
-        ) : null}
-        {size !== undefined ? (
-          <span className="font-mono text-[0.7rem] text-ink-subtle">{size} B</span>
-        ) : null}
+          <span className="font-mono font-medium">{label}</span>
+          {exitCode !== undefined ? (
+            <span className="font-mono">exit {exitCode}</span>
+          ) : null}
+          {size !== undefined ? (
+            <span className="font-mono">{size} B</span>
+          ) : null}
         </span>
         <ToolDisclosureChevron />
       </summary>
-      <div className="mt-1.5 space-y-1 border-l border-current/15 pl-3 text-ink-muted">
+      <div className="mt-1.5 space-y-1 border-l border-current/15 pl-3">
         {subject ? (
-          <code className="block max-h-24 overflow-auto whitespace-pre-wrap break-all text-xs text-ink">
+          <code className="block max-h-24 overflow-auto whitespace-pre-wrap break-all font-mono text-inherit">
             {subject}
           </code>
         ) : null}
-        {detail ? <p className="font-mono text-[0.68rem] text-ink-subtle">{detail}</p> : null}
+        {detail ? <p className="font-mono">{detail}</p> : null}
         <ToolExecutionResult result={result} />
       </div>
     </details>
@@ -1376,15 +1376,15 @@ function McpToolActivityCard({
   });
   const label = toolInvocationLabel(`${serverId} · ${remoteToolName}`, state);
   return (
-    <details className="group my-2 text-sm text-ink-muted">
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 py-1.5 [&::-webkit-details-marker]:hidden">
+    <details className="group my-2 text-[0.97rem] leading-7 text-ink opacity-55 transition-opacity duration-150 hover:opacity-85 open:opacity-75">
+      <summary className="flex cursor-pointer list-none items-center py-1.5 [&::-webkit-details-marker]:hidden">
         <span className="flex min-w-0 flex-wrap items-center gap-2">
-          <span className="font-mono text-xs font-medium">{label}</span>
+          <span className="font-mono font-medium">{label}</span>
         </span>
         <ToolDisclosureChevron />
       </summary>
-      <div className="mt-1.5 space-y-1 border-l border-current/15 pl-3 text-ink-muted">
-        <code className="block max-h-24 overflow-auto whitespace-pre-wrap break-all text-xs text-ink">
+      <div className="mt-1.5 space-y-1 border-l border-current/15 pl-3">
+        <code className="block max-h-24 overflow-auto whitespace-pre-wrap break-all font-mono text-inherit">
           {JSON.stringify(args)}
         </code>
         <ToolExecutionResult result={result} />
@@ -1417,10 +1417,10 @@ function ToolExecutionResult({ result }: Readonly<{ result?: SandboxToolResult |
 
   return (
     <div className="space-y-1.5 pt-1">
-      <p className="text-[0.68rem] font-medium text-ink-subtle">调用结果</p>
-      {summary ? <p className="text-xs leading-relaxed text-ink-muted">{summary}</p> : null}
+      <p className="font-medium">调用结果</p>
+      {summary ? <p>{summary}</p> : null}
       {hasAudit ? (
-        <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-all rounded-lg bg-surface-muted px-2.5 py-2 font-mono text-[0.7rem] leading-relaxed text-ink-secondary">
+        <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-all rounded-lg bg-surface-muted px-2.5 py-2 font-mono text-inherit leading-7">
           {JSON.stringify(audit, null, 2)}
         </pre>
       ) : null}

@@ -699,7 +699,7 @@ export function AgentEmptyState({
 export function UserMessage() {
   return (
     <MessagePrimitive.Root className="flex flex-col items-end gap-2 py-4">
-      <div className="liquid-glass-soft max-w-[min(82%,38rem)] rounded-2xl px-4 py-3 text-[0.87rem] leading-relaxed text-ink-secondary max-md:max-w-[92%] dark:text-ink-secondary">
+      <div className="liquid-glass-soft max-w-[min(82%,38rem)] rounded-2xl px-4 py-3 text-[0.97rem] leading-7 text-ink-secondary max-md:max-w-[92%] dark:text-ink-secondary">
         <MessagePrimitive.Parts />
       </div>
     </MessagePrimitive.Root>
@@ -849,26 +849,28 @@ export function AgentRunMetadata({
 
 export function AgentReasoning({ text }: Readonly<{ text: string }>) {
   return (
-    <details className="group my-2 text-ink-muted">
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 py-1 text-xs font-medium tracking-[0.02em] text-ink-muted [&::-webkit-details-marker]:hidden">
-        <span className="opacity-55 transition-opacity group-hover:opacity-90">思考过程</span>
+    <details className="group my-2 text-[0.97rem] leading-7 text-ink opacity-55 transition-opacity duration-150 hover:opacity-85 open:opacity-75">
+      <summary className="flex cursor-pointer list-none items-center py-1 font-medium tracking-[0.02em] [&::-webkit-details-marker]:hidden">
+        <span>思考过程</span>
         <ChevronRightIcon
           aria-hidden="true"
           className="size-4 shrink-0 opacity-75 transition-[opacity,transform] duration-150 group-hover:opacity-100 group-open:rotate-90 motion-reduce:transition-none"
           strokeWidth={2}
         />
       </summary>
-      <div className="mt-2 whitespace-pre-wrap text-[0.82rem] leading-relaxed text-ink-muted">{text}</div>
+      <div className="mt-2 whitespace-pre-wrap">
+        {text}
+      </div>
     </details>
   )
 }
 
 export function AgentToolCall({ url }: Readonly<{ url?: string }>) {
   return (
-    <div className="my-2 flex flex-wrap items-center gap-2 rounded-xl border border-line bg-brand-muted/8 px-3 py-2 text-sm dark:border-line-soft">
+    <div className="my-2 flex flex-wrap items-center gap-2 text-[0.97rem] leading-7 text-ink opacity-55 transition-opacity duration-150 hover:opacity-85">
       <span className="font-mono font-semibold">web_fetch</span>
-      {url ? <span className="break-all text-[0.8rem] text-ink-subtle">{url}</span> : null}
-      <span className="rounded-lg bg-ink-subtle/16 px-1.5 py-0.5 text-xs">调用中…</span>
+      {url ? <span className="break-all">{url}</span> : null}
+      <span>调用中…</span>
     </div>
   )
 }
@@ -887,32 +889,18 @@ export function AgentToolResult({
   finalUrl?: string | undefined
 }>) {
   return (
-    <div
-      className={cn(
-        'my-2 rounded-xl border px-3 py-2 text-sm',
-        isError
-          ? 'border-[#e3b3b3] bg-[rgb(227_179_179/0.12)]'
-          : 'border-line bg-brand-muted/8 dark:border-line-soft',
-      )}
-    >
+    <div className="my-2 text-[0.97rem] leading-7 text-ink opacity-55 transition-opacity duration-150 hover:opacity-85">
       <div className="flex flex-wrap items-center gap-2">
         <span className="font-mono font-semibold">web_fetch</span>
-        <span
-          className={cn(
-            'rounded-lg px-1.5 py-0.5 text-xs',
-            status === 'failed' || isError ? 'text-[#a63d3d]' : 'text-[#2f7a4d]',
-          )}
-        >
-          {status ?? (isError ? 'failed' : 'succeeded')}
-        </span>
+        <span>{status ?? (isError ? 'failed' : 'succeeded')}</span>
         {httpStatus ? (
-          <span className="text-[0.8rem] text-ink-subtle">HTTP {httpStatus}</span>
+          <span>HTTP {httpStatus}</span>
         ) : null}
       </div>
       {summary ? <p className="mt-1.5">{summary}</p> : null}
       {finalUrl ? (
         <a
-          className="mt-1 inline-block break-all text-[0.8rem] text-brand hover:underline"
+          className="mt-1 inline-block break-all text-inherit hover:underline"
           href={finalUrl}
           target="_blank"
           rel="noreferrer noopener"
