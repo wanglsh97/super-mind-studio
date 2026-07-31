@@ -881,16 +881,23 @@ export function AgentRunMetadata({
       {toolCalls != null ? ` · 工具 ${toolCalls}` : ''}
       {interrupted && runStatus === 'interrupted' ? ' · 未自动重放' : ''}
     </p>
-  )
+  );
 }
 
-export function AgentReasoning({ text }: Readonly<{ text: string }>) {
-  const isRunning = useAuiState(({ message }) => message.status?.type === 'running');
-  const [open, setOpen] = useState(isRunning);
+export function AgentReasoning({
+  title,
+  text,
+  running,
+}: Readonly<{
+  title: string;
+  text: string;
+  running: boolean;
+}>) {
+  const [open, setOpen] = useState(running);
 
   useEffect(() => {
-    setOpen(isRunning);
-  }, [isRunning]);
+    setOpen(running);
+  }, [running]);
 
   return (
     <details

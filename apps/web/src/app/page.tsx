@@ -391,7 +391,13 @@ function AgentConsole() {
                         if (part.type === 'text')
                           return <AssistantMarkdown>{part.text ?? ''}</AssistantMarkdown>;
                         if (part.type === 'reasoning') {
-                          return <AgentReasoning text={part.text ?? ''} />;
+                          return (
+                            <AgentReasoning
+                              title="reasoning"
+                              text={part.text ?? ''}
+                              running={part.status?.type === 'running'}
+                            />
+                          );
                         }
                         return null;
                       }}
