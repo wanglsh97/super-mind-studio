@@ -275,11 +275,11 @@
 @keyframes progress-shimmer {
   0%,
   20% {
-    background-position: -120% 0;
+    background-position: 200% 0;
   }
   58%,
   100% {
-    background-position: 120% 0;
+    background-position: -100% 0;
   }
 }
 
@@ -294,8 +294,8 @@
       var(--theme-ink-muted) 57%,
       var(--theme-ink-muted) 100%
     );
-    background-size: 220% 100%;
-    background-position: -120% 0;
+    background-size: 200% 100%;
+    background-position: 200% 0;
     background-clip: text;
     -webkit-background-clip: text;
     animation: var(--animate-progress-shimmer);
