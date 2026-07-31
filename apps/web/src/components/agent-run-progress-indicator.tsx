@@ -2,7 +2,7 @@
 
 import type { AgentRunProgressStage } from '@/utils/agent/agent-run-adapter'
 
-import { ShimmerText } from '@/components/shimmer-text'
+import ShimmerText from '@/components/shimmer-text'
 
 const STAGE_COPY: Record<AgentRunProgressStage, string> = {
   'creating-thread': '正在创建会话…',

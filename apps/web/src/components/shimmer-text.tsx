@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 
 import { cn } from '@/utils/cn'
 
-export function ShimmerText({
+export default function ShimmerText({
   children,
   className,
 }: Readonly<{
