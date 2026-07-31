@@ -81,8 +81,14 @@ import {
 import { activeRunForThread } from '@/utils/agent/agent-active-runs';
 import { initialAgentRunViewState } from '@/utils/agent/agent-run-reducer';
 import { threadTokenUsagePercentage } from '@/utils/agent/agent-thread-token-usage';
-import { resolveAgentToolActivityState, type AgentToolActivityState } from '@/utils/agent/agent-tool-activity';
-import { parseNamespacedMcpToolName, summarizeAgentMcpStatuses } from '@/utils/agent/agent-mcp-status';
+import {
+  resolveAgentToolActivityState,
+  type AgentToolActivityState,
+} from '@/utils/agent/agent-tool-activity';
+import {
+  parseNamespacedMcpToolName,
+  summarizeAgentMcpStatuses,
+} from '@/utils/agent/agent-mcp-status';
 
 const client = createAIGatewayClient();
 
@@ -184,10 +190,10 @@ function AgentConsole() {
     });
   };
   contextRef.current.onRunFinished = () => {
-    setRunProgress(null);
     // LocalRuntime 的终态消息已包含本次 run 的 timing；跳过紧随其后的 hydration，
     // 避免持久化快照（尚不包含前端 timing）覆盖该元数据。
     skipHydrationRef.current = true;
+    setRunProgress(null);
     setSandboxTelemetry((current) =>
       current.status === 'failed'
         ? current
@@ -297,15 +303,17 @@ function AgentConsole() {
     }),
     [],
   );
-  // TODO(api): 接入服务端 STT 后，以自定义 DictationAdapter 替换浏览器 Web Speech 实现。
   const dictationAdapter = useMemo(
-    () => new WebSpeechDictationAdapter({ language: 'zh-CN', continuous: true, interimResults: true }),
+    () =>
+      new WebSpeechDictationAdapter({ language: 'zh-CN', continuous: true, interimResults: true }),
     [],
   );
   const [dictationSupported, setDictationSupported] = useState(false);
+
   useEffect(() => {
     setDictationSupported(WebSpeechDictationAdapter.isSupported());
   }, []);
+
   const runtimeAdapters = useMemo(
     () => ({
       feedback: feedbackAdapter,
@@ -349,10 +357,7 @@ function AgentConsole() {
           <AgentThreadRoot>
             <AgentThreadViewport>
               <AuiIf condition={(state) => state.thread.isEmpty}>
-                <AgentEmptyState
-                  kicker="AGENT THREAD · EMPTY"
-                  title="交给 Agent 一个可执行的任务"
-                />
+                <AgentEmptyState kicker="AGENT THREAD · EMPTY" title="描述你的目标，Agent 来推进" />
               </AuiIf>
               <ThreadPrimitive.Messages>
                 {({ message }) =>
@@ -360,7 +365,6 @@ function AgentConsole() {
                     <UserMessage />
                   ) : (
                     <AssistantMessage
-                      label="AGENT"
                       runProgress={runProgress}
                       metadata={<AgentMessageMetadata />}
                       renderPart={(part) => {
@@ -384,7 +388,7 @@ function AgentConsole() {
                                 remoteToolName={parsed.remoteToolName}
                                 args={isRecord(toolPart.args) ? toolPart.args : {}}
                                 result={result}
-                                running={result === undefined}
+                                running={part.status?.type === 'running'}
                                 isError={toolPart.isError === true}
                               />
                             );
@@ -396,7 +400,7 @@ function AgentConsole() {
                         if (part.type === 'reasoning') {
                           return (
                             <AgentReasoning
-                              title="reasoning"
+                              title="Reasoning"
                               text={part.text ?? ''}
                               running={part.status?.type === 'running'}
                             />
@@ -433,8 +437,8 @@ function AgentConsole() {
                 <AgentComposerInput
                   placeholder={
                     submitBlocked && !modelDisabled
-                      ? '已有进行中的 Agent 运行，请等待结束后再提交…'
-                      : '有什么问题冲我来...'
+                      ? '上一个任务还在进行中，请等待结束后再提交…'
+                      : '有什么问题尽管问，输入/ 调用技能'
                   }
                   disabled={submitBlocked}
                   maxLength={8000}
@@ -1174,7 +1178,8 @@ const agentToolUiToolkit = defineToolkit({
       const url = typeof args.url === 'string' ? args.url : '';
       const finalUrl =
         typeof result?.audit?.finalUrl === 'string' ? result.audit.finalUrl : undefined;
-      const httpStatus = typeof result?.audit?.status === 'number' ? result.audit.status : undefined;
+      const httpStatus =
+        typeof result?.audit?.status === 'number' ? result.audit.status : undefined;
 
       if (status.type === 'running') return <AgentToolCall url={url} />;
 
@@ -1344,7 +1349,7 @@ function SandboxToolActivityCard({
 
   return (
     <details
-      className="group my-2 text-[0.97rem] leading-7 text-ink opacity-55 transition-opacity duration-150 hover:opacity-85 open:opacity-75"
+      className="group text-[0.97rem] leading-7 text-ink"
       open={open}
       onToggle={(event) => setOpen(event.currentTarget.open)}
     >
@@ -1392,7 +1397,7 @@ function McpToolActivityCard({
     isError,
     audit: result?.audit,
   });
-  const label = toolCallLabel(`${serverId} · ${remoteToolName}`);
+  const label = toolCallLabel(remoteToolName);
   const [open, setOpen] = useState(running);
 
   useEffect(() => {
@@ -1401,7 +1406,7 @@ function McpToolActivityCard({
 
   return (
     <details
-      className="group my-2 text-[0.97rem] leading-7 text-ink opacity-55 transition-opacity duration-150 hover:opacity-85 open:opacity-75"
+      className="group text-[0.97rem] leading-7 text-ink"
       open={open}
       onToggle={(event) => setOpen(event.currentTarget.open)}
     >
@@ -1455,18 +1460,18 @@ function toolActivityTextClassName(state: AgentToolActivityState): string {
   return 'text-ink-subtle';
 }
 
-      totalTokens={custom.totalTokens}
-      modelCalls={custom.modelCalls}
-      toolCalls={custom.toolCalls}
-    />
-  );
-}
 function AgentMessageMetadata() {
   const custom = useAuiState(({ message }) => message.metadata.custom) as AgentRunMetadataType;
   return (
     <AgentRunMetadata
       model={custom.model}
       runStatus={custom.runStatus}
+      totalTokens={custom.totalTokens}
+      modelCalls={custom.modelCalls}
+      toolCalls={custom.toolCalls}
+    />
+  );
+}
 
 function isTextModelAlias(value: string): value is TextModelAlias {
   return ['qwen', 'glm', 'deepseek', 'kimi'].includes(value);

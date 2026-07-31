@@ -1,6 +1,6 @@
-'use client'
+'use client';
 
-import type { AgentThinkingEffort, TextModelAlias, TextModelId, Usage } from '@supermind/sdk'
+import type { AgentThinkingEffort, TextModelAlias, TextModelId, Usage } from '@supermind/sdk';
 import {
   ActionBarPrimitive,
   AuiIf,
@@ -13,22 +13,22 @@ import {
   useAuiState,
   useMessageTiming,
   useThreadViewport,
-} from '@assistant-ui/react'
-import { CheckIcon, ChevronRightIcon, CopyIcon, ThumbsDownIcon, ThumbsUpIcon } from 'lucide-react'
-import Link from 'next/link'
-import Image from 'next/image'
-import type { ReactNode } from 'react'
-import { useEffect, useRef, useState } from 'react'
+} from '@assistant-ui/react';
+import { CheckIcon, ChevronRightIcon, CopyIcon, ThumbsDownIcon, ThumbsUpIcon } from 'lucide-react';
+import Image from 'next/image';
+import Link from 'next/link';
+import type { ReactNode } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
-import { CHAT_PROVIDER_BRANDING } from '@/const/branding/chat-provider-branding'
-import { AssistantMarkdown } from '@/components/chat/assistant-markdown'
-import chatLogo from '@/const/chat-logo.png'
-import { AgentRunProgressIndicator } from '@/components/agent-run-progress-indicator'
-import type { AgentRunProgressStage } from '@/utils/agent/agent-run-adapter'
-import { cn } from '@/utils/cn'
+import { CHAT_PROVIDER_BRANDING } from '@/const/branding/chat-provider-branding';
+import chatLogo from '@/const/chat-logo.png';
+import { AssistantMarkdown } from '@/components/chat/assistant-markdown';
+import { AgentRunProgressIndicator } from '@/components/agent-run-progress-indicator';
+import type { AgentRunProgressStage } from '@/utils/agent/agent-run-adapter';
+import { cn } from '@/utils/cn';
 
 const focusRing =
-  'focus-visible:outline-3 focus-visible:outline-brand-focus focus-visible:outline-offset-3'
+  'focus-visible:outline-3 focus-visible:outline-brand-focus focus-visible:outline-offset-3';
 
 export function AgentPageShell({
   children,
@@ -44,7 +44,7 @@ export function AgentPageShell({
     >
       {children}
     </main>
-  )
+  );
 }
 
 export function AgentConsolePanel({
@@ -58,7 +58,7 @@ export function AgentConsolePanel({
     >
       {children}
     </section>
-  )
+  );
 }
 
 export function AgentThreadRoot({ children }: Readonly<{ children: ReactNode }>) {
@@ -66,7 +66,7 @@ export function AgentThreadRoot({ children }: Readonly<{ children: ReactNode }>)
     <ThreadPrimitive.Root className="relative flex h-full min-h-0 flex-col">
       {children}
     </ThreadPrimitive.Root>
-  )
+  );
 }
 
 export function AgentThreadViewport({ children }: Readonly<{ children: ReactNode }>) {
@@ -76,13 +76,13 @@ export function AgentThreadViewport({ children }: Readonly<{ children: ReactNode
         {children}
       </div>
     </ThreadPrimitive.Viewport>
-  )
+  );
 }
 
 export function AgentScrollToBottom() {
-  const isAtBottom = useThreadViewport((viewport) => viewport.isAtBottom)
+  const isAtBottom = useThreadViewport((viewport) => viewport.isAtBottom);
 
-  if (isAtBottom) return null
+  if (isAtBottom) return null;
 
   return (
     <ThreadPrimitive.ScrollToBottom
@@ -94,7 +94,7 @@ export function AgentScrollToBottom() {
     >
       ↓
     </ThreadPrimitive.ScrollToBottom>
-  )
+  );
 }
 
 export function AgentComposerDock({ children }: Readonly<{ children: ReactNode }>) {
@@ -102,15 +102,16 @@ export function AgentComposerDock({ children }: Readonly<{ children: ReactNode }
     <div className="sticky bottom-0 z-3 bg-linear-to-b from-transparent via-surface/85 via-28% to-surface px-1 pt-5 pb-2 md:px-4.5 md:pt-7 md:pb-2.5">
       {children}
     </div>
-  )
+  );
 }
 
 export function AgentComposerRoot({ children }: Readonly<{ children: ReactNode }>) {
-  const [hasFocus, setHasFocus] = useState(false)
+  const [hasFocus, setHasFocus] = useState(false);
 
   return (
     <ComposerPrimitive.Unstable_TriggerPopoverRoot>
       <ComposerPrimitive.Root
+        compact
         style={
           hasFocus
             ? {
@@ -121,7 +122,7 @@ export function AgentComposerRoot({ children }: Readonly<{ children: ReactNode }
         }
         onFocusCapture={() => setHasFocus(true)}
         onBlurCapture={(event) => {
-          if (!event.currentTarget.contains(event.relatedTarget)) setHasFocus(false)
+          if (!event.currentTarget.contains(event.relatedTarget)) setHasFocus(false);
         }}
         className={cn(
           'liquid-glass relative mx-auto w-full max-w-[58rem] rounded-2xl p-2.5 pb-3 transition-[border-color,box-shadow]',
@@ -130,7 +131,7 @@ export function AgentComposerRoot({ children }: Readonly<{ children: ReactNode }
         {children}
       </ComposerPrimitive.Root>
     </ComposerPrimitive.Unstable_TriggerPopoverRoot>
-  )
+  );
 }
 
 export function AgentComposerInput(
@@ -145,12 +146,12 @@ export function AgentComposerInput(
       placeholder={props.placeholder}
       className="w-full max-h-40 min-h-12 resize-none bg-transparent px-2.5 py-2 text-sm leading-relaxed outline-none placeholder:text-ink-subtle"
     />
-  )
+  );
 }
 
 export function AgentDictationTranscript() {
-  const dictation = useAuiState(({ composer }) => composer.dictation)
-  if (!dictation) return null
+  const dictation = useAuiState(({ composer }) => composer.dictation);
+  if (!dictation) return null;
 
   return (
     <div
@@ -162,15 +163,15 @@ export function AgentDictationTranscript() {
       <span className="font-semibold">正在聆听</span>
       <ComposerPrimitive.DictationTranscript className="min-w-0 truncate text-ink-muted" />
     </div>
-  )
+  );
 }
 
 export function AgentComposerFooter({ children }: Readonly<{ children: ReactNode }>) {
-  return <div className="flex items-center justify-between gap-2 dark:border-line">{children}</div>
+  return <div className="flex items-center justify-between gap-2 dark:border-line">{children}</div>;
 }
 
 export function AgentComposerActions({ children }: Readonly<{ children: ReactNode }>) {
-  return <div className="flex min-w-0 items-center gap-0.5 md:gap-1">{children}</div>
+  return <div className="flex min-w-0 items-center gap-0.5 md:gap-1">{children}</div>;
 }
 
 export function AgentComposerAction({
@@ -179,43 +180,43 @@ export function AgentComposerAction({
   href,
   expanded,
 }: Readonly<{
-  children: ReactNode
-  onClick?: () => void
-  href?: string
-  expanded?: boolean
+  children: ReactNode;
+  onClick?: () => void;
+  href?: string;
+  expanded?: boolean;
 }>) {
   const className = cn(
     'inline-flex min-h-8 items-center gap-1.5 rounded-lg px-2 text-[0.66rem] font-semibold whitespace-nowrap text-ink-muted transition-[background,color] hover:bg-brand-subtle hover:text-brand-hover dark:hover:bg-brand-subtle dark:hover:text-brand-light',
     focusRing,
-  )
+  );
   if (href) {
     return (
       <Link href={href} className={className}>
         {children}
       </Link>
-    )
+    );
   }
   return (
     <button type="button" className={className} onClick={onClick} aria-expanded={expanded}>
       {children}
     </button>
-  )
+  );
 }
 
 export function AgentComposerSubmitGroup({ children }: Readonly<{ children: ReactNode }>) {
-  return <div className="flex min-w-0 items-center gap-1.5">{children}</div>
+  return <div className="flex min-w-0 items-center gap-1.5">{children}</div>;
 }
 
 export function AgentDictationButton({
   disabled,
 }: Readonly<{
-  disabled?: boolean
+  disabled?: boolean;
 }>) {
-  const dictationActive = useAuiState(({ composer }) => composer.dictation !== undefined)
+  const dictationActive = useAuiState(({ composer }) => composer.dictation !== undefined);
   const className = cn(
     'grid size-9 shrink-0 place-items-center rounded-full text-ink-muted transition-[background,color,transform] hover:-translate-y-px hover:bg-brand-subtle hover:text-brand disabled:cursor-not-allowed disabled:opacity-40 disabled:transform-none',
     focusRing,
-  )
+  );
 
   if (dictationActive) {
     return (
@@ -226,7 +227,7 @@ export function AgentDictationButton({
       >
         <span aria-hidden="true" className="size-3 rounded-[0.2rem] bg-current" />
       </ComposerPrimitive.StopDictation>
-    )
+    );
   }
 
   return (
@@ -236,28 +237,33 @@ export function AgentDictationButton({
       aria-label="开始语音输入"
       title="开始语音输入"
     >
-      <svg aria-hidden="true" viewBox="0 0 20 20" className="size-4 fill-none stroke-current stroke-1.8">
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 20 20"
+        className="size-4 fill-none stroke-current stroke-1.8"
+      >
         <rect x="7" y="2.5" width="6" height="9" rx="3" />
         <path d="M4.75 9.25a5.25 5.25 0 0 0 10.5 0M10 14.5v3M7 17.5h6" strokeLinecap="round" />
       </svg>
     </ComposerPrimitive.Dictate>
-  )
+  );
 }
+
 export function AgentSendButton({
   children,
   disabled,
   cancel,
   onClick,
 }: Readonly<{
-  children?: ReactNode
-  disabled?: boolean
-  cancel?: boolean
-  onClick?: () => void
+  children?: ReactNode;
+  disabled?: boolean;
+  cancel?: boolean;
+  onClick?: () => void;
 }>) {
   const base = cn(
     'liquid-button grid place-items-center rounded-full text-white transition-[background,transform,box-shadow] hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-40 disabled:transform-none',
     focusRing,
-  )
+  );
   if (cancel) {
     return (
       <ComposerPrimitive.Cancel
@@ -270,7 +276,7 @@ export function AgentSendButton({
       >
         {children}
       </ComposerPrimitive.Cancel>
-    )
+    );
   }
   return (
     <ComposerPrimitive.Send
@@ -288,7 +294,7 @@ export function AgentSendButton({
         </svg>
       )}
     </ComposerPrimitive.Send>
-  )
+  );
 }
 
 export function AgentSendButtonDisabled() {
@@ -307,7 +313,7 @@ export function AgentSendButtonDisabled() {
         <path d="M10 15V5m0 0L6 9m4-4 4 4" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     </button>
-  )
+  );
 }
 
 export function AgentPrivacyNote() {
@@ -315,7 +321,7 @@ export function AgentPrivacyNote() {
     <p className="mx-auto mt-2 w-full max-w-[58rem] text-center text-[0.62rem] text-ink-subtle">
       内容由 AI 生成，请仔细甄别
     </p>
-  )
+  );
 }
 
 export function AgentComposerError({ message }: Readonly<{ message: string }>) {
@@ -323,7 +329,7 @@ export function AgentComposerError({ message }: Readonly<{ message: string }>) {
     <p role="alert" className="mx-2.5 mt-2 text-[0.7rem] text-danger">
       {message}
     </p>
-  )
+  );
 }
 
 export function AgentActiveRunHint({ message }: Readonly<{ message: string }>) {
@@ -331,7 +337,7 @@ export function AgentActiveRunHint({ message }: Readonly<{ message: string }>) {
     <p className="mx-auto mb-2 w-full max-w-[58rem] text-center text-[0.78rem] leading-snug text-warning dark:text-warning-light">
       {message}
     </p>
-  )
+  );
 }
 
 export function AgentInterruptedBanner({ message }: Readonly<{ message: string }>) {
@@ -342,7 +348,7 @@ export function AgentInterruptedBanner({ message }: Readonly<{ message: string }
     >
       {message}
     </p>
-  )
+  );
 }
 
 export function ParameterSliders({
@@ -353,12 +359,12 @@ export function ParameterSliders({
   onTopPChange,
   onMaxTokensChange,
 }: Readonly<{
-  temperature: number
-  topP: number
-  maxTokens: number
-  onTemperatureChange: (value: number) => void
-  onTopPChange: (value: number) => void
-  onMaxTokensChange: (value: number) => void
+  temperature: number;
+  topP: number;
+  maxTokens: number;
+  onTemperatureChange: (value: number) => void;
+  onTopPChange: (value: number) => void;
+  onMaxTokensChange: (value: number) => void;
 }>) {
   return (
     <section
@@ -390,7 +396,7 @@ export function ParameterSliders({
         onChange={onMaxTokensChange}
       />
     </section>
-  )
+  );
 }
 
 function ParameterSlider({
@@ -401,12 +407,12 @@ function ParameterSlider({
   step,
   onChange,
 }: Readonly<{
-  label: string
-  value: number
-  min: number
-  max: number
-  step: number
-  onChange: (value: number) => void
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  onChange: (value: number) => void;
 }>) {
   return (
     <label>
@@ -424,17 +430,17 @@ function ParameterSlider({
         className="mt-2 w-full accent-brand"
       />
     </label>
-  )
+  );
 }
 
 export function ModelLogo({ alias }: Readonly<{ alias: TextModelAlias }>) {
-  const branding = CHAT_PROVIDER_BRANDING[alias]
+  const branding = CHAT_PROVIDER_BRANDING[alias];
   const logoClasses: Record<TextModelAlias, string> = {
     kimi: 'border-ink bg-ink text-white italic dark:border-ink dark:bg-ink',
     qwen: 'border-brand-muted bg-surface-card',
     glm: branding.logoUrl ? 'bg-surface-card' : 'border-[#17151e] bg-[#17151e] text-white',
     deepseek: 'border-[#d7e1ff] text-[#5d7cf0]',
-  }
+  };
 
   return (
     <span
@@ -448,7 +454,7 @@ export function ModelLogo({ alias }: Readonly<{ alias: TextModelAlias }>) {
     >
       {!branding.logoUrl && <span>{branding.fallbackText}</span>}
     </span>
-  )
+  );
 }
 
 export function ModelSelect({
@@ -459,33 +465,33 @@ export function ModelSelect({
   menuTitle,
   onChange,
 }: Readonly<{
-  value: TextModelId
-  options: ReadonlyArray<{ value: TextModelId; label: string; provider: TextModelAlias }>
-  disabled: boolean
-  boundHint?: boolean
-  menuTitle?: string
-  onChange: (value: TextModelId) => void
+  value: TextModelId;
+  options: ReadonlyArray<{ value: TextModelId; label: string; provider: TextModelAlias }>;
+  disabled: boolean;
+  boundHint?: boolean;
+  menuTitle?: string;
+  onChange: (value: TextModelId) => void;
 }>) {
-  const [open, setOpen] = useState(false)
-  const rootRef = useRef<HTMLDivElement>(null)
-  const selected = options.find((option) => option.value === value)
-  const selectedLabel = selected?.label ?? value
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const selected = options.find((option) => option.value === value);
+  const selectedLabel = selected?.label ?? value;
 
   useEffect(() => {
-    if (!open) return
+    if (!open) return;
     const closeOnOutsideClick = (event: PointerEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) setOpen(false)
-    }
-    document.addEventListener('pointerdown', closeOnOutsideClick)
-    return () => document.removeEventListener('pointerdown', closeOnOutsideClick)
-  }, [open])
+      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+    };
+    document.addEventListener('pointerdown', closeOnOutsideClick);
+    return () => document.removeEventListener('pointerdown', closeOnOutsideClick);
+  }, [open]);
 
   return (
     <div
       className="relative min-w-0"
       ref={rootRef}
       onKeyDown={(event) => {
-        if (event.key === 'Escape') setOpen(false)
+        if (event.key === 'Escape') setOpen(false);
       }}
     >
       <button
@@ -527,7 +533,7 @@ export function ModelSelect({
             {menuTitle ?? (boundHint ? '切换模型将新建会话' : '运行模型')}
           </p>
           {options.map((option) => {
-            const isSelected = option.value === value
+            const isSelected = option.value === value;
             return (
               <button
                 key={option.value}
@@ -535,8 +541,8 @@ export function ModelSelect({
                 role="option"
                 aria-selected={isSelected}
                 onClick={() => {
-                  onChange(option.value)
-                  setOpen(false)
+                  onChange(option.value);
+                  setOpen(false);
                 }}
                 className={cn(
                   'flex min-h-8 w-full items-center justify-between rounded-lg px-2.5 text-[0.68rem] font-medium text-ink-muted transition-[background,color] hover:bg-surface-inset/45 hover:text-ink-secondary',
@@ -549,53 +555,53 @@ export function ModelSelect({
                 </span>
                 {isSelected && <span aria-hidden="true">✓</span>}
               </button>
-            )
+            );
           })}
         </div>
       )}
     </div>
-  )
+  );
 }
 
 const THINKING_EFFORT_OPTIONS: ReadonlyArray<{
-  value: AgentThinkingEffort
-  label: string
-  note: string
+  value: AgentThinkingEffort;
+  label: string;
+  note: string;
 }> = [
   { value: 'fast', label: '快速', note: '更快、更省' },
   { value: 'balanced', label: '均衡', note: '默认' },
   { value: 'deep', label: '深度', note: 'token消耗更高' },
-]
+];
 
 export function ThinkingEffortSelect({
   value,
   disabled,
   onChange,
 }: Readonly<{
-  value: AgentThinkingEffort
-  disabled: boolean
-  onChange: (effort: AgentThinkingEffort) => void
+  value: AgentThinkingEffort;
+  disabled: boolean;
+  onChange: (effort: AgentThinkingEffort) => void;
 }>) {
-  const [open, setOpen] = useState(false)
-  const rootRef = useRef<HTMLDivElement>(null)
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
   const selectedLabel =
-    THINKING_EFFORT_OPTIONS.find((option) => option.value === value)?.label ?? '均衡'
+    THINKING_EFFORT_OPTIONS.find((option) => option.value === value)?.label ?? '均衡';
 
   useEffect(() => {
-    if (!open) return
+    if (!open) return;
     const closeOnOutsideClick = (event: PointerEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) setOpen(false)
-    }
-    document.addEventListener('pointerdown', closeOnOutsideClick)
-    return () => document.removeEventListener('pointerdown', closeOnOutsideClick)
-  }, [open])
+      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+    };
+    document.addEventListener('pointerdown', closeOnOutsideClick);
+    return () => document.removeEventListener('pointerdown', closeOnOutsideClick);
+  }, [open]);
 
   return (
     <div
       className="relative"
       ref={rootRef}
       onKeyDown={(event) => {
-        if (event.key === 'Escape') setOpen(false)
+        if (event.key === 'Escape') setOpen(false);
       }}
     >
       <button
@@ -630,7 +636,7 @@ export function ThinkingEffortSelect({
           className="liquid-glass absolute right-0 bottom-[calc(100%+0.4rem)] z-10 w-40 rounded-lg p-0.5"
         >
           {THINKING_EFFORT_OPTIONS.map((option) => {
-            const isSelected = option.value === value
+            const isSelected = option.value === value;
             return (
               <button
                 key={option.value}
@@ -638,8 +644,8 @@ export function ThinkingEffortSelect({
                 role="option"
                 aria-selected={isSelected}
                 onClick={() => {
-                  onChange(option.value)
-                  setOpen(false)
+                  onChange(option.value);
+                  setOpen(false);
                 }}
                 className={cn(
                   'flex h-8 w-full items-center gap-1.5 rounded-md px-2 text-left transition-[background,color] hover:bg-surface-inset/45',
@@ -667,20 +673,20 @@ export function ThinkingEffortSelect({
                   ✓
                 </span>
               </button>
-            )
+            );
           })}
         </div>
       )}
     </div>
-  )
+  );
 }
 
 export function AgentEmptyState({
   kicker,
   title,
 }: Readonly<{
-  kicker: string
-  title: string
+  kicker: string;
+  title: string;
 }>) {
   return (
     <div className="grid min-h-[calc(100dvh-14rem)] place-items-center content-center text-center md:min-h-[calc(100dvh-15rem)]">
@@ -695,7 +701,7 @@ export function AgentEmptyState({
       </p>
       <h2 className="mt-3 text-xl font-bold tracking-tight">{title}</h2>
     </div>
-  )
+  );
 }
 
 export function UserMessage() {
@@ -704,12 +710,6 @@ export function UserMessage() {
       <div className="max-w-[min(82%,38rem)] rounded-2xl bg-surface-muted px-4 py-3 text-[0.95rem] leading-7 text-ink max-md:max-w-[92%] dark:text-ink">
         <MessagePrimitive.Parts />
       </div>
-    </MessagePrimitive.Root>
-  );
-}
-
-export function AssistantMessage({
-  label,
       <ActionBarPrimitive.Root className="flex h-7 items-center opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100">
         <ActionBarPrimitive.Copy
           aria-label="复制消息"
@@ -728,15 +728,24 @@ export function AssistantMessage({
           />
         </ActionBarPrimitive.Copy>
       </ActionBarPrimitive.Root>
+    </MessagePrimitive.Root>
+  );
+}
+
+export function AssistantMessage({
   renderPart,
   runProgress,
 }: Readonly<{
-  label: string
-  metadata: ReactNode
-  renderPart?: (part: { type: string; text?: string; toolUI?: ReactNode }) => ReactNode | null
-  runProgress?: AgentRunProgressStage | null
+  metadata: ReactNode;
+  renderPart?: (part: {
+    type: string;
+    text?: string;
+    toolUI?: ReactNode;
+    status?: { type?: string };
+  }) => ReactNode | null;
+  runProgress?: AgentRunProgressStage | null;
 }>) {
-  const isRunning = useAuiState(({ message }) => message.status?.type === 'running')
+  const isRunning = useAuiState(({ message }) => message.status?.type === 'running');
 
   return (
     <MessagePrimitive.Root className="group flex gap-4 py-4">
@@ -747,10 +756,7 @@ export function AssistantMessage({
         <Image src={chatLogo} alt="" className="size-full object-cover" />
       </div>
       <div className="min-w-0 flex-1">
-        <div className="font-mono text-[0.55rem] font-bold tracking-[0.13em] text-ink-subtle">
-          {label}
-        </div>
-        <div className="mt-2 text-[0.97rem] leading-7 text-ink dark:text-ink">
+        <div className="text-[0.97rem] leading-7 text-ink dark:text-ink">
           <MessagePrimitive.GroupedParts
             groupBy={groupPartByType({
               reasoning: ['group-agent-activity'],
@@ -759,7 +765,11 @@ export function AssistantMessage({
           >
             {({ part, children }) => {
               if (part.type === 'group-agent-activity') {
-                return <AgentActivityDisclosure isRunning={part.status.type === 'running'}>{children}</AgentActivityDisclosure>;
+                return (
+                  <AgentActivityDisclosure isRunning={part.status.type === 'running'}>
+                    {children}
+                  </AgentActivityDisclosure>
+                );
               }
               if (renderPart) return renderPart(part);
               if (part.type === 'text') return <AssistantMarkdown>{part.text}</AssistantMarkdown>;
@@ -785,52 +795,53 @@ export function AssistantMessage({
         </MessagePrimitive.Error>
         {!isRunning ? (
           <div className="mt-3 flex min-h-7 items-center justify-between gap-4 font-mono text-[0.56rem] text-ink-subtle">
-          <ActionBarPrimitive.Root className="flex items-center gap-1">
-            <ActionBarPrimitive.Copy
-              aria-label="复制回复"
-              title="复制"
-              className="group/copy grid size-7 cursor-pointer place-items-center rounded-md transition-[background,color,opacity] hover:bg-brand-subtle hover:text-brand-hover disabled:cursor-not-allowed dark:hover:bg-brand-subtle dark:hover:text-brand-light"
-            >
-              <CopyIcon
-                aria-hidden="true"
-                className="size-3.5 group-data-[copied=true]/copy:hidden"
-                strokeWidth={1.8}
-              />
-              <CheckIcon
-                aria-hidden="true"
-                className="hidden size-3.5 group-data-[copied=true]/copy:block"
-                strokeWidth={1.8}
-              />
-            </ActionBarPrimitive.Copy>
-            <ActionBarPrimitive.FeedbackPositive
-              aria-label="有帮助"
-              title="有帮助"
-              className="grid size-7 cursor-pointer place-items-center rounded-md transition-[background,color,opacity] hover:bg-brand-subtle hover:text-brand-hover disabled:cursor-not-allowed disabled:opacity-25 data-[submitted=true]:bg-brand-subtle data-[submitted=true]:text-brand dark:hover:bg-brand-subtle dark:hover:text-brand-light"
-            >
-              <ThumbsUpIcon aria-hidden="true" className="size-3.5" strokeWidth={1.8} />
-            </ActionBarPrimitive.FeedbackPositive>
-            <ActionBarPrimitive.FeedbackNegative
-              aria-label="没帮助"
-              title="没帮助"
-              className="grid size-7 cursor-pointer place-items-center rounded-md transition-[background,color,opacity] hover:bg-brand-subtle hover:text-brand-hover disabled:cursor-not-allowed disabled:opacity-25 data-[submitted=true]:bg-brand-subtle data-[submitted=true]:text-brand dark:hover:bg-brand-subtle dark:hover:text-brand-light"
-            >
-              <ThumbsDownIcon aria-hidden="true" className="size-3.5" strokeWidth={1.8} />
-            </ActionBarPrimitive.FeedbackNegative>
-          </ActionBarPrimitive.Root>
-          <AgentMessageDuration />
+            <ActionBarPrimitive.Root className="flex items-center gap-1">
+              <ActionBarPrimitive.Copy
+                aria-label="复制回复"
+                title="复制"
+                className="group/copy grid size-7 cursor-pointer place-items-center rounded-md transition-[background,color,opacity] hover:bg-brand-subtle hover:text-brand-hover disabled:cursor-not-allowed dark:hover:bg-brand-subtle dark:hover:text-brand-light"
+              >
+                <CopyIcon
+                  aria-hidden="true"
+                  className="size-3.5 group-data-[copied=true]/copy:hidden"
+                  strokeWidth={1.8}
+                />
+                <CheckIcon
+                  aria-hidden="true"
+                  className="hidden size-3.5 group-data-[copied=true]/copy:block"
+                  strokeWidth={1.8}
+                />
+              </ActionBarPrimitive.Copy>
+              <ActionBarPrimitive.FeedbackPositive
+                aria-label="有帮助"
+                title="有帮助"
+                className="grid size-7 cursor-pointer place-items-center rounded-md transition-[background,color,opacity] hover:bg-brand-subtle hover:text-brand-hover disabled:cursor-not-allowed disabled:opacity-25 data-[submitted=true]:bg-brand-subtle data-[submitted=true]:text-brand dark:hover:bg-brand-subtle dark:hover:text-brand-light"
+              >
+                <ThumbsUpIcon aria-hidden="true" className="size-3.5" strokeWidth={1.8} />
+              </ActionBarPrimitive.FeedbackPositive>
+              <ActionBarPrimitive.FeedbackNegative
+                aria-label="没帮助"
+                title="没帮助"
+                className="grid size-7 cursor-pointer place-items-center rounded-md transition-[background,color,opacity] hover:bg-brand-subtle hover:text-brand-hover disabled:cursor-not-allowed disabled:opacity-25 data-[submitted=true]:bg-brand-subtle data-[submitted=true]:text-brand dark:hover:bg-brand-subtle dark:hover:text-brand-light"
+              >
+                <ThumbsDownIcon aria-hidden="true" className="size-3.5" strokeWidth={1.8} />
+              </ActionBarPrimitive.FeedbackNegative>
+              <AgentMessageDuration />
+            </ActionBarPrimitive.Root>
           </div>
         ) : null}
       </div>
     </MessagePrimitive.Root>
-  )
+  );
 }
+
 function AgentMessageDuration() {
   const timing = useMessageTiming();
   if (timing?.totalStreamTime === undefined) return null;
 
   return (
-    <span aria-label={`模型总耗时 ${formatDuration(timing.totalStreamTime)}`}>
-      总耗时 {formatDuration(timing.totalStreamTime)}
+    <span aria-label={`对话生成耗时 ${formatDuration(timing.totalStreamTime)}`}>
+      耗时 {formatDuration(timing.totalStreamTime)}
     </span>
   );
 }
@@ -839,7 +850,6 @@ function formatDuration(durationMs: number): string {
   if (durationMs < 1_000) return `${Math.max(1, Math.round(durationMs))}ms`;
   return `${(durationMs / 1_000).toFixed(durationMs >= 10_000 ? 1 : 2)}s`;
 }
-
 
 function AgentActivityDisclosure({
   children,
@@ -856,15 +866,15 @@ function AgentActivityDisclosure({
 
   return (
     <details
-      className="group my-2 text-[0.97rem] leading-7 text-ink opacity-55 transition-opacity duration-150 hover:opacity-85 open:opacity-75"
+      className="group text-[0.97rem] leading-7 text-ink opacity-55 transition-opacity duration-150 hover:opacity-85 open:opacity-75"
       open={open}
       onToggle={(event) => setOpen(event.currentTarget.open)}
     >
       <summary className="flex cursor-pointer list-none items-center py-1 font-normal tracking-[0.02em] [&::-webkit-details-marker]:hidden">
-        <span>思考与工具调用</span>
+        <span>{isRunning ? '正在思考' : '思考完成'}</span>
         <AgentDisclosureChevron />
       </summary>
-      <div className="mt-1.5 space-y-1.5">{children}</div>
+      <div className="space-y-1.5">{children}</div>
     </details>
   );
 }
@@ -874,18 +884,18 @@ export function ChatUsageMetadata({
   model,
   requestId,
 }: Readonly<{
-  usage?: Usage | undefined
-  model?: string | undefined
-  requestId?: string | undefined
+  usage?: Usage | undefined;
+  model?: string | undefined;
+  requestId?: string | undefined;
 }>) {
-  const status = useAuiState(({ message }) => message.status)
+  const status = useAuiState(({ message }) => message.status);
   return (
     <p className="break-anywhere">
       {model ?? '模型'} · {status?.type === 'running' ? '生成中' : usageLabel(usage)}
       {usage?.estimatedCostCny ? ` · ¥${usage.estimatedCostCny}` : ''}
       {requestId ? ` · ${requestId}` : ''}
     </p>
-  )
+  );
 }
 
 export function AgentRunMetadata({
@@ -895,14 +905,14 @@ export function AgentRunMetadata({
   modelCalls,
   toolCalls,
 }: Readonly<{
-  model?: string | undefined
-  runStatus?: string | null | undefined
-  totalTokens?: number | null | undefined
-  modelCalls?: number | null | undefined
-  toolCalls?: number | null | undefined
+  model?: string | undefined;
+  runStatus?: string | null | undefined;
+  totalTokens?: number | null | undefined;
+  modelCalls?: number | null | undefined;
+  toolCalls?: number | null | undefined;
 }>) {
-  const status = useAuiState(({ message }) => message.status)
-  const interrupted = runStatus === 'interrupted' || status?.type === 'incomplete'
+  const status = useAuiState(({ message }) => message.status);
+  const interrupted = runStatus === 'interrupted' || status?.type === 'incomplete';
   return (
     <p>
       {model ?? '模型'}
@@ -937,28 +947,18 @@ export function AgentReasoning({
 
   return (
     <details
-      className="group my-2 text-[0.97rem] leading-7 text-ink opacity-55 transition-opacity duration-150 hover:opacity-85 open:opacity-75"
+      className="group text-[0.97rem] leading-7 text-ink opacity-55 transition-opacity duration-150 hover:opacity-85 open:opacity-75"
       open={open}
       onToggle={(event) => setOpen(event.currentTarget.open)}
     >
       <summary className="flex cursor-pointer list-none items-center py-1 font-normal tracking-[0.02em] [&::-webkit-details-marker]:hidden">
-        <span>思考过程</span>
+        <span>{title}</span>
         <AgentDisclosureChevron />
       </summary>
-      <div className="mt-2 whitespace-pre-wrap">
+      <div className="mt-1.5 space-y-1 border-l border-current/15 pl-3 whitespace-pre-wrap">
         {text}
       </div>
     </details>
-  )
-}
-
-export function AgentToolCall({ url }: Readonly<{ url?: string }>) {
-  return (
-    <div className="my-2 flex flex-wrap items-center gap-2 text-[0.97rem] leading-7 text-ink opacity-55 transition-opacity duration-150 hover:opacity-85">
-      <span className="font-sans font-semibold">web_fetch</span>
-      {url ? <span className="break-all">{url}</span> : null}
-      <span>调用中…</span>
-    </div>
   );
 }
 
@@ -972,6 +972,16 @@ export function AgentDisclosureChevron() {
   );
 }
 
+export function AgentToolCall({ url }: Readonly<{ url?: string }>) {
+  return (
+    <div className="my-2 flex flex-wrap items-center gap-2 text-[0.97rem] leading-7 text-ink opacity-55 transition-opacity duration-150 hover:opacity-85">
+      <span className="font-sans font-semibold">web_fetch</span>
+      {url ? <span className="break-all">{url}</span> : null}
+      <span>调用中…</span>
+    </div>
+  );
+}
+
 export function AgentToolResult({
   isError,
   status,
@@ -979,20 +989,18 @@ export function AgentToolResult({
   summary,
   finalUrl,
 }: Readonly<{
-  isError?: boolean | undefined
-  status?: string | undefined
-  httpStatus?: number | undefined
-  summary?: string | undefined
-  finalUrl?: string | undefined
+  isError?: boolean | undefined;
+  status?: string | undefined;
+  httpStatus?: number | undefined;
+  summary?: string | undefined;
+  finalUrl?: string | undefined;
 }>) {
   return (
     <div className="my-2 text-[0.97rem] leading-7 text-ink opacity-55 transition-opacity duration-150 hover:opacity-85">
       <div className="flex flex-wrap items-center gap-2">
         <span className="font-sans font-semibold">web_fetch</span>
         <span>{status ?? (isError ? 'failed' : 'succeeded')}</span>
-        {httpStatus ? (
-          <span>HTTP {httpStatus}</span>
-        ) : null}
+        {httpStatus ? <span>HTTP {httpStatus}</span> : null}
       </div>
       {summary ? <p className="mt-1.5">{summary}</p> : null}
       {finalUrl ? (
@@ -1006,23 +1014,23 @@ export function AgentToolResult({
         </a>
       ) : null}
     </div>
-  )
+  );
 }
 
 function usageLabel(usage?: Usage): string {
-  if (!usage) return '等待用量'
-  return usage.usageUnknown ? 'Token 未知' : `${usage.totalTokens} tokens`
+  if (!usage) return '等待用量';
+  return usage.usageUnknown ? 'Token 未知' : `${usage.totalTokens} tokens`;
 }
 
 export function NewThreadButton({ onNewThread }: Readonly<{ onNewThread: () => void }>) {
-  const hasMessages = useAuiState(({ thread }) => thread.messages.length > 0)
-  if (!hasMessages) return null
-  return <AgentComposerAction onClick={onNewThread}>新会话</AgentComposerAction>
+  const hasMessages = useAuiState(({ thread }) => thread.messages.length > 0);
+  if (!hasMessages) return null;
+  return <AgentComposerAction onClick={onNewThread}>新会话</AgentComposerAction>;
 }
 
 export function ResetThreadButton() {
-  const api = useAui()
-  const hasMessages = useAuiState(({ thread }) => thread.messages.length > 0)
-  if (!hasMessages) return null
-  return <AgentComposerAction onClick={() => api.thread().reset()}>新会话</AgentComposerAction>
+  const api = useAui();
+  const hasMessages = useAuiState(({ thread }) => thread.messages.length > 0);
+  if (!hasMessages) return null;
+  return <AgentComposerAction onClick={() => api.thread().reset()}>新会话</AgentComposerAction>;
 }

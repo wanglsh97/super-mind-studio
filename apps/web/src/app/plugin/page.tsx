@@ -1,22 +1,22 @@
-'use client'
+'use client';
 
-import { createAIGatewayClient } from '@supermind/sdk'
-import type { AgentMcpServerStatus } from '@supermind/sdk'
-import Image, { type StaticImageData } from 'next/image'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { createAIGatewayClient } from '@supermind/sdk';
+import type { AgentMcpServerStatus } from '@supermind/sdk';
+import Image, { type StaticImageData } from 'next/image';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { ProtectedUserPage } from '@/components/protected-user-page'
-import { useAuthenticationFailure } from '@/hooks/use-authentication-failure'
-import { cn } from '@/utils/cn'
-import context7Logo from '@/const/branding/Context7_192.png'
-import deepWikiLogo from '@/const/branding/DeepWiki_Logo_1024.png'
-import qichachaLogo from '@/const/branding/qcc_Logo_93.png'
-import rollinggoHotelLogo from '@/const/branding/RollingGo_Logo.png'
-import amapMapsLogo from '@/const/branding/amap_Logo.png'
+import { ProtectedUserPage } from '@/components/protected-user-page';
+import { useAuthenticationFailure } from '@/hooks/use-authentication-failure';
+import { cn } from '@/utils/cn';
+import context7Logo from '@/const/branding/context7-logo.png';
+import deepWikiLogo from '@/const/branding/deepWiki-logo.png';
+import qichachaLogo from '@/const/branding/qcc-logo.png';
+import rollinggoHotelLogo from '@/const/branding/rollingGo-logo.png';
+import amapMapsLogo from '@/const/branding/amap-logo.png';
 
-import { mcpConnectionLabel, replaceMcpServerStatus } from '@/utils/plugin/mcp-settings-state'
+import { mcpConnectionLabel, replaceMcpServerStatus } from '@/utils/plugin/mcp-settings-state';
 
-const client = createAIGatewayClient()
+const client = createAIGatewayClient();
 
 const MCP_LOGOS: Readonly<Record<string, { alt: string; src: StaticImageData }>> = {
   context7: { alt: 'Context7', src: context7Logo },
@@ -24,7 +24,7 @@ const MCP_LOGOS: Readonly<Record<string, { alt: string; src: StaticImageData }>>
   'qcc-company': { alt: '企查查', src: qichachaLogo },
   'rollinggo-hotel': { alt: 'RollingGo 酒店', src: rollinggoHotelLogo },
   'amap-maps': { alt: '高德地图', src: amapMapsLogo },
-}
+};
 
 const PLUGIN_CATEGORIES = [
   { id: 'all', label: '全部' },
@@ -32,9 +32,9 @@ const PLUGIN_CATEGORIES = [
   { id: 'business', label: '商业运营' },
   { id: 'travel', label: '旅行出行' },
   { id: 'other', label: '其他' },
-] as const
+] as const;
 
-type PluginCategoryId = (typeof PLUGIN_CATEGORIES)[number]['id']
+type PluginCategoryId = (typeof PLUGIN_CATEGORIES)[number]['id'];
 
 const PLUGIN_CATEGORY_BY_ID: Readonly<Record<string, Exclude<PluginCategoryId, 'all' | 'other'>>> =
   {
@@ -44,70 +44,70 @@ const PLUGIN_CATEGORY_BY_ID: Readonly<Record<string, Exclude<PluginCategoryId, '
     'rollinggo-hotel': 'travel',
     'rollinggo-flight': 'travel',
     'amap-maps': 'travel',
-  }
+  };
 
 export default function McpSettingsPage() {
   return (
     <ProtectedUserPage>
       <McpSettings />
     </ProtectedUserPage>
-  )
+  );
 }
 
 function McpSettings() {
-  const handleAuthenticationFailure = useAuthenticationFailure()
-  const [servers, setServers] = useState<AgentMcpServerStatus[]>([])
-  const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>('loading')
-  const [error, setError] = useState('')
-  const [savingId, setSavingId] = useState<string | null>(null)
-  const [category, setCategory] = useState<PluginCategoryId>('all')
+  const handleAuthenticationFailure = useAuthenticationFailure();
+  const [servers, setServers] = useState<AgentMcpServerStatus[]>([]);
+  const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [error, setError] = useState('');
+  const [savingId, setSavingId] = useState<string | null>(null);
+  const [category, setCategory] = useState<PluginCategoryId>('all');
 
   const load = useCallback(async () => {
-    setLoadState('loading')
-    setError('')
+    setLoadState('loading');
+    setError('');
     try {
-      setServers(await client.agent.mcp.servers())
-      setLoadState('ready')
+      setServers(await client.agent.mcp.servers());
+      setLoadState('ready');
     } catch (cause) {
-      if (handleAuthenticationFailure(cause)) return
-      setError(errorMessage(cause, 'MCP 配置加载失败，请重试。'))
-      setLoadState('error')
+      if (handleAuthenticationFailure(cause)) return;
+      setError(errorMessage(cause, 'MCP 配置加载失败，请重试。'));
+      setLoadState('error');
     }
-  }, [handleAuthenticationFailure])
+  }, [handleAuthenticationFailure]);
 
   useEffect(() => {
-    void load()
-  }, [load])
+    void load();
+  }, [load]);
 
   async function setEnabled(server: AgentMcpServerStatus, enabled: boolean) {
-    if (savingId) return
-    setSavingId(server.id)
-    setError('')
+    if (savingId) return;
+    setSavingId(server.id);
+    setError('');
     try {
-      const updated = await client.agent.mcp.update(server.id, { enabled })
-      setServers((current) => replaceMcpServerStatus(current, updated))
+      const updated = await client.agent.mcp.update(server.id, { enabled });
+      setServers((current) => replaceMcpServerStatus(current, updated));
     } catch (cause) {
-      if (handleAuthenticationFailure(cause)) return
-      setError(errorMessage(cause, `${server.name} 的设置保存失败，请重试。`))
+      if (handleAuthenticationFailure(cause)) return;
+      setError(errorMessage(cause, `${server.name} 的设置保存失败，请重试。`));
     } finally {
-      setSavingId(null)
+      setSavingId(null);
     }
   }
 
-  const enabledCount = useMemo(() => servers.filter((server) => server.enabled).length, [servers])
+  const enabledCount = useMemo(() => servers.filter((server) => server.enabled).length, [servers]);
   const toolCount = useMemo(
     () => servers.reduce((total, server) => total + server.registeredToolCount, 0),
     [servers],
-  )
+  );
   const visibleServers = useMemo(
     () =>
       category === 'all'
         ? servers
         : servers.filter((server) => pluginCategory(server) === category),
     [category, servers],
-  )
+  );
 
-  const loading = loadState === 'loading'
+  const loading = loadState === 'loading';
 
   return (
     <main className="min-h-screen px-8 py-10 lg:px-12 lg:py-12">
@@ -165,7 +165,7 @@ function McpSettings() {
             className="-mx-1 mb-5 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           >
             {PLUGIN_CATEGORIES.map((item) => {
-              const selected = item.id === category
+              const selected = item.id === category;
               return (
                 <button
                   key={item.id}
@@ -184,7 +184,7 @@ function McpSettings() {
                 >
                   {item.label}
                 </button>
-              )
+              );
             })}
           </div>
 
@@ -222,11 +222,11 @@ function McpSettings() {
         </section>
       </div>
     </main>
-  )
+  );
 }
 
 function pluginCategory(server: AgentMcpServerStatus): Exclude<PluginCategoryId, 'all'> {
-  return PLUGIN_CATEGORY_BY_ID[server.id] ?? 'other'
+  return PLUGIN_CATEGORY_BY_ID[server.id] ?? 'other';
 }
 
 function McpServerCard({
@@ -235,15 +235,14 @@ function McpServerCard({
   disabled,
   onToggle,
 }: Readonly<{
-  server: AgentMcpServerStatus
-  saving: boolean
-  disabled: boolean
-  onToggle(enabled: boolean): void
+  server: AgentMcpServerStatus;
+  saving: boolean;
+  disabled: boolean;
+  onToggle(enabled: boolean): void;
 }>) {
-  const connectionLabel = mcpConnectionLabel(server)
-  const healthy = server.status === 'ready'
-  const logo =
-    MCP_LOGOS[server.id] ?? (server.name.includes('企查查') ? MCP_LOGOS.qichacha : undefined)
+  const connectionLabel = mcpConnectionLabel(server);
+  const healthy = server.status === 'ready';
+  const logo = MCP_LOGOS[server.id] ?? undefined;
 
   return (
     <article
@@ -254,14 +253,6 @@ function McpServerCard({
           : 'border-line/75 opacity-72 dark:border-line-soft',
       )}
     >
-      <div
-        className={cn(
-          'absolute inset-x-0 top-0 h-px',
-          server.enabled
-            ? 'bg-gradient-to-r from-transparent via-brand/70 to-transparent'
-            : 'bg-line',
-        )}
-      />
       <div className="flex items-start gap-3">
         <div
           className={cn(
@@ -336,7 +327,7 @@ function McpServerCard({
         />
       </div>
     </article>
-  )
+  );
 }
 
 function Metric({ label, value }: Readonly<{ label: string; value: string }>) {
@@ -347,7 +338,7 @@ function Metric({ label, value }: Readonly<{ label: string; value: string }>) {
         {value}
       </strong>
     </div>
-  )
+  );
 }
 
 function ServerDatum({ label, value }: Readonly<{ label: string; value: string }>) {
@@ -358,7 +349,7 @@ function ServerDatum({ label, value }: Readonly<{ label: string; value: string }
         {value}
       </strong>
     </div>
-  )
+  );
 }
 
 function PluginCatalogLoading() {
@@ -394,7 +385,7 @@ function PluginCatalogLoading() {
         </div>
       ))}
     </div>
-  )
+  );
 }
 
 function CircuitBackdrop() {
@@ -422,9 +413,9 @@ function CircuitBackdrop() {
         <circle cx="484" cy="188" r="4" />
       </g>
     </svg>
-  )
+  );
 }
 
 function errorMessage(cause: unknown, fallback: string): string {
-  return cause instanceof Error && cause.message ? cause.message : fallback
+  return cause instanceof Error && cause.message ? cause.message : fallback;
 }
