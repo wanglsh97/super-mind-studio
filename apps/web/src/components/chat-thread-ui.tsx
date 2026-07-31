@@ -688,7 +688,7 @@ export function AgentEmptyState({
         aria-hidden="true"
         className="liquid-glass grid size-[4.8rem] place-items-center rounded-[1.7rem] shadow-[0_18px_45px_rgb(39_100_255/0.15)]"
       >
-        <Image src={chatLogo} alt="" className="size-11 rounded-lg object-cover" />
+        <Image src={chatLogo} alt="" className="size-16 rounded-xl object-cover" />
       </div>
       <p className="mt-5 font-mono text-[0.58rem] font-bold tracking-[0.15em] text-ink-subtle">
         {kicker}
