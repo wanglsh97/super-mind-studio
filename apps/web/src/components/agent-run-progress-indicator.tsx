@@ -16,9 +16,11 @@ export function AgentRunProgressIndicator({ stage }: Readonly<{ stage: AgentRunP
     <div className="flex items-center gap-2 py-4 text-sm text-ink-muted" role="status" aria-live="polite">
       <span
         aria-hidden="true"
-        className="size-2 animate-pulse rounded-full bg-brand motion-reduce:animate-none"
+        className="size-2 animate-status-breathe rounded-full bg-brand motion-reduce:animate-none"
       />
-      <span className="animate-pulse motion-reduce:animate-none">{STAGE_COPY[stage]}</span>
+      <span className="animate-status-breathe motion-reduce:animate-none">
+        {STAGE_COPY[stage]}
+      </span>
     </div>
   )
 }
