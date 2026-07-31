@@ -185,6 +185,9 @@ function AgentConsole() {
   };
   contextRef.current.onRunFinished = () => {
     setRunProgress(null);
+    // LocalRuntime 的终态消息已包含本次 run 的 timing；跳过紧随其后的 hydration，
+    // 避免持久化快照（尚不包含前端 timing）覆盖该元数据。
+    skipHydrationRef.current = true;
     setSandboxTelemetry((current) =>
       current.status === 'failed'
         ? current
