@@ -759,7 +759,7 @@ export function AssistantMessage({
           >
             {({ part, children }) => {
               if (part.type === 'group-agent-activity') {
-                return <AgentActivityDisclosure isRunning={isRunning}>{children}</AgentActivityDisclosure>;
+                return <AgentActivityDisclosure isRunning={part.status.type === 'running'}>{children}</AgentActivityDisclosure>;
               }
               if (renderPart) return renderPart(part);
               if (part.type === 'text') return <AssistantMarkdown>{part.text}</AssistantMarkdown>;
