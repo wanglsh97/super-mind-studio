@@ -997,7 +997,7 @@ function AgentActivityDisclosure({
       onToggle={(event) => setOpen(event.currentTarget.open)}
     >
       <summary className="flex cursor-pointer list-none items-center py-1 font-normal tracking-[0.02em] [&::-webkit-details-marker]:hidden">
-        <span>{isRunning ? '正在思考' : '思考完成'}</span>
+        <ShimmerText>{isRunning ? '正在思考' : '思考完成'}</ShimmerText>
         <AgentDisclosureChevron />
       </summary>
       <div className="space-y-1.5">{children}</div>
@@ -1059,17 +1059,11 @@ export function AgentRunMetadata({
 export function AgentReasoning({
   title,
   text,
-  running,
 }: Readonly<{
   title: string;
   text: string;
-  running: boolean;
 }>) {
-  const [open, setOpen] = useState(running);
-
-  useEffect(() => {
-    setOpen(running);
-  }, [running]);
+  const [open, setOpen] = useState(false);
 
   return (
     <details
@@ -1078,7 +1072,7 @@ export function AgentReasoning({
       onToggle={(event) => setOpen(event.currentTarget.open)}
     >
       <summary className="flex cursor-pointer list-none items-center py-1 font-normal tracking-[0.02em] [&::-webkit-details-marker]:hidden">
-        {running ? <ShimmerText>{title}</ShimmerText> : <span>{title}</span>}
+        <ShimmerText>{title}</ShimmerText>
         <AgentDisclosureChevron />
       </summary>
       <div className="mt-1.5 space-y-1 border-l border-current/15 pl-3 whitespace-pre-wrap">
