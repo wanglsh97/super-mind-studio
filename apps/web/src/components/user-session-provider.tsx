@@ -10,7 +10,7 @@ import {
   useState,
 } from 'react'
 
-import { getUserSession, type UserSessionProfile, UserAuthApiError } from '../lib/user-auth-client'
+import { getUserSession, type UserSessionProfile, UserAuthApiError } from '@/utils/auth/user-auth-client'
 
 type SessionStatus = 'loading' | 'authenticated' | 'unauthenticated' | 'error'
 

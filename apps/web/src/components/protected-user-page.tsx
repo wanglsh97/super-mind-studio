@@ -4,7 +4,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import type { ReactNode } from 'react'
 import { useEffect } from 'react'
 
-import { sanitizeUserReturnTo } from '../lib/user-auth-client'
+import { sanitizeUserReturnTo } from '@/utils/auth/user-auth-client'
 import { useUserSession } from './user-session-provider'
 
 export function ProtectedUserPage({ children }: Readonly<{ children: ReactNode }>) {

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { Suspense } from 'react'
 
-import { LoginContent } from './login-content'
+import { LoginContent } from '@/components/login/login-content'
 
 export const metadata: Metadata = { title: '登录 | Super Mind Studio' }
 

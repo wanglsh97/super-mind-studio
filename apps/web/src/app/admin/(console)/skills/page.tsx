@@ -5,7 +5,7 @@ import { Alert, Button, Input, Modal, Space, Table, Tag, Typography } from 'antd
 import type { ColumnsType } from 'antd/es/table'
 import { useCallback, useEffect, useState } from 'react'
 
-import { redirectToAdminLogin } from '../../../../lib/admin-auth-client'
+import { redirectToAdminLogin } from '@/utils/admin/admin-auth-client'
 
 const client = createAIGatewayClient()
 

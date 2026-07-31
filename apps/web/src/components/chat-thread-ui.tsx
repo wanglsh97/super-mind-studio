@@ -17,9 +17,9 @@ import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { useEffect, useRef, useState } from 'react'
 
-import { CHAT_PROVIDER_BRANDING } from '../config/chat-provider-branding'
-import { cn } from '../lib/cn'
-import { AssistantMarkdown } from '../app/chat/assistant-markdown'
+import { CHAT_PROVIDER_BRANDING } from '@/const/branding/chat-provider-branding'
+import { AssistantMarkdown } from '@/components/chat/assistant-markdown'
+import { cn } from '@/utils/cn'
 
 const focusRing =
   'focus-visible:outline-3 focus-visible:outline-brand-focus focus-visible:outline-offset-3'

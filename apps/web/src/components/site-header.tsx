@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
-import { logoutUser, sanitizeUserReturnTo } from '../lib/user-auth-client'
+import { logoutUser, sanitizeUserReturnTo } from '@/utils/auth/user-auth-client'
 import { BrandMark } from './brand-mark'
 import { ThemeToggle } from './theme-toggle'
 import { useUserSession } from './user-session-provider'

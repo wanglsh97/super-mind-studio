@@ -5,12 +5,12 @@ import type { ColumnsType } from 'antd/es/table'
 import type { EChartsOption } from 'echarts'
 import { useEffect, useState } from 'react'
 
-import { DashboardChart } from '../../../components/admin/dashboard-chart'
-import { AnalyticsChart } from '../../../components/analytics-chart'
-import { TokenCalendarHeatmap } from '../../../components/token-calendar-heatmap'
-import { redirectToAdminLogin } from '../../../lib/admin-auth-client'
-import { loadDashboard } from '../../../lib/admin-dashboard-data'
-import { formatTokenChartValue, formatTokenValue } from '../../../lib/token-display'
+import { DashboardChart } from '@/components/admin/dashboard-chart'
+import { AnalyticsChart } from '@/components/analytics-chart'
+import { TokenCalendarHeatmap } from '@/components/token-calendar-heatmap'
+import { redirectToAdminLogin } from '@/utils/admin/admin-auth-client'
+import { loadDashboard } from '@/utils/admin/admin-dashboard-data'
+import { formatTokenChartValue, formatTokenValue } from '@/utils/usage/token-display'
 import type {
   DashboardData,
   DashboardErrors,
@@ -18,7 +18,7 @@ import type {
   DashboardSection,
   DashboardTrends,
   DashboardTokenAnalytics,
-} from '../../../lib/admin-dashboard-data'
+} from '@/utils/admin/admin-dashboard-data'
 
 export default function AdminHomePage() {
   const [data, setData] = useState<DashboardData | null>(null)

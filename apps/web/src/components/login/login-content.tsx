@@ -4,14 +4,14 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
 import { useUserSession } from '../../components/user-session-provider'
-import { cn } from '../../lib/cn'
+import { cn } from '@/utils/cn'
 import {
   githubLoginUrl,
   googleLoginUrl,
   loginAnonymously,
   sanitizeUserReturnTo,
   userLoginErrorMessage,
-} from '../../lib/user-auth-client'
+} from '@/utils/auth/user-auth-client'
 
 const focusRing =
   'focus-visible:outline-3 focus-visible:outline-brand-focus focus-visible:outline-offset-3'

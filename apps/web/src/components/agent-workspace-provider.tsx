@@ -22,7 +22,7 @@ import { useUserSession } from './user-session-provider'
 import {
   removeActiveRun as removeActiveRunState,
   upsertActiveRun as upsertActiveRunState,
-} from '../app/agent/agent-active-runs'
+} from '@/utils/agent/agent-active-runs'
 
 const client = createAIGatewayClient()
 

@@ -4,7 +4,7 @@ import type { AgentSkillCandidate } from '@supermind/sdk'
 import { ComposerPrimitive, unstable_useSlashCommandAdapter } from '@assistant-ui/react'
 import { useMemo } from 'react'
 
-import { cn } from '../lib/cn'
+import { cn } from '@/utils/cn'
 
 interface AgentSkillSlashPickerProps {
   candidates: AgentSkillCandidate[]

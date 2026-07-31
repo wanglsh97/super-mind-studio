@@ -5,16 +5,16 @@ import type { AgentMcpServerStatus } from '@supermind/sdk'
 import Image, { type StaticImageData } from 'next/image'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
-import { ProtectedUserPage } from '../../components/protected-user-page'
-import { useAuthenticationFailure } from '../../components/use-authentication-failure'
-import { cn } from '../../lib/cn'
-import context7Logo from '../../config/Context7_192.png'
-import deepWikiLogo from '../../config/DeepWiki_Logo_1024.png'
-import qichachaLogo from '../../config/qcc_Logo_93.png'
-import rollinggoHotelLogo from '../../config/RollingGo_Logo.png'
-import amapMapsLogo from '../../config/amap_Logo.png'
+import { ProtectedUserPage } from '@/components/protected-user-page'
+import { useAuthenticationFailure } from '@/hooks/use-authentication-failure'
+import { cn } from '@/utils/cn'
+import context7Logo from '@/const/branding/Context7_192.png'
+import deepWikiLogo from '@/const/branding/DeepWiki_Logo_1024.png'
+import qichachaLogo from '@/const/branding/qcc_Logo_93.png'
+import rollinggoHotelLogo from '@/const/branding/RollingGo_Logo.png'
+import amapMapsLogo from '@/const/branding/amap_Logo.png'
 
-import { mcpConnectionLabel, replaceMcpServerStatus } from './mcp-settings-state'
+import { mcpConnectionLabel, replaceMcpServerStatus } from '@/utils/plugin/mcp-settings-state'
 
 const client = createAIGatewayClient()
 

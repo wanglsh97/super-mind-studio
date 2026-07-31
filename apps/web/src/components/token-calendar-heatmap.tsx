@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 
-import { formatTokenValue } from '../lib/token-display'
+import { formatTokenValue } from '@/utils/usage/token-display'
 
 export interface TokenCalendarDay {
   date: string

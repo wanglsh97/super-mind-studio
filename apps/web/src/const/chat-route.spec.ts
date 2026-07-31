@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 
-import { sanitizeUserReturnTo } from '../../lib/user-auth-client'
-import { CHAT_ROUTE_DESTINATION } from './chat-route'
+import { CHAT_ROUTE_DESTINATION } from '@/const/chat-route'
+import { sanitizeUserReturnTo } from '@/utils/auth/user-auth-client'
 
 describe('retired Chat route policy', () => {
   it('uses Agent as the canonical ordinary conversation destination', () => {

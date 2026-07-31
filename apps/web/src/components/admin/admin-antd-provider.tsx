@@ -5,7 +5,7 @@ import { App, ConfigProvider } from 'antd'
 import zhCN from 'antd/locale/zh_CN'
 import type { ReactNode } from 'react'
 
-import { adminTheme } from './admin-theme'
+import { adminTheme } from '@/const/admin-theme'
 
 export function AdminAntdProvider({ children }: Readonly<{ children: ReactNode }>) {
   return (

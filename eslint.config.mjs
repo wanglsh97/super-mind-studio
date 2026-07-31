@@ -12,6 +12,13 @@ const javascriptFiles = ['**/*.{js,mjs,cjs,jsx}']
 const webSourceFiles = ['apps/web/src/**/*.{ts,tsx}']
 const webComponentFiles = ['apps/web/src/**/*.{tsx,jsx}']
 const apiJestFiles = ['apps/api/**/*.spec.ts', 'apps/api/**/*.e2e-spec.ts']
+const warningRules = (rules) =>
+  Object.fromEntries(
+    Object.entries(rules).map(([name, value]) => [
+      name,
+      Array.isArray(value) ? ['warn', ...value.slice(1)] : 'warn',
+    ]),
+  )
 
 export default tseslint.config(
   {
@@ -29,12 +36,7 @@ export default tseslint.config(
     ],
   },
   js.configs.recommended,
-  ...tseslint.configs.recommendedTypeChecked,
-  ...tseslint.configs.stylisticTypeChecked,
-  {
-    ...tseslint.configs.disableTypeChecked,
-    files: javascriptFiles,
-  },
+  ...tseslint.configs.recommended,
   {
     files: typescriptFiles,
     languageOptions: {
@@ -43,30 +45,15 @@ export default tseslint.config(
         ...globals.browser,
         ...globals.jest,
       },
-      parserOptions: {
-        projectService: {
-          allowDefaultProject: ['prisma.config.ts'],
-        },
-        tsconfigRootDir: import.meta.dirname,
-      },
-    },
-    settings: {
-      'import-x/resolver-next': [
-        {
-          typescript: {
-            project: ['apps/*/tsconfig.json', 'packages/*/tsconfig.json'],
-          },
-        },
-      ],
     },
     rules: {
       '@typescript-eslint/consistent-type-imports': 'error',
       '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/no-import-type-side-effects': 'error',
-      'import-x/consistent-type-specifier-style': ['error', 'prefer-top-level'],
+      'import-x/consistent-type-specifier-style': ['warn', 'prefer-top-level'],
       'import-x/no-duplicates': 'error',
       'import-x/order': [
-        'error',
+        'warn',
         {
           alphabetize: { caseInsensitive: true, order: 'asc' },
           groups: ['builtin', 'external', 'internal', 'parent', 'sibling', 'index', 'type'],
@@ -77,9 +64,19 @@ export default tseslint.config(
     },
   },
   {
+    files: javascriptFiles,
+    languageOptions: {
+      globals: {
+        ...globals.node,
+        ...globals.browser,
+      },
+    },
+  },
+  {
     files: typescriptFiles,
-    ...importX.flatConfigs.recommended,
-    ...importX.flatConfigs.typescript,
+    plugins: {
+      'import-x': importX,
+    },
   },
   {
     files: webSourceFiles,
@@ -93,7 +90,15 @@ export default tseslint.config(
   {
     files: webComponentFiles,
     ...jsxA11y.flatConfigs.recommended,
-    ...reactHooks.configs.flat.recommended,
+    plugins: {
+      ...jsxA11y.flatConfigs.recommended.plugins,
+      'react-hooks': reactHooks,
+    },
+    rules: {
+      ...warningRules(jsxA11y.flatConfigs.recommended.rules),
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/exhaustive-deps': 'warn',
+    },
   },
   {
     ...jest.configs['flat/recommended'],

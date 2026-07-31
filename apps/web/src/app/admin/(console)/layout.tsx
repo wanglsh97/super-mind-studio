@@ -14,16 +14,16 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import type { ReactNode } from 'react'
 import { Suspense, useEffect, useMemo, useState } from 'react'
 
-import { BrandMark } from '../../../components/brand-mark'
+import { BrandMark } from '@/components/brand-mark'
 import {
   AdminApiError,
   getAdminSession,
   logoutAdmin,
   redirectToAdminLogin,
-} from '../../../lib/admin-auth-client'
-import type { AdminSession } from '../../../lib/admin-auth-client'
-import { loadAdminTableSchema } from '../../../lib/admin-tables'
-import type { AdminTableCapability } from '../../../lib/admin-tables'
+} from '@/utils/admin/admin-auth-client'
+import type { AdminSession } from '@/utils/admin/admin-auth-client'
+import { loadAdminTableSchema } from '@/utils/admin/admin-tables'
+import type { AdminTableCapability } from '@/utils/admin/admin-tables'
 
 const { Header, Sider, Content } = Layout
 

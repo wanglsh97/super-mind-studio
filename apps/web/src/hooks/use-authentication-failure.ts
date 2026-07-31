@@ -3,8 +3,8 @@
 import { usePathname, useRouter } from 'next/navigation'
 import { useCallback, useRef } from 'react'
 
-import { sanitizeUserReturnTo } from '../lib/user-auth-client'
-import { useUserSession } from './user-session-provider'
+import { useUserSession } from '@/components/user-session-provider'
+import { sanitizeUserReturnTo } from '@/utils/auth/user-auth-client'
 
 export function isUserAuthenticationFailure(error: unknown): boolean {
   return (

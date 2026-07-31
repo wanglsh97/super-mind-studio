@@ -6,8 +6,8 @@ import { Suspense, type ReactNode, useEffect, useRef, useState } from 'react'
 
 import type { AgentThreadSummary } from '@supermind/sdk'
 
-import { logoutUser, sanitizeUserReturnTo } from '../lib/user-auth-client'
-import { cn } from '../lib/cn'
+import { logoutUser, sanitizeUserReturnTo } from '@/utils/auth/user-auth-client'
+import { cn } from '@/utils/cn'
 import {
   AGENT_THREAD_TITLE_MAX_LENGTH,
   useAgentActiveThreadId,
@@ -17,7 +17,7 @@ import {
   AGENT_THREAD_PREVIEW_LIMIT,
   hiddenAgentThreadCount,
   visibleAgentThreads,
-} from './agent-thread-list'
+} from '@/utils/agent/agent-thread-list'
 import { BrandMark } from './brand-mark'
 import { ThemeToggle } from './theme-toggle'
 import { useUserSession } from './user-session-provider'

@@ -24,8 +24,8 @@ import {
 } from '@assistant-ui/react'
 import { Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 
-import { useAgentActiveThreadId, useAgentWorkspace } from '../components/agent-workspace-provider'
-import { AgentSkillSlashPicker } from '../components/agent-skill-slash-picker'
+import { useAgentActiveThreadId, useAgentWorkspace } from '@/components/agent-workspace-provider'
+import { AgentSkillSlashPicker } from '@/components/agent-skill-slash-picker'
 import {
   AgentActiveRunHint,
   AgentComposerActions,
@@ -53,32 +53,32 @@ import {
   ThinkingEffortSelect,
   NewThreadButton,
   UserMessage,
-} from '../components/chat-thread-ui'
-import { ProtectedUserPage } from '../components/protected-user-page'
-import { useAuthenticationFailure } from '../components/use-authentication-failure'
-import { cn } from '../lib/cn'
-import { AssistantMarkdown } from './chat/assistant-markdown'
+} from '@/components/chat-thread-ui'
+import { AssistantMarkdown } from '@/components/chat/assistant-markdown'
+import { ProtectedUserPage } from '@/components/protected-user-page'
+import { useAuthenticationFailure } from '@/hooks/use-authentication-failure'
+import { cn } from '@/utils/cn'
 import {
   agentMessagesToThreadMessages,
   createAgentRunAdapter,
   type AgentRunMetadata as AgentRunMetadataType,
-} from './agent/agent-run-adapter'
-import { shouldStartNewThreadOnModelChange } from './agent/agent-model-policy'
-import { resetThreadIfIdle } from './agent/agent-thread-hydration'
+} from '@/utils/agent/agent-run-adapter'
+import { shouldStartNewThreadOnModelChange } from '@/utils/agent/agent-model-policy'
+import { resetThreadIfIdle } from '@/utils/agent/agent-thread-hydration'
 import {
   foldEventsFromCursor,
   isResumableActiveRun,
   mergeThreadMessagesWithRunView,
-} from './agent/agent-run-resume'
-import { activeRunForThread } from './agent/agent-active-runs'
-import { initialAgentRunViewState } from './agent/agent-run-reducer'
-import { threadTokenUsagePercentage } from './agent/agent-thread-token-usage'
+} from '@/utils/agent/agent-run-resume'
+import { activeRunForThread } from '@/utils/agent/agent-active-runs'
+import { initialAgentRunViewState } from '@/utils/agent/agent-run-reducer'
+import { threadTokenUsagePercentage } from '@/utils/agent/agent-thread-token-usage'
 import {
   AGENT_TOOL_ACTIVITY_LABELS,
   resolveAgentToolActivityState,
   type AgentToolActivityState,
-} from './agent/agent-tool-activity'
-import { parseNamespacedMcpToolName, summarizeAgentMcpStatuses } from './agent/agent-mcp-status'
+} from '@/utils/agent/agent-tool-activity'
+import { parseNamespacedMcpToolName, summarizeAgentMcpStatuses } from '@/utils/agent/agent-mcp-status'
 
 const client = createAIGatewayClient()
 

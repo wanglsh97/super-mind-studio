@@ -5,7 +5,7 @@ import { Alert, Button, Card, Form, Input, Typography } from 'antd'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
-import { loginAdmin } from '../../../lib/admin-auth-client'
+import { loginAdmin } from '@/utils/admin/admin-auth-client'
 
 interface LoginFormValues {
   username: string

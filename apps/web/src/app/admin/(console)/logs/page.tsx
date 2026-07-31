@@ -17,14 +17,14 @@ import {
 import type { ColumnsType } from 'antd/es/table'
 import { useEffect, useState } from 'react'
 
-import { AdminApiError, redirectToAdminLogin } from '../../../../lib/admin-auth-client'
-import { loadRequestLogDetail, loadRequestLogs } from '../../../../lib/admin-request-logs'
+import { AdminApiError, redirectToAdminLogin } from '@/utils/admin/admin-auth-client'
+import { loadRequestLogDetail, loadRequestLogs } from '@/utils/admin/admin-request-logs'
 import type {
   RequestLogDetail,
   RequestLogFilters,
   RequestLogListItem,
   RequestLogPage,
-} from '../../../../lib/admin-request-logs'
+} from '@/utils/admin/admin-request-logs'
 
 const initialFilters: RequestLogFilters = { page: 1, pageSize: 20 }
 

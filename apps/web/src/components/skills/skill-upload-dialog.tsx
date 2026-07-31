@@ -4,20 +4,20 @@ import { createAIGatewayClient } from '@supermind/sdk'
 import type { SkillUploadProgress } from '@supermind/sdk'
 import { useEffect, useRef, useState } from 'react'
 
-import { useAuthenticationFailure } from '../../components/use-authentication-failure'
-import { cn } from '../../lib/cn'
+import { useAuthenticationFailure } from '@/hooks/use-authentication-failure'
+import { cn } from '@/utils/cn'
 import {
   prepareSkillFolder,
   type PreparedSkillFolder,
   type SkillFolderFile,
-} from './skill-folder-package'
+} from '@/utils/skills/skill-folder-package'
 import {
   SKILL_CATEGORIES,
   SKILL_DESCRIPTION_MAX_LENGTH,
   SKILL_TITLE_MAX_LENGTH,
   validateSkillMetadata,
   type SkillCategory,
-} from './skill-upload-form'
+} from '@/utils/skills/skill-upload-form'
 
 const client = createAIGatewayClient()
 

@@ -1,9 +1,9 @@
 import type { Metadata, Viewport } from 'next'
 import type { ReactNode } from 'react'
 
-import { AgentWorkspaceProvider } from '../components/agent-workspace-provider'
-import { AppShell } from '../components/app-shell'
-import { UserSessionProvider } from '../components/user-session-provider'
+import { AgentWorkspaceProvider } from '@/components/agent-workspace-provider'
+import { AppShell } from '@/components/app-shell'
+import { UserSessionProvider } from '@/components/user-session-provider'
 
 import './globals.css'
 

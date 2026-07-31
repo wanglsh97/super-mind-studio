@@ -13,11 +13,11 @@ import {
 import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
 
-import { useAuthenticationFailure } from '../../components/use-authentication-failure'
-import { useUserSession } from '../../components/user-session-provider'
-import { cn } from '../../lib/cn'
-import type { SkillFolderFile } from './skill-folder-package'
-import { SkillUploadDialog } from './skill-upload-dialog'
+import { SkillUploadDialog } from '@/components/skills/skill-upload-dialog'
+import { useUserSession } from '@/components/user-session-provider'
+import { useAuthenticationFailure } from '@/hooks/use-authentication-failure'
+import { cn } from '@/utils/cn'
+import type { SkillFolderFile } from '@/utils/skills/skill-folder-package'
 
 const client = createAIGatewayClient()
 const categoryLabels: Record<AgentSkillCategory, string> = {

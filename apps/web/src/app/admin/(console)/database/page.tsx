@@ -6,14 +6,14 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Suspense, useEffect, useMemo, useState } from 'react'
 
-import { AdminApiError, redirectToAdminLogin } from '../../../../lib/admin-auth-client'
-import { loadAdminTableRows, loadAdminTableSchema } from '../../../../lib/admin-tables'
+import { AdminApiError, redirectToAdminLogin } from '@/utils/admin/admin-auth-client'
+import { loadAdminTableRows, loadAdminTableSchema } from '@/utils/admin/admin-tables'
 import type {
   AdminTableCapability,
   AdminTablePage,
   AdminTableRelation,
   AdminTableSchema,
-} from '../../../../lib/admin-tables'
+} from '@/utils/admin/admin-tables'
 
 function AdminDatabasePageInner() {
   const router = useRouter()
