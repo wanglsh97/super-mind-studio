@@ -16,8 +16,10 @@ import {
   AssistantRuntimeProvider,
   AuiIf,
   ComposerPrimitive,
-  makeAssistantToolUI,
+  defineToolkit,
   ThreadPrimitive,
+  Tools,
+  type ToolDefinition,
   useAui,
   useAuiState,
   useLocalRuntime,
@@ -287,12 +289,13 @@ function AgentConsole() {
     [],
   );
   const runtime = useLocalRuntime(adapter, { adapters: { feedback: feedbackAdapter } });
+  const aui = useAui({ tools: Tools({ toolkit: agentToolUiToolkit }) });
   const modelDisabled = modelOptions.length === 0;
   const currentActiveRun = activeRunForThread(activeRuns, activeThreadId);
   const submitBlocked = modelDisabled || currentActiveRun !== null;
 
   return (
-    <AssistantRuntimeProvider runtime={runtime}>
+    <AssistantRuntimeProvider runtime={runtime} aui={aui}>
       <ThreadHydrator
         skipHydrationRef={skipHydrationRef}
         onTokenUsage={setThreadTokenUsage}
@@ -307,11 +310,6 @@ function AgentConsole() {
         }
         onSandboxSnapshot={(sandbox) => setSandboxTelemetry(toSandboxTelemetry(sandbox))}
       />
-      <WebFetchToolUI />
-      <ShellToolUI />
-      <ReadFileToolUI />
-      <WriteFileToolUI />
-      <ExportFileToolUI />
       <AgentPageShell>
         <AgentConsolePanel label="智能体">
           <AgentEnvironmentPanel
@@ -1110,36 +1108,22 @@ function AgentStopButton() {
   );
 }
 
-const WebFetchToolUI = makeAssistantToolUI<
-  { url?: string },
-  { summary?: string; status?: string; audit?: Record<string, unknown> }
->({
-  toolName: 'web_fetch',
-  render: ({ args, result, status, isError }) => {
-    const url = typeof args.url === 'string' ? args.url : '';
-    const finalUrl =
-      typeof result?.audit?.finalUrl === 'string' ? result.audit.finalUrl : undefined;
-    const httpStatus = typeof result?.audit?.status === 'number' ? result.audit.status : undefined;
-
-    if (status.type === 'running') return <AgentToolCall url={url} />;
-
-    return (
-      <AgentToolResult
-        isError={Boolean(isError)}
-        status={result?.status ?? (isError ? 'failed' : 'succeeded')}
-        httpStatus={httpStatus}
-        summary={result?.summary}
-        finalUrl={finalUrl}
-      />
-    );
-  },
-});
-
 interface SandboxToolResult {
   summary?: string;
   status?: string;
   audit?: Record<string, unknown>;
 }
+
+type AgentToolUiToolkit = {
+  web_fetch: ToolDefinition<
+    { url?: string },
+    { summary?: string; status?: string; audit?: Record<string, unknown> }
+  >;
+  shell: ToolDefinition<{ command?: string; workingDirectory?: string }, SandboxToolResult>;
+  read_file: ToolDefinition<{ path?: string }, SandboxToolResult>;
+  write_file: ToolDefinition<{ path?: string }, SandboxToolResult>;
+  export_file: ToolDefinition<{ path?: string }, SandboxToolResult>;
+};
 
 function isSandboxToolResult(value: unknown): value is SandboxToolResult {
   return isRecord(value);
@@ -1149,65 +1133,82 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-const ShellToolUI = makeAssistantToolUI<
-  { command?: string; workingDirectory?: string },
-  SandboxToolResult
->({
-  toolName: 'shell',
-  render: ({ args, result, status, isError }) => (
-    <SandboxToolActivityCard
-      toolName="shell"
-      subject={args.command}
-      detail={args.workingDirectory}
-      result={result}
-      running={status.type === 'running'}
-      isError={Boolean(isError)}
-    />
-  ),
-});
+const agentToolUiToolkit = defineToolkit({
+  web_fetch: {
+    type: 'backend',
+    render: ({ args, result, status, isError }) => {
+      const url = typeof args.url === 'string' ? args.url : '';
+      const finalUrl =
+        typeof result?.audit?.finalUrl === 'string' ? result.audit.finalUrl : undefined;
+      const httpStatus = typeof result?.audit?.status === 'number' ? result.audit.status : undefined;
 
-const ReadFileToolUI = makeAssistantToolUI<{ path?: string }, SandboxToolResult>({
-  toolName: 'read_file',
-  render: ({ args, result, status, isError }) => (
-    <SandboxToolActivityCard
-      toolName="read_file"
-      subject={args.path}
-      result={result}
-      running={status.type === 'running'}
-      isError={Boolean(isError)}
-    />
-  ),
-});
+      if (status.type === 'running') return <AgentToolCall url={url} />;
 
-const WriteFileToolUI = makeAssistantToolUI<{ path?: string }, SandboxToolResult>({
-  toolName: 'write_file',
-  render: ({ args, result, status, isError }) => (
-    <SandboxToolActivityCard
-      toolName="write_file"
-      subject={args.path}
-      result={result}
-      running={status.type === 'running'}
-      isError={Boolean(isError)}
-    />
-  ),
-});
-
-const ExportFileToolUI = makeAssistantToolUI<{ path?: string }, SandboxToolResult>({
-  toolName: 'export_file',
-  render: ({ args, result, status, isError }) => {
-    if (status.type === 'running') {
       return (
-        <SandboxToolActivityCard
-          toolName="export_file"
-          subject={args.path}
-          running
-          isError={false}
+        <AgentToolResult
+          isError={Boolean(isError)}
+          status={result?.status ?? (isError ? 'failed' : 'succeeded')}
+          httpStatus={httpStatus}
+          summary={result?.summary}
+          finalUrl={finalUrl}
         />
       );
-    }
-    return <ArtifactCard path={args.path} result={result} isError={Boolean(isError)} />;
+    },
   },
-});
+  shell: {
+    type: 'backend',
+    render: ({ args, result, status, isError }) => (
+      <SandboxToolActivityCard
+        toolName="shell"
+        subject={args.command}
+        detail={args.workingDirectory}
+        result={result}
+        running={status.type === 'running'}
+        isError={Boolean(isError)}
+      />
+    ),
+  },
+  read_file: {
+    type: 'backend',
+    render: ({ args, result, status, isError }) => (
+      <SandboxToolActivityCard
+        toolName="read_file"
+        subject={args.path}
+        result={result}
+        running={status.type === 'running'}
+        isError={Boolean(isError)}
+      />
+    ),
+  },
+  write_file: {
+    type: 'backend',
+    render: ({ args, result, status, isError }) => (
+      <SandboxToolActivityCard
+        toolName="write_file"
+        subject={args.path}
+        result={result}
+        running={status.type === 'running'}
+        isError={Boolean(isError)}
+      />
+    ),
+  },
+  export_file: {
+    type: 'backend',
+    render: ({ args, result, status, isError }) => {
+      if (status.type === 'running') {
+        return (
+          <SandboxToolActivityCard
+            toolName="export_file"
+            subject={args.path}
+            running
+            isError={false}
+          />
+        );
+      }
+      return <ArtifactCard path={args.path} result={result} isError={Boolean(isError)} />;
+    },
+  },
+} satisfies AgentToolUiToolkit);
 
 function ArtifactCard({
   path,
