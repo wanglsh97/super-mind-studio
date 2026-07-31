@@ -13,7 +13,7 @@ export default function ShimmerText({
   className?: string
 }>) {
   const ref = useRef<HTMLSpanElement>(null)
-  const [duration, setDuration] = useState(3.2)
+  const [duration, setDuration] = useState(2.6)
 
   useEffect(() => {
     const element = ref.current
@@ -21,7 +21,7 @@ export default function ShimmerText({
 
     const updateDuration = () => {
       const width = element.getBoundingClientRect().width
-      setDuration(Math.max(3.2, (width + 160) / 180))
+      setDuration(Math.max(2.6, (width + 160) / 210))
     }
 
     updateDuration()
