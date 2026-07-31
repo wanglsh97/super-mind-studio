@@ -984,7 +984,11 @@ function AgentActivityDisclosure({
   children: ReactNode;
   isRunning: boolean;
 }>) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(isRunning);
+
+  useEffect(() => {
+    setOpen(isRunning);
+  }, [isRunning]);
 
   return (
     <details
