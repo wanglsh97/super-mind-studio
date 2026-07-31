@@ -19,6 +19,8 @@ import { useEffect, useRef, useState } from 'react'
 
 import { CHAT_PROVIDER_BRANDING } from '@/const/branding/chat-provider-branding'
 import { AssistantMarkdown } from '@/components/chat/assistant-markdown'
+import { AgentRunProgressIndicator } from '@/components/agent-run-progress-indicator'
+import type { AgentRunProgressStage } from '@/utils/agent/agent-run-adapter'
 import { cn } from '@/utils/cn'
 
 const focusRing =
@@ -707,11 +709,15 @@ export function UserMessage() {
 export function AssistantMessage({
   label,
   renderPart,
+  runProgress,
 }: Readonly<{
   label: string
   metadata: ReactNode
   renderPart?: (part: { type: string; text?: string; toolUI?: ReactNode }) => ReactNode | null
+  runProgress?: AgentRunProgressStage | null
 }>) {
+  const isRunning = useAuiState(({ message }) => message.status?.type === 'running')
+
   return (
     <MessagePrimitive.Root className="group flex gap-4 py-4">
       <div
@@ -732,7 +738,8 @@ export function AssistantMessage({
               return null
             }}
           </MessagePrimitive.Parts>
-          <AuiIf condition={({ message }) => message.status?.type === 'running'}>
+          {isRunning && runProgress ? <AgentRunProgressIndicator stage={runProgress} /> : null}
+          <AuiIf condition={({ message }) => message.status?.type === 'running' && !runProgress}>
             <span
               className="ml-1 inline-block h-4 w-1.5 animate-blink bg-brand align-[-0.12rem]"
               aria-label="正在生成"
@@ -748,7 +755,8 @@ export function AssistantMessage({
             <ErrorPrimitive.Message />
           </ErrorPrimitive.Root>
         </MessagePrimitive.Error>
-        <div className="mt-3 flex min-h-7 items-center justify-between gap-4 font-mono text-[0.56rem] text-ink-subtle">
+        {!isRunning ? (
+          <div className="mt-3 flex min-h-7 items-center justify-between gap-4 font-mono text-[0.56rem] text-ink-subtle">
           <ActionBarPrimitive.Root className="flex items-center gap-1">
             <ActionBarPrimitive.Copy
               aria-label="复制回复"
@@ -781,7 +789,8 @@ export function AssistantMessage({
               <ThumbsDownIcon aria-hidden="true" className="size-3.5" strokeWidth={1.8} />
             </ActionBarPrimitive.FeedbackNegative>
           </ActionBarPrimitive.Root>
-        </div>
+          </div>
+        ) : null}
       </div>
     </MessagePrimitive.Root>
   )

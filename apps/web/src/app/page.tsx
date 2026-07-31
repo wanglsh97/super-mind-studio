@@ -28,7 +28,6 @@ import {
 import { Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
 import { AgentSkillSlashPicker } from '@/components/agent-skill-slash-picker';
-import { AgentRunProgressIndicator } from '@/components/agent-run-progress-indicator';
 import {
   AgentActiveRunHint,
   AgentComposerActions,
@@ -362,6 +361,7 @@ function AgentConsole() {
                   ) : (
                     <AssistantMessage
                       label="AGENT"
+                      runProgress={runProgress}
                       metadata={<AgentMessageMetadata />}
                       renderPart={(part) => {
                         if (part.type === 'tool-call') {
@@ -402,7 +402,6 @@ function AgentConsole() {
                   )
                 }
               </ThreadPrimitive.Messages>
-              <AgentRunProgressIndicator stage={runProgress} />
               <AgentContextTimeline events={compressionEvents} summary={contextSummary} />
             </AgentThreadViewport>
             <AgentScrollToBottom />
