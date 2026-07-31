@@ -83,6 +83,7 @@ export function AgentThreadViewport({ children }: Readonly<{ children: ReactNode
 export function AgentThreadNavigator() {
   const messages = useAuiState(({ thread }) => thread.messages);
   const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const entries = messages.reduce<Array<{ id: string; label: string; index: number }>>(
     (current, message) => {
       if (message.role !== 'user') return current;
@@ -98,16 +99,26 @@ export function AgentThreadNavigator() {
 
   if (entries.length === 0) return null;
 
+  const barWidth = (index: number) => {
+    if (hoveredIndex === null) return 12;
+    const distance = Math.abs(index - hoveredIndex);
+    if (distance === 0) return 64;
+    if (distance === 1) return 40;
+    if (distance === 2) return 24;
+    return 12;
+  };
+
   return (
     <aside
       aria-label="当前会话导航"
-      className="hidden min-h-0 w-[8.25rem] shrink-0 flex-col border-r border-line-soft pr-2.5 pb-4 md:flex"
+      className="hidden min-h-0 w-14 shrink-0 flex-col md:flex"
     >
-      <p className="px-2.5 pt-6 pb-2 font-mono text-[0.58rem] font-bold tracking-[0.14em] text-ink-subtle uppercase">
-        此会话
-      </p>
-      <nav className="min-h-0 flex-1 overflow-y-auto" aria-label="历史对话定位">
-        <ol className="m-0 flex list-none flex-col gap-1 p-0">
+      <nav
+        className="min-h-0 flex-1 overflow-y-auto pt-14"
+        aria-label="历史对话定位"
+        onMouseLeave={() => setHoveredIndex(null)}
+      >
+        <ol className="m-0 flex list-none flex-col gap-0.5 p-0">
           {entries.map((entry) => {
             const selected = entry.id === selectedMessageId;
             return (
@@ -115,7 +126,11 @@ export function AgentThreadNavigator() {
                 <button
                   type="button"
                   title={entry.label}
+                  aria-label={`定位到第 ${entry.index} 轮对话：${entry.label}`}
                   aria-current={selected ? 'location' : undefined}
+                  onMouseEnter={() => setHoveredIndex(entry.index - 1)}
+                  onFocus={() => setHoveredIndex(entry.index - 1)}
+                  onBlur={() => setHoveredIndex(null)}
                   onClick={() => {
                     setSelectedMessageId(entry.id);
                     document
@@ -123,26 +138,18 @@ export function AgentThreadNavigator() {
                       ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                   }}
                   className={cn(
-                    'group flex w-full items-start gap-2 rounded-lg px-2.5 py-2 text-left transition-[background,color] hover:bg-surface-muted',
-                    selected && 'bg-surface-muted',
+                    'group flex h-5 w-full items-center pl-2.5 text-left',
                     focusRing,
                   )}
                 >
                   <span
                     aria-hidden="true"
                     className={cn(
-                      'mt-1.5 size-1.5 shrink-0 rounded-full bg-ink-faint transition-colors group-hover:bg-ink-muted',
-                      selected && 'bg-brand',
+                      'h-[3px] rounded-full bg-ink-faint transition-[width,background-color] duration-200 ease-out group-hover:bg-ink-muted',
+                      selected && 'bg-ink-muted',
                     )}
+                    style={{ width: `${barWidth(entry.index - 1)}px` }}
                   />
-                  <span className="min-w-0">
-                    <span className="mb-0.5 block font-mono text-[0.56rem] font-bold tracking-[0.08em] text-ink-subtle">
-                      {String(entry.index).padStart(2, '0')}
-                    </span>
-                    <span className="block line-clamp-2 text-[0.68rem] leading-4 text-ink-muted group-hover:text-ink-secondary">
-                      {entry.label}
-                    </span>
-                  </span>
                 </button>
               </li>
             );
