@@ -6,6 +6,7 @@ import {
   AuiIf,
   ComposerPrimitive,
   ErrorPrimitive,
+  groupPartByType,
   MessagePrimitive,
   ThreadPrimitive,
   useAui,
@@ -731,13 +732,21 @@ export function AssistantMessage({
           {label}
         </div>
         <div className="mt-2 text-[0.97rem] leading-7 text-ink dark:text-ink">
-          <MessagePrimitive.Parts>
-            {({ part }) => {
-              if (renderPart) return renderPart(part)
-              if (part.type === 'text') return <AssistantMarkdown>{part.text}</AssistantMarkdown>
-              return null
+          <MessagePrimitive.GroupedParts
+            groupBy={groupPartByType({
+              reasoning: ['group-agent-activity'],
+              'tool-call': ['group-agent-activity'],
+            })}
+          >
+            {({ part, children }) => {
+              if (part.type === 'group-agent-activity') {
+                return <AgentActivityDisclosure isRunning={isRunning}>{children}</AgentActivityDisclosure>;
+              }
+              if (renderPart) return renderPart(part);
+              if (part.type === 'text') return <AssistantMarkdown>{part.text}</AssistantMarkdown>;
+              return null;
             }}
-          </MessagePrimitive.Parts>
+          </MessagePrimitive.GroupedParts>
           {isRunning && runProgress ? <AgentRunProgressIndicator stage={runProgress} /> : null}
           <AuiIf condition={({ message }) => message.status?.type === 'running' && !runProgress}>
             <span
