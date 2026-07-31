@@ -912,7 +912,7 @@ export function AgentDisclosureChevron() {
   return (
     <ChevronRightIcon
       aria-hidden="true"
-      className="size-4 shrink-0 opacity-75 transition-[opacity,transform] duration-150 group-hover:opacity-100 group-[&[open]]:rotate-90 motion-reduce:transition-none"
+      className="size-4 shrink-0 opacity-75 transition-[opacity,transform] duration-150 group-hover:opacity-100 [details[open]>summary>&]:rotate-90 motion-reduce:transition-none"
       strokeWidth={2}
     />
   );
