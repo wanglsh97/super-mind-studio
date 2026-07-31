@@ -406,6 +406,7 @@ function AgentConsole() {
                               <AgentReasoning
                                 title="Reasoning"
                                 text={part.text ?? ''}
+                                running={part.status?.type === 'running'}
                               />
                             );
                           }
@@ -1356,7 +1357,7 @@ function SandboxToolActivityCard({
       <summary className="flex cursor-pointer list-none items-center py-1.5 [&::-webkit-details-marker]:hidden">
         <span className="flex min-w-0 flex-wrap items-center gap-2">
           <span className={cn('font-sans font-normal', toolActivityTextClassName(state))}>
-            <ShimmerText>{label}</ShimmerText>
+            {running ? <ShimmerText>{label}</ShimmerText> : label}
           </span>
           {exitCode !== undefined ? <span className="font-sans">exit {exitCode}</span> : null}
           {size !== undefined ? <span className="font-sans">{size} B</span> : null}
@@ -1410,7 +1411,7 @@ function McpToolActivityCard({
       <summary className="flex cursor-pointer list-none items-center py-1.5 [&::-webkit-details-marker]:hidden">
         <span className="flex min-w-0 flex-wrap items-center gap-2">
           <span className={cn('font-sans font-normal', toolActivityTextClassName(state))}>
-            <ShimmerText>{label}</ShimmerText>
+            {running ? <ShimmerText>{label}</ShimmerText> : label}
           </span>
         </span>
         <AgentDisclosureChevron />
