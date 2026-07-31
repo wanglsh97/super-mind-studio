@@ -16,11 +16,13 @@ import {
 } from '@assistant-ui/react'
 import { CheckIcon, ChevronRightIcon, CopyIcon, ThumbsDownIcon, ThumbsUpIcon } from 'lucide-react'
 import Link from 'next/link'
+import Image from 'next/image'
 import type { ReactNode } from 'react'
 import { useEffect, useRef, useState } from 'react'
 
 import { CHAT_PROVIDER_BRANDING } from '@/const/branding/chat-provider-branding'
 import { AssistantMarkdown } from '@/components/chat/assistant-markdown'
+import chatLogo from '@/const/chat-logo.png'
 import { AgentRunProgressIndicator } from '@/components/agent-run-progress-indicator'
 import type { AgentRunProgressStage } from '@/utils/agent/agent-run-adapter'
 import { cn } from '@/utils/cn'
@@ -742,9 +744,9 @@ export function AssistantMessage({
     <MessagePrimitive.Root className="group flex gap-4 py-4">
       <div
         aria-hidden="true"
-        className="liquid-glass-soft grid size-[2.1rem] shrink-0 rotate-45 place-items-center rounded-lg text-brand dark:text-brand-light"
+        className="liquid-glass-soft grid size-[2.1rem] shrink-0 place-items-center overflow-hidden rounded-lg"
       >
-        <span className="-rotate-45 font-mono text-[0.47rem] font-black">AI</span>
+        <Image src={chatLogo} alt="" className="size-full object-cover" />
       </div>
       <div className="min-w-0 flex-1">
         <div className="font-mono text-[0.55rem] font-bold tracking-[0.13em] text-ink-subtle">
