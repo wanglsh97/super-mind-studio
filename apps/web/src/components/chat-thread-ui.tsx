@@ -730,7 +730,7 @@ export function AssistantMessage({
         <div className="font-mono text-[0.55rem] font-bold tracking-[0.13em] text-ink-subtle">
           {label}
         </div>
-        <div className="mt-2 text-[0.9rem] leading-relaxed text-ink-secondary dark:text-ink-secondary">
+        <div className="mt-2 text-[0.97rem] leading-7 text-ink dark:text-ink">
           <MessagePrimitive.Parts>
             {({ part }) => {
               if (renderPart) return renderPart(part)
@@ -850,11 +850,12 @@ export function AgentRunMetadata({
 export function AgentReasoning({ text }: Readonly<{ text: string }>) {
   return (
     <details className="group my-2 text-ink-muted">
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 py-1 text-xs font-medium tracking-[0.02em] opacity-45 transition-opacity hover:opacity-80 [&::-webkit-details-marker]:hidden">
-        <span>思考过程</span>
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 py-1 text-xs font-medium tracking-[0.02em] text-ink-muted [&::-webkit-details-marker]:hidden">
+        <span className="opacity-55 transition-opacity group-hover:opacity-90">思考过程</span>
         <ChevronRightIcon
           aria-hidden="true"
-          className="size-3 shrink-0 transition-transform duration-150 group-open:rotate-90 motion-reduce:transition-none"
+          className="size-4 shrink-0 opacity-75 transition-[opacity,transform] duration-150 group-hover:opacity-100 group-open:rotate-90 motion-reduce:transition-none"
+          strokeWidth={2}
         />
       </summary>
       <div className="mt-2 whitespace-pre-wrap text-[0.82rem] leading-relaxed text-ink-muted">{text}</div>
