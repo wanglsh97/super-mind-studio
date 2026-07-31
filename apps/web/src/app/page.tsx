@@ -1,6 +1,6 @@
-'use client'
+'use client';
 
-import { createAIGatewayClient, parseAgentOutputFileReference } from '@supermind/sdk'
+import { createAIGatewayClient, parseAgentOutputFileReference } from '@supermind/sdk';
 import type {
   AgentContextSummary,
   AgentMcpServerStatus,
@@ -11,7 +11,7 @@ import type {
   AgentThreadSandbox,
   TextModelAlias,
   TextModelId,
-} from '@supermind/sdk'
+} from '@supermind/sdk';
 import {
   AssistantRuntimeProvider,
   AuiIf,
@@ -21,11 +21,11 @@ import {
   useAui,
   useAuiState,
   useLocalRuntime,
-} from '@assistant-ui/react'
-import { Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+} from '@assistant-ui/react';
+import { Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
-import { useAgentActiveThreadId, useAgentWorkspace } from '@/components/agent-workspace-provider'
-import { AgentSkillSlashPicker } from '@/components/agent-skill-slash-picker'
+import { useAgentActiveThreadId, useAgentWorkspace } from '@/components/agent-workspace-provider';
+import { AgentSkillSlashPicker } from '@/components/agent-skill-slash-picker';
 import {
   AgentActiveRunHint,
   AgentComposerActions,
@@ -53,39 +53,39 @@ import {
   ThinkingEffortSelect,
   NewThreadButton,
   UserMessage,
-} from '@/components/chat-thread-ui'
-import { AssistantMarkdown } from '@/components/chat/assistant-markdown'
-import { ProtectedUserPage } from '@/components/protected-user-page'
-import { useAuthenticationFailure } from '@/hooks/use-authentication-failure'
-import { cn } from '@/utils/cn'
+} from '@/components/chat-thread-ui';
+import { AssistantMarkdown } from '@/components/chat/assistant-markdown';
+import { ProtectedUserPage } from '@/components/protected-user-page';
+import { useAuthenticationFailure } from '@/hooks/use-authentication-failure';
+import { cn } from '@/utils/cn';
 import {
   agentMessagesToThreadMessages,
   createAgentRunAdapter,
   type AgentRunMetadata as AgentRunMetadataType,
-} from '@/utils/agent/agent-run-adapter'
-import { shouldStartNewThreadOnModelChange } from '@/utils/agent/agent-model-policy'
-import { resetThreadIfIdle } from '@/utils/agent/agent-thread-hydration'
+} from '@/utils/agent/agent-run-adapter';
+import { shouldStartNewThreadOnModelChange } from '@/utils/agent/agent-model-policy';
+import { resetThreadIfIdle } from '@/utils/agent/agent-thread-hydration';
 import {
   foldEventsFromCursor,
   isResumableActiveRun,
   mergeThreadMessagesWithRunView,
-} from '@/utils/agent/agent-run-resume'
-import { activeRunForThread } from '@/utils/agent/agent-active-runs'
-import { initialAgentRunViewState } from '@/utils/agent/agent-run-reducer'
-import { threadTokenUsagePercentage } from '@/utils/agent/agent-thread-token-usage'
+} from '@/utils/agent/agent-run-resume';
+import { activeRunForThread } from '@/utils/agent/agent-active-runs';
+import { initialAgentRunViewState } from '@/utils/agent/agent-run-reducer';
+import { threadTokenUsagePercentage } from '@/utils/agent/agent-thread-token-usage';
 import {
   AGENT_TOOL_ACTIVITY_LABELS,
   resolveAgentToolActivityState,
   type AgentToolActivityState,
-} from '@/utils/agent/agent-tool-activity'
-import { parseNamespacedMcpToolName, summarizeAgentMcpStatuses } from '@/utils/agent/agent-mcp-status'
+} from '@/utils/agent/agent-tool-activity';
+import { parseNamespacedMcpToolName, summarizeAgentMcpStatuses } from '@/utils/agent/agent-mcp-status';
 
-const client = createAIGatewayClient()
+const client = createAIGatewayClient();
 
 interface ModelOption {
-  value: TextModelId
-  label: string
-  provider: TextModelAlias
+  value: TextModelId;
+  label: string;
+  provider: TextModelAlias;
 }
 
 export default function AgentPage() {
@@ -95,11 +95,11 @@ export default function AgentPage() {
         <AgentConsole />
       </Suspense>
     </ProtectedUserPage>
-  )
+  );
 }
 
 function AgentConsole() {
-  const handleAuthenticationFailure = useAuthenticationFailure()
+  const handleAuthenticationFailure = useAuthenticationFailure();
   const {
     models,
     selectedModel,
@@ -113,21 +113,21 @@ function AgentConsole() {
     activeRuns,
     upsertActiveRun,
     removeActiveRun,
-  } = useAgentWorkspace()
-  const activeThreadId = useAgentActiveThreadId()
-  const [threadTokenUsage, setThreadTokenUsage] = useState<AgentThread['tokenUsage'] | null>(null)
-  const [contextSummary, setContextSummary] = useState<AgentContextSummary | null>(null)
+  } = useAgentWorkspace();
+  const activeThreadId = useAgentActiveThreadId();
+  const [threadTokenUsage, setThreadTokenUsage] = useState<AgentThread['tokenUsage'] | null>(null);
+  const [contextSummary, setContextSummary] = useState<AgentContextSummary | null>(null);
   const [compressionEvents, setCompressionEvents] = useState<
     Extract<AgentStreamEvent, { type: 'context-compressed' }>[]
-  >([])
-  const [skillCandidates, setSkillCandidates] = useState<AgentSkillCandidate[]>([])
-  const [selectedSkillNames, setSelectedSkillNames] = useState<string[]>([])
-  const [skillLoadState, setSkillLoadState] = useState<'loading' | 'ready' | 'failed'>('loading')
-  const [mcpServers, setMcpServers] = useState<AgentMcpServerStatus[]>([])
-  const [mcpLoadState, setMcpLoadState] = useState<'loading' | 'ready' | 'failed'>('loading')
-  const [sandboxTelemetry, setSandboxTelemetry] = useState<SandboxTelemetry>({ status: 'idle' })
+  >([]);
+  const [skillCandidates, setSkillCandidates] = useState<AgentSkillCandidate[]>([]);
+  const [selectedSkillNames, setSelectedSkillNames] = useState<string[]>([]);
+  const [skillLoadState, setSkillLoadState] = useState<'loading' | 'ready' | 'failed'>('loading');
+  const [mcpServers, setMcpServers] = useState<AgentMcpServerStatus[]>([]);
+  const [mcpLoadState, setMcpLoadState] = useState<'loading' | 'ready' | 'failed'>('loading');
+  const [sandboxTelemetry, setSandboxTelemetry] = useState<SandboxTelemetry>({ status: 'idle' });
 
-  const skipHydrationRef = useRef(false)
+  const skipHydrationRef = useRef(false);
   const contextRef = useRef({
     threadId: activeThreadId as string | null,
     model: selectedModel,
@@ -140,22 +140,22 @@ function AgentConsole() {
       event: Extract<AgentStreamEvent, { type: 'context-compressed' }>,
     ) => void,
     onSandboxStatus: (() => undefined) as (status: AgentSandboxStatus, sandboxId?: string) => void,
-  })
+  });
 
-  contextRef.current.threadId = activeThreadId
-  contextRef.current.model = selectedModel
-  contextRef.current.thinkingEffort = thinkingEffort
-  contextRef.current.selectedSkillNames = selectedSkillNames
+  contextRef.current.threadId = activeThreadId;
+  contextRef.current.model = selectedModel;
+  contextRef.current.thinkingEffort = thinkingEffort;
+  contextRef.current.selectedSkillNames = selectedSkillNames;
   contextRef.current.onThreadCreated = (thread) => {
-    skipHydrationRef.current = true
-    setThreadTokenUsage(null)
-    setContextSummary(null)
-    setCompressionEvents([])
-    prependThread(thread)
-    openThread(thread.id)
-  }
+    skipHydrationRef.current = true;
+    setThreadTokenUsage(null);
+    setContextSummary(null);
+    setCompressionEvents([]);
+    prependThread(thread);
+    openThread(thread.id);
+  };
   contextRef.current.onRunCreated = (run) => {
-    setSandboxTelemetry({ status: 'creating' })
+    setSandboxTelemetry({ status: 'creating' });
     upsertActiveRun({
       id: run.id,
       threadId: run.threadId,
@@ -175,8 +175,8 @@ function AgentConsole() {
       createdAt: new Date().toISOString(),
       startedAt: null,
       completedAt: null,
-    })
-  }
+    });
+  };
   contextRef.current.onRunFinished = () => {
     setSandboxTelemetry((current) =>
       current.status === 'failed'
@@ -186,67 +186,67 @@ function AgentConsole() {
             ? { status: 'standby', sandboxId: current.sandboxId }
             : { status: 'idle' }
           : { status: 'idle' },
-    )
+    );
     if (activeThreadId) {
-      removeActiveRun(activeThreadId)
+      removeActiveRun(activeThreadId);
       void client.agent.threads
         .get(activeThreadId)
         .then((thread) => {
-          setThreadTokenUsage(thread.tokenUsage)
-          setContextSummary(thread.contextSummary)
+          setThreadTokenUsage(thread.tokenUsage);
+          setContextSummary(thread.contextSummary);
         })
-        .catch(() => undefined)
+        .catch(() => undefined);
     }
-    void refreshThreads().catch(() => undefined)
-  }
+    void refreshThreads().catch(() => undefined);
+  };
   contextRef.current.onContextCompressed = (event) => {
-    setCompressionEvents((current) => [...current, event])
+    setCompressionEvents((current) => [...current, event]);
     if (event.summaryId && contextRef.current.threadId) {
       void client.agent.threads
         .get(contextRef.current.threadId)
         .then((thread) => {
-          setContextSummary(thread.contextSummary)
+          setContextSummary(thread.contextSummary);
         })
-        .catch(() => undefined)
+        .catch(() => undefined);
     }
-  }
+  };
   contextRef.current.onSandboxStatus = (status, sandboxId) => {
     setSandboxTelemetry({
       status,
       ...(sandboxId === undefined ? {} : { sandboxId }),
-    })
-  }
+    });
+  };
 
   const loadSkillCandidates = () => {
-    setSkillLoadState('loading')
+    setSkillLoadState('loading');
     return client.agent.skills
       .candidates()
       .then((items) => {
-        setSkillCandidates(items)
+        setSkillCandidates(items);
         setSelectedSkillNames((current) =>
           current.filter((name) => items.some((item) => item.name === name)),
-        )
-        setSkillLoadState('ready')
+        );
+        setSkillLoadState('ready');
       })
       .catch((error) => {
-        handleAuthenticationFailure(error)
-        setSkillLoadState('failed')
-      })
-  }
+        handleAuthenticationFailure(error);
+        setSkillLoadState('failed');
+      });
+  };
 
   useEffect(() => {
-    void loadSkillCandidates()
+    void loadSkillCandidates();
     void client.agent.mcp
       .servers()
       .then((servers) => {
-        setMcpServers(servers)
-        setMcpLoadState('ready')
+        setMcpServers(servers);
+        setMcpLoadState('ready');
       })
       .catch((error) => {
-        handleAuthenticationFailure(error)
-        setMcpLoadState('failed')
-      })
-  }, [])
+        handleAuthenticationFailure(error);
+        setMcpLoadState('failed');
+      });
+  }, []);
 
   const modelOptions = useMemo<ModelOption[]>(
     () =>
@@ -256,17 +256,17 @@ function AgentConsole() {
           : [],
       ),
     [models],
-  )
+  );
 
   const handleModelChange = (nextModel: TextModelId) => {
-    const current = (selectedModel as TextModelId) || modelOptions[0]?.value || 'qwen3.7-plus'
-    const leaveThread = shouldStartNewThreadOnModelChange(activeThreadId, current, nextModel)
-    setSelectedModel(nextModel)
+    const current = (selectedModel as TextModelId) || modelOptions[0]?.value || 'qwen3.7-plus';
+    const leaveThread = shouldStartNewThreadOnModelChange(activeThreadId, current, nextModel);
+    setSelectedModel(nextModel);
     if (leaveThread) {
-      skipHydrationRef.current = false
-      startNewThread()
+      skipHydrationRef.current = false;
+      startNewThread();
     }
-  }
+  };
 
   const adapter = useMemo(
     () =>
@@ -274,22 +274,22 @@ function AgentConsole() {
         client,
         () => contextRef.current,
         (error) => {
-          handleAuthenticationFailure(error)
+          handleAuthenticationFailure(error);
         },
       ),
     [handleAuthenticationFailure],
-  )
+  );
 
   const feedbackAdapter = useMemo(
     () => ({
       submit: () => undefined,
     }),
     [],
-  )
-  const runtime = useLocalRuntime(adapter, { adapters: { feedback: feedbackAdapter } })
-  const modelDisabled = modelOptions.length === 0
-  const currentActiveRun = activeRunForThread(activeRuns, activeThreadId)
-  const submitBlocked = modelDisabled || currentActiveRun !== null
+  );
+  const runtime = useLocalRuntime(adapter, { adapters: { feedback: feedbackAdapter } });
+  const modelDisabled = modelOptions.length === 0;
+  const currentActiveRun = activeRunForThread(activeRuns, activeThreadId);
+  const submitBlocked = modelDisabled || currentActiveRun !== null;
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
@@ -341,19 +341,19 @@ function AgentConsole() {
                       metadata={<AgentMessageMetadata />}
                       renderPart={(part) => {
                         if (part.type === 'tool-call') {
-                          if (part.toolUI) return part.toolUI
+                          if (part.toolUI) return part.toolUI;
                           const toolPart = part as typeof part & {
-                            toolName?: unknown
-                            args?: unknown
-                            result?: unknown
-                            isError?: unknown
-                          }
-                          if (typeof toolPart.toolName !== 'string') return null
-                          const parsed = parseNamespacedMcpToolName(toolPart.toolName)
+                            toolName?: unknown;
+                            args?: unknown;
+                            result?: unknown;
+                            isError?: unknown;
+                          };
+                          if (typeof toolPart.toolName !== 'string') return null;
+                          const parsed = parseNamespacedMcpToolName(toolPart.toolName);
                           if (parsed) {
                             const result = isSandboxToolResult(toolPart.result)
                               ? toolPart.result
-                              : undefined
+                              : undefined;
                             return (
                               <McpToolActivityCard
                                 serverId={parsed.serverId}
@@ -363,16 +363,16 @@ function AgentConsole() {
                                 running={result === undefined}
                                 isError={toolPart.isError === true}
                               />
-                            )
+                            );
                           }
-                          return null
+                          return null;
                         }
                         if (part.type === 'text')
-                          return <AssistantMarkdown>{part.text ?? ''}</AssistantMarkdown>
+                          return <AssistantMarkdown>{part.text ?? ''}</AssistantMarkdown>;
                         if (part.type === 'reasoning') {
-                          return <AgentReasoning text={part.text ?? ''} />
+                          return <AgentReasoning text={part.text ?? ''} />;
                         }
-                        return null
+                        return null;
                       }}
                     />
                   )
@@ -444,13 +444,13 @@ function AgentConsole() {
         </AgentConsolePanel>
       </AgentPageShell>
     </AssistantRuntimeProvider>
-  )
+  );
 }
 
 type SandboxTelemetry =
   | { status: 'idle' }
   | { status: 'standby'; sandboxId: string }
-  | { status: AgentSandboxStatus; sandboxId?: string }
+  | { status: AgentSandboxStatus; sandboxId?: string };
 
 const SANDBOX_STATUS_COPY: Record<
   SandboxTelemetry['status'],
@@ -486,7 +486,7 @@ const SANDBOX_STATUS_COPY: Record<
     tone: 'text-danger',
     dot: 'bg-danger',
   },
-}
+};
 
 function AgentEnvironmentPanel({
   sandbox,
@@ -497,42 +497,42 @@ function AgentEnvironmentPanel({
   skillLoadState,
   tokenUsage,
 }: {
-  sandbox: SandboxTelemetry
-  mcpServers: AgentMcpServerStatus[]
-  mcpLoadState: 'loading' | 'ready' | 'failed'
-  skillCandidates: AgentSkillCandidate[]
-  selectedSkillNames: string[]
-  skillLoadState: 'loading' | 'ready' | 'failed'
-  tokenUsage: AgentThread['tokenUsage'] | null
+  sandbox: SandboxTelemetry;
+  mcpServers: AgentMcpServerStatus[];
+  mcpLoadState: 'loading' | 'ready' | 'failed';
+  skillCandidates: AgentSkillCandidate[];
+  selectedSkillNames: string[];
+  skillLoadState: 'loading' | 'ready' | 'failed';
+  tokenUsage: AgentThread['tokenUsage'] | null;
 }) {
-  const sandboxCopy = SANDBOX_STATUS_COPY[sandbox.status]
-  const sandboxId = 'sandboxId' in sandbox ? sandbox.sandboxId : undefined
+  const sandboxCopy = SANDBOX_STATUS_COPY[sandbox.status];
+  const sandboxId = 'sandboxId' in sandbox ? sandbox.sandboxId : undefined;
   const shortId = sandboxId
     ? sandboxId.length > 16
       ? `${sandboxId.slice(0, 7)}…${sandboxId.slice(-5)}`
       : sandboxId
-    : null
-  const mcpSummary = summarizeAgentMcpStatuses(mcpServers)
-  const contextPercentage = tokenUsage ? threadTokenUsagePercentage(tokenUsage) : null
+    : null;
+  const mcpSummary = summarizeAgentMcpStatuses(mcpServers);
+  const contextPercentage = tokenUsage ? threadTokenUsagePercentage(tokenUsage) : null;
   const hasFailure =
-    sandbox.status === 'failed' || mcpLoadState === 'failed' || skillLoadState === 'failed'
-  const hasLoaded = mcpLoadState === 'ready' && skillLoadState === 'ready'
-  const isReady = (sandbox.status === 'standby' || sandbox.status === 'ready') && hasLoaded
+    sandbox.status === 'failed' || mcpLoadState === 'failed' || skillLoadState === 'failed';
+  const hasLoaded = mcpLoadState === 'ready' && skillLoadState === 'ready';
+  const isReady = (sandbox.status === 'standby' || sandbox.status === 'ready') && hasLoaded;
   const overallLabel = hasFailure
     ? '部分异常'
     : isReady
       ? '环境就绪'
       : hasLoaded
         ? '环境待命'
-        : '状态检查中'
+        : '状态检查中';
   const overallDot = hasFailure
     ? 'bg-danger'
     : isReady
       ? 'bg-success'
       : hasLoaded
         ? 'bg-ink-subtle/45'
-        : 'bg-brand animate-status-breathe'
-  const [isCollapsed, setIsCollapsed] = useState(true)
+        : 'bg-brand animate-status-breathe';
+  const [isCollapsed, setIsCollapsed] = useState(true);
 
   return (
     <aside
@@ -738,7 +738,7 @@ function AgentEnvironmentPanel({
         </>
       )}
     </aside>
-  )
+  );
 }
 
 function EnvironmentRow({
@@ -751,14 +751,14 @@ function EnvironmentRow({
   title,
   children,
 }: {
-  icon: ReactNode
-  label: string
-  value: string
-  detail: string
-  dotClassName: string
-  valueClassName?: string
-  title?: string
-  children?: ReactNode
+  icon: ReactNode;
+  label: string;
+  value: string;
+  detail: string;
+  dotClassName: string;
+  valueClassName?: string;
+  title?: string;
+  children?: ReactNode;
 }) {
   return (
     <section
@@ -781,7 +781,7 @@ function EnvironmentRow({
       <span className="truncate text-[0.68rem] text-ink-subtle">{detail}</span>
       {children ? <div className="col-span-2 col-start-2">{children}</div> : null}
     </section>
-  )
+  );
 }
 
 function EnvironmentIcon() {
@@ -790,7 +790,7 @@ function EnvironmentIcon() {
       <path d="M5 6.5h14v11H5z" strokeLinejoin="round" />
       <path d="M8 10h3M8 13.5h5M16 10h.01" strokeLinecap="round" />
     </svg>
-  )
+  );
 }
 
 function SandboxIcon() {
@@ -799,7 +799,7 @@ function SandboxIcon() {
       <path d="m4.5 7.5 7.5-4 7.5 4-7.5 4-7.5-4Z" strokeLinejoin="round" />
       <path d="M4.5 7.5v8.7l7.5 4.3 7.5-4.3V7.5M12 11.5v9" strokeLinejoin="round" />
     </svg>
-  )
+  );
 }
 
 function McpIcon() {
@@ -810,7 +810,7 @@ function McpIcon() {
       <circle cx="12" cy="17" r="2.5" />
       <path d="m9 8.5 2 6M15 8.5l-2 6" />
     </svg>
-  )
+  );
 }
 
 function SkillIcon() {
@@ -819,7 +819,7 @@ function SkillIcon() {
       <path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3Z" />
       <path d="m18.5 16 .8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8.8-2.2Z" />
     </svg>
-  )
+  );
 }
 
 function ContextIcon() {
@@ -827,15 +827,15 @@ function ContextIcon() {
     <svg viewBox="0 0 24 24" className="size-[1.05rem] fill-none stroke-current stroke-[1.7]">
       <path d="M5 6h14M5 10h10M5 14h12M5 18h7" strokeLinecap="round" />
     </svg>
-  )
+  );
 }
 
 function toSandboxTelemetry(sandbox: AgentThreadSandbox | null): SandboxTelemetry {
-  if (!sandbox) return { status: 'idle' }
+  if (!sandbox) return { status: 'idle' };
   if (sandbox.status === 'idle' || sandbox.status === 'ready') {
-    return { status: 'standby', sandboxId: sandbox.id }
+    return { status: 'standby', sandboxId: sandbox.id };
   }
-  return { status: sandbox.status, sandboxId: sandbox.id }
+  return { status: sandbox.status, sandboxId: sandbox.id };
 }
 
 function ThreadHydrator({
@@ -847,81 +847,82 @@ function ThreadHydrator({
   onSandboxStatus,
   onSandboxSnapshot,
 }: {
-  skipHydrationRef: { current: boolean }
-  onTokenUsage: (usage: AgentThread['tokenUsage'] | null) => void
-  onContextSummary: (summary: AgentContextSummary | null) => void
-  onCompressionEvent: (event: Extract<AgentStreamEvent, { type: 'context-compressed' }>) => void
-  onResetCompressionEvents: () => void
-  onSandboxStatus: (status: AgentSandboxStatus, sandboxId?: string) => void
-  onSandboxSnapshot: (sandbox: AgentThreadSandbox | null) => void
+  skipHydrationRef: { current: boolean };
+  onTokenUsage: (usage: AgentThread['tokenUsage'] | null) => void;
+  onContextSummary: (summary: AgentContextSummary | null) => void;
+  onCompressionEvent: (event: Extract<AgentStreamEvent, { type: 'context-compressed' }>) => void;
+  onResetCompressionEvents: () => void;
+  onSandboxStatus: (status: AgentSandboxStatus, sandboxId?: string) => void;
+  onSandboxSnapshot: (sandbox: AgentThreadSandbox | null) => void;
 }) {
-  const api = useAui()
-  const isLocalRunRunning = useAuiState(({ thread }) => thread.isRunning)
-  const activeThreadId = useAgentActiveThreadId()
-  const { setSelectedModel, upsertActiveRun, removeActiveRun, refreshThreads } = useAgentWorkspace()
-  const handleAuthenticationFailure = useAuthenticationFailure()
+  const api = useAui();
+  const isLocalRunRunning = useAuiState(({ thread }) => thread.isRunning);
+  const activeThreadId = useAgentActiveThreadId();
+  const { setSelectedModel, upsertActiveRun, removeActiveRun, refreshThreads } =
+    useAgentWorkspace();
+  const handleAuthenticationFailure = useAuthenticationFailure();
 
-  const [interruptedNotice, setInterruptedNotice] = useState<string | null>(null)
-  const [resumeNotice, setResumeNotice] = useState<string | null>(null)
+  const [interruptedNotice, setInterruptedNotice] = useState<string | null>(null);
+  const [resumeNotice, setResumeNotice] = useState<string | null>(null);
 
   useEffect(() => {
     // LocalRuntime owns the message repository for the duration of a local run.
     // Re-run hydration after runEnd instead of invalidating its parent-message chain.
-    if (isLocalRunRunning) return
+    if (isLocalRunRunning) return;
 
     if (skipHydrationRef.current) {
-      skipHydrationRef.current = false
-      return
+      skipHydrationRef.current = false;
+      return;
     }
 
-    let cancelled = false
-    const resumeAbort = new AbortController()
+    let cancelled = false;
+    const resumeAbort = new AbortController();
 
     void (async () => {
       try {
         if (!activeThreadId) {
-          resetThreadIfIdle(api.thread(), [])
-          setInterruptedNotice(null)
-          setResumeNotice(null)
-          onTokenUsage(null)
-          onContextSummary(null)
-          onResetCompressionEvents()
-          onSandboxSnapshot(null)
-          return
+          resetThreadIfIdle(api.thread(), []);
+          setInterruptedNotice(null);
+          setResumeNotice(null);
+          onTokenUsage(null);
+          onContextSummary(null);
+          onResetCompressionEvents();
+          onSandboxSnapshot(null);
+          return;
         }
-        const thread = await client.agent.threads.get(activeThreadId)
-        if (cancelled) return
-        setSelectedModel(thread.model)
-        onContextSummary(thread.contextSummary)
-        onTokenUsage(thread.tokenUsage)
-        onResetCompressionEvents()
+        const thread = await client.agent.threads.get(activeThreadId);
+        if (cancelled) return;
+        setSelectedModel(thread.model);
+        onContextSummary(thread.contextSummary);
+        onTokenUsage(thread.tokenUsage);
+        onResetCompressionEvents();
 
         if (isResumableActiveRun(thread.activeRun)) {
-          onSandboxStatus('creating')
-          upsertActiveRun(thread.activeRun)
-          setInterruptedNotice(null)
-          setResumeNotice('运行仍在进行，正在按事件游标恢复…')
+          onSandboxStatus('creating');
+          upsertActiveRun(thread.activeRun);
+          setInterruptedNotice(null);
+          setResumeNotice('运行仍在进行，正在按事件游标恢复…');
           if (!resetThreadIfIdle(api.thread(), agentMessagesToThreadMessages(thread.messages))) {
-            return
+            return;
           }
 
-          let view = initialAgentRunViewState()
-          let afterSequence = -1
-          let sandboxFailed = false
-          let sandboxId: string | undefined
+          let view = initialAgentRunViewState();
+          let afterSequence = -1;
+          let sandboxFailed = false;
+          let sandboxId: string | undefined;
           for await (const event of client.agent.runs.subscribe(thread.activeRun.id, {
             after: -1,
             signal: resumeAbort.signal,
           })) {
-            if (cancelled) return
-            view = foldEventsFromCursor([event], afterSequence, view)
-            if (event.type === 'context-compressed') onCompressionEvent(event)
+            if (cancelled) return;
+            view = foldEventsFromCursor([event], afterSequence, view);
+            if (event.type === 'context-compressed') onCompressionEvent(event);
             if (event.type === 'sandbox-status') {
-              sandboxFailed = event.status === 'failed'
-              if (event.sandboxId) sandboxId = event.sandboxId
-              onSandboxStatus(event.status, event.sandboxId)
+              sandboxFailed = event.status === 'failed';
+              if (event.sandboxId) sandboxId = event.sandboxId;
+              onSandboxStatus(event.status, event.sandboxId);
             }
-            afterSequence = event.sequence
+            afterSequence = event.sequence;
             if (
               !resetThreadIfIdle(
                 api.thread(),
@@ -930,7 +931,7 @@ function ThreadHydrator({
                 ),
               )
             ) {
-              return
+              return;
             }
             if (event.type === 'run-terminal') {
               if (!sandboxFailed && sandboxId) {
@@ -940,55 +941,55 @@ function ThreadHydrator({
                   createdAt: new Date().toISOString(),
                   lastUsedAt: new Date().toISOString(),
                   expiresAt: new Date().toISOString(),
-                })
+                });
               }
-              setResumeNotice(null)
-              removeActiveRun(activeThreadId)
-              void refreshThreads().catch(() => undefined)
-              return
+              setResumeNotice(null);
+              removeActiveRun(activeThreadId);
+              void refreshThreads().catch(() => undefined);
+              return;
             }
           }
-          return
+          return;
         }
 
-        const interrupted = thread.lastRun?.status === 'interrupted'
-        setResumeNotice(null)
+        const interrupted = thread.lastRun?.status === 'interrupted';
+        setResumeNotice(null);
         setInterruptedNotice(
           interrupted ? '上次运行因服务重启中断，未自动重放模型或工具。可继续发送新任务。' : null,
-        )
-        if (thread.activeRun) upsertActiveRun(thread.activeRun)
-        else removeActiveRun(activeThreadId)
-        onSandboxSnapshot(thread.sandbox)
+        );
+        if (thread.activeRun) upsertActiveRun(thread.activeRun);
+        else removeActiveRun(activeThreadId);
+        onSandboxSnapshot(thread.sandbox);
         resetThreadIfIdle(
           api.thread(),
           agentMessagesToThreadMessages(thread.messages, {
             lastRunStatus: thread.lastRun?.status ?? null,
           }),
-        )
+        );
       } catch (error) {
-        if (!cancelled && !resumeAbort.signal.aborted) handleAuthenticationFailure(error)
+        if (!cancelled && !resumeAbort.signal.aborted) handleAuthenticationFailure(error);
       }
-    })()
+    })();
 
     return () => {
-      cancelled = true
-      resumeAbort.abort()
-    }
-  }, [activeThreadId, isLocalRunRunning])
+      cancelled = true;
+      resumeAbort.abort();
+    };
+  }, [activeThreadId, isLocalRunRunning]);
 
-  if (interruptedNotice) return <AgentInterruptedBanner message={interruptedNotice} />
-  if (resumeNotice) return <AgentInterruptedBanner message={resumeNotice} />
-  return null
+  if (interruptedNotice) return <AgentInterruptedBanner message={interruptedNotice} />;
+  if (resumeNotice) return <AgentInterruptedBanner message={resumeNotice} />;
+  return null;
 }
 
 function AgentContextTimeline({
   events,
   summary,
 }: {
-  events: Extract<AgentStreamEvent, { type: 'context-compressed' }>[]
-  summary: AgentContextSummary | null
+  events: Extract<AgentStreamEvent, { type: 'context-compressed' }>[];
+  summary: AgentContextSummary | null;
 }) {
-  if (events.length === 0) return null
+  if (events.length === 0) return null;
   return (
     <div className="mx-auto w-full max-w-3xl space-y-2 px-4 pb-3" aria-label="上下文压缩时间线">
       {events.map((event) => (
@@ -1012,11 +1013,11 @@ function AgentContextTimeline({
         </details>
       ))}
     </div>
-  )
+  );
 }
 
 function AgentSummaryDetail({ summary }: { summary: AgentContextSummary }) {
-  const content = summary.content
+  const content = summary.content;
   return (
     <div className="mt-3 space-y-2 border-t border-line pt-2 text-left">
       <p>
@@ -1036,50 +1037,50 @@ function AgentSummaryDetail({ summary }: { summary: AgentContextSummary }) {
         {JSON.stringify(content, null, 2)}
       </pre>
     </div>
-  )
+  );
 }
 
 function SummaryItems({ label, values }: { label: string; values: string[] }) {
-  if (values.length === 0) return null
+  if (values.length === 0) return null;
   return (
     <p>
       <span className="font-semibold text-ink">{label}：</span>
       {values.join('；')}
     </p>
-  )
+  );
 }
 
 function AgentStopButton() {
-  const activeThreadId = useAgentActiveThreadId()
-  const { activeRuns, upsertActiveRun, refreshThreads } = useAgentWorkspace()
-  const handleAuthenticationFailure = useAuthenticationFailure()
-  const isRunning = useAuiState(({ thread }) => thread.isRunning)
-  const [stopping, setStopping] = useState(false)
+  const activeThreadId = useAgentActiveThreadId();
+  const { activeRuns, upsertActiveRun, refreshThreads } = useAgentWorkspace();
+  const handleAuthenticationFailure = useAuthenticationFailure();
+  const isRunning = useAuiState(({ thread }) => thread.isRunning);
+  const [stopping, setStopping] = useState(false);
 
-  const runId = activeRunForThread(activeRuns, activeThreadId)?.id ?? null
-  if (!isRunning && !runId) return null
+  const runId = activeRunForThread(activeRuns, activeThreadId)?.id ?? null;
+  if (!isRunning && !runId) return null;
 
   const requestCancel = () => {
-    if (!runId || stopping) return
-    setStopping(true)
+    if (!runId || stopping) return;
+    setStopping(true);
     void client.agent.runs
       .cancel(runId)
       .then((run) => {
-        upsertActiveRun(run)
-        void refreshThreads().catch(() => undefined)
+        upsertActiveRun(run);
+        void refreshThreads().catch(() => undefined);
       })
       .catch((error) => {
-        handleAuthenticationFailure(error)
-        setStopping(false)
-      })
-  }
+        handleAuthenticationFailure(error);
+        setStopping(false);
+      });
+  };
 
   const className = cn(
     'grid size-9 shrink-0 place-items-center rounded-full bg-[#151515] text-white transition-[background,transform,opacity] hover:-translate-y-px hover:bg-[#252525] disabled:cursor-not-allowed disabled:opacity-45 disabled:transform-none dark:bg-white dark:text-[#151515] dark:hover:bg-[#f0f0f0]',
     'focus-visible:outline-3 focus-visible:outline-brand-focus focus-visible:outline-offset-3',
-  )
-  const icon = <span aria-hidden="true" className="block size-3 rounded-[0.2rem] bg-current" />
-  const ariaLabel = stopping ? '正在停止运行' : '停止运行'
+  );
+  const icon = <span aria-hidden="true" className="block size-3 rounded-[0.2rem] bg-current" />;
+  const ariaLabel = stopping ? '正在停止运行' : '停止运行';
 
   if (isRunning) {
     return (
@@ -1092,7 +1093,7 @@ function AgentStopButton() {
       >
         {icon}
       </ComposerPrimitive.Cancel>
-    )
+    );
   }
 
   return (
@@ -1106,7 +1107,7 @@ function AgentStopButton() {
     >
       {icon}
     </button>
-  )
+  );
 }
 
 const WebFetchToolUI = makeAssistantToolUI<
@@ -1115,11 +1116,12 @@ const WebFetchToolUI = makeAssistantToolUI<
 >({
   toolName: 'web_fetch',
   render: ({ args, result, status, isError }) => {
-    const url = typeof args.url === 'string' ? args.url : ''
-    const finalUrl = typeof result?.audit?.finalUrl === 'string' ? result.audit.finalUrl : undefined
-    const httpStatus = typeof result?.audit?.status === 'number' ? result.audit.status : undefined
+    const url = typeof args.url === 'string' ? args.url : '';
+    const finalUrl =
+      typeof result?.audit?.finalUrl === 'string' ? result.audit.finalUrl : undefined;
+    const httpStatus = typeof result?.audit?.status === 'number' ? result.audit.status : undefined;
 
-    if (status.type === 'running') return <AgentToolCall url={url} />
+    if (status.type === 'running') return <AgentToolCall url={url} />;
 
     return (
       <AgentToolResult
@@ -1129,22 +1131,22 @@ const WebFetchToolUI = makeAssistantToolUI<
         summary={result?.summary}
         finalUrl={finalUrl}
       />
-    )
+    );
   },
-})
+});
 
 interface SandboxToolResult {
-  summary?: string
-  status?: string
-  audit?: Record<string, unknown>
+  summary?: string;
+  status?: string;
+  audit?: Record<string, unknown>;
 }
 
 function isSandboxToolResult(value: unknown): value is SandboxToolResult {
-  return isRecord(value)
+  return isRecord(value);
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 const ShellToolUI = makeAssistantToolUI<
@@ -1162,7 +1164,7 @@ const ShellToolUI = makeAssistantToolUI<
       isError={Boolean(isError)}
     />
   ),
-})
+});
 
 const ReadFileToolUI = makeAssistantToolUI<{ path?: string }, SandboxToolResult>({
   toolName: 'read_file',
@@ -1175,7 +1177,7 @@ const ReadFileToolUI = makeAssistantToolUI<{ path?: string }, SandboxToolResult>
       isError={Boolean(isError)}
     />
   ),
-})
+});
 
 const WriteFileToolUI = makeAssistantToolUI<{ path?: string }, SandboxToolResult>({
   toolName: 'write_file',
@@ -1188,7 +1190,7 @@ const WriteFileToolUI = makeAssistantToolUI<{ path?: string }, SandboxToolResult
       isError={Boolean(isError)}
     />
   ),
-})
+});
 
 const ExportFileToolUI = makeAssistantToolUI<{ path?: string }, SandboxToolResult>({
   toolName: 'export_file',
@@ -1201,22 +1203,22 @@ const ExportFileToolUI = makeAssistantToolUI<{ path?: string }, SandboxToolResul
           running
           isError={false}
         />
-      )
+      );
     }
-    return <ArtifactCard path={args.path} result={result} isError={Boolean(isError)} />
+    return <ArtifactCard path={args.path} result={result} isError={Boolean(isError)} />;
   },
-})
+});
 
 function ArtifactCard({
   path,
   result,
   isError,
 }: {
-  path?: string | undefined
-  result?: SandboxToolResult | undefined
-  isError: boolean
+  path?: string | undefined;
+  result?: SandboxToolResult | undefined;
+  isError: boolean;
 }) {
-  const file = parseAgentOutputFileReference(result?.audit)
+  const file = parseAgentOutputFileReference(result?.audit);
 
   if (isError || !file) {
     return (
@@ -1227,9 +1229,9 @@ function ArtifactCard({
         running={false}
         isError
       />
-    )
+    );
   }
-  const previewable = file.mimeType.startsWith('image/')
+  const previewable = file.mimeType.startsWith('image/');
 
   return (
     <figure className="my-3 overflow-hidden rounded-2xl border border-line bg-surface-card shadow-[0_14px_38px_rgb(37_57_103/0.09)]">
@@ -1266,13 +1268,13 @@ function ArtifactCard({
         </div>
       </figcaption>
     </figure>
-  )
+  );
 }
 
 function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KiB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MiB`
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KiB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MiB`;
 }
 
 function SandboxToolActivityCard({
@@ -1283,21 +1285,21 @@ function SandboxToolActivityCard({
   running,
   isError,
 }: {
-  toolName: 'shell' | 'read_file' | 'write_file' | 'export_file'
-  subject?: string | undefined
-  detail?: string | undefined
-  result?: SandboxToolResult | undefined
-  running: boolean
-  isError: boolean
+  toolName: 'shell' | 'read_file' | 'write_file' | 'export_file';
+  subject?: string | undefined;
+  detail?: string | undefined;
+  result?: SandboxToolResult | undefined;
+  running: boolean;
+  isError: boolean;
 }) {
   const state = resolveAgentToolActivityState({
     running,
     status: result?.status,
     isError,
     audit: result?.audit,
-  })
-  const exitCode = typeof result?.audit?.exitCode === 'number' ? result.audit.exitCode : undefined
-  const size = typeof result?.audit?.size === 'number' ? result.audit.size : undefined
+  });
+  const exitCode = typeof result?.audit?.exitCode === 'number' ? result.audit.exitCode : undefined;
+  const size = typeof result?.audit?.size === 'number' ? result.audit.size : undefined;
   return (
     <div
       className={cn(
@@ -1327,7 +1329,7 @@ function SandboxToolActivityCard({
         {result?.summary ? <p className="text-xs text-ink-muted">{result.summary}</p> : null}
       </div>
     </div>
-  )
+  );
 }
 
 function McpToolActivityCard({
@@ -1338,19 +1340,19 @@ function McpToolActivityCard({
   running,
   isError,
 }: {
-  serverId: string
-  remoteToolName: string
-  args: Record<string, unknown>
-  result?: SandboxToolResult | undefined
-  running: boolean
-  isError: boolean
+  serverId: string;
+  remoteToolName: string;
+  args: Record<string, unknown>;
+  result?: SandboxToolResult | undefined;
+  running: boolean;
+  isError: boolean;
 }) {
   const state = resolveAgentToolActivityState({
     running,
     status: result?.status,
     isError,
     audit: result?.audit,
-  })
+  });
   return (
     <div
       className={cn(
@@ -1373,19 +1375,19 @@ function McpToolActivityCard({
         {result?.summary ? <p className="text-xs text-ink-muted">{result.summary}</p> : null}
       </div>
     </div>
-  )
+  );
 }
 
 function toolStateClassName(state: AgentToolActivityState): string {
-  if (state === 'failed') return 'border-[#e3b3b3] text-[#a63d3d]'
-  if (state === 'cancelled') return 'border-ink-subtle/30 text-ink-subtle'
-  if (state === 'limit') return 'border-[#d7b56d] text-[#8b6418]'
-  if (state === 'success') return 'border-[#9dc7ae] text-[#2f7a4d]'
-  return 'border-brand/30 text-brand'
+  if (state === 'failed') return 'border-[#e3b3b3] text-[#a63d3d]';
+  if (state === 'cancelled') return 'border-ink-subtle/30 text-ink-subtle';
+  if (state === 'limit') return 'border-[#d7b56d] text-[#8b6418]';
+  if (state === 'success') return 'border-[#9dc7ae] text-[#2f7a4d]';
+  return 'border-brand/30 text-brand';
 }
 
 function AgentMessageMetadata() {
-  const custom = useAuiState(({ message }) => message.metadata.custom) as AgentRunMetadataType
+  const custom = useAuiState(({ message }) => message.metadata.custom) as AgentRunMetadataType;
   return (
     <AgentRunMetadata
       model={custom.model}
@@ -1394,9 +1396,9 @@ function AgentMessageMetadata() {
       modelCalls={custom.modelCalls}
       toolCalls={custom.toolCalls}
     />
-  )
+  );
 }
 
 function isTextModelAlias(value: string): value is TextModelAlias {
-  return ['qwen', 'glm', 'deepseek', 'kimi'].includes(value)
+  return ['qwen', 'glm', 'deepseek', 'kimi'].includes(value);
 }

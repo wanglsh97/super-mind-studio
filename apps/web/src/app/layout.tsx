@@ -1,11 +1,11 @@
-import type { Metadata, Viewport } from 'next'
-import type { ReactNode } from 'react'
+import type { Metadata, Viewport } from 'next';
+import type { ReactNode } from 'react';
 
-import { AgentWorkspaceProvider } from '@/components/agent-workspace-provider'
-import { AppShell } from '@/components/app-shell'
-import { UserSessionProvider } from '@/components/user-session-provider'
+import { AgentWorkspaceProvider } from '@/components/agent-workspace-provider';
+import { AppShell } from '@/components/app-shell';
+import { UserSessionProvider } from '@/components/user-session-provider';
 
-import './globals.css'
+import './globals.css';
 
 export const metadata: Metadata = {
   title: {
@@ -13,12 +13,12 @@ export const metadata: Metadata = {
     template: '%s · Super Mind Studio',
   },
   description: '从灵感到作品的 AI Creative Workspace',
-}
+};
 
 export const viewport: Viewport = {
   width: 1440,
   initialScale: 1,
-}
+};
 
 const themeScript = `
   try {
@@ -30,7 +30,7 @@ const themeScript = `
     document.documentElement.classList.toggle('dark', theme === 'dark');
     document.documentElement.style.colorScheme = theme;
   } catch {}
-`
+`;
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
@@ -46,5 +46,5 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
         </UserSessionProvider>
       </body>
     </html>
-  )
+  );
 }
