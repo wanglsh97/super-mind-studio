@@ -18,9 +18,7 @@ export function AgentRunProgressIndicator({ stage }: Readonly<{ stage: AgentRunP
         aria-hidden="true"
         className="size-2 animate-status-breathe rounded-full bg-brand motion-reduce:animate-none"
       />
-      <span className="animate-status-breathe motion-reduce:animate-none">
-        {STAGE_COPY[stage]}
-      </span>
+      <span className="agent-progress-shimmer">{STAGE_COPY[stage]}</span>
     </div>
   )
 }
