@@ -1333,6 +1333,12 @@ function SandboxToolActivityCard({
   const exitCode = typeof result?.audit?.exitCode === 'number' ? result.audit.exitCode : undefined;
   const size = typeof result?.audit?.size === 'number' ? result.audit.size : undefined;
   const label = toolInvocationLabel(toolName, state);
+  const [open, setOpen] = useState(running);
+
+  useEffect(() => {
+    setOpen(running);
+  }, [running]);
+
   return (
     <details
       className="group my-2 text-[0.97rem] leading-7 text-ink opacity-55 transition-opacity duration-150 hover:opacity-85 open:opacity-75"
@@ -1341,19 +1347,11 @@ function SandboxToolActivityCard({
     >
       <summary className="flex cursor-pointer list-none items-center py-1.5 [&::-webkit-details-marker]:hidden">
         <span className="flex min-w-0 flex-wrap items-center gap-2">
-          <span className="font-sans font-normal">{label}</span>
-          {exitCode !== undefined ? (
-  const [open, setOpen] = useState(running);
-
-  useEffect(() => {
-    setOpen(running);
-  }, [running]);
-
-            <span className="font-sans">exit {exitCode}</span>
-          ) : null}
-          {size !== undefined ? (
-            <span className="font-sans">{size} B</span>
-          ) : null}
+          <span className={cn('font-sans font-normal', state === 'failed' && 'text-danger')}>
+            {label}
+          </span>
+          {exitCode !== undefined ? <span className="font-sans">exit {exitCode}</span> : null}
+          {size !== undefined ? <span className="font-sans">{size} B</span> : null}
         </span>
         <AgentDisclosureChevron />
       </summary>
@@ -1392,21 +1390,23 @@ function McpToolActivityCard({
     audit: result?.audit,
   });
   const label = toolInvocationLabel(`${serverId} · ${remoteToolName}`, state);
-  return (
-    <details
-      className="group my-2 text-[0.97rem] leading-7 text-ink opacity-55 transition-opacity duration-150 hover:opacity-85 open:opacity-75"
-      open={open}
-      onToggle={(event) => setOpen(event.currentTarget.open)}
-    >
   const [open, setOpen] = useState(running);
 
   useEffect(() => {
     setOpen(running);
   }, [running]);
 
+  return (
+    <details
+      className="group my-2 text-[0.97rem] leading-7 text-ink opacity-55 transition-opacity duration-150 hover:opacity-85 open:opacity-75"
+      open={open}
+      onToggle={(event) => setOpen(event.currentTarget.open)}
+    >
       <summary className="flex cursor-pointer list-none items-center py-1.5 [&::-webkit-details-marker]:hidden">
         <span className="flex min-w-0 flex-wrap items-center gap-2">
-          <span className="font-sans font-normal">{label}</span>
+          <span className={cn('font-sans font-normal', state === 'failed' && 'text-danger')}>
+            {label}
+          </span>
         </span>
         <AgentDisclosureChevron />
       </summary>
