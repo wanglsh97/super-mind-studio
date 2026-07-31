@@ -90,8 +90,10 @@ export class AgentService {
     user: AuthenticatedUser,
     query: { page?: number; pageSize?: number } = {},
   ): Promise<AgentThreadListPage> {
-    const page = query.page ?? AGENT_THREAD_LIST_DEFAULT_PAGE
-    const pageSize = query.pageSize ?? AGENT_THREAD_LIST_DEFAULT_PAGE_SIZE
+    // Query DTO 在 HTTP 边界会校验范围，但某些运行时路径仍会保留 URL 参数的字符串值。
+    // Prisma 的 skip/take 必须是 number，不能依赖调用方或管道始终完成转换。
+    const page = paginationNumber(query.page, AGENT_THREAD_LIST_DEFAULT_PAGE)
+    const pageSize = paginationNumber(query.pageSize, AGENT_THREAD_LIST_DEFAULT_PAGE_SIZE)
     const [{ rows, total }, activeRuns] = await Promise.all([
       this.threads.listForOwner(user.id, {
         skip: (page - 1) * pageSize,
@@ -244,4 +246,9 @@ export class AgentService {
     this.runService.cancel(runId)
     return toRunSummary(run)
   }
+}
+
+function paginationNumber(value: unknown, fallback: number): number {
+  const parsed = typeof value === 'number' ? value : Number(value)
+  return Number.isSafeInteger(parsed) ? parsed : fallback
 }

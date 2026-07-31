@@ -191,6 +191,18 @@ describe('AgentService', () => {
     expect(threads.listForOwner).toHaveBeenCalledWith('user-a', { skip: 0, take: 20 })
   })
 
+  it('normalizes HTTP query pagination values before passing them to Prisma', async () => {
+    const { service, threads } = setup()
+    ;(threads.listForOwner as jest.Mock).mockResolvedValue({ rows: [], total: 0 })
+
+    await service.listThreads(user, { page: '2', pageSize: '100' } as unknown as {
+      page: number
+      pageSize: number
+    })
+
+    expect(threads.listForOwner).toHaveBeenCalledWith('user-a', { skip: 100, take: 100 })
+  })
+
   it('includes all user active runs on the thread list page', async () => {
     const { service, threads, runs } = setup()
     ;(threads.listForOwner as jest.Mock).mockResolvedValue({ rows: [threadRow()], total: 1 })
