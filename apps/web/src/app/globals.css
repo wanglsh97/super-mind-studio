@@ -274,10 +274,10 @@
 
 @keyframes text-shimmer-sweep {
   0% {
-    background-position: 0 0, -10rem 0;
+    background-position: -10rem 0, 0 0;
   }
   100% {
-    background-position: 0 0, calc(100% + 10rem) 0;
+    background-position: calc(100% + 10rem) 0, 0 0;
   }
 }
 
@@ -285,15 +285,15 @@
   .text-shimmer-sweep {
     color: transparent;
     background-image:
-      linear-gradient(var(--theme-ink-muted), var(--theme-ink-muted)),
       linear-gradient(
         105deg,
         transparent 0%,
         color-mix(in srgb, var(--theme-ink-muted) 16%, white) 50%,
         transparent 100%
-      );
-    background-size: 100% 100%, min(10rem, 38%) 100%;
-    background-position: 0 0, -10rem 0;
+      ),
+      linear-gradient(var(--theme-ink-muted), var(--theme-ink-muted));
+    background-size: min(10rem, 38%) 100%, 100% 100%;
+    background-position: -10rem 0, 0 0;
     background-repeat: no-repeat;
     background-clip: text, text;
     -webkit-background-clip: text, text;
