@@ -37,6 +37,13 @@ export const CHAT_MODELS = Object.freeze([
     contextWindowTokens: 1_000_000,
   },
   {
+    id: 'deepseek-v4-flash',
+    displayName: 'DeepSeek-V4-Flash',
+    provider: 'deepseek',
+    upstreamModelId: 'deepseek-v4-flash',
+    contextWindowTokens: 1_000_000,
+  },
+  {
     id: 'kimi-k3',
     displayName: 'Kimi K3',
     provider: 'kimi',

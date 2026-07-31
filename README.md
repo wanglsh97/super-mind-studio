@@ -49,7 +49,7 @@ pnpm dev
 
 `/chat/compare` 和公开 `POST /api/v1/chat/completions` 已删除，`@supermind/sdk` 不再暴露 `chat.stream/compare`。服务端仍使用厂商 Chat Completions 协议作为 Adapter 实现细节，Agent 通过内部 `ModelInvocationPort` 消费统一 reasoning/text/tool/usage/finish 事件。
 
-四个真实模型均在服务端显式使用 thinking：Qwen3.7-Plus 开启 `enable_thinking`，GLM-5.2 与 DeepSeek-V4-Pro 开启 `thinking.type` 并使用 `reasoning_effort=max`，Kimi K3 使用其强制 thinking 模式和 `reasoning_effort=max`。`reasoning_content` 只进入 Agent reasoning 事件，不混入最终回答文本。
+四个真实 Provider 均在服务端显式使用 thinking：Qwen3.7-Plus 开启 `enable_thinking`，GLM-5.2 与 DeepSeek-V4-Pro 开启 `thinking.type` 并使用 `reasoning_effort=max`，Kimi K3 使用其强制 thinking 模式和 `reasoning_effort=max`。DeepSeek-V4-Flash 已加入模型目录，使用同一 DeepSeek Provider 开关与凭证。`reasoning_content` 只进入 Agent reasoning 事件，不混入最终回答文本。
 
 C 端不再提供 `/image` 与 `/prompt` 页面，访问这两个地址直接返回 404，不做兼容跳转。Image/Prompt 的 API、SDK、数据库记录和管理端日志仍保留，供 Agent 工具化或后续内部场景复用。
 

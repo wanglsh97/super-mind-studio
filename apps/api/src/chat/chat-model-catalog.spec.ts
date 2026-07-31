@@ -50,6 +50,17 @@ describe('ChatModelCatalog', () => {
     })
   })
 
+  it('lists DeepSeek V4 Flash alongside V4 Pro through the DeepSeek adapter', () => {
+    const catalog = new ChatModelCatalog(
+      new ChatAdapterRegistry([adapter('deepseek', 'ignored-runtime-model')]),
+    )
+
+    expect(catalog.list().filter((model) => model.provider === 'deepseek')).toEqual([
+      expect.objectContaining({ id: 'deepseek-v4-pro', upstreamModelId: 'deepseek-v4-pro' }),
+      expect.objectContaining({ id: 'deepseek-v4-flash', upstreamModelId: 'deepseek-v4-flash' }),
+    ])
+  })
+
   it('exposes the complete repository catalog in deterministic Mock mode', () => {
     const catalog = new ChatModelCatalog(new ChatAdapterRegistry([adapter('mock', 'mock-chat')]))
 
