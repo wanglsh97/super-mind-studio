@@ -117,6 +117,10 @@ Controller 只能依赖应用 Service；应用 Service 通过接口依赖 Adapte
 
 ## Main Flows
 
+### MCP capability discovery
+
+Enabled MCP Server descriptions, calling priority and untrusted-data rules are the only MCP-specific system-prompt content. Remote tool names, descriptions and schemas are excluded from the system prompt. The Agent receives two native meta-tools: `discover_mcp_tools` returns a bounded, sanitized catalogue of relevant tools and their JSON Schema; `call_mcp_tool` accepts only an opaque handle returned to the same user and Run. The Dispatcher resolves that handle to the reviewed Server/tool, validates arguments against the discovered schema and records the real `serverId`/tool name in audit data. This avoids repeated prompt bloat while retaining per-tool validation and future confirmation policy.
+
 ### First milestone: Mock streamed Agent vertical slice
 
 ```mermaid

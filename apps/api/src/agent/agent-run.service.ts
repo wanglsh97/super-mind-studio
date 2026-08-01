@@ -216,14 +216,6 @@ export class AgentRunService {
         userId: input.userId,
         signal: controller.signal,
       })
-      const runMcpServerIds = [
-        ...new Set(
-          runTools
-            .list()
-            .map((tool) => /^mcp__([a-z0-9-]+)__/.exec(tool.name)?.[1])
-            .filter((serverId): serverId is string => serverId !== undefined),
-        ),
-      ]
       const composedPrompt = await this.promptComposer.compose({
         userId: input.userId,
         threadId: input.threadId,
@@ -232,7 +224,7 @@ export class AgentRunService {
         contextWindowTokens: input.contextWindowTokens,
         summaryId: activeSummary?.id ?? null,
         tools: runTools.list(),
-        mcpServers: this.mcp.describeServers(runMcpServerIds),
+        mcpServers: await this.mcp.listServers(input.userId),
       })
       await this.runs.savePromptAudit(input.runId, composedPrompt.manifest)
       let contextLimitError: AgentContextLimitError | undefined

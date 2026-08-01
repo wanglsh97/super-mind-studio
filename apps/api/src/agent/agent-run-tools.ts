@@ -1,14 +1,14 @@
-import type { AgentMcpRegistry, ResolveAgentMcpToolsInput } from './mcp/agent-mcp.registry'
 import { AgentToolRegistry } from './tools/agent-tool.registry'
 
 /**
- * Resolves MCP exactly once and freezes the built-in + remote definitions in one run-owned registry.
+ * MCP 远端工具按需经 discover_mcp_tools/call_mcp_tool 访问；Run 不再携带全量远端定义。
  */
 export async function createAgentRunToolRegistry(
   builtIns: AgentToolRegistry,
-  mcp: AgentMcpRegistry,
-  input: ResolveAgentMcpToolsInput,
+  _mcp: unknown,
+  _input: unknown,
 ): Promise<AgentToolRegistry> {
-  const mcpTools = await mcp.resolveTools(input)
-  return new AgentToolRegistry([...builtIns.list(), ...mcpTools])
+  void _mcp
+  void _input
+  return new AgentToolRegistry(builtIns.list())
 }

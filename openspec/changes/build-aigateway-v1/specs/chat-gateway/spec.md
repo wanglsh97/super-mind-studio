@@ -17,14 +17,21 @@ The C-end SHALL use the authenticated persistent Agent thread/run/event APIs for
 - **AND** the response is the platform's normalized not-found error
 
 ### Requirement: Reviewed remote MCP tools are exposed through the Agent only
-The API SHALL define reviewed Streamable HTTP MCP endpoints in release-controlled code and resolve credentials only from server-side environment variables. Each MCP Server MUST be disabled for a user until that user explicitly enables it. MCP transport MUST reject redirects so credentials cannot be forwarded to a different or downgraded endpoint. The Web Plugin page at `/plugin` MUST expose only sanitized server status and tool counts, and let users filter the catalog by category. A Server manifest MAY declare an explicit tool allowlist; when it does not, the Agent SHALL expose every safely discovered tool from that enabled Server, subject to the configured discovery limits. Neither the browser nor persisted Agent events may contain an MCP endpoint or credential.
+The API SHALL define reviewed Streamable HTTP MCP endpoints in release-controlled code and resolve credentials only from server-side environment variables. Each MCP Server MUST be disabled for a user until that user explicitly enables it. MCP transport MUST reject redirects so credentials cannot be forwarded to a different or downgraded endpoint. The Web Plugin page at `/plugin` MUST expose only sanitized server status and tool counts, and let users filter the catalog by category. The system prompt SHALL contain only a compact list of enabled Server descriptions, MCP calling policy and untrusted-data boundary; it MUST NOT enumerate remote tool descriptions or schemas. The Agent SHALL use `discover_mcp_tools` to find safely discovered tools and their input schema, then call them only through a run- and user-scoped opaque handle accepted by `call_mcp_tool`. A Server manifest MAY declare an explicit tool allowlist; when it does not, discovery MAY return every safely discovered tool subject to configured discovery and prompt-result limits. Neither the browser nor persisted Agent events may contain an MCP endpoint or credential.
 
 #### Scenario: User enables QCC enterprise data
 - **GIVEN** release-controlled configuration defines the reviewed `qcc-company` Server and the API environment provides its `QCC_API_KEY`
 - **WHEN** an authenticated user opens `/plugin` or starts a subsequent Agent run with the Server enabled
 - **THEN** the user can see the sanitized “企查查企业数据” Server status and discovered tool count
-- **AND** the Agent receives every safely discovered tool because the Server configuration declares no explicit tool allowlist
+- **AND** the Agent can discover every safely discovered tool because the Server configuration declares no explicit tool allowlist
 - **AND** neither the browser nor persisted Agent events contain the MCP endpoint or bearer token
+
+#### Scenario: Agent discovers a plugin tool before invoking it
+- **GIVEN** a user has enabled a reviewed MCP Server with a relevant read-only tool
+- **WHEN** the Agent needs that Server's structured external data
+- **THEN** it calls `discover_mcp_tools` before invoking the remote tool
+- **AND** the discovery result contains a bounded description, input schema and opaque run-scoped handle
+- **AND** `call_mcp_tool` rejects a forged, expired, cross-user or cross-run handle
 
 
 ### Requirement: Selectable model instances are resolved through a repository catalog

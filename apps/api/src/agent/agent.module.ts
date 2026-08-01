@@ -18,6 +18,7 @@ import { AgentModelInvocationRepository } from './agent-model-invocation.reposit
 import { AgentMcpSdkClient } from './mcp/agent-mcp.client'
 import { AgentMcpPreferenceRepository } from './mcp/agent-mcp-preference.repository'
 import { AGENT_MCP_REGISTRY, PlatformAgentMcpRegistry } from './mcp/agent-mcp.registry'
+import { McpToolDispatcher } from './mcp/mcp-dispatcher'
 import { AGENT_MEMORY_PROVIDER, EmptyAgentMemoryProvider } from './memory/agent-memory.provider'
 import { AgentRunEventBus } from './agent-run-event-bus'
 import { AgentRunRepository } from './agent-run.repository'
@@ -64,11 +65,13 @@ import type { AgentToolDefinition } from './tools/agent-tool'
 import { webFetchFixtureTool } from './tools/web-fetch/fixture.tool'
 import { webFetchTool } from './tools/web-fetch/tool'
 import { createWebSearchTool } from './tools/web-search/tool'
+import { createCallMcpTool, createDiscoverMcpToolsTool } from './tools/mcp-meta.tools'
 
 export function resolveAgentTools(
   config: ConfigService,
   sessions: AgentExecutionSessionService,
   outputs: AgentOutputFileService,
+  mcp?: McpToolDispatcher,
 ): readonly AgentToolDefinition[] {
   // CI/确定性 E2E 可显式启用 fixture；默认使用生产级联网 web_fetch。
   const webTool =
@@ -95,6 +98,7 @@ export function resolveAgentTools(
     createReadFileTool(sessions),
     createWriteFileTool(sessions),
     createExportFileTool(outputs),
+    ...(mcp === undefined ? [] : [createDiscoverMcpToolsTool(mcp), createCallMcpTool(mcp)]),
   ]
 }
 
@@ -188,16 +192,18 @@ export function createSandboxRuntime(config: ConfigService): SandboxRuntimePort 
     AgentMcpPreferenceRepository,
     PlatformAgentMcpRegistry,
     { provide: AGENT_MCP_REGISTRY, useExisting: PlatformAgentMcpRegistry },
+    McpToolDispatcher,
     EmptyAgentMemoryProvider,
     { provide: AGENT_MEMORY_PROVIDER, useExisting: EmptyAgentMemoryProvider },
     {
       provide: AGENT_TOOLS,
-      inject: [ConfigService, AgentExecutionSessionService, AgentOutputFileService],
+      inject: [ConfigService, AgentExecutionSessionService, AgentOutputFileService, McpToolDispatcher],
       useFactory: (
         config: ConfigService,
         sessions: AgentExecutionSessionService,
         outputs: AgentOutputFileService,
-      ): readonly AgentToolDefinition[] => resolveAgentTools(config, sessions, outputs),
+        mcp: McpToolDispatcher,
+      ): readonly AgentToolDefinition[] => resolveAgentTools(config, sessions, outputs, mcp),
     },
     AgentToolRegistry,
   ],
