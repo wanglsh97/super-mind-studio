@@ -1,0 +1,4 @@
+schema: spec-driven
+created: 2026-08-02
+goal: 以不向第三方导出数据的方式，为 Super Mind Studio 接入自建 OpenTelemetry Trace 与
+  Metrics，并在管理员后台安全展示只读调用链。
