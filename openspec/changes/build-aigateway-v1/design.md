@@ -294,6 +294,16 @@ Chat 客户端提交公开模型实例 ID，而不是厂商 alias。服务端 `M
 
 Agent Composer 将运行模型与思考强度呈现为两个独立的轻量选择器：底部模型按钮仅显示模型名，模型列表保留厂商 Logo 以辅助识别；相邻的思考强度按钮提供统一的 run 级选择，并通过 SDK `thinkingEffort=fast|balanced|deep` 传入服务端。强度列表使用“档位名称 + 弱化说明”的两行信息层级表达各档位特点，选中标记固定在行末。运行中的停止动作使用与发送按钮等尺寸的圆形纯图标控件，以方形停止符号表达且不显示中文，但保留可访问名称。三个思考档位在所有模型上保持相同的用户表达，Adapter 再映射厂商能力：Qwen 使用关闭或分档 `thinking_budget`；GLM/DeepSeek 使用关闭、`high`、`max`；Kimi K3 因始终思考而使用 `low`、`high`、`max`。该值作用于一次 run 内的首轮回答、工具 follow-up 和上下文摘要调用，不写入 thread 模型绑定，也不允许客户端直接提交厂商参数。
 
+### Decision 14: Private self-hosted OTel is diagnostic-only and admin-proxied
+
+API 在 NestJS 启动前加载 OpenTelemetry Node instrumentation，自动追踪 HTTP、PostgreSQL、Redis 与出站 HTTP；在 `agent.run`、模型调用、Tool/MCP 调用和请求终结处补充手工 span。Trace 与 Metric 只能经同一 Docker `backend` 网络中的 OTel Collector 写入自建 Tempo，Collector、Tempo 及可选 Grafana 均不得映射公网端口，也不得向第三方 SaaS 导出数据。
+
+OTel 不是业务真源：`RequestLog`、`BillingRecord`、`AgentModelInvocation` 与 `AdminAuditLog` 的 PostgreSQL 记录继续承担账单、审计与请求详情职责。Pino 保留并增加 `traceId/spanId` 以关联结构化日志；管理员可以由 `requestId` 在请求详情中打开只读调用链。
+
+浏览器不得直接访问 Tempo/Grafana，也不得通过 iframe 嵌入 Grafana。新增受现有 Admin Guard 保护的 NestJS 只读 Trace 查询适配层，使用固定查询能力和字段白名单向 `/admin` 返回调用链树。UI 仅展示 span 名称、父子关系、开始/结束时间、耗时、状态、规范化错误码与受控模型/工具元数据。
+
+Telemetry 默认不记录或导出 Prompt/messages、模型输出、工具/MCP 输入输出、HTTP request/response body、IP、email、Cookie、Authorization、API Key 或其他凭证。应用侧禁止设置这些属性；Collector 在出口再次删除敏感属性。Metrics label 不得使用 request/user/thread/run ID、原始 URL 或 Prompt，避免高基数。Trace 只保留 7 天，生产通过 Collector tail sampling 保留全部错误、超时、取消、failover 和慢请求，正常成功请求仅保留 5%。
+
 ## Failure Handling
 
 | Failure | Platform behavior | Persistence |
@@ -305,6 +315,8 @@ Agent Composer 将运行模型与思考强度呈现为两个独立的轻量选�
 | Provider failure after delta | SSE error 后结束，不拼接模型 | failed + partial timing/usage if known |
 | Client disconnect/cancel | 中止读取并 best-effort abort upstream | cancelled |
 | Final DB transaction fails | 有界重试，随后 critical 日志 | 可能保留 pending，后台可发现 |
+| OTel Collector/Tempo unavailable | 不影响 API、模型调用、计费或 Pino；批量导出在有界队列后丢弃并记录本地告警 | Trace 有缺口，不补写业务数据库 |
+| Telemetry contains forbidden attribute | Collector 删除并记录安全告警；不向 Tempo 持久化该字段 | 不影响 RequestLog 的既定留存策略 |
 | Image provider status unavailable | 返回 retryable 状态错误，不把 task 误标 failed | 保留最近已知状态 |
 | Admin mutation/audit insert fails | 整个事务回滚 | 数据与审计均不提交 |
 
@@ -338,6 +350,7 @@ Wave A 是第一个必须完成的演示基线。之后未完成页面或未购�
 - [三家兼容接口仍有边缘差异] → 每个 Adapter 使用录制的去敏响应 fixture 和共享 contract suite，禁止业务 Service 读取原始厂商类型。
 - [Nginx 缓冲破坏 SSE] → 配置专项 smoke test，以延迟 Mock chunks 验证首 chunk 和连续到达，而不是只检查最终文本。
 - [4C8G 资源竞争] → Compose 资源限制、PostgreSQL 连接池上限、Next/Nest 单实例起步、按实测再调整；不预设多副本。
+- [Trace 数据意外泄露或观测组件被绕过] → OTel/Tempo 仅 backend network、禁止第三方 exporter、应用与 Collector 双层字段删除、Admin Guard 后端代理查询且不 iframe；Trace 7 天过期，不将内容数据写入 span。
 
 ## Migration Plan
 

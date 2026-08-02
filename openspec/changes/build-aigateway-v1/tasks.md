@@ -93,6 +93,11 @@
 - [x] 1.72 扩展统一 usage 契约以采集 cached input 与 reasoning Token，并为四个 Provider、Mock 和 Pi bridge 补齐映射测试
 - [x] 1.73 新增 AgentModelInvocation 调用级账本与 Skill/Tool 归因迁移，在 Agent 每次模型调用终结时幂等持久化实际 resolved model 和 usage
 - [x] 1.74 实现仅当前用户可访问的一年 Token 日历、每日明细和模型总量聚合 API，并覆盖权限、缺失维度按 0 展示和无历史回填测试
+- [ ] 1.75 在 API 启动前初始化可禁用的 OTel Node SDK，自动采集 HTTP、PostgreSQL、Redis 与出站 HTTP，并验证未配置 Collector 时不影响 API 启动或请求主链路
+- [ ] 1.76 为 Agent run、模型流、Tool/MCP 调用与请求终结添加低基数 Trace/Metric 埋点；禁止 Prompt、响应、参数、身份和凭证进入 telemetry，并让 Pino 关联 traceId/spanId
+- [ ] 1.77 新增内网 OTel Collector 与 Tempo Compose 配置：不映射公网端口、仅 backend network、7 天保留、出口敏感字段删除及错误/慢请求/failover 全量、成功 5% 的 tail sampling
+- [ ] 1.78 实现受 Admin Guard 保护的 Trace 查询适配层与 `/admin` 只读调用链抽屉；拒绝任意查询透传、iframe 与未认证访问，只返回白名单 span 字段
+- [ ] 1.79 添加 OTel 回归与安全验证：Mock 模型、取消、流中失败、首事件前 failover、MCP 失败可关联 trace；断言 telemetry 不含禁止字段，Collector/Tempo 故障不影响 API 业务终结
 
 ## 2. 管理员中后台
 
