@@ -1,5 +1,8 @@
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-proto'
-import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node'
+import { HttpInstrumentation } from '@opentelemetry/instrumentation-http'
+import { PgInstrumentation } from '@opentelemetry/instrumentation-pg'
+import { RedisInstrumentation } from '@opentelemetry/instrumentation-redis'
+import { UndiciInstrumentation } from '@opentelemetry/instrumentation-undici'
 import { resourceFromAttributes } from '@opentelemetry/resources'
 import { NodeSDK } from '@opentelemetry/sdk-node'
 import { ATTR_SERVICE_NAME } from '@opentelemetry/semantic-conventions'
@@ -7,6 +10,36 @@ import { ATTR_SERVICE_NAME } from '@opentelemetry/semantic-conventions'
 import { resolveTelemetryBootstrapConfig } from './telemetry-bootstrap.config'
 
 let sdk: NodeSDK | undefined
+
+const HTTP_REDACTED_QUERY_PARAMS = [
+  'access_token',
+  'api_key',
+  'code',
+  'key',
+  'password',
+  'secret',
+  'state',
+  'token',
+]
+
+function createSafeInstrumentations() {
+  return [
+    new HttpInstrumentation({
+      headersToSpanAttributes: {},
+      redactedQueryParams: HTTP_REDACTED_QUERY_PARAMS,
+    }),
+    new PgInstrumentation({
+      addSqlCommenterCommentToQueries: false,
+      enhancedDatabaseReporting: false,
+      requestHook(span) {
+        span.setAttribute('db.query.text', '[REDACTED]')
+        span.setAttribute('db.statement', '[REDACTED]')
+      },
+    }),
+    new RedisInstrumentation({ dbStatementSerializer: (command) => command }),
+    new UndiciInstrumentation({ headersToSpanAttributes: {} }),
+  ]
+}
 
 export function startOpenTelemetry(): void {
   const config = resolveTelemetryBootstrapConfig()
@@ -23,7 +56,7 @@ export function startOpenTelemetry(): void {
     sdk = new NodeSDK({
       resource: resourceFromAttributes({ [ATTR_SERVICE_NAME]: config.serviceName }),
       traceExporter: new OTLPTraceExporter({ url: config.tracesEndpoint }),
-      instrumentations: [getNodeAutoInstrumentations()],
+      instrumentations: createSafeInstrumentations(),
     })
     sdk.start()
 
