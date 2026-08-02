@@ -1,6 +1,6 @@
 ## 1. API telemetry foundation
 
-- [ ] 1.1 增加 OTel Node SDK、OTLP exporter、自动 instrumentation 与环境校验；在 NestJS `main.ts` 前加载 instrumentation，`OTEL_ENABLED=false` 或 Collector 未配置时安全降级。
+- [x] 1.1 增加 OTel Node SDK、OTLP exporter、自动 instrumentation 与环境校验；在 NestJS `main.ts` 前加载 instrumentation，`OTEL_ENABLED=false` 或 Collector 未配置时安全降级。
 - [ ] 1.2 配置 HTTP、Redis、PostgreSQL/Prisma driver 与 undici 自动埋点，禁用 HTTP body、SQL 参数及其他内容采集。
 - [ ] 1.3 建立 `TelemetryService` 与属性白名单，封装 trace/span、规范化错误、TTFB 与低基数 Metric 写入；禁止公共业务代码直接写任意 telemetry 属性。
 - [ ] 1.4 为 Pino 增加 traceId/spanId correlation，同时保持既有 requestId 与敏感字段脱敏行为。

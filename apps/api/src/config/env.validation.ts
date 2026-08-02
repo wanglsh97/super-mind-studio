@@ -45,6 +45,12 @@ const environmentSchema = z
     API_PORT: z.coerce.number().int().min(1).max(65_535).default(3001),
     WEB_ORIGIN: z.string().url().default('http://localhost:3000'),
     LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
+    OTEL_ENABLED: booleanFromEnv.default(false),
+    OTEL_SERVICE_NAME: z.string().min(1).default('supermind-api'),
+    OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: z.preprocess(
+      (value) => (value === '' ? undefined : value),
+      z.string().url().optional(),
+    ),
     DATABASE_URL: z.string().min(1, 'DATABASE_URL 必填'),
     DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(50).default(10),
     REDIS_URL: z.string().min(1, 'REDIS_URL 必填'),
