@@ -54,7 +54,7 @@ Collector 对成功、失败、超时、取消、failover 与慢请求全量保�
 
 ### 6. Observability 故障必须 fail-open
 
-OTel 初始化由 `OTEL_ENABLED` 控制；未配置 Collector、Exporter 批量失败、Collector/Tempo 不可用或查询后端失败时，只写已脱敏 Pino 告警与内部 SDK 指标，绝不能阻塞 Agent、模型、Tool、账单或 RequestLifecycle 事务。管理员 UI 必须显示“调用链暂不可用”，不得伪造无 Trace 的成功结果。
+OTel 默认初始化，并在未显式配置端点时使用内部 Collector 默认地址；Exporter 批量失败、Collector/Tempo 不可用或查询后端失败时，只写已脱敏 Pino 告警与内部 SDK 指标，绝不能阻塞 Agent、模型、Tool、账单或 RequestLifecycle 事务。管理员 UI 必须显示“调用链暂不可用”，不得伪造无 Trace 的成功结果。
 
 ## Risks / Trade-offs
 
@@ -66,13 +66,13 @@ OTel 初始化由 `OTEL_ENABLED` 控制；未配置 Collector、Exporter 批量�
 
 ## Migration Plan
 
-1. 增加依赖、环境校验与禁用状态；开发环境使用 in-memory exporter 验证启动顺序和无 Collector 降级。
+1. 增加依赖、环境校验与内部 Collector 默认端点；开发环境使用 in-memory exporter 验证启动顺序和无 Collector 降级。
 2. 加入自动/手工埋点、Pino correlation 与敏感字段测试，先在 Mock 模型、取消、失败、failover、MCP fixture 流量中验收。
 3. 新增 Collector、Tempo、持久卷和仅 backend network 的 Compose profile；初始以 100% 开发采样验证脱敏与资源占用。
 4. 生产启用 Collector 全量采集、7 天保留与资源限制；Collector/Tempo 不暴露端口。
 5. 增加受 Admin Guard 保护的查询 API 与前端 Trace 抽屉；完成未认证、查询注入、内容泄露和后端不可用测试。
 
-回滚只需设置 `OTEL_ENABLED=false` 并停止 observability profile；API/Pino/PostgreSQL 按原路径继续工作。Tempo volume 可在保留期外删除，不涉及业务数据库迁移或恢复。
+回滚通过停止 observability profile 或使 Collector/Tempo 下线完成；API/Pino/PostgreSQL 按原路径继续工作，Exporter 故障不会阻塞业务。Tempo volume 可在保留期外删除，不涉及业务数据库迁移或恢复。
 
 ## Open Questions
 

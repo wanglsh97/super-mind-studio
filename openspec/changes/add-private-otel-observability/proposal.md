@@ -4,7 +4,7 @@
 
 ## What Changes
 
-- 在 API 接入可禁用的 OpenTelemetry Trace 与 Metrics 采集，覆盖 HTTP、PostgreSQL、Redis、出站 HTTP 及 Agent 的模型/工具/MCP 关键边界。
+- 在 API 默认启用 OpenTelemetry Trace 与 Metrics 采集，覆盖 HTTP、PostgreSQL、Redis、出站 HTTP 及 Agent 的模型/工具/MCP 关键边界。
 - 部署仅在 Docker backend 网络可访问的 OTel Collector 与 Tempo；Trace 仅保留 7 天，不开放公网端口，不配置第三方 exporter。
 - 以低基数、非内容属性关联现有 `requestId`、Agent Run、模型、Tool、状态、TTFB、Token 与费用；Pino 关联 `traceId/spanId`。
 - 在现有管理员认证边界后新增只读 Trace 查询 API 与调用链抽屉；浏览器不直接访问 Tempo/Grafana，不使用 iframe，也不接受任意查询透传。

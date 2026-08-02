@@ -43,14 +43,7 @@ function createSafeInstrumentations() {
 
 export function startOpenTelemetry(): void {
   const config = resolveTelemetryBootstrapConfig()
-  if (!config.enabled || !config.tracesEndpoint) {
-    if (config.disabledReason === 'missing_traces_endpoint') {
-      console.warn(
-        '[otel] OTEL_ENABLED=true but OTEL_EXPORTER_OTLP_TRACES_ENDPOINT is not configured; telemetry is disabled',
-      )
-    }
-    return
-  }
+  if (!config.enabled) return
 
   try {
     sdk = new NodeSDK({

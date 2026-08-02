@@ -1,26 +1,17 @@
 import { resolveTelemetryBootstrapConfig } from './telemetry-bootstrap.config'
 
 describe('resolveTelemetryBootstrapConfig', () => {
-  it('disables telemetry by default', () => {
+  it('enables telemetry with the internal collector default', () => {
     expect(resolveTelemetryBootstrapConfig({})).toEqual({
-      enabled: false,
+      enabled: true,
       serviceName: 'supermind-api',
-      disabledReason: 'disabled_by_environment',
+      tracesEndpoint: 'http://otel-collector:4318/v1/traces',
     })
   })
 
-  it('fails open when telemetry is enabled without a collector endpoint', () => {
-    expect(resolveTelemetryBootstrapConfig({ OTEL_ENABLED: 'true' })).toEqual({
-      enabled: false,
-      serviceName: 'supermind-api',
-      disabledReason: 'missing_traces_endpoint',
-    })
-  })
-
-  it('enables telemetry only with an explicit collector endpoint', () => {
+  it('allows the Collector endpoint and service name to be overridden', () => {
     expect(
       resolveTelemetryBootstrapConfig({
-        OTEL_ENABLED: 'TRUE',
         OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: 'http://otel-collector:4318/v1/traces',
         OTEL_SERVICE_NAME: ' api ',
       }),
