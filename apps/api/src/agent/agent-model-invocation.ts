@@ -7,6 +7,7 @@ import type {
   ModelStreamEvent,
 } from '../chat/model-invocation.port'
 import { PricingService } from '../billing/pricing.service'
+import { TelemetryService } from '../observability/telemetry.service'
 import type { RequestLifecycleService } from '../request-lifecycle/request-lifecycle.service'
 import type { AgentModelInvocationRepository } from './agent-model-invocation.repository'
 
@@ -36,10 +37,17 @@ export function createAgentModelInvocationPort(
   lifecycle: RequestLifecycleService,
   pricing: PricingService,
   invocations: AgentModelInvocationRepository,
+  telemetry: TelemetryService,
   context: AgentModelInvocationContext,
 ): ModelInvocationPort {
   return {
     async *invoke(request: ModelInvocationRequest): AsyncIterable<ModelStreamEvent> {
+      const span = telemetry.startSpan('agent.model.invoke', {
+        requestId: request.requestId,
+        runId: context.agentRunId,
+        capability: 'agent',
+        model: request.modelId,
+      })
       const started = await lifecycle.start({
         userId: context.userId,
         requestId: request.requestId,
@@ -71,6 +79,13 @@ export function createAgentModelInvocationPort(
             usage = event.usage
             provider = event.provider as ChatAdapterId
             resolvedModel = event.resolvedModel
+            telemetry.addOutcome(span, {
+              provider: event.provider,
+              model: event.resolvedModel,
+              inputTokens: event.usage.inputTokens ?? undefined,
+              outputTokens: event.usage.outputTokens ?? undefined,
+              totalTokens: event.usage.totalTokens ?? undefined,
+            })
           }
           if (event.type === 'finish') {
             finished = true
@@ -108,6 +123,16 @@ export function createAgentModelInvocationPort(
               skillNames,
               toolNames: [...toolNames],
             })
+            telemetry.endSpan(span, 'ok', {
+              status: 'succeeded',
+              provider: event.provider,
+              model: event.resolvedModel,
+              failover: event.failover !== undefined,
+              ttfbMs:
+                firstTokenAt === undefined
+                  ? undefined
+                  : firstTokenAt.getTime() - started.startedAt.getTime(),
+            })
           }
           yield event
         }
@@ -140,6 +165,12 @@ export function createAgentModelInvocationPort(
             completedAt,
             skillNames,
             toolNames: [...toolNames],
+          })
+          telemetry.endSpan(span, 'error', {
+            status: 'failed',
+            provider,
+            model: resolvedModel,
+            errorCode: 'AGENT_MODEL_STREAM_INCOMPLETE',
           })
         }
       } catch (error) {
@@ -176,6 +207,12 @@ export function createAgentModelInvocationPort(
             completedAt,
             skillNames,
             toolNames: [...toolNames],
+          })
+          telemetry.endSpan(span, aborted ? 'ok' : 'error', {
+            status: aborted ? 'cancelled' : 'failed',
+            provider,
+            model: resolvedModel,
+            ...(aborted ? {} : { errorCode: 'AGENT_MODEL_ERROR' }),
           })
         }
         throw error

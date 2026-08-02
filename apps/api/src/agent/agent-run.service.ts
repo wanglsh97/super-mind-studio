@@ -15,6 +15,7 @@ import { MODEL_INVOCATION_PORT } from '../chat/model-invocation.port'
 import type { ModelInvocationPort } from '../chat/model-invocation.port'
 import { PricingService } from '../billing/pricing.service'
 import { RequestLifecycleService } from '../request-lifecycle/request-lifecycle.service'
+import { TelemetryService } from '../observability/telemetry.service'
 import { createAgentModelInvocationPort } from './agent-model-invocation'
 import { AgentModelInvocationRepository } from './agent-model-invocation.repository'
 import { AgentActiveRunLock } from './agent-active-run.lock'
@@ -103,6 +104,7 @@ export class AgentRunService {
     @Inject(AgentExecutionSessionService)
     private readonly executionSessions: AgentExecutionSessionService,
     @Inject(AGENT_MCP_REGISTRY) private readonly mcp: AgentMcpRegistry,
+    @Inject(TelemetryService) private readonly telemetry: TelemetryService,
   ) {}
 
   isRunning(runId: string): boolean {
@@ -118,6 +120,14 @@ export class AgentRunService {
    * 该方法在进程内异步执行，浏览器断线不影响其完成。
    */
   async execute(input: ExecuteAgentRunInput): Promise<void> {
+    await this.telemetry.withSpan(
+      'agent.run',
+      { runId: input.runId, capability: 'agent', provider: input.provider, model: input.modelId },
+      () => this.executeWithinSpan(input),
+    )
+  }
+
+  private async executeWithinSpan(input: ExecuteAgentRunInput): Promise<void> {
     const controller = new AbortController()
     this.activeRuns.set(input.runId, { controller })
     this.bus.open(input.runId)
@@ -197,6 +207,7 @@ export class AgentRunService {
         this.lifecycle,
         this.pricing,
         this.modelInvocations,
+        this.telemetry,
         {
           userId: input.userId,
           agentRunId: input.runId,
@@ -264,11 +275,16 @@ export class AgentRunService {
                       },
                     }),
               })
-              const prepared = this.contextPreparer.prepare({
-                contextWindowTokens: input.contextWindowTokens,
-                messages: assembled,
-                tools,
-              })
+              const prepared = await this.telemetry.withSpan(
+                'agent.context.prepare',
+                { runId: input.runId, capability: 'agent', model: input.modelId },
+                async () =>
+                  this.contextPreparer.prepare({
+                    contextWindowTokens: input.contextWindowTokens,
+                    messages: assembled,
+                    tools,
+                  }),
+              )
               await persistAndPublish(
                 projector.contextBudget({
                   usedTokens: prepared.budget.usedTokens,

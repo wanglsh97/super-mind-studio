@@ -7,7 +7,7 @@
 
 ## 2. Agent and gateway instrumentation
 
-- [ ] 2.1 为 Agent Run、上下文准备、模型调用/流、请求终结建立手工 span，使用 requestId/runId 进行内部关联并避免每个 SSE delta/token 生成 span。
+- [x] 2.1 为 Agent Run、上下文准备、模型调用/流、请求终结建立手工 span，使用 requestId/runId 进行内部关联并避免每个 SSE delta/token 生成 span。
 - [ ] 2.2 为 Tool、MCP discovery/call、Sandbox 与 web 工具统一执行边界建立 span，记录受控工具名称、时长、状态与规范化错误码。
 - [ ] 2.3 增加 Agent Run、模型 TTFB、模型调用、Tool/MCP 时长、Token 和费用的低基数 metrics，并约束 label 集合。
 - [ ] 2.4 添加单元与 Mock E2E，覆盖成功、取消、流中失败、首事件前 failover、MCP 失败、Trace/Pino/requestId 关联和禁止属性缺失。

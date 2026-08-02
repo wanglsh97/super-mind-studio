@@ -4,6 +4,7 @@ import { Inject, Injectable, Logger, ServiceUnavailableException } from '@nestjs
 import { Prisma, RequestCapability, RequestStatus } from '../generated/prisma/client'
 import type { RequestLog } from '../generated/prisma/client'
 import { PrismaService } from '../database/prisma.service'
+import { TelemetryService } from '../observability/telemetry.service'
 
 const REQUEST_CAPABILITY_MAP = {
   chat: RequestCapability.CHAT,
@@ -99,7 +100,10 @@ const TERMINAL_STATUS_MAP = {
 export class RequestLifecycleService {
   private readonly logger = new Logger(RequestLifecycleService.name)
 
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(TelemetryService) private readonly telemetry: TelemetryService = new TelemetryService(),
+  ) {}
 
   async listStalePending(olderThan: Date, take = 100): Promise<StalePendingRequest[]> {
     if (Number.isNaN(olderThan.getTime())) throw new TypeError('olderThan must be a valid date')
@@ -191,6 +195,20 @@ export class RequestLifecycleService {
       outputCostCny: usage.outputCostCny ?? null,
       estimatedCostCny: usage.estimatedCostCny ?? null,
     }
+    const span = this.telemetry.startSpan('request.lifecycle.finalize', {
+      requestId: input.requestId,
+      status: input.status,
+      provider: input.provider,
+      model: input.resolvedModel,
+      failover: input.failover !== undefined,
+      ttfbMs:
+        input.firstTokenAt === undefined
+          ? undefined
+          : Math.max(0, input.firstTokenAt.getTime() - input.startedAt.getTime()),
+      inputTokens: usage.inputTokens ?? undefined,
+      outputTokens: usage.outputTokens ?? undefined,
+      totalTokens: usage.totalTokens ?? undefined,
+    })
 
     try {
       await this.prisma.$transaction(async (transaction) => {
@@ -251,7 +269,9 @@ export class RequestLifecycleService {
         },
         'Request lifecycle finished',
       )
+      this.telemetry.endSpan(span, 'ok')
     } catch (error) {
+      this.telemetry.endSpan(span, 'error', { errorCode: 'REQUEST_LIFECYCLE_FINISH_ERROR' })
       if (error instanceof RequestLifecycleTransitionError) throw error
       this.logger.error(
         { error, requestId: input.requestId, status: input.status },

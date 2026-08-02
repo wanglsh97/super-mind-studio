@@ -3,27 +3,28 @@ import { metrics, trace, SpanStatusCode, type Attributes, type Span } from '@ope
 
 export type TelemetrySpanName =
   | 'agent.run'
+  | 'agent.context.prepare'
   | 'agent.model.invoke'
   | 'agent.tool.invoke'
   | 'agent.mcp.call'
   | 'request.lifecycle.finalize'
 
 export interface TelemetryAttributes {
-  requestId?: string
-  runId?: string
-  capability?: 'agent' | 'image' | 'prompt'
-  provider?: string
-  model?: string
-  toolName?: string
-  mcpServer?: string
-  status?: 'succeeded' | 'failed' | 'cancelled'
-  errorCode?: string
-  failover?: boolean
-  ttfbMs?: number
-  inputTokens?: number
-  outputTokens?: number
-  totalTokens?: number
-  costCny?: number
+  requestId?: string | undefined
+  runId?: string | undefined
+  capability?: 'agent' | 'image' | 'prompt' | undefined
+  provider?: string | undefined
+  model?: string | undefined
+  toolName?: string | undefined
+  mcpServer?: string | undefined
+  status?: 'succeeded' | 'failed' | 'cancelled' | undefined
+  errorCode?: string | undefined
+  failover?: boolean | undefined
+  ttfbMs?: number | undefined
+  inputTokens?: number | undefined
+  outputTokens?: number | undefined
+  totalTokens?: number | undefined
+  costCny?: number | undefined
 }
 
 const tracer = trace.getTracer('supermind.observability')
@@ -34,6 +35,16 @@ const modelInvocations = meter.createCounter('supermind.model.invocations')
 
 @Injectable()
 export class TelemetryService {
+  startSpan(name: TelemetrySpanName, attributes: TelemetryAttributes): Span {
+    return tracer.startSpan(name, { attributes: toSpanAttributes(attributes) })
+  }
+
+  endSpan(span: Span, status: 'ok' | 'error', attributes: TelemetryAttributes = {}): void {
+    span.setAttributes(toSpanAttributes(attributes))
+    span.setStatus({ code: status === 'ok' ? SpanStatusCode.OK : SpanStatusCode.ERROR })
+    span.end()
+  }
+
   async withSpan<T>(
     name: TelemetrySpanName,
     attributes: TelemetryAttributes,

@@ -3,6 +3,7 @@ import type { PricingService } from '../billing/pricing.service'
 import type { RequestLifecycleService } from '../request-lifecycle/request-lifecycle.service'
 import type { AgentModelInvocationRepository } from './agent-model-invocation.repository'
 import { createAgentModelInvocationPort } from './agent-model-invocation'
+import type { TelemetryService } from '../observability/telemetry.service'
 
 describe('createAgentModelInvocationPort', () => {
   it('persists actual model usage with active Skill and pre/post Tool attribution', async () => {
@@ -45,7 +46,16 @@ describe('createAgentModelInvocationPort', () => {
     } as unknown as PricingService
     const save = jest.fn()
     const invocations = { save } as unknown as AgentModelInvocationRepository
-    const port = createAgentModelInvocationPort(base, lifecycle, pricing, invocations, {
+    const telemetry = {
+      startSpan: jest.fn(() => ({
+        setAttributes: jest.fn(),
+        setStatus: jest.fn(),
+        end: jest.fn(),
+      })),
+      addOutcome: jest.fn(),
+      endSpan: jest.fn(),
+    } as unknown as TelemetryService
+    const port = createAgentModelInvocationPort(base, lifecycle, pricing, invocations, telemetry, {
       userId: 'user-1',
       agentRunId: 'run-1',
       activeSkillNames: () => ['research'],
