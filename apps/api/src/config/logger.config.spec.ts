@@ -4,6 +4,10 @@ import pino from 'pino'
 import { createPinoHttpOptions } from './logger.config'
 
 describe('request ID generation', () => {
+  it('does not add invalid trace context to logs', () => {
+    expect(createPinoHttpOptions().mixin()).toEqual({})
+  })
+
   it('preserves a valid UUID request ID', () => {
     const incomingId = '00000000-0000-4000-8000-000000000004'
     const response = { setHeader: jest.fn() } as unknown as ServerResponse

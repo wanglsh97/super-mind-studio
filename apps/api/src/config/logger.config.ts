@@ -1,11 +1,20 @@
 import { randomUUID } from 'node:crypto'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 
+import { isSpanContextValid, trace } from '@opentelemetry/api'
+
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 export function createPinoHttpOptions() {
   return {
     level: process.env.LOG_LEVEL ?? 'info',
+    mixin() {
+      const span = trace.getActiveSpan()
+      if (span === undefined) return {}
+      const context = span.spanContext()
+      if (!isSpanContextValid(context)) return {}
+      return { traceId: context.traceId, spanId: context.spanId }
+    },
     redact: {
       paths: [
         'req.headers.authorization',
