@@ -15,7 +15,7 @@
 ## 3. Private telemetry infrastructure
 
 - [ ] 3.1 新增 OTel Collector 和 Tempo Compose profile、配置文件、持久卷、健康检查、资源上限与仅 backend 网络访问；不得映射公网端口或配置第三方 exporter。
-- [ ] 3.2 在 Collector 配置应用与出口双层敏感字段删除、批量队列限制、失败不阻塞和 tail sampling：错误/超时/取消/failover/慢请求 100%，其余成功 5%。
+- [ ] 3.2 在 Collector 配置应用与出口双层敏感字段删除、批量队列限制和失败不阻塞；成功、失败、超时、取消、failover 与慢请求均全量采集。
 - [ ] 3.3 配置 Tempo 7 天 retention、查询访问限制与备份/清理说明；明确其不是 PostgreSQL 业务备份的一部分。
 - [ ] 3.4 验证 Collector/Tempo 宕机、队列饱和和 profile 未启用时 API、模型调用、账单与 Pino 均不受阻塞。
 

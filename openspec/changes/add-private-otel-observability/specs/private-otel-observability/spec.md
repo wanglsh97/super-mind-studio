@@ -29,8 +29,12 @@
 - **THEN** Agent 请求仍按既有请求生命周期完成，且系统仅产生不含敏感内容的本地告警
 
 ### Requirement: Sampling and retention
-生产 Collector SHALL 保留 Trace 7 天，并对错误、超时、取消、failover 与慢请求保留全部 Trace，对其他成功 Trace 以 5% 采样。
+生产 Collector SHALL 全量采集成功、失败、超时、取消、failover 与慢请求的 Trace，并将 Trace 保留 7 天。
+
+#### Scenario: Successful trace is retained
+- **WHEN** Agent Run 成功完成且未触发慢请求或 failover
+- **THEN** Collector 仍保留该 Trace 7 天，并且不记录内容数据
 
 #### Scenario: Failed trace is retained
 - **WHEN** 模型流在首事件前失败并触发 failover 或终态失败
-- **THEN** Collector 保留该 Trace，并记录规范化结果而非上游原始响应内容
+- **THEN** Collector 保留该 Trace 7 天，并记录规范化结果而非上游原始响应内容

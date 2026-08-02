@@ -40,11 +40,11 @@ API 的 OTLP exporter 只指向 Compose 中的 Collector；Collector 只导出�
 
 应用侧 TelemetryService 只接受该白名单；Collector 再使用 attributes/transform processor 删除禁止 key。Pino 通过当前 span context 追加 `traceId`、`spanId`，但维持现有的日志脱敏规则。
 
-### 4. Collector tail sampling 优先保留诊断价值
+### 4. Collector 全量保留 7 天 Trace
 
-Collector 对错误、超时、取消、failover 或超出已配置慢请求阈值的 Trace 100% 保留；其他成功 Trace 以 5% 概率保留。开发和测试环境可用 memory/console exporter 100% 采样，且不得依赖真实 Collector 或 Tempo。
+Collector 对成功、失败、超时、取消、failover 与慢请求全量保留。开发和测试环境可用 memory/console exporter 全量采集，且不得依赖真实 Collector 或 Tempo。
 
-头部采样会在 Trace 结束前丢弃未知错误，因此生产采样责任放在 Collector。其代价是 Collector 需要为完整 Trace 提供有界缓冲，因此 Compose 为其分配固定内存上限并设置丢弃优先于阻塞业务请求。
+全量采集提高诊断完整性，但会增加单机 CPU、内存和 Tempo 磁盘占用；Trace 固定仅保留 7 天。Collector 仍使用有界批量队列并设置丢弃优先于阻塞业务请求，确保 telemetry 不反压业务主链路。
 
 ### 5. 管理后台经 API 查询适配层展示，而非直连或 iframe
 
@@ -58,7 +58,7 @@ OTel 初始化由 `OTEL_ENABLED` 控制；未配置 Collector、Exporter 批量�
 
 ## Risks / Trade-offs
 
-- [4C8G 单机资源竞争] → Collector/Tempo 使用明确 CPU/内存限额、短期保留与采样；先以 Mock 负载测量，再决定是否启用 Grafana 容器。
+- [4C8G 单机资源竞争] → 全量 Trace 仅保留 7 天，Collector/Tempo 使用明确 CPU/内存/磁盘限额；先以 Mock 负载测量，再决定是否启用 Grafana 容器。
 - [自动埋点意外携带敏感 HTTP/数据库数据] → 默认禁用 body 与 SQL 参数捕获；应用白名单和 Collector 删除规则共同约束，并以回归测试检查导出 payload。
 - [Collector tail sampling 缓冲耗尽] → 设置内存上限、批量队列上限和优先丢弃策略；业务 telemetry 调用不得同步等待导出。
 - [Trace 与 RequestLog 关联不完整] → 在 Agent/模型调用 span 写入 `supermind.request_id`，并让 Pino 写 traceId/spanId；管理端仅由 requestId 发起固定查询。
@@ -69,7 +69,7 @@ OTel 初始化由 `OTEL_ENABLED` 控制；未配置 Collector、Exporter 批量�
 1. 增加依赖、环境校验与禁用状态；开发环境使用 in-memory exporter 验证启动顺序和无 Collector 降级。
 2. 加入自动/手工埋点、Pino correlation 与敏感字段测试，先在 Mock 模型、取消、失败、failover、MCP fixture 流量中验收。
 3. 新增 Collector、Tempo、持久卷和仅 backend network 的 Compose profile；初始以 100% 开发采样验证脱敏与资源占用。
-4. 生产启用 Collector tail sampling、7 天保留与资源限制；Collector/Tempo 不暴露端口。
+4. 生产启用 Collector 全量采集、7 天保留与资源限制；Collector/Tempo 不暴露端口。
 5. 增加受 Admin Guard 保护的查询 API 与前端 Trace 抽屉；完成未认证、查询注入、内容泄露和后端不可用测试。
 
 回滚只需设置 `OTEL_ENABLED=false` 并停止 observability profile；API/Pino/PostgreSQL 按原路径继续工作。Tempo volume 可在保留期外删除，不涉及业务数据库迁移或恢复。
