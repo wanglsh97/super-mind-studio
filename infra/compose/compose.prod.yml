@@ -17,7 +17,8 @@ services:
     environment:
       DOMAIN: '${DOMAIN:?DOMAIN is required}'
       PUBLIC_IP: '${PUBLIC_IP:?PUBLIC_IP is required}'
-      NGINX_ENVSUBST_FILTER: '^(DOMAIN|PUBLIC_IP)$'
+      OTEL_INGEST_TOKEN: '${OTEL_INGEST_TOKEN:?OTEL_INGEST_TOKEN is required}'
+      NGINX_ENVSUBST_FILTER: '^(DOMAIN|PUBLIC_IP|OTEL_INGEST_TOKEN)$'
     volumes:
       - ../nginx/default.conf.template:/etc/nginx/templates/default.conf.template:ro
       - ../nginx/app-locations.conf:/etc/nginx/includes/app-locations.conf:ro
@@ -30,6 +31,7 @@ services:
         condition: service_healthy
     networks:
       - frontend
+      - backend
     read_only: true
     tmpfs:
       - /etc/nginx/conf.d:size=1m,mode=0755
@@ -85,6 +87,11 @@ services:
       API_PORT: '3001'
       WEB_ORIGIN: '${WEB_ORIGIN:?WEB_ORIGIN is required}'
       LOG_LEVEL: '${LOG_LEVEL:-info}'
+      OTEL_SERVICE_NAME: '${OTEL_SERVICE_NAME:-supermind-api}'
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: '${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-https://${DOMAIN}/otel/v1/traces}'
+      OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: '${OTEL_EXPORTER_OTLP_METRICS_ENDPOINT:-https://${DOMAIN}/otel/v1/metrics}'
+      OTEL_INGEST_TOKEN: '${OTEL_INGEST_TOKEN:?OTEL_INGEST_TOKEN is required}'
+      TEMPO_QUERY_URL: '${TEMPO_QUERY_URL:-http://tempo:3200}'
       DATABASE_URL: '${DATABASE_URL:?DATABASE_URL is required}'
       DATABASE_POOL_MAX: '${DATABASE_POOL_MAX:-10}'
       REDIS_URL: '${REDIS_URL:-redis://redis:6379}'
@@ -160,6 +167,7 @@ services:
       - '3001'
     networks:
       - frontend
+      - backend
       - backend
     read_only: true
     tmpfs:
@@ -251,10 +259,48 @@ services:
     stop_grace_period: 20s
     logging: *bounded-logging
 
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.120.0
+    profiles: ['observability']
+    restart: unless-stopped
+    command: ['--config=/etc/otelcol-contrib/config.yaml']
+    volumes:
+      - ../otel/collector.yaml:/etc/otelcol-contrib/config.yaml:ro
+    expose: ['4318']
+    depends_on:
+      tempo:
+        condition: service_healthy
+    networks: [backend]
+    cpus: '0.35'
+    mem_limit: 384m
+    pids_limit: 128
+    logging: *bounded-logging
+
+  tempo:
+    image: grafana/tempo:2.7.2
+    profiles: ['observability']
+    restart: unless-stopped
+    command: ['-config.file=/etc/tempo.yaml']
+    volumes:
+      - ../otel/tempo.yaml:/etc/tempo.yaml:ro
+      - tempo-data:/var/tempo
+    expose: ['3200', '4318']
+    networks: [backend]
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://127.0.0.1:3200/ready >/dev/null || exit 1']
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    cpus: '0.60'
+    mem_limit: 768m
+    pids_limit: 256
+    logging: *bounded-logging
+
 volumes:
   postgres-data:
     # Preserve the pre-rebrand production volume so existing databases remain attached.
     name: ai-gateway-studio-prod_postgres-data
+  tempo-data:
 
 networks:
   frontend:

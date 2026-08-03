@@ -1,10 +1,13 @@
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-proto'
+import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-proto'
 import { HttpInstrumentation } from '@opentelemetry/instrumentation-http'
+import { NestInstrumentation } from '@opentelemetry/instrumentation-nestjs-core'
 import { PgInstrumentation } from '@opentelemetry/instrumentation-pg'
 import { RedisInstrumentation } from '@opentelemetry/instrumentation-redis'
 import { UndiciInstrumentation } from '@opentelemetry/instrumentation-undici'
 import { resourceFromAttributes } from '@opentelemetry/resources'
 import { NodeSDK } from '@opentelemetry/sdk-node'
+import { PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics'
 import { ATTR_SERVICE_NAME } from '@opentelemetry/semantic-conventions'
 
 import { resolveTelemetryBootstrapConfig } from './telemetry-bootstrap.config'
@@ -24,6 +27,7 @@ const HTTP_REDACTED_QUERY_PARAMS = [
 
 function createSafeInstrumentations() {
   return [
+    new NestInstrumentation(),
     new HttpInstrumentation({
       headersToSpanAttributes: {},
       redactedQueryParams: HTTP_REDACTED_QUERY_PARAMS,
@@ -48,7 +52,8 @@ export function startOpenTelemetry(): void {
   try {
     sdk = new NodeSDK({
       resource: resourceFromAttributes({ [ATTR_SERVICE_NAME]: config.serviceName }),
-      traceExporter: new OTLPTraceExporter({ url: config.tracesEndpoint }),
+      traceExporter: new OTLPTraceExporter(exporterOptions(config.tracesEndpoint, config.ingestToken)),
+      metricReader: new PeriodicExportingMetricReader({ exporter: new OTLPMetricExporter(exporterOptions(config.metricsEndpoint, config.ingestToken)), exportIntervalMillis: 10_000 }),
       instrumentations: createSafeInstrumentations(),
     })
     sdk.start()
@@ -65,6 +70,10 @@ export function startOpenTelemetry(): void {
     console.warn('[otel] failed to initialize telemetry; continuing without telemetry', error)
     sdk = undefined
   }
+}
+
+function exporterOptions(url: string, ingestToken: string | undefined): { url: string; headers?: Record<string, string> } {
+  return ingestToken ? { url, headers: { 'x-otel-ingest-token': ingestToken } } : { url }
 }
 
 startOpenTelemetry()

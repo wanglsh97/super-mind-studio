@@ -8,6 +8,11 @@ upstream aigateway_api {
     keepalive 32;
 }
 
+upstream aigateway_otel_collector {
+    server otel-collector:4318;
+    keepalive 8;
+}
+
 server {
     listen 80 default_server;
     listen [::]:80 default_server;
@@ -43,6 +48,18 @@ server {
     ssl_session_tickets off;
 
     add_header Strict-Transport-Security "max-age=31536000" always;
+
+    location /otel/ {
+        if ($http_x_otel_ingest_token != "${OTEL_INGEST_TOKEN}") { return 404; }
+        proxy_pass http://aigateway_otel_collector/;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header Connection "";
+        proxy_request_buffering off;
+        proxy_buffering off;
+        proxy_read_timeout 15s;
+        access_log off;
+    }
 
     include /etc/nginx/includes/app-locations.conf;
 }

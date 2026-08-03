@@ -6,6 +6,7 @@ export type TelemetrySpanName =
   | 'agent.context.prepare'
   | 'agent.model.invoke'
   | 'agent.tool.invoke'
+  | 'agent.mcp.discover'
   | 'agent.mcp.call'
   | 'request.lifecycle.finalize'
 
@@ -32,6 +33,10 @@ const meter = metrics.getMeter('supermind.observability')
 const agentRunDuration = meter.createHistogram('supermind.agent.run.duration', { unit: 'ms' })
 const modelTtfb = meter.createHistogram('supermind.model.ttfb', { unit: 'ms' })
 const modelInvocations = meter.createCounter('supermind.model.invocations')
+const toolDuration = meter.createHistogram('supermind.agent.tool.duration', { unit: 'ms' })
+const mcpCalls = meter.createCounter('supermind.agent.mcp.calls')
+const tokenUsage = meter.createCounter('supermind.model.tokens')
+const cost = meter.createHistogram('supermind.model.cost', { unit: 'CNY' })
 
 @Injectable()
 export class TelemetryService {
@@ -76,6 +81,19 @@ export class TelemetryService {
 
   recordAgentRunDuration(durationMs: number, attributes: TelemetryAttributes): void {
     agentRunDuration.record(durationMs, toMetricAttributes(attributes))
+  }
+
+  recordToolInvocation(durationMs: number, attributes: TelemetryAttributes): void {
+    const metricAttributes = toMetricAttributes(attributes)
+    toolDuration.record(durationMs, metricAttributes)
+    if (attributes.mcpServer) mcpCalls.add(1, metricAttributes)
+  }
+
+  recordUsage(attributes: TelemetryAttributes): void {
+    const metricAttributes = toMetricAttributes(attributes)
+    if (attributes.inputTokens) tokenUsage.add(attributes.inputTokens, { ...metricAttributes, 'supermind.token.type': 'input' })
+    if (attributes.outputTokens) tokenUsage.add(attributes.outputTokens, { ...metricAttributes, 'supermind.token.type': 'output' })
+    if (attributes.costCny !== undefined) cost.record(attributes.costCny, metricAttributes)
   }
 
   addOutcome(span: Span, attributes: TelemetryAttributes): void {

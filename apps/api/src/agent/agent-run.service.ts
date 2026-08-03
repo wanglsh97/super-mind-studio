@@ -120,11 +120,22 @@ export class AgentRunService {
    * 该方法在进程内异步执行，浏览器断线不影响其完成。
    */
   async execute(input: ExecuteAgentRunInput): Promise<void> {
-    await this.telemetry.withSpan(
-      'agent.run',
-      { runId: input.runId, capability: 'agent', provider: input.provider, model: input.modelId },
-      () => this.executeWithinSpan(input),
-    )
+    const startedAt = performance.now()
+    let status: 'succeeded' | 'failed' | 'cancelled' = 'succeeded'
+    try {
+      await this.telemetry.withSpan(
+        'agent.run',
+        { runId: input.runId, capability: 'agent', provider: input.provider, model: input.modelId },
+        () => this.executeWithinSpan(input),
+      )
+    } catch (error) {
+      status = this.activeRuns.get(input.runId)?.controller.signal.aborted ? 'cancelled' : 'failed'
+      throw error
+    } finally {
+      this.telemetry.recordAgentRunDuration(performance.now() - startedAt, {
+        capability: 'agent', provider: input.provider, model: input.modelId, status,
+      })
+    }
   }
 
   private async executeWithinSpan(input: ExecuteAgentRunInput): Promise<void> {

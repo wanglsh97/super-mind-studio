@@ -8,6 +8,7 @@ import { AdminDashboardModule } from './admin/dashboard/admin-dashboard.module'
 import { AdminRequestLogsModule } from './admin/logs/admin-request-logs.module'
 import { AdminSkillReviewModule } from './admin/skills/admin-skill-review.module'
 import { AdminTablesModule } from './admin/tables/admin-tables.module'
+import { ObservabilityAdminModule } from './admin/observability/observability-admin.module'
 import { AgentModule } from './agent/agent.module'
 import { ModelGatewayModule } from './chat/model-gateway.module'
 import { validateEnvironment } from './config/env.validation'
@@ -46,6 +47,7 @@ import { UserAuthModule } from './user-auth/user-auth.module'
     AdminRequestLogsModule,
     AdminSkillReviewModule,
     AdminTablesModule,
+    ObservabilityAdminModule,
   ],
   controllers: [AppController],
 })

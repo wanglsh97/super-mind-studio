@@ -84,6 +84,22 @@ export interface RequestLogDetail extends Omit<RequestLogListItem, 'billing'> {
   imageTask: Record<string, unknown> | null
 }
 
+export interface AdminTraceSpan {
+  spanId: string
+  parentSpanId?: string
+  name: string
+  startedAt: string
+  durationMs: number
+  status: 'ok' | 'error' | 'unset'
+  attributes: Record<string, string | number | boolean>
+}
+
+export interface AdminTrace {
+  traceId?: string
+  spans: AdminTraceSpan[]
+  infrastructure: { databaseCalls: number; redisCalls: number; httpCalls: number }
+}
+
 export async function loadRequestLogs(
   filters: RequestLogFilters,
   fetchImplementation: typeof fetch = fetch,
@@ -115,6 +131,17 @@ export async function loadRequestLogDetail(
   )
   if (!response.ok) throw await responseError(response, '请求日志详情加载失败')
   return (await response.json()) as RequestLogDetail
+}
+
+export async function loadRequestTrace(
+  requestId: string,
+  fetchImplementation: typeof fetch = fetch,
+): Promise<AdminTrace> {
+  const response = await fetchImplementation(`/api/v1/admin/observability/traces/${encodeURIComponent(requestId)}`, {
+    headers: { accept: 'application/json' }, credentials: 'same-origin',
+  })
+  if (!response.ok) throw await responseError(response, '调用链加载失败')
+  return (await response.json()) as AdminTrace
 }
 
 async function responseError(response: Response, fallback: string): Promise<AdminApiError> {

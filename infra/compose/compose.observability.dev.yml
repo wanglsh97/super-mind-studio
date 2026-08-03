@@ -1,0 +1,31 @@
+# 仅本机开发验证；不用于生产部署，也不暴露到非 loopback 网络。
+services:
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.120.0
+    command: ['--config=/etc/otelcol-contrib/config.yaml']
+    volumes:
+      - ../otel/collector.yaml:/etc/otelcol-contrib/config.yaml:ro
+    ports:
+      - '127.0.0.1:4318:4318'
+    depends_on:
+      tempo:
+        condition: service_healthy
+    networks: [backend, development]
+
+  tempo:
+    image: grafana/tempo:2.7.2
+    command: ['-config.file=/etc/tempo.yaml']
+    volumes:
+      - tempo-dev-data:/var/tempo
+      - ../otel/tempo.yaml:/etc/tempo.yaml:ro
+    ports:
+      - '127.0.0.1:3200:3200'
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://127.0.0.1:3200/ready >/dev/null || exit 1']
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    networks: [backend, development]
+
+volumes:
+  tempo-dev-data:

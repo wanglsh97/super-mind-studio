@@ -8,15 +8,15 @@
 ## 2. Agent and gateway instrumentation
 
 - [x] 2.1 为 Agent Run、上下文准备、模型调用/流、请求终结建立手工 span，使用 requestId/runId 进行内部关联并避免每个 SSE delta/token 生成 span。
-- [ ] 2.2 为 Tool、MCP discovery/call、Sandbox 与 web 工具统一执行边界建立 span，记录受控工具名称、时长、状态与规范化错误码。
-- [ ] 2.3 增加 Agent Run、模型 TTFB、模型调用、Tool/MCP 时长、Token 和费用的低基数 metrics，并约束 label 集合。
+- [x] 2.2 为 Tool、MCP discovery/call、Sandbox 与 web 工具统一执行边界建立 span，记录受控工具名称、时长、状态与规范化错误码。
+- [x] 2.3 增加 Agent Run、模型 TTFB、模型调用、Tool/MCP 时长、Token 和费用的低基数 metrics，并约束 label 集合。
 - [ ] 2.4 添加单元与 Mock E2E，覆盖成功、取消、流中失败、首事件前 failover、MCP 失败、Trace/Pino/requestId 关联和禁止属性缺失。
 
 ## 3. Private telemetry infrastructure
 
-- [ ] 3.1 新增 OTel Collector 和 Tempo Compose profile、配置文件、持久卷、健康检查、资源上限与仅 backend 网络访问；不得映射公网端口或配置第三方 exporter。
-- [ ] 3.2 在 Collector 配置应用与出口双层敏感字段删除、批量队列限制和失败不阻塞；成功、失败、超时、取消、failover 与慢请求均全量采集。
-- [ ] 3.3 配置 Tempo 7 天 retention、查询访问限制与备份/清理说明；明确其不是 PostgreSQL 业务备份的一部分。
+- [x] 3.1 新增 OTel Collector 和 Tempo Compose profile、配置文件、持久卷、健康检查、资源上限与仅 backend 网络访问；不得映射公网端口或配置第三方 exporter。
+- [x] 3.2 在 Collector 配置应用与出口双层敏感字段删除、批量队列限制和失败不阻塞；成功、失败、超时、取消、failover 与慢请求均全量采集。
+- [x] 3.3 配置 Tempo 7 天 retention、查询访问限制与备份/清理说明；明确其不是 PostgreSQL 业务备份的一部分。
 - [ ] 3.4 验证 Collector/Tempo 宕机、队列饱和和 profile 未启用时 API、模型调用、账单与 Pino 均不受阻塞。
 
 ## 4. Admin trace inspection

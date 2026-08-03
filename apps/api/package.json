@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "NODE_USE_ENV_PROXY=1 NO_PROXY=\"localhost,127.0.0.1,::1${NO_PROXY:+,$NO_PROXY}\" tsx --import ./src/observability/instrumentation.ts watch src/main.ts",
+    "dev": "NODE_USE_ENV_PROXY=1 NO_PROXY=\"localhost,127.0.0.1,::1${NO_PROXY:+,$NO_PROXY}\" tsx watch --import ./src/observability/instrumentation.ts src/main.ts",
     "prebuild": "corepack pnpm --workspace-root db:generate",
     "build": "tsc -p tsconfig.build.json",
     "start": "node --import ./dist/observability/instrumentation.js dist/main.js",
@@ -39,6 +39,7 @@
     "@opentelemetry/exporter-metrics-otlp-proto": "^0.221.0",
     "@opentelemetry/exporter-trace-otlp-proto": "^0.221.0",
     "@opentelemetry/instrumentation-http": "^0.221.0",
+    "@opentelemetry/instrumentation-nestjs-core": "^0.67.0",
     "@opentelemetry/instrumentation-pg": "^0.73.0",
     "@opentelemetry/instrumentation-redis": "^0.69.0",
     "@opentelemetry/instrumentation-undici": "^0.31.0",

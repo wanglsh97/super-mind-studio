@@ -22,11 +22,11 @@ Super Mind Studio 当前运行在单台 4C8G ECS 上，NestJS API 已使用 Pino
 
 ## Decisions
 
-### 1. API → Collector → Tempo，全部仅 backend 网络可达
+### 1. API → 同源 `/otel` → Collector → Tempo
 
-API 的 OTLP exporter 只指向 Compose 中的 Collector；Collector 只导出至同一 backend 网络的 Tempo。各服务使用 `expose` 而非 `ports`，Nginx 不代理这些服务。Tempo 使用本地持久卷并设置 7 天保留期。
+API 的 OTLP exporter 使用当前 HTTPS 域名下的 `/otel/v1/traces` 与 `/otel/v1/metrics`；Nginx 校验仅服务端持有的 `OTEL_INGEST_TOKEN` 后转发给 Compose 中的 Collector，Collector 只导出至同一 backend 网络的 Tempo。Collector 与 Tempo 均不映射 `ports`，Tempo 使用本地持久卷并设置 7 天保留期。
 
-直接从 API 写 Tempo 会使采样、脱敏和未来后端迁移散落于应用；Collector 集中执行这两项策略。使用 SaaS 会引入出境与内容留存风险，已明确排除。
+直接从 API 写 Tempo 会使采样、脱敏和未来后端迁移散落于应用；Collector 集中执行这两项策略。使用 SaaS 会引入出境与内容留存风险，已明确排除。同源入口不向浏览器公开凭证，错误 token 返回 404，避免匿名 OTLP 写入。
 
 ### 2. API 启动前加载 OTel，并同时采用自动和手工埋点
 
@@ -67,7 +67,7 @@ OTel 默认初始化，并在未显式配置端点时使用内部 Collector 默�
 ## Migration Plan
 
 1. 增加依赖、环境校验与内部 Collector 默认端点；开发环境使用 in-memory exporter 验证启动顺序和无 Collector 降级。
-2. 加入自动/手工埋点、Pino correlation 与敏感字段测试，先在 Mock 模型、取消、失败、failover、MCP fixture 流量中验收。
+2. 加入 NestJS、HTTP、数据库/缓存/出站 HTTP 自动埋点及手工埋点、Pino correlation 与敏感字段测试，先在 Mock 模型、取消、失败、failover、MCP fixture 流量中验收。
 3. 新增 Collector、Tempo、持久卷和仅 backend network 的 Compose profile；初始以 100% 开发采样验证脱敏与资源占用。
 4. 生产启用 Collector 全量采集、7 天保留与资源限制；Collector/Tempo 不暴露端口。
 5. 增加受 Admin Guard 保护的查询 API 与前端 Trace 抽屉；完成未认证、查询注入、内容泄露和后端不可用测试。

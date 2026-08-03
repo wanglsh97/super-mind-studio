@@ -133,6 +133,16 @@ export function createAgentModelInvocationPort(
                   ? undefined
                   : firstTokenAt.getTime() - started.startedAt.getTime(),
             })
+            telemetry.recordModelInvocation?.({
+              capability: 'agent', provider: event.provider, model: event.resolvedModel,
+              status: 'succeeded', failover: event.failover !== undefined,
+              ttfbMs: firstTokenAt === undefined ? undefined : firstTokenAt.getTime() - started.startedAt.getTime(),
+            })
+            telemetry.recordUsage?.({
+              capability: 'agent', provider: event.provider, model: event.resolvedModel,
+              status: 'succeeded', inputTokens: usage?.inputTokens ?? undefined, outputTokens: usage?.outputTokens ?? undefined,
+              totalTokens: usage?.totalTokens ?? undefined, costCny: priced.estimatedCostCny === undefined ? undefined : Number(priced.estimatedCostCny),
+            })
           }
           yield event
         }

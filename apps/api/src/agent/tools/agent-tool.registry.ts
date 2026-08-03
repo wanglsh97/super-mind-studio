@@ -3,6 +3,7 @@ import { Inject, Injectable } from '@nestjs/common'
 import type { AgentToolContext, AgentToolDefinition, AgentToolResult } from './agent-tool'
 import { AgentToolExecutionError } from './agent-tool'
 import { validateToolArguments } from './tool-args.validation'
+import { TelemetryService } from '../../observability/telemetry.service'
 
 export const AGENT_TOOLS = Symbol('AGENT_TOOLS')
 
@@ -37,7 +38,7 @@ export class UnsupportedAgentToolApprovalError extends Error {
 export class AgentToolRegistry {
   private readonly tools: ReadonlyMap<string, AgentToolDefinition>
 
-  constructor(@Inject(AGENT_TOOLS) tools: readonly AgentToolDefinition[]) {
+  constructor(@Inject(AGENT_TOOLS) tools: readonly AgentToolDefinition[], private readonly telemetry = new TelemetryService()) {
     const byName = new Map<string, AgentToolDefinition>()
     for (const tool of tools) {
       if (tool.approvalPolicy === 'explicit') {
@@ -90,6 +91,23 @@ export class AgentToolRegistry {
       }
     }
 
-    return tool.execute(validation.args, context)
+    const startedAt = performance.now()
+    const span = this.telemetry.startSpan('agent.tool.invoke', { runId: context.runId, toolName: tool.name })
+    try {
+      const result = await tool.execute(validation.args, context)
+      const attributes = { runId: context.runId, toolName: tool.name, status: result.isError ? 'failed' as const : 'succeeded' as const, errorCode: auditCode(result) }
+      this.telemetry.endSpan(span, result.isError ? 'error' : 'ok', attributes)
+      this.telemetry.recordToolInvocation(performance.now() - startedAt, attributes)
+      return result
+    } catch (error) {
+      const attributes = { runId: context.runId, toolName: tool.name, status: context.signal.aborted ? 'cancelled' as const : 'failed' as const, errorCode: error instanceof AgentToolExecutionError ? error.code : 'AGENT_TOOL_FAILED' }
+      this.telemetry.endSpan(span, 'error', attributes)
+      this.telemetry.recordToolInvocation(performance.now() - startedAt, attributes)
+      throw error
+    }
   }
+}
+
+function auditCode(result: AgentToolResult): string | undefined {
+  return typeof result.audit?.code === 'string' ? result.audit.code : undefined
 }

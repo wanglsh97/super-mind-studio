@@ -18,12 +18,13 @@ import type { ColumnsType } from 'antd/es/table'
 import { useEffect, useState } from 'react'
 
 import { AdminApiError, redirectToAdminLogin } from '@/utils/admin/admin-auth-client'
-import { loadRequestLogDetail, loadRequestLogs } from '@/utils/admin/admin-request-logs'
+import { loadRequestLogDetail, loadRequestLogs, loadRequestTrace } from '@/utils/admin/admin-request-logs'
 import type {
   RequestLogDetail,
   RequestLogFilters,
   RequestLogListItem,
   RequestLogPage,
+  AdminTrace,
 } from '@/utils/admin/admin-request-logs'
 
 const initialFilters: RequestLogFilters = { page: 1, pageSize: 20 }
@@ -47,6 +48,9 @@ export default function AdminRequestLogsPage() {
   const [detailOpen, setDetailOpen] = useState(false)
   const [detailLoading, setDetailLoading] = useState(false)
   const [detailError, setDetailError] = useState('')
+  const [trace, setTrace] = useState<AdminTrace | null>(null)
+  const [traceLoading, setTraceLoading] = useState(false)
+  const [traceError, setTraceError] = useState('')
 
   useEffect(() => {
     let active = true
@@ -102,6 +106,13 @@ export default function AdminRequestLogsPage() {
     } finally {
       setDetailLoading(false)
     }
+  }
+
+  async function openTrace(requestId: string) {
+    setTraceLoading(true); setTraceError(''); setTrace(null)
+    try { setTrace(await loadRequestTrace(requestId)) }
+    catch (caught) { setTraceError(caught instanceof Error ? caught.message : '调用链暂不可用') }
+    finally { setTraceLoading(false) }
   }
 
   function closeDetail() {
@@ -258,11 +269,32 @@ export default function AdminRequestLogsPage() {
         ) : detailError ? (
           <Alert type="error" showIcon title={detailError} />
         ) : detail ? (
-          <DetailContent detail={detail} />
+          <>
+            <DetailContent detail={detail} />
+            <div style={{ marginTop: 20 }}>
+              <Button onClick={() => void openTrace(detail.requestId)} loading={traceLoading}>查看调用链</Button>
+              {traceError ? <Alert type="warning" showIcon message={traceError} style={{ marginTop: 12 }} /> : null}
+              {trace ? <TraceContent trace={trace} /> : null}
+            </div>
+          </>
         ) : null}
       </Drawer>
     </div>
   )
+}
+
+function TraceContent({ trace }: { trace: AdminTrace }) {
+  const infrastructure = `基础设施：数据库 ${trace.infrastructure.databaseCalls} 次 · Redis ${trace.infrastructure.redisCalls} 次 · HTTP ${trace.infrastructure.httpCalls} 次`
+  if (trace.spans.length === 0) return <Alert type="info" showIcon message={`未记录 Agent 业务步骤。${infrastructure}`} style={{ marginTop: 12 }} />
+  return <div style={{ marginTop: 16 }}><Typography.Title level={5}>调用链{trace.traceId ? ` · ${trace.traceId}` : ''}</Typography.Title>
+    <Typography.Text type="secondary">{infrastructure}</Typography.Text>
+    <Table size="small" rowKey="spanId" pagination={false} dataSource={trace.spans} columns={[
+      { title: '步骤', dataIndex: 'name' },
+      { title: '耗时', dataIndex: 'durationMs', render: (value: number) => `${Math.round(value)} ms` },
+      { title: '状态', dataIndex: 'status', render: (value: string) => <Tag color={value === 'error' ? 'error' : value === 'ok' ? 'success' : 'default'}>{value}</Tag> },
+      { title: '受控元数据', dataIndex: 'attributes', render: (value: Record<string, unknown>) => Object.entries(value).map(([key, item]) => `${key}: ${item}`).join(' · ') || '—' },
+    ]} />
+  </div>
 }
 
 function DetailContent({ detail }: { detail: RequestLogDetail }) {

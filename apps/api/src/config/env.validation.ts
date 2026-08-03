@@ -50,6 +50,15 @@ const environmentSchema = z
       (value) => (value === '' ? undefined : value),
       z.string().url().optional(),
     ),
+    OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: z.preprocess(
+      (value) => (value === '' ? undefined : value),
+      z.string().url().optional(),
+    ),
+    OTEL_INGEST_TOKEN: optionalSecret,
+    TEMPO_QUERY_URL: z.preprocess(
+      (value) => (value === '' ? undefined : value),
+      z.string().url().optional(),
+    ),
     DATABASE_URL: z.string().min(1, 'DATABASE_URL 必填'),
     DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(50).default(10),
     REDIS_URL: z.string().min(1, 'REDIS_URL 必填'),
