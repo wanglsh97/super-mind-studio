@@ -129,7 +129,9 @@ if [ -n "$(git status --porcelain --untracked-files=normal)" ]; then
 fi
 
 compose() {
-  docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" "$@"
+  # 单机 ECS 磁盘空间有限，禁止 Compose 并行构建多个 Node 镜像，
+  # 避免 Next standalone 复制依赖时因 BuildKit 临时层耗尽空间。
+  COMPOSE_PARALLEL_LIMIT=1 docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" "$@"
 }
 
 compose config >/dev/null
