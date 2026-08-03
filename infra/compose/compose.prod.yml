@@ -168,7 +168,6 @@ services:
     networks:
       - frontend
       - backend
-      - backend
     read_only: true
     tmpfs:
       - /home/node:size=64m,mode=0700,uid=1000,gid=1000
