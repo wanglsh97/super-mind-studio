@@ -108,16 +108,19 @@ export function AgentUserQuestionCard({
   }
 
   return (
-    <section aria-label="Agent 需要你的回答" className="mx-auto w-full max-w-[58rem]">
-      <div className="max-h-[calc(100dvh-7rem)] overflow-y-auto overscroll-contain rounded-[1.4rem] border border-line bg-surface-card shadow-[0_8px_24px_rgb(15_23_42/0.06)] dark:border-line-soft dark:shadow-none">
-        <div className="px-4 pt-4 sm:px-5 sm:pt-5">
-          <div className="flex items-start justify-between gap-4">
+    <section
+      aria-label="Agent 需要你的回答"
+      className="mx-auto w-full max-w-[44rem] sm:w-[calc(100%-2rem)]"
+    >
+      <div className="max-h-[calc(100dvh-6rem)] overflow-y-auto overscroll-contain rounded-[1.125rem] border border-line bg-surface-card shadow-[0_6px_18px_rgb(15_23_42/0.05)] dark:border-line-soft dark:shadow-none">
+        <div className="px-3.5 pt-3.5 sm:px-4 sm:pt-4">
+          <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-xs font-medium text-ink-muted">
+              <p className="text-[0.6875rem] font-medium leading-4 text-ink-muted">
                 {item.header} · {index + 1} / {question.questions.length} ·{' '}
                 {item.multiSelect ? '可多选' : '单选'}
               </p>
-              <h2 className="mt-1.5 max-w-2xl text-base font-semibold leading-6 tracking-[-0.02em] text-ink dark:text-white sm:text-lg">
+              <h2 className="mt-1 max-w-2xl text-sm font-semibold leading-5 tracking-[-0.015em] text-ink dark:text-white sm:text-base">
                 {item.question}
               </h2>
             </div>
@@ -126,13 +129,13 @@ export function AgentUserQuestionCard({
               aria-label="跳过这组问题"
               disabled={submitting}
               onClick={() => void skip()}
-              className="grid size-8 shrink-0 place-items-center rounded-full text-ink-muted hover:bg-surface-muted hover:text-ink disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-brand-focus focus-visible:outline-offset-2"
+              className="grid size-7 shrink-0 place-items-center rounded-full text-ink-muted hover:bg-surface-muted hover:text-ink disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-brand-focus focus-visible:outline-offset-2"
             >
-              <XIcon aria-hidden className="size-5" />
+              <XIcon aria-hidden className="size-4" />
             </button>
           </div>
 
-          <div className="mt-3 space-y-0.5">
+          <div className="mt-2 space-y-px">
             {item.options.map((option, optionIndex) => {
               const active = selected.includes(option.id)
               return (
@@ -142,13 +145,13 @@ export function AgentUserQuestionCard({
                     aria-pressed={active}
                     onClick={() => selectOption(option.id)}
                     className={cn(
-                      'flex min-h-[3.75rem] w-full items-center gap-3 rounded-xl px-2 py-2 text-left hover:bg-surface-muted focus-visible:bg-surface-muted focus-visible:outline-none dark:hover:bg-white/[0.055] dark:focus-visible:bg-white/[0.055]',
+                      'flex min-h-[3.125rem] w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left hover:bg-surface-muted focus-visible:bg-surface-muted focus-visible:outline-none dark:hover:bg-white/[0.055] dark:focus-visible:bg-white/[0.055]',
                       active ? 'bg-surface-muted dark:bg-white/[0.055]' : 'bg-transparent',
                     )}
                   >
                     <span
                       className={cn(
-                        'grid size-7 shrink-0 place-items-center rounded-full text-xs font-medium tabular-nums',
+                        'grid size-6 shrink-0 place-items-center rounded-full text-[0.6875rem] font-medium tabular-nums',
                         active
                           ? 'bg-ink text-surface-card dark:bg-white dark:text-surface'
                           : 'bg-surface-inset text-ink-muted',
@@ -157,10 +160,10 @@ export function AgentUserQuestionCard({
                       {optionIndex + 1}
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block text-sm font-semibold leading-5 text-ink dark:text-white">
+                      <span className="block text-[0.8125rem] font-semibold leading-[1.125rem] text-ink dark:text-white">
                         {option.label}
                       </span>
-                      <span className="mt-0.5 block text-[0.7rem] leading-4 text-ink-muted sm:text-xs">
+                      <span className="mt-px block text-[0.6875rem] leading-4 text-ink-muted">
                         {option.description}
                       </span>
                     </span>
@@ -175,16 +178,16 @@ export function AgentUserQuestionCard({
           </div>
 
           {error || actionError ? (
-            <p role="alert" className="mt-3 text-sm text-danger">
+            <p role="alert" className="mt-2 text-xs text-danger">
               {error ?? actionError}
             </p>
           ) : null}
         </div>
 
-        <footer className="mt-2 flex flex-col gap-2 px-4 pb-4 sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:pb-5">
+        <footer className="mt-1.5 flex flex-col gap-1.5 px-3.5 pb-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-4 sm:pb-4">
           <div
             className={cn(
-              'flex min-h-10 min-w-0 flex-1 items-center gap-2.5 rounded-xl px-2',
+              'flex min-h-8 min-w-0 flex-1 items-center gap-2 rounded-lg px-2',
               customSelected[item.id] ? 'bg-surface-muted' : 'bg-transparent',
             )}
           >
@@ -194,13 +197,13 @@ export function AgentUserQuestionCard({
               aria-pressed={customSelected[item.id] === true}
               onClick={selectOther}
               className={cn(
-                'grid size-7 shrink-0 place-items-center rounded-full focus-visible:outline-2 focus-visible:outline-brand-focus focus-visible:outline-offset-2',
+                'grid size-6 shrink-0 place-items-center rounded-full focus-visible:outline-2 focus-visible:outline-brand-focus focus-visible:outline-offset-2',
                 customSelected[item.id]
                   ? 'bg-ink text-surface-card dark:bg-white dark:text-surface'
                   : 'bg-surface-inset text-ink-muted',
               )}
             >
-              <PenLineIcon aria-hidden className="size-3.5" />
+              <PenLineIcon aria-hidden className="size-3" />
             </button>
             <label htmlFor={`agent-question-other-${item.id}`} className="min-w-0 flex-1">
               <span className="sr-only">其他答案</span>
@@ -213,12 +216,12 @@ export function AgentUserQuestionCard({
                   setCustomText((current) => ({ ...current, [item.id]: event.target.value }))
                 }}
                 placeholder="其他，告诉 Agent 你的想法…"
-                className="w-full bg-transparent text-sm text-ink outline-none placeholder:text-ink-subtle dark:text-white"
+                className="w-full bg-transparent text-xs text-ink outline-none placeholder:text-ink-subtle dark:text-white"
               />
             </label>
           </div>
 
-          <div className="flex shrink-0 items-center justify-end gap-2">
+          <div className="flex shrink-0 items-center justify-end gap-1.5">
             {index > 0 ? (
               <button
                 type="button"
@@ -227,9 +230,9 @@ export function AgentUserQuestionCard({
                   setError(null)
                   setIndex((value) => value - 1)
                 }}
-                className="inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 text-sm font-medium text-ink-muted hover:bg-surface-muted hover:text-ink disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-brand-focus focus-visible:outline-offset-2"
+                className="inline-flex min-h-8 items-center gap-1 rounded-full px-2.5 text-xs font-medium text-ink-muted hover:bg-surface-muted hover:text-ink disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-brand-focus focus-visible:outline-offset-2"
               >
-                <ArrowLeftIcon aria-hidden className="size-4" />
+                <ArrowLeftIcon aria-hidden className="size-3.5" />
                 上一步
               </button>
             ) : null}
@@ -237,7 +240,7 @@ export function AgentUserQuestionCard({
               type="button"
               disabled={submitting}
               onClick={() => void skip()}
-              className="min-h-9 rounded-full border border-line px-4 text-sm font-medium text-ink hover:bg-surface-muted disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-brand-focus focus-visible:outline-offset-2 dark:text-white"
+              className="min-h-8 rounded-full border border-line px-3 text-xs font-medium text-ink hover:bg-surface-muted disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-brand-focus focus-visible:outline-offset-2 dark:text-white"
             >
               跳过
             </button>
@@ -245,7 +248,7 @@ export function AgentUserQuestionCard({
               type="button"
               disabled={!isCurrentValid || submitting}
               onClick={() => void next()}
-              className="min-h-9 rounded-full bg-ink px-5 text-sm font-semibold text-surface-card hover:opacity-85 disabled:bg-surface-inset disabled:text-ink-subtle disabled:opacity-100 focus-visible:outline-2 focus-visible:outline-brand-focus focus-visible:outline-offset-2 dark:bg-white dark:text-surface dark:disabled:bg-white/10 dark:disabled:text-ink-subtle"
+              className="min-h-8 rounded-full bg-ink px-4 text-xs font-semibold text-surface-card hover:opacity-85 disabled:bg-surface-inset disabled:text-ink-subtle disabled:opacity-100 focus-visible:outline-2 focus-visible:outline-brand-focus focus-visible:outline-offset-2 dark:bg-white dark:text-surface dark:disabled:bg-white/10 dark:disabled:text-ink-subtle"
             >
               {submitting ? '正在提交…' : isLast ? '提交' : '下一步'}
             </button>
