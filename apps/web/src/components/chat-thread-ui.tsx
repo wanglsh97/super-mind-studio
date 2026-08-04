@@ -194,7 +194,7 @@ export function AgentScrollToBottom() {
     <ThreadPrimitive.ScrollToBottom
       aria-label="滚动到底部"
       className={cn(
-        'absolute bottom-48 left-1/2 z-5 grid size-9 -translate-x-1/2 cursor-pointer place-items-center rounded-full border border-line bg-surface-card text-brand dark:bg-surface-muted dark:text-brand-light',
+        'absolute bottom-36 left-1/2 z-5 grid size-9 -translate-x-1/2 cursor-pointer place-items-center rounded-full border border-line bg-surface-card text-brand dark:bg-surface-muted dark:text-brand-light',
         focusRing,
       )}
     >
@@ -242,7 +242,7 @@ export function AgentComposerRoot({ children }: Readonly<{ children: ReactNode }
           if (trimmedText !== composerText) aui.composer().setText(trimmedText);
         }}
         className={cn(
-          'liquid-glass relative mx-auto w-full max-w-[58rem] rounded-2xl p-2.5 pb-3 transition-[border-color,box-shadow]',
+          'liquid-glass relative mx-auto w-full max-w-[44rem] rounded-[1.125rem] p-2 pb-2.5 transition-[border-color,box-shadow] sm:w-[calc(100%-2rem)]',
         )}
       >
         {children}
@@ -261,7 +261,7 @@ export function AgentComposerInput(
       maxLength={props.maxLength}
       disabled={props.disabled}
       placeholder={props.placeholder}
-      className="w-full max-h-40 min-h-12 resize-none bg-transparent px-2.5 py-2 text-sm leading-relaxed outline-none placeholder:text-ink-subtle"
+      className="max-h-32 min-h-10 w-full resize-none bg-transparent px-2 py-1.5 text-sm leading-6 outline-none placeholder:text-ink-subtle"
     />
   );
 }
@@ -272,7 +272,7 @@ export function AgentDictationTranscript() {
 
   return (
     <div
-      className="flex items-center gap-2 px-2.5 pb-1 text-xs text-brand"
+      className="flex items-center gap-2 px-2 pb-0.5 text-xs text-brand"
       role="status"
       aria-live="polite"
     >
@@ -284,7 +284,7 @@ export function AgentDictationTranscript() {
 }
 
 export function AgentComposerFooter({ children }: Readonly<{ children: ReactNode }>) {
-  return <div className="flex items-center justify-between gap-2 dark:border-line">{children}</div>;
+  return <div className="flex items-center justify-between gap-1.5 dark:border-line">{children}</div>;
 }
 
 export function AgentComposerActions({ children }: Readonly<{ children: ReactNode }>) {
@@ -321,7 +321,7 @@ export function AgentComposerAction({
 }
 
 export function AgentComposerSubmitGroup({ children }: Readonly<{ children: ReactNode }>) {
-  return <div className="flex min-w-0 items-center gap-1.5">{children}</div>;
+  return <div className="flex min-w-0 items-center gap-1">{children}</div>;
 }
 
 export function AgentDictationButton({
@@ -331,7 +331,7 @@ export function AgentDictationButton({
 }>) {
   const dictationActive = useAuiState(({ composer }) => composer.dictation !== undefined);
   const className = cn(
-    'grid size-9 shrink-0 place-items-center rounded-full text-ink-muted transition-[background,color,transform] hover:-translate-y-px hover:bg-brand-subtle hover:text-brand disabled:cursor-not-allowed disabled:opacity-40 disabled:transform-none',
+    'grid size-8 shrink-0 place-items-center rounded-full text-ink-muted transition-[background,color,transform] hover:-translate-y-px hover:bg-brand-subtle hover:text-brand disabled:cursor-not-allowed disabled:opacity-40 disabled:transform-none',
     focusRing,
   );
 
@@ -342,7 +342,7 @@ export function AgentDictationButton({
         aria-label="停止语音输入"
         title="停止语音输入"
       >
-        <span aria-hidden="true" className="size-3 rounded-[0.2rem] bg-current" />
+        <span aria-hidden="true" className="size-2.5 rounded-[0.2rem] bg-current" />
       </ComposerPrimitive.StopDictation>
     );
   }
@@ -357,7 +357,7 @@ export function AgentDictationButton({
       <svg
         aria-hidden="true"
         viewBox="0 0 20 20"
-        className="size-4 fill-none stroke-current stroke-1.8"
+        className="size-3.5 fill-none stroke-current stroke-1.8"
       >
         <rect x="7" y="2.5" width="6" height="9" rx="3" />
         <path d="M4.75 9.25a5.25 5.25 0 0 0 10.5 0M10 14.5v3M7 17.5h6" strokeLinecap="round" />
@@ -386,7 +386,7 @@ export function AgentSendButton({
       <ComposerPrimitive.Cancel
         className={cn(
           base,
-          'h-9 w-auto rounded-full px-3 text-[0.7rem] font-bold dark:bg-surface-inset dark:text-ink',
+          'h-8 w-auto rounded-full px-2.5 text-[0.68rem] font-bold dark:bg-surface-inset dark:text-ink',
         )}
         disabled={disabled}
         onClick={onClick}
@@ -397,7 +397,7 @@ export function AgentSendButton({
   }
   return (
     <ComposerPrimitive.Send
-      className={cn(base, 'size-9 shrink-0')}
+      className={cn(base, 'size-8 shrink-0')}
       disabled={disabled}
       aria-label="发送消息"
     >
@@ -405,7 +405,7 @@ export function AgentSendButton({
         <svg
           aria-hidden="true"
           viewBox="0 0 20 20"
-          className="size-5 fill-none stroke-current stroke-2"
+          className="size-4.5 fill-none stroke-current stroke-2"
         >
           <path d="M10 15V5m0 0L6 9m4-4 4 4" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
@@ -418,14 +418,14 @@ export function AgentSendButtonDisabled() {
   return (
     <button
       type="button"
-      className="grid size-9 shrink-0 place-items-center rounded-full bg-brand text-white opacity-40"
+      className="grid size-8 shrink-0 place-items-center rounded-full bg-brand text-white opacity-40"
       disabled
       aria-label="发送消息"
     >
       <svg
         aria-hidden="true"
         viewBox="0 0 20 20"
-        className="size-5 fill-none stroke-current stroke-2"
+        className="size-4.5 fill-none stroke-current stroke-2"
       >
         <path d="M10 15V5m0 0L6 9m4-4 4 4" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
@@ -435,7 +435,7 @@ export function AgentSendButtonDisabled() {
 
 export function AgentPrivacyNote() {
   return (
-    <p className="mx-auto mt-2 w-full max-w-[58rem] text-center text-[0.62rem] text-ink-subtle">
+    <p className="mx-auto mt-1.5 w-full max-w-[44rem] text-center text-[0.6rem] text-ink-subtle sm:w-[calc(100%-2rem)]">
       内容由 AI 生成，请仔细甄别
     </p>
   );
@@ -443,7 +443,7 @@ export function AgentPrivacyNote() {
 
 export function AgentComposerError({ message }: Readonly<{ message: string }>) {
   return (
-    <p role="alert" className="mx-2.5 mt-2 text-[0.7rem] text-danger">
+    <p role="alert" className="mx-2 mt-1.5 text-[0.68rem] text-danger">
       {message}
     </p>
   );
@@ -451,7 +451,7 @@ export function AgentComposerError({ message }: Readonly<{ message: string }>) {
 
 export function AgentActiveRunHint({ message }: Readonly<{ message: string }>) {
   return (
-    <p className="mx-auto mb-2 w-full max-w-[58rem] text-center text-[0.78rem] leading-snug text-warning dark:text-warning-light">
+    <p className="mx-auto mb-1.5 w-full max-w-[44rem] text-center text-[0.72rem] leading-snug text-warning dark:text-warning-light sm:w-[calc(100%-2rem)]">
       {message}
     </p>
   );
