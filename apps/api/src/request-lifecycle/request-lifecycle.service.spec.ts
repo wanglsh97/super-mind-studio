@@ -138,6 +138,34 @@ describe('RequestLifecycleService.start', () => {
     )
   })
 
+  it('escapes PostgreSQL-incompatible NUL characters in persisted JSON only', async () => {
+    const { create, service } = createService()
+    create.mockResolvedValue({ id: 'log-1', requestId, status: RequestStatus.PENDING, startedAt })
+    const nulInput: StartRequestLifecycleInput = {
+      ...input,
+      prompt: {
+        messages: [{ role: 'tool', content: '搜索结果前\u0000搜索结果后' }],
+      },
+      metadata: { nested: ['值\u0000尾'] },
+    }
+
+    await service.start(nulInput)
+
+    expect(create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          prompt: {
+            messages: [{ role: 'tool', content: '搜索结果前\\u0000搜索结果后' }],
+          },
+          metadata: { nested: ['值\\u0000尾'] },
+        }),
+      }),
+    )
+    expect(
+      (nulInput.prompt as { messages: Array<{ content: string }> }).messages[0]?.content,
+    ).toContain('\u0000')
+  })
+
   it('prevents provider invocation when the pending record cannot be created', async () => {
     jest.spyOn(Logger.prototype, 'error').mockImplementation()
     const { create, service } = createService()

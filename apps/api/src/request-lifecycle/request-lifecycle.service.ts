@@ -128,20 +128,22 @@ export class RequestLifecycleService {
   }
 
   async start(input: StartRequestLifecycleInput): Promise<StartedRequestLifecycle> {
+    const prompt = sanitizePostgresJson(input.prompt)
+    const metadata = input.metadata === undefined ? undefined : sanitizePostgresJson(input.metadata)
     try {
       const started = await this.prisma.requestLog.create({
         data: {
           userId: input.userId,
           requestId: input.requestId,
           capability: REQUEST_CAPABILITY_MAP[input.capability],
-          prompt: input.prompt,
+          prompt,
           modelAlias: input.modelAlias,
           stream: input.stream,
           status: RequestStatus.PENDING,
           ...(input.provider === undefined ? {} : { provider: input.provider }),
           ...(input.resolvedModel === undefined ? {} : { resolvedModel: input.resolvedModel }),
           ...(input.clientIp === undefined ? {} : { clientIp: input.clientIp }),
-          ...(input.metadata === undefined ? {} : { metadata: input.metadata }),
+          ...(metadata === undefined ? {} : { metadata }),
           ...(input.agentRunId === undefined ? {} : { agentRunId: input.agentRunId }),
         },
         select: {
@@ -162,7 +164,7 @@ export class RequestLifecycleService {
           provider: input.provider ?? null,
           resolvedModel: input.resolvedModel ?? null,
           stream: input.stream,
-          prompt: input.prompt,
+          prompt,
         },
         'Request lifecycle started',
       )
@@ -227,7 +229,10 @@ export class RequestLifecycleService {
             failoverReason: input.failover?.reason ?? null,
             errorCode: input.error?.code ?? null,
             errorMessage: input.error?.message ?? null,
-            errorDetails: input.error?.details ?? Prisma.DbNull,
+            errorDetails:
+              input.error?.details === undefined
+                ? Prisma.DbNull
+                : sanitizePostgresJson(input.error.details),
           },
         })
 
@@ -280,4 +285,21 @@ export class RequestLifecycleService {
       throw new RequestLifecycleFinishError(error)
     }
   }
+}
+
+/** PostgreSQL jsonb cannot represent U+0000 even when it arrived in valid JSON text. */
+function sanitizePostgresJson(value: Prisma.InputJsonValue): Prisma.InputJsonValue {
+  if (typeof value === 'string') return value.replaceAll('\u0000', '\\u0000')
+  if (Array.isArray(value)) {
+    return value.map((item) => (item === null ? null : sanitizePostgresJson(item)))
+  }
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, item]) => [
+        key,
+        item === null ? null : sanitizePostgresJson(item),
+      ]),
+    ) as Prisma.InputJsonObject
+  }
+  return value
 }
