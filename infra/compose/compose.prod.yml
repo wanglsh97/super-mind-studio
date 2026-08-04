@@ -200,7 +200,7 @@ services:
     logging: *bounded-logging
 
   postgres:
-    image: postgres:17-alpine
+    image: pgvector/pgvector:0.8.1-pg17
     restart: unless-stopped
     environment:
       POSTGRES_DB: '${POSTGRES_DB:?POSTGRES_DB is required}'

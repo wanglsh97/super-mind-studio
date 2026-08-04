@@ -2,7 +2,7 @@ name: super-mind-studio
 
 services:
   postgres:
-    image: postgres:17-alpine
+    image: pgvector/pgvector:0.8.1-pg17
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-aigateway}
       POSTGRES_USER: ${POSTGRES_USER:-aigateway}
