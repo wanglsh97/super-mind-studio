@@ -17,7 +17,10 @@ interface DiscoveredTool {
 export class McpToolDispatcher {
   private readonly handles = new Map<string, DiscoveredTool>()
 
-  constructor(@Inject(AGENT_MCP_REGISTRY) private readonly mcp: AgentMcpRegistry, private readonly telemetry = new TelemetryService()) {}
+  constructor(
+    @Inject(AGENT_MCP_REGISTRY) private readonly mcp: AgentMcpRegistry,
+    @Inject(TelemetryService) private readonly telemetry: TelemetryService = new TelemetryService(),
+  ) {}
 
   async discover(input: { query: string; serverIds?: string[]; context: AgentToolContext }) {
     const { runId, userId } = requiredScope(input.context)
