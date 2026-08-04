@@ -14,6 +14,7 @@ import type { AgentMessageRepository } from './agent-message.repository'
 import { AgentUserConcurrencyLimitError, type AgentRunRepository } from './agent-run.repository'
 import type { AgentRunService } from './agent-run.service'
 import type { AgentThreadRepository } from './agent-thread.repository'
+import type { AgentUserQuestionService } from './agent-user-question.service'
 import type { AgentExecutionSessionService } from './sandbox/agent-execution-session.service'
 import { AgentService } from './agent.service'
 
@@ -81,6 +82,10 @@ function setup() {
   const executionSessions = {
     destroyThread: jest.fn().mockResolvedValue(undefined),
   } as unknown as jest.Mocked<AgentExecutionSessionService>
+  const userQuestions = {
+    pendingForThread: jest.fn().mockResolvedValue(null),
+    cancelForRun: jest.fn().mockResolvedValue(undefined),
+  } as unknown as jest.Mocked<AgentUserQuestionService>
   const config = {
     get: jest.fn((_key: string, fallback: unknown) => fallback),
   } as unknown as ConfigService
@@ -93,6 +98,7 @@ function setup() {
     activeRunLock,
     contextSummaries,
     executionSessions,
+    userQuestions,
     config,
   )
   return {
@@ -103,6 +109,7 @@ function setup() {
     runService,
     activeRunLock,
     executionSessions,
+    userQuestions,
     service,
   }
 }
@@ -297,6 +304,26 @@ describe('AgentService', () => {
       estimated: true,
     })
     expect(thread.tokenUsage.totalTokens).toBeGreaterThan(0)
+  })
+
+  it('restores the durable pending question in thread detail', async () => {
+    const { service, threads, userQuestions } = setup()
+    ;(threads.findSummaryForOwner as jest.Mock).mockResolvedValue(threadRow())
+    ;(userQuestions.pendingForThread as jest.Mock).mockResolvedValue({
+      id: 'question-1',
+      runId: 'run-1',
+      status: 'pending',
+      questions: [],
+      createdAt: '2026-08-04T08:00:00.000Z',
+      settledAt: null,
+    })
+
+    await expect(service.getThread(user, 'thread-1')).resolves.toEqual(
+      expect.objectContaining({
+        pendingQuestion: expect.objectContaining({ id: 'question-1', status: 'pending' }),
+      }),
+    )
+    expect(userQuestions.pendingForThread).toHaveBeenCalledWith('thread-1', 'user-a')
   })
 
   it('rejects a second concurrent run in the same thread', async () => {
@@ -558,5 +585,35 @@ describe('AgentService', () => {
     ;(runs.findForOwner as jest.Mock).mockResolvedValue(null)
     await expect(service.cancelRun(user, 'run-x')).rejects.toBeInstanceOf(NotFoundException)
     expect(runService.cancel).not.toHaveBeenCalled()
+  })
+
+  it('settles a pending question before cancelling its owned run', async () => {
+    const { service, runs, runService, userQuestions } = setup()
+    ;(runs.findForOwner as jest.Mock).mockResolvedValue({
+      id: 'run-1',
+      threadId: 'thread-1',
+      status: 'WAITING_FOR_USER',
+      limitReason: null,
+      usageUnknown: true,
+      inputTokens: 0,
+      outputTokens: 0,
+      totalTokens: 0,
+      estimatedCostCny: null,
+      modelCallCount: 1,
+      toolCallCount: 1,
+      webFetchCount: 0,
+      lastSequence: 3,
+      createdAt: new Date('2026-08-04T08:00:00.000Z'),
+      startedAt: new Date('2026-08-04T08:00:00.000Z'),
+      completedAt: null,
+    })
+
+    await service.cancelRun(user, 'run-1')
+
+    expect(userQuestions.cancelForRun).toHaveBeenCalledWith('run-1')
+    expect(runService.cancel).toHaveBeenCalledWith('run-1')
+    expect(userQuestions.cancelForRun.mock.invocationCallOrder[0]).toBeLessThan(
+      runService.cancel.mock.invocationCallOrder[0] ?? Number.POSITIVE_INFINITY,
+    )
   })
 })

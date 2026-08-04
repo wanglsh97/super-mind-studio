@@ -36,6 +36,7 @@ import { createAgentRunToolRegistry } from './agent-run-tools'
 import { AGENT_MCP_REGISTRY, type AgentMcpRegistry } from './mcp/agent-mcp.registry'
 import { AgentRunEventBus } from './agent-run-event-bus'
 import { AgentRunProjector } from './agent-run.projector'
+import { AgentRunQuestionEventBridge } from './agent-run-question-event-bridge'
 import { AgentRunRepository } from './agent-run.repository'
 import { AgentPromptComposer } from './prompt/agent-prompt.composer'
 import { AgentExecutionSessionService } from './sandbox/agent-execution-session.service'
@@ -104,6 +105,8 @@ export class AgentRunService {
     @Inject(AgentExecutionSessionService)
     private readonly executionSessions: AgentExecutionSessionService,
     @Inject(AGENT_MCP_REGISTRY) private readonly mcp: AgentMcpRegistry,
+    @Inject(AgentRunQuestionEventBridge)
+    private readonly questionEventBridge: AgentRunQuestionEventBridge,
     @Inject(TelemetryService) private readonly telemetry: TelemetryService,
   ) {}
 
@@ -133,7 +136,10 @@ export class AgentRunService {
       throw error
     } finally {
       this.telemetry.recordAgentRunDuration(performance.now() - startedAt, {
-        capability: 'agent', provider: input.provider, model: input.modelId, status,
+        capability: 'agent',
+        provider: input.provider,
+        model: input.modelId,
+        status,
       })
     }
   }
@@ -144,14 +150,23 @@ export class AgentRunService {
     this.bus.open(input.runId)
 
     const projector = new AgentRunProjector(input.runId, () => randomUUID())
+    let persistQueue: Promise<void> = Promise.resolve()
     const persistAndPublish = async (
       events: ReturnType<AgentRunProjector['ingest']>,
     ): Promise<void> => {
-      // 必须先落库再广播：确保任何已投影到 SSE 的事件都已在 PostgreSQL 中可补读，
-      // 避免订阅者在“已广播未入库”窗口做游标补读时丢失事件、产生 sequence 间隙。
-      if (events.length > 0) await this.runs.appendEvents(input.runId, events)
-      for (const event of events) this.bus.publish(input.runId, event)
+      const operation = persistQueue.then(async () => {
+        // 必须先落库再广播：确保任何已投影到 SSE 的事件都已在 PostgreSQL 中可补读，
+        // 避免订阅者在“已广播未入库”窗口做游标补读时丢失事件、产生 sequence 间隙。
+        if (events.length > 0) await this.runs.appendEvents(input.runId, events)
+        for (const event of events) this.bus.publish(input.runId, event)
+      })
+      persistQueue = operation
+      await operation
     }
+    this.questionEventBridge.register(input.runId, {
+      flush: () => persistQueue,
+      advancePast: (sequence) => projector.advancePast(sequence),
+    })
 
     try {
       await this.runs.markStarted(input.runId)
@@ -434,6 +449,7 @@ export class AgentRunService {
       } catch (error) {
         this.logger.warn({ error, runId: input.runId }, 'Agent prompt rejected')
       }
+      await persistQueue
 
       const status = contextLimitError
         ? 'limit_reached'
@@ -468,6 +484,7 @@ export class AgentRunService {
         this.logger.error({ error, runId: input.runId }, 'Agent Thread sandbox release failed')
       })
       this.activeRuns.delete(input.runId)
+      this.questionEventBridge.unregister(input.runId)
       this.bus.close(input.runId)
       await this.activeRunLock.release(input.threadId, input.activeRunLockToken)
     }

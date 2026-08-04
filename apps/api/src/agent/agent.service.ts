@@ -37,6 +37,7 @@ import {
 import { AgentRunService } from './agent-run.service'
 import { deriveAgentThreadTitle } from './agent-title'
 import { AgentThreadRepository } from './agent-thread.repository'
+import { AgentUserQuestionService } from './agent-user-question.service'
 import {
   toContextSummary,
   toMessage,
@@ -63,6 +64,8 @@ export class AgentService {
     private readonly contextSummaries: AgentContextSummaryRepository,
     @Inject(AgentExecutionSessionService)
     private readonly executionSessions: AgentExecutionSessionService,
+    @Inject(AgentUserQuestionService)
+    private readonly userQuestions: AgentUserQuestionService,
     @Inject(ConfigService) private readonly config: ConfigService,
   ) {}
 
@@ -113,11 +116,12 @@ export class AgentService {
     const summary = await this.threads.findSummaryForOwner(threadId, user.id)
     if (!summary) throw new NotFoundException('Agent 会话不存在')
 
-    const [messages, activeRun, lastRun, contextSummary] = await Promise.all([
+    const [messages, activeRun, lastRun, contextSummary, pendingQuestion] = await Promise.all([
       this.messages.listForThread(threadId),
       this.runs.findActiveForThread(threadId),
       this.runs.findLatestForThread(threadId),
       this.contextSummaries.findForThread(threadId),
+      this.userQuestions.pendingForThread(threadId, user.id),
     ])
     const tokenEstimate = this.tokenEstimator.messages(
       messages.flatMap((message) => persistedMessageToAdapter(message)),
@@ -128,6 +132,7 @@ export class AgentService {
       ...toThreadSummary(summary),
       messages: messages.map(toMessage),
       activeRun: activeRun ? toRunSummary(activeRun) : null,
+      pendingQuestion,
       lastRun: lastRun ? toRunSummary(lastRun) : null,
       contextSummary: contextSummary ? toContextSummary(contextSummary) : null,
       tokenUsage: {
@@ -241,6 +246,7 @@ export class AgentService {
 
   async cancelRun(user: AuthenticatedUser, runId: string): Promise<AgentRunSummary> {
     const run = await this.assertRunOwner(user, runId)
+    await this.userQuestions.cancelForRun(runId)
     this.runService.cancel(runId)
     return toRunSummary(run)
   }

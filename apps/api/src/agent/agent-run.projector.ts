@@ -76,6 +76,16 @@ export class AgentRunProjector {
     return this.sequence - 1
   }
 
+  /**
+   * 持久问卷等 run 外部事件已占用 sequence 后推进本地游标，避免后续 Pi 事件复用同一序号。
+   */
+  advancePast(sequence: number): void {
+    if (!Number.isInteger(sequence) || sequence < 0) {
+      throw new Error(`Invalid external Agent event sequence: ${sequence}`)
+    }
+    this.sequence = Math.max(this.sequence, sequence + 1)
+  }
+
   /** run 开始事件（sequence 0）。 */
   start(): AgentStreamEvent[] {
     return [this.emit({ type: 'run-status', status: 'running' })]

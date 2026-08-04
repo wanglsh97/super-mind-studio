@@ -46,6 +46,15 @@ function drive(
 }
 
 describe('AgentRunProjector', () => {
+  it('continues after a durable user-question event without reusing its sequence', () => {
+    const projector = new AgentRunProjector('run-question', () => 'message-1')
+
+    expect(projector.start()[0]?.sequence).toBe(0)
+    projector.advancePast(1)
+
+    expect(projector.sandboxStatus({ status: 'creating' })[0]?.sequence).toBe(2)
+  })
+
   it('projects Sandbox creation and readiness as ordered replayable events', () => {
     const projector = new AgentRunProjector('run-sandbox', () => 'message-1')
     const events = [

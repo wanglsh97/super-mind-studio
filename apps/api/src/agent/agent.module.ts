@@ -22,10 +22,13 @@ import { McpToolDispatcher } from './mcp/mcp-dispatcher'
 import { AGENT_MEMORY_PROVIDER, EmptyAgentMemoryProvider } from './memory/agent-memory.provider'
 import { AgentRunEventBus } from './agent-run-event-bus'
 import { AgentRunRepository } from './agent-run.repository'
+import { AgentRunQuestionEventBridge } from './agent-run-question-event-bridge'
 import { AgentRunService } from './agent-run.service'
 import { AgentService } from './agent.service'
 import { AgentStartupCleanupService } from './agent-startup-cleanup.service'
 import { AgentThreadRepository } from './agent-thread.repository'
+import { AgentUserQuestionService } from './agent-user-question.service'
+import { AgentUserQuestionRepository } from './agent-user-question.repository'
 import { AgentPromptComposer } from './prompt/agent-prompt.composer'
 import { AgentExecutionSessionService } from './sandbox/agent-execution-session.service'
 import { OpenSandboxRuntime } from './sandbox/open-sandbox-runtime'
@@ -66,11 +69,13 @@ import { webFetchFixtureTool } from './tools/web-fetch/fixture.tool'
 import { webFetchTool } from './tools/web-fetch/tool'
 import { createWebSearchTool } from './tools/web-search/tool'
 import { createCallMcpTool, createDiscoverMcpToolsTool } from './tools/mcp-meta.tools'
+import { createAskUserQuestionTool } from './tools/ask-user-question.tool'
 
 export function resolveAgentTools(
   config: ConfigService,
   sessions: AgentExecutionSessionService,
   outputs: AgentOutputFileService,
+  questions?: AgentUserQuestionService,
   mcp?: McpToolDispatcher,
 ): readonly AgentToolDefinition[] {
   // CI/确定性 E2E 可显式启用 fixture；默认使用生产级联网 web_fetch。
@@ -93,6 +98,7 @@ export function resolveAgentTools(
   }
   return [
     ...tools,
+    ...(questions === undefined ? [] : [createAskUserQuestionTool(questions)]),
     createActivateSkillTool(sessions),
     createShellTool(sessions),
     createReadFileTool(sessions),
@@ -134,6 +140,9 @@ export function createSandboxRuntime(config: ConfigService): SandboxRuntimePort 
   providers: [
     AgentThreadRepository,
     AgentRunRepository,
+    AgentRunQuestionEventBridge,
+    AgentUserQuestionService,
+    AgentUserQuestionRepository,
     AgentMessageRepository,
     AgentModelInvocationRepository,
     AgentRunEventBus,
@@ -197,13 +206,21 @@ export function createSandboxRuntime(config: ConfigService): SandboxRuntimePort 
     { provide: AGENT_MEMORY_PROVIDER, useExisting: EmptyAgentMemoryProvider },
     {
       provide: AGENT_TOOLS,
-      inject: [ConfigService, AgentExecutionSessionService, AgentOutputFileService, McpToolDispatcher],
+      inject: [
+        ConfigService,
+        AgentExecutionSessionService,
+        AgentOutputFileService,
+        AgentUserQuestionService,
+        McpToolDispatcher,
+      ],
       useFactory: (
         config: ConfigService,
         sessions: AgentExecutionSessionService,
         outputs: AgentOutputFileService,
+        questions: AgentUserQuestionService,
         mcp: McpToolDispatcher,
-      ): readonly AgentToolDefinition[] => resolveAgentTools(config, sessions, outputs, mcp),
+      ): readonly AgentToolDefinition[] =>
+        resolveAgentTools(config, sessions, outputs, questions, mcp),
     },
     AgentToolRegistry,
   ],
