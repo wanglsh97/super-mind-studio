@@ -40,5 +40,10 @@ export function mergeThreadMessagesWithRunView(
 export function isResumableActiveRun(
   activeRun: AgentRunSummary | null | undefined,
 ): activeRun is AgentRunSummary {
-  return activeRun != null && (activeRun.status === 'running' || activeRun.status === 'cancelling')
+  return (
+    activeRun != null &&
+    (activeRun.status === 'running' ||
+      activeRun.status === 'cancelling' ||
+      activeRun.status === 'waiting_for_user')
+  )
 }

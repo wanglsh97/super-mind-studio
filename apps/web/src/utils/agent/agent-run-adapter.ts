@@ -29,6 +29,7 @@ export interface AgentRunAdapterContext {
   onContextCompressed?: (event: Extract<AgentStreamEvent, { type: 'context-compressed' }>) => void
   onSandboxStatus?: (status: AgentSandboxStatus, sandboxId?: string) => void
   onRunProgressChange?: (stage: AgentRunProgressStage | null) => void
+  onUserQuestion?: (question: Extract<AgentStreamEvent, { type: 'user-question-asked' }>['question'] | null) => void
 }
 
 export type AgentRunProgressStage =
@@ -111,6 +112,8 @@ export function createAgentRunAdapter(
         })) {
           if (event.type === 'context-budget') context.onContextBudget?.(event)
           if (event.type === 'context-compressed') context.onContextCompressed?.(event)
+          if (event.type === 'user-question-asked') context.onUserQuestion?.(event.question)
+          if (event.type === 'user-question-answered' || event.type === 'user-question-skipped') context.onUserQuestion?.(null)
           if (event.type === 'sandbox-status') {
             context.onSandboxStatus?.(event.status, event.sandboxId)
             context.onRunProgressChange?.(

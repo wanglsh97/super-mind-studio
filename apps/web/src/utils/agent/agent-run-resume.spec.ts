@@ -102,5 +102,29 @@ describe('agent run resume helpers', () => {
       true,
     )
     assert.equal(isResumableActiveRun(null), false)
+
+    assert.equal(
+      isResumableActiveRun({
+        id: 'waiting-run',
+        threadId: 't',
+        status: 'waiting_for_user',
+        limitReason: null,
+        usage: {
+          inputTokens: null,
+          outputTokens: null,
+          totalTokens: null,
+          usageUnknown: true,
+          estimatedCostCny: null,
+          modelCalls: 1,
+          toolCalls: 1,
+          webFetchCalls: 0,
+        },
+        lastSequence: 2,
+        createdAt: '',
+        startedAt: null,
+        completedAt: null,
+      }),
+      true,
+    )
   })
 })

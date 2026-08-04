@@ -158,6 +158,7 @@ describe('reduceAgentEvents', () => {
   it('classifies active statuses', () => {
     assert.equal(isActiveStatus('running'), true)
     assert.equal(isActiveStatus('cancelling'), true)
+    assert.equal(isActiveStatus('waiting_for_user'), true)
     assert.equal(isActiveStatus('succeeded'), false)
     assert.equal(isActiveStatus('idle'), false)
   })

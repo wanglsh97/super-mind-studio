@@ -160,5 +160,5 @@ function upsertAssistantPart(
 }
 
 export function isActiveStatus(status: AgentRunStatus | 'idle'): boolean {
-  return status === 'running' || status === 'cancelling'
+  return status === 'running' || status === 'cancelling' || status === 'waiting_for_user'
 }

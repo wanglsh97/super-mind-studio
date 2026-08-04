@@ -58,4 +58,11 @@ describe('Agent active runs by Thread', () => {
       run('run-b', 'thread-b'),
     ])
   })
+
+  it('keeps a run active while it is waiting for a user answer', () => {
+    const waiting = run('run-waiting', 'thread-a', 'waiting_for_user')
+
+    assert.deepEqual(upsertActiveRun([], waiting), [waiting])
+    assert.equal(activeRunForThread([waiting], 'thread-a')?.id, 'run-waiting')
+  })
 })

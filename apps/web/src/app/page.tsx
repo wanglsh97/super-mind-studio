@@ -9,6 +9,7 @@ import type {
   AgentStreamEvent,
   AgentThread,
   AgentThreadSandbox,
+  AgentUserQuestion,
   TextModelAlias,
   TextModelId,
 } from '@supermind/sdk';
@@ -28,6 +29,7 @@ import {
 import { Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
 import { AgentSkillSlashPicker } from '@/components/agent-skill-slash-picker';
+import { AgentUserQuestionCard } from '@/components/agent-user-question-card';
 import ShimmerText from '@/components/shimmer-text';
 import {
   AgentActiveRunHint,
@@ -84,10 +86,6 @@ import { activeRunForThread } from '@/utils/agent/agent-active-runs';
 import { initialAgentRunViewState } from '@/utils/agent/agent-run-reducer';
 import { threadTokenUsagePercentage } from '@/utils/agent/agent-thread-token-usage';
 import {
-  resolveAgentToolActivityState,
-  type AgentToolActivityState,
-} from '@/utils/agent/agent-tool-activity';
-import {
   parseNamespacedMcpToolName,
   summarizeAgentMcpStatuses,
 } from '@/utils/agent/agent-mcp-status';
@@ -139,6 +137,7 @@ function AgentConsole() {
   const [mcpLoadState, setMcpLoadState] = useState<'loading' | 'ready' | 'failed'>('loading');
   const [sandboxTelemetry, setSandboxTelemetry] = useState<SandboxTelemetry>({ status: 'idle' });
   const [runProgress, setRunProgress] = useState<AgentRunProgressStage | null>(null);
+  const [pendingQuestion, setPendingQuestion] = useState<AgentUserQuestion | null>(null);
 
   const skipHydrationRef = useRef(false);
   const contextRef = useRef({
@@ -154,6 +153,7 @@ function AgentConsole() {
     ) => void,
     onSandboxStatus: (() => undefined) as (status: AgentSandboxStatus, sandboxId?: string) => void,
     onRunProgressChange: (() => undefined) as (stage: AgentRunProgressStage | null) => void,
+    onUserQuestion: (() => undefined) as (question: AgentUserQuestion | null) => void,
   });
 
   contextRef.current.threadId = activeThreadId;
@@ -235,6 +235,7 @@ function AgentConsole() {
     });
   };
   contextRef.current.onRunProgressChange = setRunProgress;
+  contextRef.current.onUserQuestion = setPendingQuestion;
 
   const loadSkillCandidates = () => {
     setSkillLoadState('loading');
@@ -344,6 +345,7 @@ function AgentConsole() {
           })
         }
         onSandboxSnapshot={(sandbox) => setSandboxTelemetry(toSandboxTelemetry(sandbox))}
+        onUserQuestion={setPendingQuestion}
       />
       <AgentPageShell>
         <AgentConsolePanel label="智能体">
@@ -419,6 +421,20 @@ function AgentConsole() {
                     )
                   }
                 </ThreadPrimitive.Messages>
+                {pendingQuestion ? (
+                  <AgentUserQuestionCard
+                    key={pendingQuestion.id}
+                    question={pendingQuestion}
+                    onAnswer={async (input) => {
+                      await client.agent.questions.answer(pendingQuestion.id, input);
+                      setPendingQuestion(null);
+                    }}
+                    onSkip={async () => {
+                      await client.agent.questions.skip(pendingQuestion.id);
+                      setPendingQuestion(null);
+                    }}
+                  />
+                ) : null}
                 <AgentContextTimeline events={compressionEvents} summary={contextSummary} />
               </AgentThreadViewport>
             </div>
@@ -890,6 +906,7 @@ function ThreadHydrator({
   onResetCompressionEvents,
   onSandboxStatus,
   onSandboxSnapshot,
+  onUserQuestion,
 }: {
   skipHydrationRef: { current: boolean };
   onTokenUsage: (usage: AgentThread['tokenUsage'] | null) => void;
@@ -898,6 +915,7 @@ function ThreadHydrator({
   onResetCompressionEvents: () => void;
   onSandboxStatus: (status: AgentSandboxStatus, sandboxId?: string) => void;
   onSandboxSnapshot: (sandbox: AgentThreadSandbox | null) => void;
+  onUserQuestion: (question: AgentUserQuestion | null) => void;
 }) {
   const api = useAui();
   const isLocalRunRunning = useAuiState(({ thread }) => thread.isRunning);
@@ -921,6 +939,7 @@ function ThreadHydrator({
 
     let cancelled = false;
     const resumeAbort = new AbortController();
+    onUserQuestion(null);
 
     void (async () => {
       try {
@@ -932,6 +951,7 @@ function ThreadHydrator({
           onContextSummary(null);
           onResetCompressionEvents();
           onSandboxSnapshot(null);
+          onUserQuestion(null);
           return;
         }
         const thread = await client.agent.threads.get(activeThreadId);
@@ -940,12 +960,17 @@ function ThreadHydrator({
         onContextSummary(thread.contextSummary);
         onTokenUsage(thread.tokenUsage);
         onResetCompressionEvents();
+        onUserQuestion(thread.pendingQuestion);
 
         if (isResumableActiveRun(thread.activeRun)) {
           onSandboxStatus('creating');
           upsertActiveRun(thread.activeRun);
           setInterruptedNotice(null);
-          setResumeNotice('运行仍在进行，正在按事件游标恢复…');
+          setResumeNotice(
+            thread.activeRun.status === 'waiting_for_user'
+              ? 'Agent 正在等待你的回答。'
+              : '运行仍在进行，正在按事件游标恢复…',
+          );
           if (!resetThreadIfIdle(api.thread(), agentMessagesToThreadMessages(thread.messages))) {
             return;
           }
@@ -961,6 +986,10 @@ function ThreadHydrator({
             if (cancelled) return;
             view = foldEventsFromCursor([event], afterSequence, view);
             if (event.type === 'context-compressed') onCompressionEvent(event);
+            if (event.type === 'user-question-asked') onUserQuestion(event.question);
+            if (event.type === 'user-question-answered' || event.type === 'user-question-skipped') {
+              onUserQuestion(null);
+            }
             if (event.type === 'sandbox-status') {
               sandboxFailed = event.status === 'failed';
               if (event.sandboxId) sandboxId = event.sandboxId;
@@ -988,6 +1017,7 @@ function ThreadHydrator({
                 });
               }
               setResumeNotice(null);
+              onUserQuestion(null);
               removeActiveRun(activeThreadId);
               void refreshThreads().catch(() => undefined);
               return;
@@ -998,6 +1028,7 @@ function ThreadHydrator({
 
         const interrupted = thread.lastRun?.status === 'interrupted';
         setResumeNotice(null);
+        onUserQuestion(null);
         setInterruptedNotice(
           interrupted ? '上次运行因服务重启中断，未自动重放模型或工具。可继续发送新任务。' : null,
         );
@@ -1331,7 +1362,6 @@ function SandboxToolActivityCard({
   detail,
   result,
   running,
-  isError,
 }: {
   toolName: 'shell' | 'read_file' | 'write_file' | 'export_file';
   subject?: string | undefined;
@@ -1340,12 +1370,6 @@ function SandboxToolActivityCard({
   running: boolean;
   isError: boolean;
 }) {
-  const state = resolveAgentToolActivityState({
-    running,
-    status: result?.status,
-    isError,
-    audit: result?.audit,
-  });
   const exitCode = typeof result?.audit?.exitCode === 'number' ? result.audit.exitCode : undefined;
   const size = typeof result?.audit?.size === 'number' ? result.audit.size : undefined;
   const label = toolCallLabel(toolName);
@@ -1386,7 +1410,6 @@ function McpToolActivityCard({
   args,
   result,
   running,
-  isError,
 }: {
   serverId: string;
   remoteToolName: string;
@@ -1395,12 +1418,6 @@ function McpToolActivityCard({
   running: boolean;
   isError: boolean;
 }) {
-  const state = resolveAgentToolActivityState({
-    running,
-    status: result?.status,
-    isError,
-    audit: result?.audit,
-  });
   const label = toolCallLabel(remoteToolName);
   const [open, setOpen] = useState(false);
 
@@ -1452,14 +1469,6 @@ function ToolExecutionResult({ result }: Readonly<{ result?: SandboxToolResult |
 function toolCallLabel(toolName: string): string {
   return `ToolCall · ${toolName}`;
 }
-
-// function toolActivityTextClassName(state: AgentToolActivityState): string {
-//   if (state === 'loading' || state === 'running') return 'text-brand';
-//   if (state === 'success') return 'text-success';
-//   if (state === 'failed') return 'text-danger';
-//   if (state === 'limit') return 'text-warning';
-//   return 'text-ink-subtle';
-// }
 
 function AgentMessageMetadata() {
   const custom = useAuiState(({ message }) => message.metadata.custom) as AgentRunMetadataType;

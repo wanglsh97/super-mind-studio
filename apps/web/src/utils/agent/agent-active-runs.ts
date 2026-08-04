@@ -12,7 +12,11 @@ export function upsertActiveRun(
   runs: readonly AgentRunSummary[],
   run: AgentRunSummary,
 ): AgentRunSummary[] {
-  if (run.status !== 'running' && run.status !== 'cancelling') {
+  if (
+    run.status !== 'running' &&
+    run.status !== 'cancelling' &&
+    run.status !== 'waiting_for_user'
+  ) {
     return removeActiveRun(runs, run.threadId)
   }
   return [run, ...runs.filter((current) => current.threadId !== run.threadId)]
