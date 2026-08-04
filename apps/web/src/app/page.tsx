@@ -138,8 +138,10 @@ function AgentConsole() {
   const [sandboxTelemetry, setSandboxTelemetry] = useState<SandboxTelemetry>({ status: 'idle' });
   const [runProgress, setRunProgress] = useState<AgentRunProgressStage | null>(null);
   const [pendingQuestion, setPendingQuestion] = useState<AgentUserQuestion | null>(null);
+  const [questionActionError, setQuestionActionError] = useState<string | null>(null);
 
   const skipHydrationRef = useRef(false);
+  const dismissedQuestionIdsRef = useRef(new Set<string>());
   const contextRef = useRef({
     threadId: activeThreadId as string | null,
     model: selectedModel,
@@ -235,7 +237,11 @@ function AgentConsole() {
     });
   };
   contextRef.current.onRunProgressChange = setRunProgress;
-  contextRef.current.onUserQuestion = setPendingQuestion;
+  contextRef.current.onUserQuestion = (question) => {
+    if (question && dismissedQuestionIdsRef.current.has(question.id)) return;
+    setQuestionActionError(null);
+    setPendingQuestion(question);
+  };
 
   const loadSkillCandidates = () => {
     setSkillLoadState('loading');
@@ -430,13 +436,41 @@ function AgentConsole() {
                 <AgentUserQuestionCard
                   key={pendingQuestion.id}
                   question={pendingQuestion}
+                  actionError={questionActionError}
+                  onClearActionError={() => setQuestionActionError(null)}
                   onAnswer={async (input) => {
-                    await client.agent.questions.answer(pendingQuestion.id, input);
+                    const submittedQuestion = pendingQuestion;
+                    const submittedThreadId = activeThreadId;
+                    dismissedQuestionIdsRef.current.add(submittedQuestion.id);
+                    setQuestionActionError(null);
                     setPendingQuestion(null);
+                    try {
+                      await client.agent.questions.answer(submittedQuestion.id, input);
+                    } catch (cause) {
+                      dismissedQuestionIdsRef.current.delete(submittedQuestion.id);
+                      if (contextRef.current.threadId !== submittedThreadId) return;
+                      setQuestionActionError(
+                        toQuestionActionError(cause, '回答提交失败，请检查后重试。'),
+                      );
+                      setPendingQuestion((current) => current ?? submittedQuestion);
+                    }
                   }}
                   onSkip={async () => {
-                    await client.agent.questions.skip(pendingQuestion.id);
+                    const skippedQuestion = pendingQuestion;
+                    const skippedThreadId = activeThreadId;
+                    dismissedQuestionIdsRef.current.add(skippedQuestion.id);
+                    setQuestionActionError(null);
                     setPendingQuestion(null);
+                    try {
+                      await client.agent.questions.skip(skippedQuestion.id);
+                    } catch (cause) {
+                      dismissedQuestionIdsRef.current.delete(skippedQuestion.id);
+                      if (contextRef.current.threadId !== skippedThreadId) return;
+                      setQuestionActionError(
+                        toQuestionActionError(cause, '暂时无法跳过，请稍后重试。'),
+                      );
+                      setPendingQuestion((current) => current ?? skippedQuestion);
+                    }
                   }}
                 />
               ) : (
@@ -903,6 +937,10 @@ function toSandboxTelemetry(sandbox: AgentThreadSandbox | null): SandboxTelemetr
     return { status: 'standby', sandboxId: sandbox.id };
   }
   return { status: sandbox.status, sandboxId: sandbox.id };
+}
+
+function toQuestionActionError(cause: unknown, fallback: string): string {
+  return cause instanceof Error && cause.message ? cause.message : fallback;
 }
 
 function ThreadHydrator({

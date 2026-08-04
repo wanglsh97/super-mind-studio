@@ -15,10 +15,14 @@ import { cn } from '@/utils/cn'
 
 export function AgentUserQuestionCard({
   question,
+  actionError,
+  onClearActionError,
   onAnswer,
   onSkip,
 }: Readonly<{
   question: AgentUserQuestion
+  actionError?: string | null
+  onClearActionError?: () => void
   onAnswer: (input: AnswerAgentUserQuestionRequest) => Promise<void>
   onSkip: () => Promise<void>
 }>) {
@@ -48,8 +52,13 @@ export function AgentUserQuestionCard({
   const isLast = index === question.questions.length - 1
   const isCurrentValid = answered[index] === true
 
-  const selectOption = (optionId: string) => {
+  const clearError = () => {
     setError(null)
+    onClearActionError?.()
+  }
+
+  const selectOption = (optionId: string) => {
+    clearError()
     setCustomSelected((current) => ({ ...current, [item.id]: false }))
     setSelections((current) => {
       const previous = current[item.id] ?? []
@@ -63,7 +72,7 @@ export function AgentUserQuestionCard({
   }
 
   const selectOther = () => {
-    setError(null)
+    clearError()
     setSelections((current) => ({ ...current, [item.id]: [] }))
     setCustomSelected((current) => ({ ...current, [item.id]: true }))
   }
@@ -75,7 +84,7 @@ export function AgentUserQuestionCard({
       return
     }
     setSubmitting(true)
-    setError(null)
+    clearError()
     try {
       await onAnswer(answer)
     } catch (cause) {
@@ -88,7 +97,7 @@ export function AgentUserQuestionCard({
   const skip = async () => {
     if (submitting) return
     setSubmitting(true)
-    setError(null)
+    clearError()
     try {
       await onSkip()
     } catch (cause) {
@@ -165,9 +174,9 @@ export function AgentUserQuestionCard({
             })}
           </div>
 
-          {error ? (
+          {error || actionError ? (
             <p role="alert" className="mt-3 text-sm text-danger">
-              {error}
+              {error ?? actionError}
             </p>
           ) : null}
         </div>

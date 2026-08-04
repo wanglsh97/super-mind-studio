@@ -29,6 +29,14 @@ The user interface SHALL always provide an Other custom-answer path. While a pen
 - **WHEN** the batch is answered, skipped, cancelled, or otherwise invalidated
 - **THEN** the question panel is removed and the Composer is restored
 
+#### Scenario: Settlement immediately releases the question panel
+- **GIVEN** the owner has completed a pending question batch
+- **WHEN** the owner submits answers or selects Skip
+- **THEN** the Web application immediately removes the question panel without waiting for the settlement response or next model turn
+- **AND** a delayed replay of the same `user-question-asked` event does not restore that dismissed panel
+- **WHEN** the settlement request fails
+- **THEN** the original panel is restored with a retryable error
+
 #### Scenario: User submits complete answers
 - **GIVEN** the authenticated run owner completes every question in a pending batch
 - **WHEN** the answer request is submitted
