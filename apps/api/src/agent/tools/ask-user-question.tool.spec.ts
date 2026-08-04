@@ -1,4 +1,4 @@
-import { ASK_USER_QUESTION_DESCRIPTION, createAskUserQuestionTool } from './ask-user-question.tool'
+import { createAskUserQuestionTool } from './ask-user-question.tool'
 
 describe('ask_user_question tool description', () => {
   const tool = createAskUserQuestionTool({
@@ -6,7 +6,6 @@ describe('ask_user_question tool description', () => {
   })
 
   it('explains the main situations where the model should ask the user', () => {
-    expect(tool.description).toBe(ASK_USER_QUESTION_DESCRIPTION)
     expect(tool.description).toContain('Gather user preferences or requirements')
     expect(tool.description).toContain('Clarify ambiguous instructions')
     expect(tool.description).toContain('decisions on implementation choices')

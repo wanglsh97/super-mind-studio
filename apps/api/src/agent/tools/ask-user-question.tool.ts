@@ -2,21 +2,6 @@ import { AgentToolExecutionError } from './agent-tool'
 
 import type { AgentToolDefinition } from './agent-tool'
 
-export const ASK_USER_QUESTION_DESCRIPTION = [
-  'Use this tool when you need to ask the user structured questions during execution.',
-  'This allows you to:',
-  '1. Gather user preferences or requirements.',
-  '2. Clarify ambiguous instructions.',
-  '3. Get decisions on implementation choices as you work.',
-  '4. Offer choices to the user about what direction to take.',
-  '',
-  'Usage notes:',
-  '- Users can always select "Other" to provide custom text input, so do not add an "Other" option yourself.',
-  '- Set multi_select to true when the user may select more than one answer.',
-  '- If you recommend a specific option, put it first and append "(Recommended)" to its label.',
-  '- Ask one to four questions at a time, then wait for the user to answer or skip before continuing.',
-].join('\n')
-
 /**
  * 内置结构化提问工具。持久化、SSE 与用户回答只作为该工具 await 的内部通道；
  * 模型侧始终只看到一个普通的成功 tool result。
@@ -83,7 +68,18 @@ export function createAskUserQuestionTool(
   return {
     name: 'ask_user_question',
     label: '询问用户',
-    description: ASK_USER_QUESTION_DESCRIPTION,
+    description: `Use this tool when you need to ask the user structured questions during execution.
+This allows you to:
+1. Gather user preferences or requirements.
+2. Clarify ambiguous instructions.
+3. Get decisions on implementation choices as you work.
+4. Offer choices to the user about what direction to take.
+
+Usage notes:
+- Users can always select "Other" to provide custom text input, so do not add an "Other" option yourself.
+- Set multi_select to true when the user may select more than one answer.
+- If you recommend a specific option, put it first and append "(Recommended)" to its label.
+- Ask one to four questions at a time, then wait for the user to answer or skip before continuing.`,
     riskLevel: 'read',
     approvalPolicy: 'none',
     parameters: ASK_USER_QUESTION_PARAMETERS,
