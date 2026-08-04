@@ -38,6 +38,7 @@
 - [x] 3.8 在 Agent system prompt 和 tool result envelope 中标记网页内容为不可信数据，添加 Prompt Injection fixture 以验证工具白名单和网络限制无法被内容绕过
 - [ ] 3.9 持久化限长工具结果与 requested/final URL、状态、类型、字节、耗时、截断和错误审计，验证 Pino/数据库均不记录敏感响应头或凭证
 - [ ] 3.10 完善 `/agent` tool card，实时展示目标 URL、running/succeeded/failed/cancelled、HTTP 状态和简短摘要，并验证消毒和窄屏布局
+- [x] 3.10a 将 reasoning、中间进度文本与 tool call 聚合为单一思考模块，验证运行中默认展开、终态自动收起及手动重开
 - [ ] 3.11 执行 `web_fetch` SSRF 安全测试、内容抽取单测、工具集成测试、Agent E2E、typecheck、lint 和 build，全套测试不得依赖公网
 
 ## 4. 运行预算、计费与真实模型

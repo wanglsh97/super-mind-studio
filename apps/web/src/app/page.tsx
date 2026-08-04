@@ -42,7 +42,6 @@ import {
   AgentConsolePanel,
   AgentDictationButton,
   AgentDictationTranscript,
-  AgentDisclosureChevron,
   AgentEmptyState,
   AgentInterruptedBanner,
   AgentPageShell,
@@ -76,6 +75,10 @@ import {
   type AgentRunProgressStage,
 } from '@/utils/agent/agent-run-adapter';
 import { shouldStartNewThreadOnModelChange } from '@/utils/agent/agent-model-policy';
+import {
+  AGENT_TOOL_ACTIVITY_LABELS,
+  resolveAgentToolActivityState,
+} from '@/utils/agent/agent-tool-activity';
 import { resetThreadIfIdle } from '@/utils/agent/agent-thread-hydration';
 import {
   foldEventsFromCursor,
@@ -413,13 +416,7 @@ function AgentConsole() {
                           if (part.type === 'text')
                             return <AssistantMarkdown>{part.text ?? ''}</AssistantMarkdown>;
                           if (part.type === 'reasoning') {
-                            return (
-                              <AgentReasoning
-                                title="Reasoning"
-                                text={part.text ?? ''}
-                                running={part.status?.type === 'running'}
-                              />
-                            );
+                            return <AgentReasoning text={part.text ?? ''} />;
                           }
                           return null;
                         }}
@@ -1407,6 +1404,7 @@ function SandboxToolActivityCard({
   detail,
   result,
   running,
+  isError,
 }: {
   toolName: 'shell' | 'read_file' | 'write_file' | 'export_file';
   subject?: string | undefined;
@@ -1418,34 +1416,37 @@ function SandboxToolActivityCard({
   const exitCode = typeof result?.audit?.exitCode === 'number' ? result.audit.exitCode : undefined;
   const size = typeof result?.audit?.size === 'number' ? result.audit.size : undefined;
   const label = toolCallLabel(toolName);
-  const [open, setOpen] = useState(false);
+  const activityState = resolveAgentToolActivityState({
+    running,
+    status: result?.status,
+    isError,
+    audit: result?.audit,
+  });
+  const statusLabel = AGENT_TOOL_ACTIVITY_LABELS[activityState];
+  const hasDetails = Boolean(subject || detail || result);
 
   return (
-    <details
-      className="group text-[0.97rem] leading-7 text-ink"
-      open={open}
-      onToggle={(event) => setOpen(event.currentTarget.open)}
-    >
-      <summary className="flex cursor-pointer list-none items-center py-1.5 [&::-webkit-details-marker]:hidden">
-        <span className="flex min-w-0 flex-wrap items-center gap-2">
-          <span className="font-sans font-normal">
-            {running ? <ShimmerText>{label}</ShimmerText> : label}
-          </span>
-          {exitCode !== undefined ? <span className="font-sans">exit {exitCode}</span> : null}
-          {size !== undefined ? <span className="font-sans">{size} B</span> : null}
+    <div className="py-1 text-[0.9rem] leading-6 text-ink">
+      <div className="flex min-w-0 flex-wrap items-center gap-2">
+        <span className="font-sans font-normal">
+          {running ? <ShimmerText>{label}</ShimmerText> : label}
         </span>
-        <AgentDisclosureChevron />
-      </summary>
-      <div className="mt-1.5 space-y-1 border-l border-current/15 pl-3">
-        {subject ? (
-          <code className="block max-h-24 overflow-auto whitespace-pre-wrap break-all font-sans text-inherit">
-            {subject}
-          </code>
-        ) : null}
-        {detail ? <p className="font-sans">{detail}</p> : null}
-        <ToolExecutionResult result={result} />
+        <span className="font-sans text-[0.78rem] opacity-70">{statusLabel}</span>
+        {exitCode !== undefined ? <span className="font-sans">exit {exitCode}</span> : null}
+        {size !== undefined ? <span className="font-sans">{size} B</span> : null}
       </div>
-    </details>
+      {hasDetails ? (
+        <div className="mt-1.5 space-y-1">
+          {subject ? (
+            <code className="block max-h-24 overflow-auto whitespace-pre-wrap break-all font-sans text-inherit">
+              {subject}
+            </code>
+          ) : null}
+          {detail ? <p className="font-sans">{detail}</p> : null}
+          <ToolExecutionResult result={result} />
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -1455,6 +1456,7 @@ function McpToolActivityCard({
   args,
   result,
   running,
+  isError,
 }: {
   serverId: string;
   remoteToolName: string;
@@ -1464,30 +1466,30 @@ function McpToolActivityCard({
   isError: boolean;
 }) {
   const label = toolCallLabel(remoteToolName);
-  const [open, setOpen] = useState(false);
+  const activityState = resolveAgentToolActivityState({
+    running,
+    status: result?.status,
+    isError,
+    audit: result?.audit,
+  });
 
   return (
-    <details
-      data-mcp-server-id={serverId}
-      className="group text-[0.97rem] leading-7 text-ink"
-      open={open}
-      onToggle={(event) => setOpen(event.currentTarget.open)}
-    >
-      <summary className="flex cursor-pointer list-none items-center py-1.5 [&::-webkit-details-marker]:hidden">
-        <span className="flex min-w-0 flex-wrap items-center gap-2">
-          <span className="font-sans font-normal">
-            {running ? <ShimmerText>{label}</ShimmerText> : label}
-          </span>
+    <div data-mcp-server-id={serverId} className="py-1 text-[0.9rem] leading-6 text-ink">
+      <div className="flex min-w-0 flex-wrap items-center gap-2">
+        <span className="font-sans font-normal">
+          {running ? <ShimmerText>{label}</ShimmerText> : label}
         </span>
-        <AgentDisclosureChevron />
-      </summary>
-      <div className="mt-1.5 space-y-1 border-l border-current/15 pl-3">
+        <span className="font-sans text-[0.78rem] opacity-70">
+          {AGENT_TOOL_ACTIVITY_LABELS[activityState]}
+        </span>
+      </div>
+      <div className="mt-1.5 space-y-1">
         <code className="block max-h-24 overflow-auto whitespace-pre-wrap break-all font-sans text-inherit">
           {JSON.stringify(args)}
         </code>
         <ToolExecutionResult result={result} />
       </div>
-    </details>
+    </div>
   );
 }
 

@@ -6,7 +6,6 @@ import {
   AuiIf,
   ComposerPrimitive,
   ErrorPrimitive,
-  groupPartByType,
   MessagePrimitive,
   ThreadPrimitive,
   useAui,
@@ -18,13 +17,14 @@ import { CheckIcon, ChevronRightIcon, CopyIcon, ThumbsDownIcon, ThumbsUpIcon } f
 import Image from 'next/image';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { CHAT_PROVIDER_BRANDING } from '@/const/branding/chat-provider-branding';
 import chatLogo from '@/const/chat-logo.png';
 import { AssistantMarkdown } from '@/components/chat/assistant-markdown';
 import { AgentRunProgressIndicator } from '@/components/agent-run-progress-indicator';
 import ShimmerText from '@/components/shimmer-text';
+import { agentActivityPartIndices } from '@/utils/agent/agent-activity-grouping';
 import type { AgentRunProgressStage } from '@/utils/agent/agent-run-adapter';
 import { cn } from '@/utils/cn';
 
@@ -866,6 +866,15 @@ export function AssistantMessage({
   runProgress?: AgentRunProgressStage | null;
 }>) {
   const isRunning = useAuiState(({ message }) => message.status?.type === 'running');
+  const messageParts = useAuiState(({ message }) => message.parts);
+  const groupAgentActivity = useMemo(() => {
+    const activityIndices = agentActivityPartIndices(messageParts);
+
+    return (part: (typeof messageParts)[number]) =>
+      activityIndices.has(messageParts.indexOf(part))
+        ? (['group-agent-activity'] as const)
+        : ([] as const);
+  }, [messageParts]);
 
   return (
     <MessagePrimitive.Root className="group flex gap-4 py-4">
@@ -877,16 +886,11 @@ export function AssistantMessage({
       </div>
       <div className="min-w-0 flex-1">
         <div className="text-[0.97rem] leading-7 text-ink dark:text-ink">
-          <MessagePrimitive.GroupedParts
-            groupBy={groupPartByType({
-              reasoning: ['group-agent-activity'],
-              'tool-call': ['group-agent-activity'],
-            })}
-          >
+          <MessagePrimitive.GroupedParts groupBy={groupAgentActivity}>
             {({ part, children }) => {
               if (part.type === 'group-agent-activity') {
                 return (
-                  <AgentActivityDisclosure isRunning={part.status.type === 'running'}>
+                  <AgentActivityDisclosure isRunning={isRunning}>
                     {children}
                   </AgentActivityDisclosure>
                 );
@@ -986,15 +990,17 @@ function AgentActivityDisclosure({
 
   return (
     <details
+      data-testid="agent-activity-disclosure"
+      aria-busy={isRunning}
       className="group text-[0.97rem] leading-7 text-ink opacity-55 transition-opacity duration-150 hover:opacity-85 open:opacity-75"
       open={open}
       onToggle={(event) => setOpen(event.currentTarget.open)}
     >
       <summary className="flex cursor-pointer list-none items-center py-1 font-normal tracking-[0.02em] [&::-webkit-details-marker]:hidden">
-        {isRunning ? <ShimmerText>正在思考</ShimmerText> : <span>思考完成</span>}
+        {isRunning ? <ShimmerText>正在思考</ShimmerText> : <span>思考过程</span>}
         <AgentDisclosureChevron />
       </summary>
-      <div className="space-y-1.5">{children}</div>
+      <div className="mt-1.5 space-y-2 border-l border-current/15 pl-3">{children}</div>
     </details>
   );
 }
@@ -1050,32 +1056,10 @@ export function AgentRunMetadata({
   );
 }
 
-export function AgentReasoning({
-  title,
-  text,
-  running,
-}: Readonly<{
-  title: string;
-  text: string;
-  running: boolean;
-}>) {
-  const [open, setOpen] = useState(false);
+export function AgentReasoning({ text }: Readonly<{ text: string }>) {
+  if (!text.trim()) return null;
 
-  return (
-    <details
-      className="group text-[0.97rem] leading-7 text-ink opacity-55 transition-opacity duration-150 hover:opacity-85 open:opacity-75"
-      open={open}
-      onToggle={(event) => setOpen(event.currentTarget.open)}
-    >
-      <summary className="flex cursor-pointer list-none items-center py-1 font-normal tracking-[0.02em] [&::-webkit-details-marker]:hidden">
-        {running ? <ShimmerText>{title}</ShimmerText> : <span>{title}</span>}
-        <AgentDisclosureChevron />
-      </summary>
-      <div className="mt-1.5 space-y-1 border-l border-current/15 pl-3 whitespace-pre-wrap">
-        {text}
-      </div>
-    </details>
-  );
+  return <div className="whitespace-pre-wrap text-[0.9rem] leading-6">{text}</div>;
 }
 
 export function AgentDisclosureChevron() {
@@ -1090,7 +1074,7 @@ export function AgentDisclosureChevron() {
 
 export function AgentToolCall({ url }: Readonly<{ url?: string }>) {
   return (
-    <div className="my-2 flex flex-wrap items-center gap-2 text-[0.97rem] leading-7 text-ink opacity-55 transition-opacity duration-150 hover:opacity-85">
+    <div className="flex flex-wrap items-center gap-2 text-[0.9rem] leading-6 text-ink">
       <span className="font-sans font-semibold">web_fetch</span>
       {url ? <span className="break-all">{url}</span> : null}
       <span>调用中…</span>
@@ -1112,7 +1096,7 @@ export function AgentToolResult({
   finalUrl?: string | undefined;
 }>) {
   return (
-    <div className="my-2 text-[0.97rem] leading-7 text-ink opacity-55 transition-opacity duration-150 hover:opacity-85">
+    <div className="text-[0.9rem] leading-6 text-ink">
       <div className="flex flex-wrap items-center gap-2">
         <span className="font-sans font-semibold">web_fetch</span>
         <span>{status ?? (isError ? 'failed' : 'succeeded')}</span>

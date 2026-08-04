@@ -12,7 +12,7 @@ Super Mind Studio 已有 `/chat`、`/image`、`/prompt` 专业页面以及稳定
 
 - 交付 `/agent → SDK → Agent API → Pi harness → Mock tool-calling model → web_fetch → follow-up turn → persisted events` 的确定性纵向切片。
 - 将 Agent loop、tools 和未来 skills/MCP 集中在 NestJS 服务端，并保持 provider 类型只存在于 Adapter 层。
-- 提供用户隔离的持久会话、可续读事件、折叠 reasoning、工具状态、取消和累计用量/费用。
+- 提供用户隔离的持久会话、可续读事件、统一思考模块、工具状态、取消和累计用量/费用。
 - 让模型只能选择经过 tool-calling contract test 的模型实例，并将会话模型固定到创建时选择。
 - 建立小而稳定的 Tool/Skill/MCP registry 端口，使后续能力不要求重写 Agent loop。
 
@@ -72,7 +72,7 @@ Qwen、GLM、DeepSeek 和 Kimi 等采用 OpenAI-compatible Chat Completions wire
 | `AgentEvent` | run 内单调递增 sequence、事件类型和 payload；唯一 `(runId, sequence)` |
 | `AgentToolCall` | tool call ID、工具名、校验后参数、状态、截断结果摘要、时间和错误 |
 
-消息 parts 至少支持 `text`、`reasoning`、`tool-call`、`tool-result`。Reasoning 只保存 provider 明确返回的字段，独立限长，默认折叠，仅返回会话所有者，不写入 Pino；它不作为普通 assistant text 回灌下一轮。
+消息 parts 至少支持 `text`、`reasoning`、`tool-call`、`tool-result`。Reasoning 只保存 provider 明确返回的字段，独立限长，仅返回会话所有者，不写入 Pino；它不作为普通 assistant text 回灌下一轮。UI 展示层可将 reasoning 与工具活动聚合，但不得改变持久化 part 类型。
 
 删除 thread 时在事务内级联删除其消息、run、event 和 tool call。首版不做回收站。所有查询和变更都以当前 GitHub 用户 ID 过滤，客户端不能声明 ownerId。
 
@@ -124,7 +124,7 @@ Pino 与 AgentToolCall 记录 URL、最终 URL、状态、字节数、耗时和�
 
 `/agent` 使用 assistant-ui primitives，但不复用当前单次请求的 LocalRuntime adapter。新增 Agent runtime adapter 消费 SDK 的 thread/run/event API，按 sequence 投影 text、reasoning、tool 状态、usage 和终态。
 
-Reasoning 默认折叠并显示“不完整或不准确”的说明；仅当 provider 返回 reasoning 时出现。Tool card 展示工具名、目标域名/URL、running/succeeded/failed/cancelled 状态、HTTP 状态和简短摘要。最终回答中的链接经过现有 Markdown 消毒，并保留可点击来源 URL。
+同一次工具辅助执行中的 reasoning、tool call 和最后一次 tool call 之前的中间进度文本聚合为一个思考模块，避免每个 part 重复生成独立折叠项。模块在 run 进行中默认展开，进入终态时自动收起，用户仍可手动重新展开；最后一次 tool call 之后的最终回答始终留在模块外。Provider 未返回 reasoning 时不得伪造 reasoning 文本，但已有 tool activity 仍可显示在思考模块中。Tool activity 展示工具名、目标域名/URL、running/succeeded/failed/cancelled 状态、HTTP 状态和简短摘要。最终回答中的链接经过现有 Markdown 消毒，并保留可点击来源 URL。
 
 ### Decision 10: Skills, MCP and Memory are ports only in this change
 
@@ -200,7 +200,7 @@ SDK 事件新增 `context-budget`，包含 context window、可用预算、已�
 - [高频 delta 使 PostgreSQL 写放大] → 小窗口批量/合并文本事件、保留严格 sequence 和最终消息快照。
 - [API 重启丢失进程内执行] → 将 run 标记为 interrupted、保留历史并允许用户重新提交；首版明确不自动重放。
 - [删除会话不可恢复] → UI 二次确认、服务端 owner 校验和事务级联；首版接受无回收站。
-- [Reasoning 体积和敏感内容] → 独立 part、长度上限、默认折叠、所有者可见、不写 Pino、不进入未来默认分享内容。
+- [Reasoning 体积和敏感内容] → 独立 part、长度上限、运行结束自动收起、所有者可见、不写 Pino、不进入未来默认分享内容。
 - [历史 reasoning 被模型误当作事实或指令] → 使用独立 part 或显式不可信边界、限长和分层删除，并在核心 prompt 中声明其低信任语义。
 - [摘要遗漏用户约束或被工具内容污染] → 固定 Schema、来源字段、工具发现不可信标记、覆盖前严格校验、用户可见摘要和失败不覆盖旧版本。
 - [Token 估算偏差导致 provider 拒绝请求] → 模型目录声明窗口、工具 schema/输出/安全预留纳入预算、保守估算提前压缩并记录误差。

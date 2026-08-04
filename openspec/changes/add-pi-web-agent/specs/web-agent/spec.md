@@ -70,18 +70,28 @@ Each Agent run SHALL enforce authoritative configurable limits with defaults of 
 - **WHEN** a model call or tool request is active
 - **THEN** the server aborts active work best effort and persists a `limit_reached` terminal event
 
-### Requirement: Provider reasoning is distinct and folded by default
-The system SHALL persist and render reasoning only when the provider protocol explicitly returns reasoning content. Reasoning SHALL be stored as a distinct limited-size message part, visible only to the thread owner, folded by default, sanitized, and excluded from ordinary assistant text sent into later model turns. The system MUST NOT fabricate reasoning for models that do not provide it.
+### Requirement: Provider reasoning remains distinct and thought activity is grouped
+The system SHALL persist reasoning only when the provider protocol explicitly returns reasoning content. Reasoning SHALL remain a distinct limited-size message part, visible only to the thread owner, sanitized, and excluded from ordinary assistant text sent into later model turns. The Agent page SHALL group reasoning, tool activity, and intermediate progress text before the final tool call into one thought disclosure while keeping final answer text outside. The disclosure SHALL be expanded while its run is active and SHALL automatically collapse when the run reaches a terminal state. The system MUST NOT fabricate reasoning for models that do not provide it.
 
-#### Scenario: Model returns reasoning
-- **GIVEN** the selected model emits provider reasoning and final text
+#### Scenario: Active tool-assisted thought is shown as one module
+- **GIVEN** an active Agent run emits reasoning, intermediate text, and tool calls
 - **WHEN** the Agent page renders the response
-- **THEN** reasoning appears in a folded section with an accuracy warning and final text appears separately
+- **THEN** those parts appear in one expanded thought disclosure without nested Reasoning or ToolCall disclosures
 
-#### Scenario: Model provides no reasoning
-- **GIVEN** the selected model emits only text and tool events
+#### Scenario: Completed thought automatically collapses
+- **GIVEN** a visible thought disclosure belongs to a running Agent response
+- **WHEN** the response reaches a terminal state
+- **THEN** the disclosure automatically collapses, final answer text remains visible separately, and the user can reopen the disclosure
+
+#### Scenario: Model provides tools without reasoning
+- **GIVEN** the selected model emits tool events and final text but no provider reasoning
 - **WHEN** the Agent page renders the response
-- **THEN** the page shows tool activity and final text without an artificial reasoning section
+- **THEN** the tool activity appears in the thought disclosure and final text appears separately without artificial reasoning text
+
+#### Scenario: Model provides neither tools nor reasoning
+- **GIVEN** the selected model emits only a final text answer
+- **WHEN** the Agent page renders the response
+- **THEN** the page renders the answer without an empty thought disclosure
 
 ### Requirement: Agent usage and cost are auditable
 Every internal model invocation SHALL create its own RequestLog and one-to-one BillingRecord after normal validation and rate-limit checks. The AgentRun SHALL aggregate model-call count, usage, and estimated CNY cost across its invocations without replacing the underlying records.
@@ -90,4 +100,3 @@ Every internal model invocation SHALL create its own RequestLog and one-to-one B
 - **GIVEN** one Agent run invokes a model, executes `web_fetch`, and invokes the model again
 - **WHEN** the run succeeds
 - **THEN** two request lifecycle records exist and the Agent run exposes their aggregated usage and estimated cost
-
