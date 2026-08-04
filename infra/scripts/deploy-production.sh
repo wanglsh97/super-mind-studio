@@ -134,6 +134,21 @@ compose() {
   COMPOSE_PARALLEL_LIMIT=1 docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" "$@"
 }
 
+nginx_was_running=0
+if compose ps --status running --services 2>/dev/null | grep -qx nginx; then
+  nginx_was_running=1
+fi
+
+enter_maintenance_mode() {
+  echo '切换至发布维护页。'
+  MAINTENANCE_MODE=on compose up -d --no-deps --force-recreate nginx
+}
+
+leave_maintenance_mode() {
+  echo '恢复应用入口。'
+  MAINTENANCE_MODE=off compose up -d --no-deps --force-recreate nginx
+}
+
 compose config >/dev/null
 compose build web api migrate
 
@@ -144,7 +159,20 @@ else
   echo '首次部署未发现运行中的 PostgreSQL，跳过发布前备份。'
 fi
 
-compose up -d --remove-orphans
+if [ "$nginx_was_running" -eq 1 ]; then
+  enter_maintenance_mode
+fi
+
+if ! compose up -d --remove-orphans postgres redis migrate api web; then
+  if [ "$nginx_was_running" -eq 1 ]; then
+    echo '应用启动失败，维护页将继续显示；修复后重新执行发布脚本。' >&2
+  fi
+  exit 1
+fi
+
+if [ "$nginx_was_running" -eq 0 ]; then
+  leave_maintenance_mode
+fi
 
 attempt=1
 ready=0
@@ -165,8 +193,18 @@ if [ "$ready" -ne 1 ]; then
   exit 1
 fi
 
-SMOKE_MODEL_ALIAS="$smoke_model_alias" \
-  "$SCRIPT_DIR/smoke-production.sh" "http://127.0.0.1:$http_port"
+if [ "$nginx_was_running" -eq 1 ]; then
+  leave_maintenance_mode
+fi
+
+if ! SMOKE_MODEL_ALIAS="$smoke_model_alias" \
+  "$SCRIPT_DIR/smoke-production.sh" "http://127.0.0.1:$http_port"; then
+  if [ "$nginx_was_running" -eq 1 ]; then
+    enter_maintenance_mode
+    echo '发布冒烟失败，维护页将继续显示；修复后重新执行发布脚本。' >&2
+  fi
+  exit 1
+fi
 
 compose ps
 printf 'production_deploy=ok version=%s\n' "$app_version"

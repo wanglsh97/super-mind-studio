@@ -296,7 +296,7 @@ Agent Composer 将运行模型与思考强度呈现为两个独立的轻量选�
 
 ### Decision 14: Nginx owns the deployment fallback page
 
-Nginx 不再等待 Web/API 健康后才启动，并将只读静态维护页随配置挂载。Web 上游在发布或异常期间不可达时，Nginx 对文档请求拦截 `502`、`503`、`504` 并返回该页及 `Retry-After`；API 与 SSE 路由保持原有 JSON/SSE 错误语义，不能替换为 HTML。该页仅改善单机滚动替换期间的用户体验，不构成零停机或自动回滚承诺；真正的无中断切换留待未来蓝绿发布。
+Nginx 不再等待 Web/API 健康后才启动，并将只读静态维护页随配置挂载。发布脚本会先用环境变量重建 Nginx 到维护模式，只有候选容器通过 readiness 和冒烟后才恢复入口；失败时页面持续显示维护提示。Web 上游在异常期间不可达时，Nginx 也会对文档请求拦截 `502`、`503`、`504` 并返回该页及 `Retry-After`。API 与 SSE 路由保持原有 JSON/SSE 错误语义，不能替换为 HTML。该页仅改善单机滚动替换期间的用户体验，不构成零停机或自动回滚承诺；真正的无中断切换留待未来蓝绿发布。
 
 ## Failure Handling
 

@@ -125,13 +125,13 @@ ENV_FILE="$PWD/.env.production" ./infra/scripts/deploy-production.sh
 2. 解析并验证生产 Compose。
 3. 构建 Web、API 和 migration 镜像。
 4. 已有 PostgreSQL 正在运行时，先创建并验证 custom-format 备份；首次部署跳过。
-5. 启动 PostgreSQL、Redis，执行 Prisma migration，再启动 API、Web；Nginx 独立常驻。
+5. 已有 Nginx 先切换为静态维护页；启动 PostgreSQL、Redis，执行 Prisma migration，再启动 API、Web。
 6. 最多等待 180 秒通过 readiness。
-7. 通过 Nginx 运行首页、health 和未登录 Chat `401` 门禁冒烟。提供临时用户 Session 时，额外验证 Mock Chat SSE 分段到达和 usage/`[DONE]`。
+7. 通过 Nginx 运行首页、health 和未登录 Chat `401` 门禁冒烟；成功后自动恢复应用入口。提供临时用户 Session 时，额外验证 Mock Chat SSE 分段到达和 usage/`[DONE]`。
 
 任何一步失败都会返回非零状态。脚本不会自动删除卷、恢复数据库或切换 Git 版本。
 
-发布过程中如果 Web 容器不可用，常驻 Nginx 会对页面路由返回 HTTP `503` 的静态“正在发布更新”页面，并带 `Retry-After: 60` 与禁止缓存响应头；这避免访客直接看到默认 `502` 页面。`/api/v1/*`、`/health/*` 与 SSE 保持 JSON/SSE 协议，不会返回 HTML。该机制只是体验兜底，不会让失败版本自动回滚；单机零停机蓝绿发布不在当前部署方案范围内。
+已有 Nginx 的发布会在替换应用容器前先切换页面路由到 HTTP `503` 的静态“正在发布更新”页面，并带 `Retry-After: 60` 与禁止缓存响应头；只有 readiness 和冒烟均成功才恢复页面入口。若发布失败，维护页会继续显示，避免访客进入接口已经失效的旧页面。Web 上游意外不可用时也会触发同一页面。`/api/v1/*`、`/health/*` 与 SSE 保持 JSON/SSE 协议，不会返回 HTML。该机制只是体验兜底，不会让失败版本自动回滚；单机零停机蓝绿发布不在当前部署方案范围内。
 
 ## 7. 发布验收
 

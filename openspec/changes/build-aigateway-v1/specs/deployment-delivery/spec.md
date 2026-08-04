@@ -27,13 +27,19 @@ For the Chat SSE route, Nginx SHALL disable proxy buffering and caching, use sui
 - **AND** cancelling the browser request closes the upstream API request best effort
 
 ### Requirement: Web unavailability has a static deployment fallback
-Nginx SHALL remain able to start independently of Web and API health. When the Web upstream is unreachable and would produce `502`, `503`, or `504`, Nginx SHALL return a no-store static maintenance page with a retry hint. API, health, and SSE endpoints MUST retain their protocol-native responses and MUST NOT be replaced by HTML.
+Nginx SHALL remain able to start independently of Web and API health. The deployment script SHALL enable a no-store static maintenance page before replacing existing application containers, and disable it only after readiness and smoke checks pass. When the Web upstream is unreachable and would produce `502`, `503`, or `504`, Nginx SHALL also return that page with a retry hint. API, health, and SSE endpoints MUST retain their protocol-native responses and MUST NOT be replaced by HTML.
 
 #### Scenario: Web candidate fails to start during deployment
 - **GIVEN** Nginx is running and the Web upstream cannot accept connections
 - **WHEN** a visitor requests a document route such as `/` or `/admin`
 - **THEN** the visitor receives HTTP `503` and the static maintenance page
 - **AND** an API request remains an API error response rather than an HTML document
+
+#### Scenario: Application startup fails after maintenance mode is enabled
+- **GIVEN** a prior Nginx instance is serving the application
+- **WHEN** the replacement API or Web container fails its Compose health gate
+- **THEN** the deployment exits non-zero and the maintenance page remains enabled
+- **AND** the script does not delete PostgreSQL data or attempt a database rollback
 
 ### Requirement: Runtime configuration and secrets stay outside images
 The deployment SHALL provide a documented `.env.example`, validate environment-specific variables, inject real API keys only at runtime, and keep production secrets out of source control, built images, browser bundles, API docs, and health responses.

@@ -18,7 +18,8 @@ services:
       DOMAIN: '${DOMAIN:?DOMAIN is required}'
       PUBLIC_IP: '${PUBLIC_IP:?PUBLIC_IP is required}'
       OTEL_INGEST_TOKEN: '${OTEL_INGEST_TOKEN:?OTEL_INGEST_TOKEN is required}'
-      NGINX_ENVSUBST_FILTER: '^(DOMAIN|PUBLIC_IP|OTEL_INGEST_TOKEN)$'
+      MAINTENANCE_MODE: '${MAINTENANCE_MODE:-off}'
+      NGINX_ENVSUBST_FILTER: '^(DOMAIN|PUBLIC_IP|OTEL_INGEST_TOKEN|MAINTENANCE_MODE)$'
     volumes:
       - ../nginx/default.conf.template:/etc/nginx/templates/default.conf.template:ro
       - ../nginx/app-locations.conf:/etc/nginx/includes/app-locations.conf:ro

@@ -18,6 +18,7 @@ server {
     listen [::]:80 default_server;
     server_name ${PUBLIC_IP} _;
 
+    set $supermind_maintenance_mode "${MAINTENANCE_MODE}";
     include /etc/nginx/includes/app-locations.conf;
 }
 
@@ -48,6 +49,8 @@ server {
     ssl_session_tickets off;
 
     add_header Strict-Transport-Security "max-age=31536000" always;
+
+    set $supermind_maintenance_mode "${MAINTENANCE_MODE}";
 
     location /otel/ {
         if ($http_x_otel_ingest_token != "${OTEL_INGEST_TOKEN}") { return 404; }
