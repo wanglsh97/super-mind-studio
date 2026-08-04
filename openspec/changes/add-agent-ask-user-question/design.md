@@ -31,6 +31,8 @@
 
 工具参数固定为 `questions: [{header, question, options: [{label, description}], multi_select}]`。题目数为 1–4，`header` 最多 12 字符，选项数 2–4；题干和选项 label 在同一批中不得重复。UI 始终额外显示“其他”，但它不是模型 schema 的 option。
 
+工具 description 明确指导模型在执行期间收集用户偏好或需求、澄清歧义、取得实现决策以及提供方向选择时调用，而不再限制为“缺少答案便无法继续”的场景。description 同时说明 UI 总会提供 Other，模型不应自行构造 Other 选项；允许多选时使用实际 schema 字段 `multi_select: true`；存在推荐项时将其放在首位并在 label 末尾添加 `(Recommended)`。
+
 回答使用稳定 question item ID（不使用纯下标），每题提交 `selectedOptionIds` 和可选 `customText`。固定选项与 Other 互斥：选择固定选项时 `customText` 不得出现；选择 Other 时 `selectedOptionIds` 必须为空且 `customText` 必须为非空白文本。服务端再次验证题目唯一覆盖、选项归属、单/多选数量和 Other 语义。每一题必须作答才能结算整批。
 
 ### Decision 3: First settlement wins; Skip succeeds

@@ -1,7 +1,12 @@
 ## ADDED Requirements
 
 ### Requirement: Agent can issue one durable structured question batch
-The system SHALL register `ask_user_question` as a server-owned `read/none` Agent tool. A call SHALL contain one to four questions. Each question SHALL contain a short header, question text, two to four labelled options with descriptions, and a single- or multi-select indicator. The tool SHALL create one durable question batch and SHALL put the owning run into `waiting_for_user`; a run MUST NOT have more than one pending batch.
+The system SHALL register `ask_user_question` as a server-owned `read/none` Agent tool. Its model-visible description SHALL direct the model to use it during execution to gather user preferences or requirements, clarify ambiguous instructions, obtain decisions on implementation choices, or offer directional choices. The description SHALL state that the user interface always provides Other and the model MUST NOT add its own Other option, that multi-answer questions use `multi_select: true`, and that a recommended option is listed first with `(Recommended)` appended to its label. A call SHALL contain one to four questions. Each question SHALL contain a short header, question text, two to four labelled options with descriptions, and a single- or multi-select indicator. The tool SHALL create one durable question batch and SHALL put the owning run into `waiting_for_user`; a run MUST NOT have more than one pending batch.
+
+#### Scenario: Model receives actionable invocation guidance
+- **WHEN** the Agent runtime exposes `ask_user_question` to the model
+- **THEN** the tool description identifies preference gathering, ambiguity clarification, implementation decisions, and directional choices as invocation scenarios
+- **AND** it documents the built-in Other path, `multi_select` field, and first-position `(Recommended)` convention
 
 #### Scenario: Tool asks a valid batch
 - **GIVEN** an active Agent run calls `ask_user_question` with schema-valid questions
