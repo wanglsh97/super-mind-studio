@@ -85,7 +85,7 @@ export function decodeAgentEvent(value: unknown, expectedRunId?: string): AgentS
     case 'reasoning-delta':
       return { type, ...base, messageId: id(record.messageId), delta: text(record.delta) }
     case 'user-question-asked':
-      return { type, ...base, question: userQuestion(record.question) }
+      return { type, ...base, question: decodeAgentUserQuestion(record.question) }
     case 'user-question-answered':
       return {
         type,
@@ -217,17 +217,24 @@ export function decodeAgentEvent(value: unknown, expectedRunId?: string): AgentS
   }
 }
 
-function userQuestion(value: unknown): AgentUserQuestion {
+export function decodeAgentUserQuestion(value: unknown): AgentUserQuestion {
   const question = asRecord(value)
   if (!question) throw protocol('Agent user question is invalid')
   const status = stringValue(question.status)
   if (!status || !['pending', 'answered', 'skipped', 'cancelled', 'interrupted'].includes(status)) {
     throw protocol('Agent user question status is invalid')
   }
-  if (!Array.isArray(question.questions) || question.questions.length < 1 || question.questions.length > 4) {
+  if (
+    !Array.isArray(question.questions) ||
+    question.questions.length < 1 ||
+    question.questions.length > 4
+  ) {
     throw protocol('Agent user question items are invalid')
   }
-  if (typeof question.createdAt !== 'string' || !(question.settledAt === null || typeof question.settledAt === 'string')) {
+  if (
+    typeof question.createdAt !== 'string' ||
+    !(question.settledAt === null || typeof question.settledAt === 'string')
+  ) {
     throw protocol('Agent user question timestamps are invalid')
   }
   return {
@@ -253,7 +260,11 @@ function userQuestionItem(value: unknown): AgentUserQuestion['questions'][number
     options: item.options.map((option) => {
       const record = asRecord(option)
       if (!record) throw protocol('Agent user question option is invalid')
-      return { id: id(record.id), label: text(record.label), description: text(record.description) }
+      return {
+        id: id(record.id),
+        label: text(record.label),
+        description: text(record.description),
+      }
     }),
   }
 }

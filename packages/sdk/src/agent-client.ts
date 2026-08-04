@@ -1,4 +1,4 @@
-import { decodeAgentEvent } from './agent-events.js'
+import { decodeAgentEvent, decodeAgentUserQuestion } from './agent-events.js'
 import type {
   AgentSkillCandidate,
   AgentSkillMarketItem,
@@ -292,21 +292,25 @@ export function createAgentClient(
         subscribeRunEvents(fetchImplementation, baseUrl, runId, options),
     },
     questions: {
-      answer: (questionId, input, options) =>
-        requestJson(
-          fetchImplementation,
-          'POST',
-          `${baseUrl}/api/v1/agent/questions/${encodeURIComponent(questionId)}/answer`,
-          input,
-          options,
+      answer: async (questionId, input, options) =>
+        decodeAgentUserQuestion(
+          await requestJson(
+            fetchImplementation,
+            'POST',
+            `${baseUrl}/api/v1/agent/questions/${encodeURIComponent(questionId)}/answer`,
+            input,
+            options,
+          ),
         ),
-      skip: (questionId, options) =>
-        requestJson(
-          fetchImplementation,
-          'POST',
-          `${baseUrl}/api/v1/agent/questions/${encodeURIComponent(questionId)}/skip`,
-          undefined,
-          options,
+      skip: async (questionId, options) =>
+        decodeAgentUserQuestion(
+          await requestJson(
+            fetchImplementation,
+            'POST',
+            `${baseUrl}/api/v1/agent/questions/${encodeURIComponent(questionId)}/skip`,
+            undefined,
+            options,
+          ),
         ),
     },
   }

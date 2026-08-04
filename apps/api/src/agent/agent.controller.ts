@@ -30,6 +30,7 @@ import { TokenAnalyticsService } from '../token-analytics/token-analytics.servic
 import { AgentRunEventBus } from './agent-run-event-bus'
 import { AgentRunRepository } from './agent-run.repository'
 import { AgentService } from './agent.service'
+import { AgentUserQuestionService } from './agent-user-question.service'
 import { AgentOutputFileError } from './files/agent-output-file.repository'
 import { AgentOutputFileService } from './files/agent-output-file.service'
 import {
@@ -45,6 +46,7 @@ import {
   ListAgentThreadsQueryDto,
   UpdateAgentThreadDto,
 } from './dto/agent-thread.dto'
+import { AnswerAgentUserQuestionDto } from './dto/answer-agent-user-question.dto'
 import { AgentSkillService } from './skills/agent-skill.service'
 import { ExecutableSkillService } from './skills/executable-skill.service'
 import {
@@ -59,6 +61,7 @@ import {
 export class AgentController {
   constructor(
     @Inject(AgentService) private readonly agent: AgentService,
+    @Inject(AgentUserQuestionService) private readonly questions: AgentUserQuestionService,
     @Inject(AgentRunRepository) private readonly runs: AgentRunRepository,
     @Inject(AgentOutputFileService) private readonly outputFiles: AgentOutputFileService,
     @Inject(AgentRunEventBus) private readonly bus: AgentRunEventBus,
@@ -270,6 +273,23 @@ export class AgentController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.agent.cancelRun(user, runId)
+  }
+
+  @Post('questions/:questionId/answer')
+  async answerQuestion(
+    @Param('questionId', ParseUUIDPipe) questionId: string,
+    @Body() body: AnswerAgentUserQuestionDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.questions.answer(questionId, user.id, body.answers)
+  }
+
+  @Post('questions/:questionId/skip')
+  async skipQuestion(
+    @Param('questionId', ParseUUIDPipe) questionId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.questions.skip(questionId, user.id)
   }
 
   @Get('files/:fileId/content')

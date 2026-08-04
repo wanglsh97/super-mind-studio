@@ -266,6 +266,64 @@ describe('AgentClient skills', () => {
 
 const bodySha256 = '4a70fe9aa6436e02c2dea340fbd1e352e4ef2d8ce6ca52ad25d4b95471fc8bf2'
 
+describe('AgentClient user questions', () => {
+  const questionId = '00000000-0000-4000-8000-0000000000f2'
+  const itemId = '00000000-0000-4000-8000-0000000000f3'
+  const optionA = '00000000-0000-4000-8000-0000000000f4'
+  const optionB = '00000000-0000-4000-8000-0000000000f5'
+
+  it('submits answers and skips through encoded owner-scoped endpoints', async () => {
+    const calls: Array<{
+      url: string
+      method: string | undefined
+      body: BodyInit | null | undefined
+    }> = []
+    const client = createAIGatewayClient({
+      fetch: async (input, init) => {
+        calls.push({ url: String(input), method: init?.method, body: init?.body })
+        return Response.json({
+          id: questionId,
+          runId,
+          status: String(input).endsWith('/skip') ? 'skipped' : 'answered',
+          questions: [
+            {
+              id: itemId,
+              header: '人数',
+              question: '几个人出行？',
+              multiSelect: false,
+              options: [
+                { id: optionA, label: '2 人', description: '双人同行' },
+                { id: optionB, label: '3–5 人', description: '小团体' },
+              ],
+            },
+          ],
+          createdAt: '2026-08-04T08:00:00.000Z',
+          settledAt: '2026-08-04T08:01:00.000Z',
+        })
+      },
+    })
+    const answer = { answers: [{ questionId: itemId, selectedOptionIds: [optionA] }] }
+
+    const answered = await client.agent.questions.answer('question/id', answer)
+    const skipped = await client.agent.questions.skip('question/id')
+
+    assert.equal(answered.status, 'answered')
+    assert.equal(skipped.status, 'skipped')
+    assert.equal(calls[0]?.url, '/api/v1/agent/questions/question%2Fid/answer')
+    assert.equal(calls[0]?.method, 'POST')
+    assert.equal(calls[0]?.body, JSON.stringify(answer))
+    assert.equal(calls[1]?.url, '/api/v1/agent/questions/question%2Fid/skip')
+  })
+
+  it('rejects malformed question responses instead of trusting the API payload', async () => {
+    const client = createAIGatewayClient({
+      fetch: async () => Response.json({ id: questionId, status: 'answered', questions: [] }),
+    })
+
+    await assert.rejects(() => client.agent.questions.skip(questionId), AIGatewayProtocolError)
+  })
+})
+
 function sseResponse(frames: string): Response {
   return new Response(frames, {
     status: 200,
