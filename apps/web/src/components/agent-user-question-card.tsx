@@ -1,7 +1,7 @@
 'use client'
 
 import type { AgentUserQuestion, AnswerAgentUserQuestionRequest } from '@supermind/sdk'
-import { ArrowLeftIcon, ArrowRightIcon, CheckIcon, ListChecksIcon, PenLineIcon } from 'lucide-react'
+import { ArrowLeftIcon, CornerDownLeftIcon, PenLineIcon, XIcon } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import {
@@ -99,103 +99,84 @@ export function AgentUserQuestionCard({
   }
 
   return (
-    <section aria-label="Agent 需要你的回答" className="mx-auto my-5 w-full max-w-3xl px-4">
-      <div className="overflow-hidden rounded-[1.35rem] border border-brand/18 bg-surface-card shadow-[0_18px_48px_rgba(23,47,92,0.10)] dark:border-brand/22">
-        <header className="border-b border-line-soft bg-[linear-gradient(110deg,rgba(52,111,255,0.09),transparent_52%)] px-5 py-4 sm:px-6">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex min-w-0 items-center gap-3">
-              <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-brand text-white shadow-[0_8px_18px_rgba(52,111,255,0.24)]">
-                <ListChecksIcon aria-hidden className="size-[1.05rem]" />
-              </span>
-              <div className="min-w-0">
-                <p className="text-sm font-semibold tracking-[-0.01em] text-ink dark:text-white">
-                  需要你确认
-                </p>
-                <p className="mt-0.5 truncate text-xs text-ink-muted">
-                  回答后，Agent 会带着这些信息继续
-                </p>
-              </div>
+    <section aria-label="Agent 需要你的回答" className="mx-auto w-full max-w-[58rem]">
+      <div className="max-h-[calc(100dvh-7rem)] overflow-y-auto overscroll-contain rounded-[1.4rem] border border-line bg-surface-card shadow-[0_8px_24px_rgb(15_23_42/0.06)] dark:border-line-soft dark:shadow-none">
+        <div className="px-4 pt-4 sm:px-5 sm:pt-5">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-ink-muted">
+                {item.header} · {index + 1} / {question.questions.length} ·{' '}
+                {item.multiSelect ? '可多选' : '单选'}
+              </p>
+              <h2 className="mt-1.5 max-w-2xl text-base font-semibold leading-6 tracking-[-0.02em] text-ink dark:text-white sm:text-lg">
+                {item.question}
+              </h2>
             </div>
-            <span className="shrink-0 font-mono text-xs font-semibold tabular-nums text-ink-muted">
-              {index + 1} / {question.questions.length}
-            </span>
+            <button
+              type="button"
+              aria-label="跳过这组问题"
+              disabled={submitting}
+              onClick={() => void skip()}
+              className="grid size-8 shrink-0 place-items-center rounded-full text-ink-muted hover:bg-surface-muted hover:text-ink disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-brand-focus focus-visible:outline-offset-2"
+            >
+              <XIcon aria-hidden className="size-5" />
+            </button>
           </div>
 
-          <div className="mt-4 grid grid-flow-col gap-1.5" aria-label="问卷进度">
-            {question.questions.map((entry, progressIndex) => (
-              <span
-                key={entry.id}
-                className={cn(
-                  'h-1 rounded-full transition-colors duration-200 motion-reduce:transition-none',
-                  progressIndex < index || answered[progressIndex]
-                    ? 'bg-brand'
-                    : progressIndex === index
-                      ? 'bg-brand/45'
-                      : 'bg-line',
-                )}
-              />
-            ))}
-          </div>
-        </header>
-
-        <div className="px-5 py-5 sm:px-6 sm:py-6">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-md bg-brand/8 px-2 py-1 text-[0.68rem] font-bold tracking-[0.08em] text-brand-hover dark:bg-brand/14 dark:text-brand-light">
-              {item.header}
-            </span>
-            <span className="text-xs text-ink-subtle">
-              {item.multiSelect ? '可多选' : '请选择一项'}
-            </span>
-          </div>
-          <h2 className="mt-3 max-w-2xl text-lg font-semibold leading-7 tracking-[-0.02em] text-ink dark:text-white sm:text-xl">
-            {item.question}
-          </h2>
-
-          <div className="mt-5 grid gap-2.5 sm:grid-cols-2">
-            {item.options.map((option) => {
+          <div className="mt-3 space-y-0.5">
+            {item.options.map((option, optionIndex) => {
               const active = selected.includes(option.id)
               return (
-                <button
-                  key={option.id}
-                  type="button"
-                  aria-pressed={active}
-                  onClick={() => selectOption(option.id)}
-                  className={cn(
-                    'group flex min-h-[5.1rem] items-start gap-3 rounded-xl border px-4 py-3.5 text-left transition-[border-color,background-color,box-shadow,transform] duration-150 motion-reduce:transition-none focus-visible:outline-3 focus-visible:outline-brand-focus focus-visible:outline-offset-2',
-                    active
-                      ? 'border-brand/55 bg-brand/[0.075] shadow-[inset_0_0_0_1px_rgba(52,111,255,0.08)] dark:bg-brand/12'
-                      : 'border-line bg-surface hover:-translate-y-0.5 hover:border-brand/30 hover:bg-brand/[0.025] dark:bg-white/[0.025] dark:hover:bg-brand/[0.07]',
-                  )}
-                >
-                  <span
+                <div key={option.id} className="group">
+                  <button
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => selectOption(option.id)}
                     className={cn(
-                      'mt-0.5 grid size-5 shrink-0 place-items-center rounded-md border transition-colors',
-                      active
-                        ? 'border-brand bg-brand text-white'
-                        : 'border-line-strong bg-surface-card text-transparent group-hover:border-brand/35 dark:bg-white/[0.04]',
+                      'flex min-h-[3.75rem] w-full items-center gap-3 rounded-xl px-2 py-2 text-left hover:bg-surface-muted focus-visible:bg-surface-muted focus-visible:outline-none dark:hover:bg-white/[0.055] dark:focus-visible:bg-white/[0.055]',
+                      active ? 'bg-surface-muted dark:bg-white/[0.055]' : 'bg-transparent',
                     )}
                   >
-                    <CheckIcon aria-hidden className="size-3.5" />
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block text-sm font-semibold text-ink dark:text-white">
-                      {option.label}
+                    <span
+                      className={cn(
+                        'grid size-7 shrink-0 place-items-center rounded-full text-xs font-medium tabular-nums',
+                        active
+                          ? 'bg-ink text-surface-card dark:bg-white dark:text-surface'
+                          : 'bg-surface-inset text-ink-muted',
+                      )}
+                    >
+                      {optionIndex + 1}
                     </span>
-                    <span className="mt-1 block text-xs leading-5 text-ink-muted">
-                      {option.description}
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-semibold leading-5 text-ink dark:text-white">
+                        {option.label}
+                      </span>
+                      <span className="mt-0.5 block text-[0.7rem] leading-4 text-ink-muted sm:text-xs">
+                        {option.description}
+                      </span>
                     </span>
-                  </span>
-                </button>
+                    <CornerDownLeftIcon
+                      aria-hidden
+                      className="size-4 shrink-0 text-ink-subtle opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"
+                    />
+                  </button>
+                </div>
               )
             })}
           </div>
 
+          {error ? (
+            <p role="alert" className="mt-3 text-sm text-danger">
+              {error}
+            </p>
+          ) : null}
+        </div>
+
+        <footer className="mt-2 flex flex-col gap-2 px-4 pb-4 sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:pb-5">
           <div
             className={cn(
-              'mt-2.5 flex items-center gap-3 rounded-xl border px-4 py-3 transition-colors',
-              customSelected[item.id]
-                ? 'border-brand/55 bg-brand/[0.06] dark:bg-brand/10'
-                : 'border-dashed border-line-strong bg-surface/55 dark:bg-white/[0.018]',
+              'flex min-h-10 min-w-0 flex-1 items-center gap-2.5 rounded-xl px-2',
+              customSelected[item.id] ? 'bg-surface-muted' : 'bg-transparent',
             )}
           >
             <button
@@ -204,11 +185,13 @@ export function AgentUserQuestionCard({
               aria-pressed={customSelected[item.id] === true}
               onClick={selectOther}
               className={cn(
-                'grid size-8 shrink-0 place-items-center rounded-lg focus-visible:outline-3 focus-visible:outline-brand-focus focus-visible:outline-offset-2',
-                customSelected[item.id] ? 'bg-brand text-white' : 'bg-surface-inset text-ink-muted',
+                'grid size-7 shrink-0 place-items-center rounded-full focus-visible:outline-2 focus-visible:outline-brand-focus focus-visible:outline-offset-2',
+                customSelected[item.id]
+                  ? 'bg-ink text-surface-card dark:bg-white dark:text-surface'
+                  : 'bg-surface-inset text-ink-muted',
               )}
             >
-              <PenLineIcon aria-hidden className="size-4" />
+              <PenLineIcon aria-hidden className="size-3.5" />
             </button>
             <label htmlFor={`agent-question-other-${item.id}`} className="min-w-0 flex-1">
               <span className="sr-only">其他答案</span>
@@ -220,21 +203,13 @@ export function AgentUserQuestionCard({
                   selectOther()
                   setCustomText((current) => ({ ...current, [item.id]: event.target.value }))
                 }}
-                placeholder="其他想法，直接告诉 Agent…"
+                placeholder="其他，告诉 Agent 你的想法…"
                 className="w-full bg-transparent text-sm text-ink outline-none placeholder:text-ink-subtle dark:text-white"
               />
             </label>
           </div>
 
-          {error ? (
-            <p role="alert" className="mt-3 text-sm font-medium text-danger">
-              {error}
-            </p>
-          ) : null}
-        </div>
-
-        <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-line-soft bg-surface/60 px-5 py-3.5 sm:px-6">
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center justify-end gap-2">
             {index > 0 ? (
               <button
                 type="button"
@@ -243,7 +218,7 @@ export function AgentUserQuestionCard({
                   setError(null)
                   setIndex((value) => value - 1)
                 }}
-                className="inline-flex min-h-9 items-center gap-1.5 rounded-lg px-3 text-sm font-semibold text-ink-muted transition-colors hover:bg-surface-inset hover:text-ink disabled:opacity-50 focus-visible:outline-3 focus-visible:outline-brand-focus focus-visible:outline-offset-2"
+                className="inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 text-sm font-medium text-ink-muted hover:bg-surface-muted hover:text-ink disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-brand-focus focus-visible:outline-offset-2"
               >
                 <ArrowLeftIcon aria-hidden className="size-4" />
                 上一步
@@ -253,20 +228,19 @@ export function AgentUserQuestionCard({
               type="button"
               disabled={submitting}
               onClick={() => void skip()}
-              className="min-h-9 rounded-lg px-3 text-sm font-medium text-ink-muted transition-colors hover:bg-surface-inset hover:text-ink disabled:opacity-50 focus-visible:outline-3 focus-visible:outline-brand-focus focus-visible:outline-offset-2"
+              className="min-h-9 rounded-full border border-line px-4 text-sm font-medium text-ink hover:bg-surface-muted disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-brand-focus focus-visible:outline-offset-2 dark:text-white"
             >
-              跳过这组问题
+              跳过
+            </button>
+            <button
+              type="button"
+              disabled={!isCurrentValid || submitting}
+              onClick={() => void next()}
+              className="min-h-9 rounded-full bg-ink px-5 text-sm font-semibold text-surface-card hover:opacity-85 disabled:bg-surface-inset disabled:text-ink-subtle disabled:opacity-100 focus-visible:outline-2 focus-visible:outline-brand-focus focus-visible:outline-offset-2 dark:bg-white dark:text-surface dark:disabled:bg-white/10 dark:disabled:text-ink-subtle"
+            >
+              {submitting ? '正在提交…' : isLast ? '提交' : '下一步'}
             </button>
           </div>
-          <button
-            type="button"
-            disabled={!isCurrentValid || submitting}
-            onClick={() => void next()}
-            className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-brand px-4 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(52,111,255,0.22)] transition-[background-color,transform,box-shadow] hover:-translate-y-0.5 hover:bg-brand-hover hover:shadow-[0_10px_22px_rgba(52,111,255,0.28)] disabled:translate-y-0 disabled:bg-line-strong disabled:shadow-none dark:disabled:bg-white/12 focus-visible:outline-3 focus-visible:outline-brand-focus focus-visible:outline-offset-2 motion-reduce:transition-none"
-          >
-            {submitting ? '正在提交…' : isLast ? '确认并继续' : '下一步'}
-            {!submitting ? <ArrowRightIcon aria-hidden className="size-4" /> : null}
-          </button>
         </footer>
       </div>
     </section>

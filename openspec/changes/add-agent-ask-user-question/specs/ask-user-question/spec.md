@@ -19,7 +19,15 @@ The system SHALL register `ask_user_question` as a server-owned `read/none` Agen
 - **THEN** it creates no question batch and returns a normalized failed tool result
 
 ### Requirement: User answers are complete, owner-scoped, and idempotent
-The user interface SHALL always provide an Other custom-answer path. Every question in a batch MUST be answered before submission: a single-select question requires exactly one fixed option, a multi-select question requires one or more fixed options, or either kind MAY use Other exclusively by sending no option IDs and a non-empty `customText`. Fixed options and Other MUST NOT be combined. The server SHALL revalidate question uniqueness, option ownership, selection cardinality and Other semantics, scope mutation to the run owner, and atomically settle a batch by stable batch ID. The first valid settlement SHALL win; duplicate or competing submissions SHALL return the original settled result without creating another event.
+The user interface SHALL always provide an Other custom-answer path. While a pending batch exists, the Web application SHALL render its question card in the bottom Composer dock, replacing the Composer and extending upward from that position; it MUST NOT insert the card into the message timeline. Every question in a batch MUST be answered before submission: a single-select question requires exactly one fixed option, a multi-select question requires one or more fixed options, or either kind MAY use Other exclusively by sending no option IDs and a non-empty `customText`. Fixed options and Other MUST NOT be combined. The server SHALL revalidate question uniqueness, option ownership, selection cardinality and Other semantics, scope mutation to the run owner, and atomically settle a batch by stable batch ID. The first valid settlement SHALL win; duplicate or competing submissions SHALL return the original settled result without creating another event.
+
+#### Scenario: Pending card replaces the Composer
+- **GIVEN** the active Agent run has a pending question batch
+- **WHEN** the owner views the Agent page
+- **THEN** a bottom question panel occupies the Composer dock and the Composer is not displayed
+- **AND** the question panel is not rendered among persisted user and assistant messages
+- **WHEN** the batch is answered, skipped, cancelled, or otherwise invalidated
+- **THEN** the question panel is removed and the Composer is restored
 
 #### Scenario: User submits complete answers
 - **GIVEN** the authenticated run owner completes every question in a pending batch

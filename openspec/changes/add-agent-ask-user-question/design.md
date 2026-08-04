@@ -51,6 +51,8 @@ API 启动清理会将 `RUNNING`、`CANCELLING` 和 `WAITING_FOR_USER` 都标记
 
 SDK `AgentStreamEvent` 新增 `user-question-asked`、`user-question-answered` 和 `user-question-skipped`，每项有 `questionId`、稳定题目 ID 和必要显示数据。Thread detail 额外返回 active pending question，以消除“事件尚未订阅就刷新”的空窗。Web reducer 将 question state 附加到 run 视图；卡片只允许 owner 对 pending batch 选择/填写、提交或跳过，结算中禁用重复提交。
 
+待答卡片不插入消息时间线，而是在页面底部 Composer dock 中替换 Composer，并从底部向上占据所需空间；回答、跳过或失效后恢复 Composer。卡片使用单层白底、细边框、选项分隔行和轻量选中态，不增加遮罩、渐变或复杂动效。
+
 ## Risks / Trade-offs
 
 - [进程内 deferred 在重启丢失] → 明确 startup interruption，避免伪恢复或无限等待。

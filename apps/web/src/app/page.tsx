@@ -421,84 +421,91 @@ function AgentConsole() {
                     )
                   }
                 </ThreadPrimitive.Messages>
-                {pendingQuestion ? (
-                  <AgentUserQuestionCard
-                    key={pendingQuestion.id}
-                    question={pendingQuestion}
-                    onAnswer={async (input) => {
-                      await client.agent.questions.answer(pendingQuestion.id, input);
-                      setPendingQuestion(null);
-                    }}
-                    onSkip={async () => {
-                      await client.agent.questions.skip(pendingQuestion.id);
-                      setPendingQuestion(null);
-                    }}
-                  />
-                ) : null}
                 <AgentContextTimeline events={compressionEvents} summary={contextSummary} />
               </AgentThreadViewport>
             </div>
-            <AgentScrollToBottom />
+            {pendingQuestion ? null : <AgentScrollToBottom />}
             <AgentComposerDock>
-              {activeRuns.some((run) => run.threadId !== activeThreadId) ? (
-                <AgentActiveRunHint message="其他会话正在后台运行；当前会话仍可独立提交" />
-              ) : null}
-              <AgentComposerRoot>
-                <AgentSkillSlashPicker
-                  candidates={skillCandidates}
-                  selectedNames={selectedSkillNames}
-                  loadState={skillLoadState}
-                  disabled={currentActiveRun !== null}
-                  onToggle={(name) =>
-                    setSelectedSkillNames((current) =>
-                      current.includes(name)
-                        ? current.filter((item) => item !== name)
-                        : [...current, name],
-                    )
-                  }
-                  onRetry={() => void loadSkillCandidates()}
+              {pendingQuestion ? (
+                <AgentUserQuestionCard
+                  key={pendingQuestion.id}
+                  question={pendingQuestion}
+                  onAnswer={async (input) => {
+                    await client.agent.questions.answer(pendingQuestion.id, input);
+                    setPendingQuestion(null);
+                  }}
+                  onSkip={async () => {
+                    await client.agent.questions.skip(pendingQuestion.id);
+                    setPendingQuestion(null);
+                  }}
                 />
-                <AgentComposerInput
-                  placeholder={
-                    submitBlocked && !modelDisabled
-                      ? '上一个任务还在进行中，请等待结束后再提交…'
-                      : '有什么问题尽管问，输入/ 调用技能'
-                  }
-                  disabled={submitBlocked}
-                  maxLength={8000}
-                />
-                <AgentDictationTranscript />
-                <AgentComposerFooter>
-                  <AgentComposerActions>
-                    <NewThreadButton onNewThread={startNewThread} />
-                  </AgentComposerActions>
-                  <AgentComposerSubmitGroup>
-                    <ThinkingEffortSelect
-                      value={thinkingEffort}
-                      disabled={modelDisabled}
-                      onChange={setThinkingEffort}
-                    />
-                    <ModelSelect
-                      value={
-                        (selectedModel as TextModelId) || modelOptions[0]?.value || 'qwen3.7-plus'
+              ) : (
+                <>
+                  {activeRuns.some((run) => run.threadId !== activeThreadId) ? (
+                    <AgentActiveRunHint message="其他会话正在后台运行；当前会话仍可独立提交" />
+                  ) : null}
+                  <AgentComposerRoot>
+                    <AgentSkillSlashPicker
+                      candidates={skillCandidates}
+                      selectedNames={selectedSkillNames}
+                      loadState={skillLoadState}
+                      disabled={currentActiveRun !== null}
+                      onToggle={(name) =>
+                        setSelectedSkillNames((current) =>
+                          current.includes(name)
+                            ? current.filter((item) => item !== name)
+                            : [...current, name],
+                        )
                       }
-                      options={modelOptions}
-                      disabled={modelDisabled}
-                      boundHint={activeThreadId !== null}
-                      onChange={handleModelChange}
+                      onRetry={() => void loadSkillCandidates()}
                     />
-                    {dictationSupported ? <AgentDictationButton disabled={submitBlocked} /> : null}
-                    <AgentStopButton />
-                    <AuiIf condition={({ thread }) => !thread.isRunning && !submitBlocked}>
-                      <AgentSendButton />
-                    </AuiIf>
-                    <AuiIf condition={({ thread }) => !thread.isRunning && submitBlocked}>
-                      <AgentSendButtonDisabled />
-                    </AuiIf>
-                  </AgentComposerSubmitGroup>
-                </AgentComposerFooter>
-              </AgentComposerRoot>
-              <AgentPrivacyNote />
+                    <AgentComposerInput
+                      placeholder={
+                        submitBlocked && !modelDisabled
+                          ? '上一个任务还在进行中，请等待结束后再提交…'
+                          : '有什么问题尽管问，输入/ 调用技能'
+                      }
+                      disabled={submitBlocked}
+                      maxLength={8000}
+                    />
+                    <AgentDictationTranscript />
+                    <AgentComposerFooter>
+                      <AgentComposerActions>
+                        <NewThreadButton onNewThread={startNewThread} />
+                      </AgentComposerActions>
+                      <AgentComposerSubmitGroup>
+                        <ThinkingEffortSelect
+                          value={thinkingEffort}
+                          disabled={modelDisabled}
+                          onChange={setThinkingEffort}
+                        />
+                        <ModelSelect
+                          value={
+                            (selectedModel as TextModelId) ||
+                            modelOptions[0]?.value ||
+                            'qwen3.7-plus'
+                          }
+                          options={modelOptions}
+                          disabled={modelDisabled}
+                          boundHint={activeThreadId !== null}
+                          onChange={handleModelChange}
+                        />
+                        {dictationSupported ? (
+                          <AgentDictationButton disabled={submitBlocked} />
+                        ) : null}
+                        <AgentStopButton />
+                        <AuiIf condition={({ thread }) => !thread.isRunning && !submitBlocked}>
+                          <AgentSendButton />
+                        </AuiIf>
+                        <AuiIf condition={({ thread }) => !thread.isRunning && submitBlocked}>
+                          <AgentSendButtonDisabled />
+                        </AuiIf>
+                      </AgentComposerSubmitGroup>
+                    </AgentComposerFooter>
+                  </AgentComposerRoot>
+                  <AgentPrivacyNote />
+                </>
+              )}
             </AgentComposerDock>
           </AgentThreadRoot>
         </AgentConsolePanel>

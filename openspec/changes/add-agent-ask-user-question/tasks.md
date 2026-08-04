@@ -11,5 +11,5 @@
 
 ## 3. 用户端与验证
 
-- [x] 3.1 在 `/agent` 渲染可续读单批问卷卡片，支持单/多选、其他、提交和跳过；失效问卷不显示
+- [x] 3.1 在 `/agent` 的 Composer dock 渲染可续读单批问卷卡片并临时替换 Composer，支持单/多选、其他、提交和跳过；问卷不进入消息流且失效后恢复 Composer
 - [ ] 3.2 执行问卷单测、集成测试、SDK contract、Agent SSE/E2E、typecheck、lint、build 和 strict OpenSpec 校验
