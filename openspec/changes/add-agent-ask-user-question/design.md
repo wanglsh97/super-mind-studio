@@ -31,13 +31,15 @@
 
 工具参数固定为 `questions: [{header, question, options: [{label, description}], multi_select}]`。题目数为 1–4，`header` 最多 12 字符，选项数 2–4；题干和选项 label 在同一批中不得重复。UI 始终额外显示“其他”，但它不是模型 schema 的 option。
 
-回答使用稳定 question item ID（不使用纯下标），每题提交 `selectedOptionIds` 和可选 `customText`。服务端再次验证选项归属、单/多选最小数量和选择 Other 时非空自定义文本。每一题必须作答才能结算整批。
+回答使用稳定 question item ID（不使用纯下标），每题提交 `selectedOptionIds` 和可选 `customText`。固定选项与 Other 互斥：选择固定选项时 `customText` 不得出现；选择 Other 时 `selectedOptionIds` 必须为空且 `customText` 必须为非空白文本。服务端再次验证题目唯一覆盖、选项归属、单/多选数量和 Other 语义。每一题必须作答才能结算整批。
 
 ### Decision 3: First settlement wins; Skip succeeds
 
 `POST .../answer` 与 `POST .../skip` 通过 `UPDATE ... WHERE status=PENDING` 原子取得结算权。首次请求写入 `ANSWERED` 或 `SKIPPED`，后续相同或重复请求返回持久化结果，不重新 resolve 或生成事件。非 owner、错误 run 或失效 question 统一不泄漏资源存在性。
 
-Answer result 回灌为 `User has answered your questions: "question"=["label"]. You can now continue with the user's answers in mind.`；自定义文本使用转义后的显式值。Skip 回灌为 `User skipped the questions. Continue with best judgment or ask different questions.`。二者都是成功 tool result，模型决定下一步。
+Answer result 回灌为 `User has answered your questions: "question"=["label"]. You can now continue with the user's answers in mind.`；自定义文本使用转义后的显式值。模型结果只能包含题目、选项 label 与 custom text，不能暴露或依赖平台生成的 question/option UUID。Skip 回灌为 `User skipped the questions. Continue with best judgment or ask different questions.`。二者都是成功 tool result，模型决定下一步。
+
+问卷之后的模型调用仍遵守先写 `RequestLog` 的付费调用边界。外部工具正文可能含 PostgreSQL `jsonb` 无法表示的 U+0000；仅在日志持久化副本中将其转为字面量 `\\u0000`，实际 provider input 保持不变，避免审计写入失败中断后续 Agent 回合。
 
 ### Decision 4: No timeout and deliberate restart interruption
 
