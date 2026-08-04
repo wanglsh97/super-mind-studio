@@ -11,6 +11,7 @@ import type { SelectAgentSkill } from './agent-skill-types.js'
 export const AGENT_RUN_STATUSES = [
   'running',
   'cancelling',
+  'waiting_for_user',
   'succeeded',
   'failed',
   'cancelled',
@@ -142,6 +143,39 @@ export interface AgentToolResultPart {
   audit?: Record<string, unknown>
 }
 
+export interface AgentUserQuestionOption {
+  id: string
+  label: string
+  description: string
+}
+
+export interface AgentUserQuestionItem {
+  id: string
+  header: string
+  question: string
+  options: AgentUserQuestionOption[]
+  multiSelect: boolean
+}
+
+export interface AgentUserQuestion {
+  id: string
+  runId: string
+  status: 'pending' | 'answered' | 'skipped' | 'cancelled' | 'interrupted'
+  questions: AgentUserQuestionItem[]
+  createdAt: string
+  settledAt: string | null
+}
+
+export interface AgentUserQuestionAnswerItem {
+  questionId: string
+  selectedOptionIds: string[]
+  customText?: string
+}
+
+export interface AnswerAgentUserQuestionRequest {
+  answers: AgentUserQuestionAnswerItem[]
+}
+
 export interface AgentMediaReferencePart {
   type: 'media-reference'
   mediaId: string
@@ -261,6 +295,8 @@ export interface AgentThreadSandbox {
 export interface AgentThread extends AgentThreadSummary {
   messages: AgentMessage[]
   activeRun: AgentRunSummary | null
+  /** 当前活跃 run 的待答问卷；非 pending、失效或已中断问卷不会返回。 */
+  pendingQuestion: AgentUserQuestion | null
   /** 该会话最近一次 run（含已终结）；用于展示 interrupted 等终态。 */
   lastRun: AgentRunSummary | null
   contextSummary: AgentContextSummary | null
@@ -367,6 +403,20 @@ export type AgentStreamEvent =
     }
   | { type: 'text-delta'; sequence: number; runId: string; messageId: string; delta: string }
   | { type: 'reasoning-delta'; sequence: number; runId: string; messageId: string; delta: string }
+  | {
+      type: 'user-question-asked'
+      sequence: number
+      runId: string
+      question: AgentUserQuestion
+    }
+  | {
+      type: 'user-question-answered'
+      sequence: number
+      runId: string
+      questionId: string
+      answers: AgentUserQuestionAnswerItem[]
+    }
+  | { type: 'user-question-skipped'; sequence: number; runId: string; questionId: string }
   | ({ type: 'context-budget'; sequence: number; runId: string } & AgentContextBudgetState)
   | {
       type: 'context-compressed'

@@ -7,6 +7,8 @@ import type {
 import type {
   AgentMcpServerStatus,
   AgentTokenAnalytics,
+  AgentUserQuestion,
+  AnswerAgentUserQuestionRequest,
   AgentRunSummary,
   AgentStreamEvent,
   AgentThread,
@@ -93,6 +95,14 @@ export interface AgentClient {
      * 订阅 run 事件流。按 sequence 递增产出事件；断线后可用最后 sequence 作为 `after` 重连补读。
      */
     subscribe(runId: string, options?: AgentEventSubscribeOptions): AsyncIterable<AgentStreamEvent>
+  }
+  questions: {
+    answer(
+      questionId: string,
+      input: AnswerAgentUserQuestionRequest,
+      options?: RequestOptions,
+    ): Promise<AgentUserQuestion>
+    skip(questionId: string, options?: RequestOptions): Promise<AgentUserQuestion>
   }
 }
 
@@ -280,6 +290,24 @@ export function createAgentClient(
         ),
       subscribe: (runId, options) =>
         subscribeRunEvents(fetchImplementation, baseUrl, runId, options),
+    },
+    questions: {
+      answer: (questionId, input, options) =>
+        requestJson(
+          fetchImplementation,
+          'POST',
+          `${baseUrl}/api/v1/agent/questions/${encodeURIComponent(questionId)}/answer`,
+          input,
+          options,
+        ),
+      skip: (questionId, options) =>
+        requestJson(
+          fetchImplementation,
+          'POST',
+          `${baseUrl}/api/v1/agent/questions/${encodeURIComponent(questionId)}/skip`,
+          undefined,
+          options,
+        ),
     },
   }
 }

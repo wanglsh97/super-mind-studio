@@ -14,8 +14,40 @@ const events: AgentStreamEvent[] = [
   { type: 'message-start', sequence: 1, runId, messageId: 'm1', role: 'assistant' },
   { type: 'reasoning-delta', sequence: 2, runId, messageId: 'm1', delta: '思考中' },
   {
-    type: 'context-budget',
+    type: 'user-question-asked',
     sequence: 3,
+    runId,
+    question: {
+      id: 'question-1',
+      runId,
+      status: 'pending',
+      questions: [
+        {
+          id: 'item-1',
+          header: '认证方式',
+          question: '请选择认证方式',
+          multiSelect: false,
+          options: [
+            { id: 'option-1', label: 'OAuth', description: '第三方授权' },
+            { id: 'option-2', label: 'Password', description: '账号密码' },
+          ],
+        },
+      ],
+      createdAt: '2026-08-04T00:00:00.000Z',
+      settledAt: null,
+    },
+  },
+  {
+    type: 'user-question-answered',
+    sequence: 4,
+    runId,
+    questionId: 'question-1',
+    answers: [{ questionId: 'item-1', selectedOptionIds: ['option-1'] }],
+  },
+  { type: 'user-question-skipped', sequence: 5, runId, questionId: 'question-2' },
+  {
+    type: 'context-budget',
+    sequence: 6,
     runId,
     usedTokens: 60,
     usableTokens: 100,
@@ -25,7 +57,7 @@ const events: AgentStreamEvent[] = [
   },
   {
     type: 'context-compressed',
-    sequence: 4,
+    sequence: 7,
     runId,
     level: 'forced',
     notes: ['structured-summary-updated'],
@@ -33,10 +65,10 @@ const events: AgentStreamEvent[] = [
     revision: 2,
     coveredThroughSequence: 12,
   },
-  { type: 'text-delta', sequence: 5, runId, messageId: 'm1', delta: '正在处理' },
+  { type: 'text-delta', sequence: 8, runId, messageId: 'm1', delta: '正在处理' },
   {
     type: 'tool-call',
-    sequence: 6,
+    sequence: 9,
     runId,
     messageId: 'm1',
     toolCallId: 't1',
@@ -45,7 +77,7 @@ const events: AgentStreamEvent[] = [
   },
   {
     type: 'tool-status',
-    sequence: 7,
+    sequence: 10,
     runId,
     toolCallId: 't1',
     toolName: 'web_fetch',
@@ -53,7 +85,7 @@ const events: AgentStreamEvent[] = [
   },
   {
     type: 'tool-result',
-    sequence: 8,
+    sequence: 11,
     runId,
     toolCallId: 't1',
     toolName: 'web_fetch',
@@ -64,7 +96,7 @@ const events: AgentStreamEvent[] = [
   },
   {
     type: 'skill-activation',
-    sequence: 9,
+    sequence: 12,
     runId,
     status: 'succeeded',
     source: 'manual',
@@ -74,7 +106,7 @@ const events: AgentStreamEvent[] = [
   },
   {
     type: 'shell-execution',
-    sequence: 10,
+    sequence: 13,
     runId,
     toolCallId: 't2',
     status: 'succeeded',
@@ -89,7 +121,7 @@ const events: AgentStreamEvent[] = [
   },
   {
     type: 'file-operation',
-    sequence: 11,
+    sequence: 14,
     runId,
     toolCallId: 't3',
     status: 'succeeded',
@@ -100,10 +132,10 @@ const events: AgentStreamEvent[] = [
     size: 42,
     sha256: outputSha256,
   },
-  { type: 'message-end', sequence: 12, runId, messageId: 'm1' },
+  { type: 'message-end', sequence: 15, runId, messageId: 'm1' },
   {
     type: 'usage',
-    sequence: 13,
+    sequence: 16,
     runId,
     usage: {
       inputTokens: 10,
@@ -118,15 +150,15 @@ const events: AgentStreamEvent[] = [
   },
   {
     type: 'run-terminal',
-    sequence: 14,
+    sequence: 17,
     runId,
     status: 'succeeded',
     limitReason: null,
   },
-  { type: 'sandbox-status', sequence: 15, runId, status: 'creating' },
+  { type: 'sandbox-status', sequence: 18, runId, status: 'creating' },
   {
     type: 'sandbox-status',
-    sequence: 16,
+    sequence: 19,
     runId,
     status: 'ready',
     sandboxId: 'sandbox-1',

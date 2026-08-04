@@ -10,6 +10,8 @@ import {
   AGENT_SKILL_ACTIVATION_STATUSES,
   AGENT_TOOL_CALL_STATUSES,
   type AgentExecutionError,
+  type AgentUserQuestion,
+  type AgentUserQuestionAnswerItem,
   type AgentFileOperation,
   type AgentMessageRole,
   type AgentRunLimitReason,
@@ -82,6 +84,17 @@ export function decodeAgentEvent(value: unknown, expectedRunId?: string): AgentS
       return { type, ...base, messageId: id(record.messageId), delta: text(record.delta) }
     case 'reasoning-delta':
       return { type, ...base, messageId: id(record.messageId), delta: text(record.delta) }
+    case 'user-question-asked':
+      return { type, ...base, question: userQuestion(record.question) }
+    case 'user-question-answered':
+      return {
+        type,
+        ...base,
+        questionId: id(record.questionId),
+        answers: userQuestionAnswers(record.answers),
+      }
+    case 'user-question-skipped':
+      return { type, ...base, questionId: id(record.questionId) }
     case 'context-budget': {
       const summaryId = optionalId(record.summaryId)
       return {
@@ -202,6 +215,66 @@ export function decodeAgentEvent(value: unknown, expectedRunId?: string): AgentS
     default:
       throw protocol(`Agent event has an unknown type "${type}"`)
   }
+}
+
+function userQuestion(value: unknown): AgentUserQuestion {
+  const question = asRecord(value)
+  if (!question) throw protocol('Agent user question is invalid')
+  const status = stringValue(question.status)
+  if (!status || !['pending', 'answered', 'skipped', 'cancelled', 'interrupted'].includes(status)) {
+    throw protocol('Agent user question status is invalid')
+  }
+  if (!Array.isArray(question.questions) || question.questions.length < 1 || question.questions.length > 4) {
+    throw protocol('Agent user question items are invalid')
+  }
+  if (typeof question.createdAt !== 'string' || !(question.settledAt === null || typeof question.settledAt === 'string')) {
+    throw protocol('Agent user question timestamps are invalid')
+  }
+  return {
+    id: id(question.id),
+    runId: id(question.runId),
+    status: status as AgentUserQuestion['status'],
+    questions: question.questions.map((item) => userQuestionItem(item)),
+    createdAt: question.createdAt,
+    settledAt: question.settledAt,
+  }
+}
+
+function userQuestionItem(value: unknown): AgentUserQuestion['questions'][number] {
+  const item = asRecord(value)
+  if (!item || !Array.isArray(item.options) || item.options.length < 2 || item.options.length > 4) {
+    throw protocol('Agent user question item is invalid')
+  }
+  return {
+    id: id(item.id),
+    header: text(item.header),
+    question: text(item.question),
+    multiSelect: bool(item.multiSelect),
+    options: item.options.map((option) => {
+      const record = asRecord(option)
+      if (!record) throw protocol('Agent user question option is invalid')
+      return { id: id(record.id), label: text(record.label), description: text(record.description) }
+    }),
+  }
+}
+
+function userQuestionAnswers(value: unknown): AgentUserQuestionAnswerItem[] {
+  if (!Array.isArray(value)) throw protocol('Agent user question answers are invalid')
+  return value.map((answer) => {
+    const record = asRecord(answer)
+    if (!record || !Array.isArray(record.selectedOptionIds)) {
+      throw protocol('Agent user question answer is invalid')
+    }
+    const customText = record.customText
+    if (customText !== undefined && typeof customText !== 'string') {
+      throw protocol('Agent user question custom answer is invalid')
+    }
+    return {
+      questionId: id(record.questionId),
+      selectedOptionIds: record.selectedOptionIds.map((optionId) => id(optionId)),
+      ...(customText === undefined ? {} : { customText }),
+    }
+  })
 }
 
 function decodeUsage(value: unknown): AgentRunUsage {
