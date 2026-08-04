@@ -26,6 +26,15 @@ For the Chat SSE route, Nginx SHALL disable proxy buffering and caching, use sui
 - **THEN** chunks arrive incrementally before the stream completes
 - **AND** cancelling the browser request closes the upstream API request best effort
 
+### Requirement: Web unavailability has a static deployment fallback
+Nginx SHALL remain able to start independently of Web and API health. When the Web upstream is unreachable and would produce `502`, `503`, or `504`, Nginx SHALL return a no-store static maintenance page with a retry hint. API, health, and SSE endpoints MUST retain their protocol-native responses and MUST NOT be replaced by HTML.
+
+#### Scenario: Web candidate fails to start during deployment
+- **GIVEN** Nginx is running and the Web upstream cannot accept connections
+- **WHEN** a visitor requests a document route such as `/` or `/admin`
+- **THEN** the visitor receives HTTP `503` and the static maintenance page
+- **AND** an API request remains an API error response rather than an HTML document
+
 ### Requirement: Runtime configuration and secrets stay outside images
 The deployment SHALL provide a documented `.env.example`, validate environment-specific variables, inject real API keys only at runtime, and keep production secrets out of source control, built images, browser bundles, API docs, and health responses.
 

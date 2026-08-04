@@ -91,6 +91,7 @@
 - [x] 1.70 为 Agent run 增加 `thinkingEffort=fast|balanced|deep` 契约并贯通工具循环、上下文摘要和四个 Provider Adapter，覆盖校验与协议映射测试
 - [x] 1.71 在 Agent Thread 详情中返回全部持久化消息的 token 估算与绑定模型最大上下文，并覆盖服务端契约测试
 - [x] 1.72 扩展统一 usage 契约以采集 cached input 与 reasoning Token，并为四个 Provider、Mock 和 Pi bridge 补齐映射测试
+- [x] 1.73 为单机发布增加 Nginx 静态维护页兜底：Web 上游不可用时返回 `503`，API/SSE 保持原协议
 - [x] 1.73 新增 AgentModelInvocation 调用级账本与 Skill/Tool 归因迁移，在 Agent 每次模型调用终结时幂等持久化实际 resolved model 和 usage
 - [x] 1.74 实现仅当前用户可访问的一年 Token 日历、每日明细和模型总量聚合 API，并覆盖权限、缺失维度按 0 展示和无历史回填测试
 

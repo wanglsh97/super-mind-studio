@@ -22,13 +22,9 @@ services:
     volumes:
       - ../nginx/default.conf.template:/etc/nginx/templates/default.conf.template:ro
       - ../nginx/app-locations.conf:/etc/nginx/includes/app-locations.conf:ro
+      - ../nginx/maintenance.html:/usr/share/nginx/html/maintenance.html:ro
       - /etc/letsencrypt:/etc/letsencrypt:ro
       - /var/www/certbot:/var/www/certbot:ro
-    depends_on:
-      api:
-        condition: service_healthy
-      web:
-        condition: service_healthy
     networks:
       - frontend
       - backend

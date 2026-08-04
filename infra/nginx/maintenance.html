@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>正在发布更新</title>
+    <style>
+      :root { color-scheme: light dark; font-family: Inter, "PingFang SC", "Microsoft YaHei", sans-serif; }
+      body { min-height: 100vh; margin: 0; display: grid; place-items: center; background: #f7f8fc; color: #1c2333; }
+      main { width: min(440px, calc(100vw - 48px)); box-sizing: border-box; padding: 40px; border-radius: 20px; background: #fff; box-shadow: 0 16px 50px rgba(28, 35, 51, .1); text-align: center; }
+      .mark { width: 44px; height: 44px; margin: 0 auto 20px; border-radius: 50%; background: #e8f0ff; position: relative; }
+      .mark::after { content: ""; position: absolute; inset: 12px; border: 3px solid #2563eb; border-right-color: transparent; border-radius: 50%; animation: spin 1s linear infinite; }
+      h1 { margin: 0; font-size: 22px; } p { margin: 14px 0 0; color: #5e687a; line-height: 1.7; font-size: 15px; }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      @media (prefers-color-scheme: dark) { body { background: #10131a; color: #edf1f8; } main { background: #191e28; box-shadow: none; } p { color: #b4becf; } .mark { background: #172b55; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="mark" aria-hidden="true"></div>
+      <h1>正在发布更新</h1>
+      <p>服务正在短暂更新，请在一分钟后刷新页面重试。</p>
+    </main>
+  </body>
+</html>

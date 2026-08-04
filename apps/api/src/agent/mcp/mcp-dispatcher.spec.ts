@@ -1,5 +1,6 @@
 import type { AgentMcpRegistry } from './agent-mcp.registry'
 import { McpToolDispatcher } from './mcp-dispatcher'
+import { TelemetryService } from '../../observability/telemetry.service'
 
 const context = (runId = 'run-1', userId = 'user-1') => ({
   toolCallId: 'call-1', runId, userId, signal: new AbortController().signal,
@@ -14,6 +15,10 @@ describe('McpToolDispatcher', () => {
   }
 
   beforeEach(() => execute.mockClear())
+
+  it('retains TelemetryService runtime injection metadata', () => {
+    expect(Reflect.getMetadata('design:paramtypes', McpToolDispatcher)?.[1]).toBe(TelemetryService)
+  })
 
   it('returns run-scoped handles and audits the real remote tool', async () => {
     const dispatcher = new McpToolDispatcher(mcp)

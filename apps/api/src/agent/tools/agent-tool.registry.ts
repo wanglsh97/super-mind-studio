@@ -38,7 +38,10 @@ export class UnsupportedAgentToolApprovalError extends Error {
 export class AgentToolRegistry {
   private readonly tools: ReadonlyMap<string, AgentToolDefinition>
 
-  constructor(@Inject(AGENT_TOOLS) tools: readonly AgentToolDefinition[], private readonly telemetry = new TelemetryService()) {
+  constructor(
+    @Inject(AGENT_TOOLS) tools: readonly AgentToolDefinition[],
+    @Inject(TelemetryService) private readonly telemetry: TelemetryService = new TelemetryService(),
+  ) {
     const byName = new Map<string, AgentToolDefinition>()
     for (const tool of tools) {
       if (tool.approvalPolicy === 'explicit') {

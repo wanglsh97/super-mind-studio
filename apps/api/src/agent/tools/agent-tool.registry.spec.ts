@@ -14,6 +14,7 @@ import {
   sanitizeWebFetchAudit,
 } from './web-fetch/contract'
 import { webFetchFixtureTool } from './web-fetch/fixture.tool'
+import { TelemetryService } from '../../observability/telemetry.service'
 
 function fakeTool(name: string, execute?: AgentToolDefinition['execute']): AgentToolDefinition {
   return {
@@ -76,6 +77,10 @@ describe('web_fetch contract helpers', () => {
 })
 
 describe('AgentToolRegistry', () => {
+  it('retains TelemetryService runtime injection metadata', () => {
+    expect(Reflect.getMetadata('design:paramtypes', AgentToolRegistry)?.[1]).toBe(TelemetryService)
+  })
+
   it('resolves registered tools and rejects unknown ones', () => {
     const registry = new AgentToolRegistry([webFetchFixtureTool])
     expect(registry.has('web_fetch')).toBe(true)

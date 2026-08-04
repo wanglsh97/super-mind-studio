@@ -294,6 +294,10 @@ Chat 客户端提交公开模型实例 ID，而不是厂商 alias。服务端 `M
 
 Agent Composer 将运行模型与思考强度呈现为两个独立的轻量选择器：底部模型按钮仅显示模型名，模型列表保留厂商 Logo 以辅助识别；相邻的思考强度按钮提供统一的 run 级选择，并通过 SDK `thinkingEffort=fast|balanced|deep` 传入服务端。强度列表使用“档位名称 + 弱化说明”的两行信息层级表达各档位特点，选中标记固定在行末。运行中的停止动作使用与发送按钮等尺寸的圆形纯图标控件，以方形停止符号表达且不显示中文，但保留可访问名称。三个思考档位在所有模型上保持相同的用户表达，Adapter 再映射厂商能力：Qwen 使用关闭或分档 `thinking_budget`；GLM/DeepSeek 使用关闭、`high`、`max`；Kimi K3 因始终思考而使用 `low`、`high`、`max`。该值作用于一次 run 内的首轮回答、工具 follow-up 和上下文摘要调用，不写入 thread 模型绑定，也不允许客户端直接提交厂商参数。
 
+### Decision 14: Nginx owns the deployment fallback page
+
+Nginx 不再等待 Web/API 健康后才启动，并将只读静态维护页随配置挂载。Web 上游在发布或异常期间不可达时，Nginx 对文档请求拦截 `502`、`503`、`504` 并返回该页及 `Retry-After`；API 与 SSE 路由保持原有 JSON/SSE 错误语义，不能替换为 HTML。该页仅改善单机滚动替换期间的用户体验，不构成零停机或自动回滚承诺；真正的无中断切换留待未来蓝绿发布。
+
 ## Failure Handling
 
 | Failure | Platform behavior | Persistence |
