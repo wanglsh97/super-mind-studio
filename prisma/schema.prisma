@@ -148,7 +148,6 @@ model User {
   files          UserFile[]
   skillUploads   SkillUploadSession[]
   modelInvocations AgentModelInvocation[]
-  knowledgeBases KnowledgeBase[]
 
   @@unique([authProvider, providerUserId])
   @@index([userName])
@@ -600,58 +599,4 @@ model AgentToolCall {
   @@index([runId])
   @@index([skillId])
   @@index([sandboxId])
-}
-
-enum KnowledgeDocumentStatus {
-  PENDING
-  INDEXING
-  READY
-  FAILED
-}
-
-model KnowledgeBase {
-  id          String              @id @default(uuid()) @db.Uuid
-  userId      String              @db.Uuid
-  name        String              @db.VarChar(120)
-  description String?             @db.VarChar(500)
-  createdAt   DateTime            @default(now()) @db.Timestamptz(3)
-  updatedAt   DateTime            @updatedAt @db.Timestamptz(3)
-  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  documents   KnowledgeDocument[]
-
-  @@index([userId, updatedAt])
-}
-
-model KnowledgeDocument {
-  id          String                  @id @default(uuid()) @db.Uuid
-  knowledgeBaseId String               @db.Uuid
-  title       String                  @db.VarChar(255)
-  mimeType    String                  @db.VarChar(100)
-  contentHash String                  @db.Char(64)
-  status      KnowledgeDocumentStatus @default(PENDING)
-  errorCode   String?                 @db.VarChar(64)
-  errorMessage String?                @db.Text
-  createdAt   DateTime                @default(now()) @db.Timestamptz(3)
-  updatedAt   DateTime                @updatedAt @db.Timestamptz(3)
-  knowledgeBase KnowledgeBase         @relation(fields: [knowledgeBaseId], references: [id], onDelete: Cascade)
-  chunks      KnowledgeChunk[]
-
-  @@index([knowledgeBaseId, status, createdAt])
-}
-
-model KnowledgeChunk {
-  id               String            @id @default(uuid()) @db.Uuid
-  documentId       String            @db.Uuid
-  ordinal          Int
-  content          String            @db.Text
-  contentHash      String            @db.Char(64)
-  embeddingModel   String            @db.VarChar(128)
-  embeddingVersion String            @db.VarChar(64)
-  embedding        Unsupported("vector(256)")
-  createdAt        DateTime          @default(now()) @db.Timestamptz(3)
-  document         KnowledgeDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
-
-  @@unique([documentId, ordinal])
-  @@index([documentId, ordinal])
-  @@index([embeddingVersion])
 }
