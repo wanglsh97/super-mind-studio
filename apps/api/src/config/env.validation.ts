@@ -144,6 +144,16 @@ const environmentSchema = z
       .default(1_048_576),
     AGENT_MCP_MAX_OUTPUT_CHARS: z.coerce.number().int().min(1_000).max(50_000).default(20_000),
     AGENT_MAX_CONCURRENT_RUNS_PER_USER: z.coerce.number().int().min(1).max(5).default(3),
+    RAG_EMBEDDING_PROVIDER: z.enum(['mock', 'openai-compatible']).default('mock'),
+    RAG_EMBEDDING_BASE_URL: z.preprocess(
+      (value) => (value === '' ? undefined : value),
+      z.string().url().optional(),
+    ),
+    RAG_EMBEDDING_API_KEY: optionalSecret,
+    RAG_EMBEDDING_MODEL: z.preprocess(
+      (value) => (value === '' ? undefined : value),
+      z.string().min(1).max(128).optional(),
+    ),
     EXA_API_KEY: optionalSecret,
     PARALLEL_API_KEY: optionalSecret,
     AMAP_MCP_API_KEY: optionalSecret,
@@ -248,6 +258,17 @@ const environmentSchema = z
           path: ['GOOGLE_CLIENT_SECRET'],
           message: '启用 Google OAuth 时必须配置 Client Secret',
         })
+      }
+    }
+    if (env.RAG_EMBEDDING_PROVIDER === 'openai-compatible') {
+      for (const key of ['RAG_EMBEDDING_BASE_URL', 'RAG_EMBEDDING_API_KEY', 'RAG_EMBEDDING_MODEL'] as const) {
+        if (!env[key]) {
+          context.addIssue({
+            code: 'custom',
+            path: [key],
+            message: `使用 OpenAI-compatible Embedding 时必须配置 ${key}`,
+          })
+        }
       }
     }
     if (

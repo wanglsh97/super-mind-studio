@@ -1,7 +1,7 @@
 ## 1. 数据与 Embedding 基础
 
 - [x] 1.1 新增 KnowledgeBase、KnowledgeDocument、KnowledgeChunk Prisma 模型、状态/索引约束与 pgvector migration，并验证空库迁移
-- [ ] 1.2 实现 provider-neutral Embedding 契约、256 维确定性 Mock Adapter、配置校验和无网络单测
+- [x] 1.2 实现 provider-neutral Embedding 契约、256 维确定性 Mock Adapter、配置校验和无网络单测
 - [ ] 1.3 实现参数化向量 repository，强制 owner/知识库/READY/embedding-version 过滤并覆盖隔离、排序和空结果测试
 
 ## 2. 文档导入与检索最小闭环

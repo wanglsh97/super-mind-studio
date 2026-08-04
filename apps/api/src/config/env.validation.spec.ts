@@ -63,6 +63,23 @@ describe('validateEnvironment', () => {
     expect(environment.AGENT_MCP_MAX_RESPONSE_BYTES).toBe(1_048_576)
     expect(environment.AGENT_MCP_MAX_OUTPUT_CHARS).toBe(20_000)
     expect(environment.AGENT_MAX_CONCURRENT_RUNS_PER_USER).toBe(3)
+    expect(environment.RAG_EMBEDDING_PROVIDER).toBe('mock')
+  })
+
+  it('requires complete configuration for an external embedding provider', () => {
+    expect(() =>
+      validateEnvironment({ ...requiredEnvironment, RAG_EMBEDDING_PROVIDER: 'openai-compatible' }),
+    ).toThrow('RAG_EMBEDDING_API_KEY')
+
+    expect(
+      validateEnvironment({
+        ...requiredEnvironment,
+        RAG_EMBEDDING_PROVIDER: 'openai-compatible',
+        RAG_EMBEDDING_BASE_URL: 'https://embedding.example.com/v1',
+        RAG_EMBEDDING_API_KEY: 'test-key',
+        RAG_EMBEDDING_MODEL: 'text-embedding-test',
+      }).RAG_EMBEDDING_MODEL,
+    ).toBe('text-embedding-test')
   })
 
   it('accepts a fixed anonymous web-search provider without API keys', () => {
