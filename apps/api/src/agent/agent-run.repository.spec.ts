@@ -33,7 +33,10 @@ describe('AgentRunRepository', () => {
 
     expect(findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { userId: 'user-a', status: { in: ['RUNNING', 'CANCELLING'] } },
+        where: {
+          userId: 'user-a',
+          status: { in: ['RUNNING', 'CANCELLING', 'WAITING_FOR_USER'] },
+        },
       }),
     )
   })
@@ -47,7 +50,10 @@ describe('AgentRunRepository', () => {
 
     await expect(repository.listActiveForUser('user-a')).resolves.toHaveLength(2)
     expect(findMany).toHaveBeenCalledWith({
-      where: { userId: 'user-a', status: { in: ['RUNNING', 'CANCELLING'] } },
+      where: {
+        userId: 'user-a',
+        status: { in: ['RUNNING', 'CANCELLING', 'WAITING_FOR_USER'] },
+      },
       orderBy: { createdAt: 'desc' },
     })
   })
@@ -58,7 +64,10 @@ describe('AgentRunRepository', () => {
 
     await expect(repository.countActiveForUser('user-a')).resolves.toBe(1)
     expect(count).toHaveBeenCalledWith({
-      where: { userId: 'user-a', status: { in: ['RUNNING', 'CANCELLING'] } },
+      where: {
+        userId: 'user-a',
+        status: { in: ['RUNNING', 'CANCELLING', 'WAITING_FOR_USER'] },
+      },
     })
   })
 
@@ -92,7 +101,10 @@ describe('AgentRunRepository', () => {
       }),
     ).resolves.toBe(run)
     expect(runCount).toHaveBeenCalledWith({
-      where: { userId: 'user-a', status: { in: ['RUNNING', 'CANCELLING'] } },
+      where: {
+        userId: 'user-a',
+        status: { in: ['RUNNING', 'CANCELLING', 'WAITING_FOR_USER'] },
+      },
     })
     expect(messageCreate).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -159,19 +171,16 @@ describe('AgentRunRepository', () => {
         lastSequence: 3,
       },
     ])
-    const createMany = jest.fn().mockResolvedValue({ count: 1 })
-    const updateMany = jest.fn()
+    const create = jest.fn().mockResolvedValue({})
+    const questionUpdateMany = jest.fn().mockResolvedValue({ count: 1 })
     const update = jest.fn().mockResolvedValue({})
+    const tx = {
+      agentRun: { findMany, update },
+      agentEvent: { create },
+      agentUserQuestion: { updateMany: questionUpdateMany },
+    }
     const prisma = {
-      agentRun: {
-        findMany,
-        update,
-        updateMany,
-        create: jest.fn(),
-        findFirst: jest.fn(),
-        count: jest.fn(),
-      },
-      agentEvent: { createMany },
+      $transaction: jest.fn(async (operation: (client: typeof tx) => unknown) => operation(tx)),
     } as unknown as PrismaService
     const repository = new AgentRunRepository(prisma)
 
@@ -179,17 +188,19 @@ describe('AgentRunRepository', () => {
       count: 1,
       runIds: ['run-stale'],
     })
-    expect(createMany).toHaveBeenCalledWith(
+    expect(create).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: [
-          expect.objectContaining({
-            runId: 'run-stale',
-            sequence: 4,
-            type: 'run-terminal',
-          }),
-        ],
+        data: expect.objectContaining({
+          runId: 'run-stale',
+          sequence: 4,
+          type: 'run-terminal',
+        }),
       }),
     )
+    expect(questionUpdateMany).toHaveBeenCalledWith({
+      where: { runId: 'run-stale', status: 'PENDING' },
+      data: { status: 'INTERRUPTED', settledAt: expect.any(Date) },
+    })
     expect(update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'run-stale' },

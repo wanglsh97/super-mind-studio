@@ -23,6 +23,7 @@ import type { AgentThreadSummaryRow } from './agent-thread.repository'
 const RUN_STATUS_MAP: Record<PrismaRunStatus, AgentRunStatus> = {
   RUNNING: 'running',
   CANCELLING: 'cancelling',
+  WAITING_FOR_USER: 'waiting_for_user',
   SUCCEEDED: 'succeeded',
   FAILED: 'failed',
   CANCELLED: 'cancelled',

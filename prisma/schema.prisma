@@ -40,6 +40,7 @@ enum AdminAuditAction {
 enum AgentRunStatus {
   RUNNING
   CANCELLING
+  WAITING_FOR_USER
   SUCCEEDED
   FAILED
   CANCELLED
@@ -71,6 +72,14 @@ enum AgentToolCallStatus {
   SUCCEEDED
   FAILED
   CANCELLED
+}
+
+enum AgentUserQuestionStatus {
+  PENDING
+  ANSWERED
+  SKIPPED
+  CANCELLED
+  INTERRUPTED
 }
 
 enum AgentInvocationStatus {
@@ -502,10 +511,39 @@ model AgentRun {
   requestLogs          RequestLog[]
   files                UserFile[]
   modelInvocations     AgentModelInvocation[]
+  userQuestions        AgentUserQuestion[]
 
   @@index([threadId, createdAt])
   @@index([userId, status])
   @@index([sandboxId])
+}
+
+model AgentUserQuestion {
+  id         String                  @id @default(uuid()) @db.Uuid
+  runId      String                  @db.Uuid
+  toolCallId String                  @db.VarChar(191)
+  status     AgentUserQuestionStatus @default(PENDING)
+  questions  Json
+  createdAt  DateTime                @default(now()) @db.Timestamptz(3)
+  settledAt  DateTime?               @db.Timestamptz(3)
+  run        AgentRun                @relation(fields: [runId], references: [id], onDelete: Cascade)
+  answers    AgentUserQuestionAnswer[]
+
+  @@unique([runId, toolCallId])
+  @@index([runId, status])
+}
+
+model AgentUserQuestionAnswer {
+  id             String            @id @default(uuid()) @db.Uuid
+  userQuestionId String            @db.Uuid
+  questionItemId String            @db.VarChar(191)
+  optionIds      Json
+  customText     String?           @db.Text
+  createdAt      DateTime          @default(now()) @db.Timestamptz(3)
+  userQuestion   AgentUserQuestion @relation(fields: [userQuestionId], references: [id], onDelete: Cascade)
+
+  @@unique([userQuestionId, questionItemId])
+  @@index([userQuestionId])
 }
 
 model AgentModelInvocation {
