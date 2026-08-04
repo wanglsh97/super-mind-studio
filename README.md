@@ -206,6 +206,10 @@ DATABASE_URL=postgresql://aigateway:password@localhost:5432/aigateway_test pnpm 
     cd super-mind-studio/
     git fetch origin
     git rev-parse HEAD
-    nano .env.production
+    # nano .env.production
+    sed -i "s/^APP_VERSION=.*/APP_VERSION=$(git rev-parse HEAD)/" .env.production
     ENV_FILE="$PWD/.env.production" ./infra/scripts/deploy-production.sh
+
+    # ECS容器内存不太够的时候执行，清除未被引用的镜像。
+    docker image prune -af
 ```

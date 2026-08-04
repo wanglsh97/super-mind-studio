@@ -1,0 +1,2 @@
+-- This migration directory was created without its SQL artifact.
+-- Keep this no-op placeholder so Prisma can advance to subsequent additive migrations.
