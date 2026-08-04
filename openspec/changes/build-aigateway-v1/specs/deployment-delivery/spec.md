@@ -41,6 +41,14 @@ Nginx SHALL remain able to start independently of Web and API health. The deploy
 - **THEN** the deployment exits non-zero and the maintenance page remains enabled
 - **AND** the script does not delete PostgreSQL data or attempt a database rollback
 
+### Requirement: Private OTel services start with the production stack
+Tempo and OpenTelemetry Collector SHALL be regular production Compose services, started by the deployment script before Nginx. They MUST NOT require an optional Compose profile because the same-origin `/otel` Nginx route depends on the Collector hostname.
+
+#### Scenario: Production release starts the observability stack
+- **WHEN** the production deployment script starts application services
+- **THEN** Tempo becomes healthy before the Collector starts
+- **AND** Nginx can resolve the Collector upstream and start successfully
+
 ### Requirement: Runtime configuration and secrets stay outside images
 The deployment SHALL provide a documented `.env.example`, validate environment-specific variables, inject real API keys only at runtime, and keep production secrets out of source control, built images, browser bundles, API docs, and health responses.
 

@@ -257,7 +257,6 @@ services:
 
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.120.0
-    profiles: ['observability']
     restart: unless-stopped
     command: ['--config=/etc/otelcol-contrib/config.yaml']
     volumes:
@@ -274,7 +273,6 @@ services:
 
   tempo:
     image: grafana/tempo:2.7.2
-    profiles: ['observability']
     restart: unless-stopped
     command: ['-config.file=/etc/tempo.yaml']
     volumes:

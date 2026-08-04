@@ -163,7 +163,7 @@ if [ "$nginx_was_running" -eq 1 ]; then
   enter_maintenance_mode
 fi
 
-if ! compose up -d --remove-orphans postgres redis migrate api web; then
+if ! compose up -d --remove-orphans postgres redis tempo otel-collector migrate api web; then
   if [ "$nginx_was_running" -eq 1 ]; then
     echo '应用启动失败，维护页将继续显示；修复后重新执行发布脚本。' >&2
   fi

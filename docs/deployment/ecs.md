@@ -125,7 +125,7 @@ ENV_FILE="$PWD/.env.production" ./infra/scripts/deploy-production.sh
 2. 解析并验证生产 Compose。
 3. 构建 Web、API 和 migration 镜像。
 4. 已有 PostgreSQL 正在运行时，先创建并验证 custom-format 备份；首次部署跳过。
-5. 已有 Nginx 先切换为静态维护页；启动 PostgreSQL、Redis，执行 Prisma migration，再启动 API、Web。
+5. 已有 Nginx 先切换为静态维护页；启动 PostgreSQL、Redis、Tempo、OpenTelemetry Collector，执行 Prisma migration，再启动 API、Web。
 6. 最多等待 180 秒通过 readiness。
 7. 通过 Nginx 运行首页、health 和未登录 Chat `401` 门禁冒烟；成功后自动恢复应用入口。提供临时用户 Session 时，额外验证 Mock Chat SSE 分段到达和 usage/`[DONE]`。
 
