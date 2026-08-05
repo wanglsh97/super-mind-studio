@@ -25,4 +25,17 @@ describe('agentActivityPartIndices', () => {
   it('groups provider reasoning without pulling the answer into the disclosure', () => {
     assert.deepEqual([...agentActivityPartIndices([{ type: 'reasoning' }, { type: 'text' }])], [0]);
   });
+
+  it('keeps the website delivery card outside the collapsed activity group', () => {
+    const parts = [
+      { type: 'reasoning' },
+      { type: 'text' },
+      { type: 'tool-call', toolName: 'shell' },
+      { type: 'text' },
+      { type: 'tool-call', toolName: 'create_website' },
+      { type: 'text' },
+    ];
+
+    assert.deepEqual([...agentActivityPartIndices(parts)], [0, 1, 2, 3]);
+  });
 });

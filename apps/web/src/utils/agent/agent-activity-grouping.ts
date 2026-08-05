@@ -1,5 +1,6 @@
 export interface AgentActivityPartLike {
   type: string;
+  toolName?: string;
 }
 
 /**
@@ -23,7 +24,7 @@ export function agentActivityPartIndices(
   parts.forEach((part, index) => {
     if (
       part.type === 'reasoning' ||
-      part.type === 'tool-call' ||
+      (part.type === 'tool-call' && part.toolName !== 'create_website') ||
       (part.type === 'text' && lastToolCallIndex >= 0 && index < lastToolCallIndex)
     ) {
       indices.add(index);
