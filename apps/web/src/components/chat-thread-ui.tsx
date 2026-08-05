@@ -318,21 +318,19 @@ export function AgentWebCreationOption({
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        'mx-auto mb-2 flex h-9 w-28 items-center justify-center gap-1.5 rounded-xl border px-2 text-xs transition-colors',
+        'mx-auto mb-2 inline-flex h-9 items-center justify-center gap-1.5 rounded-full border px-3 text-xs transition-colors',
         selected
           ? 'border-brand/45 bg-brand-subtle text-brand-hover dark:text-brand-light'
-          : 'border-line bg-surface/80 text-ink-muted hover:border-brand/35 hover:bg-brand-subtle/50 hover:text-brand-hover',
+          : 'border-line-soft bg-surface text-ink-muted hover:border-brand/35 hover:bg-brand-subtle/50 hover:text-brand-hover',
         'disabled:cursor-not-allowed disabled:opacity-45',
         focusRing,
       )}
     >
-      <span aria-hidden="true" className="grid size-6 shrink-0 place-items-center rounded-lg bg-brand/12 text-brand">
-        <svg viewBox="0 0 20 20" className="size-3.5 fill-none stroke-current stroke-[1.7]">
-          <path d="M3.5 3.5h13v13h-13zM3.5 7.5h13M7.5 7.5v9" strokeLinejoin="round" />
-          <path d="m10.25 12.5 1.5 1.5 3-3" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </span>
-      <span className="font-semibold">网页创作</span>
+      <svg aria-hidden="true" viewBox="0 0 20 20" className="size-4 shrink-0 fill-none stroke-current stroke-[1.7]">
+        <rect x="3.25" y="3.5" width="13.5" height="13" rx="2.25" />
+        <path d="M3.5 7.5h13M7.5 7.5v8.75" strokeLinejoin="round" />
+      </svg>
+      <span className="font-semibold">网页</span>
     </button>
   );
 }
@@ -356,7 +354,7 @@ export function AgentWebCreationSelection({
       aria-label="取消网页创作"
       title="取消网页创作"
     >
-      <span>网页创作</span>
+      <span>网页</span>
       <span aria-hidden="true" className="text-[0.85rem] leading-none">×</span>
     </button>
   );
