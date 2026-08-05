@@ -312,26 +312,28 @@ export function AgentWebCreationOption({
   onClick: () => void;
 }>) {
   return (
-    <button
-      type="button"
-      aria-pressed={selected}
-      disabled={disabled}
-      onClick={onClick}
-      className={cn(
-        'mx-auto mb-2 inline-flex h-9 items-center justify-center gap-1.5 rounded-full border px-3 text-xs transition-colors',
-        selected
-          ? 'border-brand/45 bg-brand-subtle text-brand-hover dark:text-brand-light'
-          : 'border-line-soft bg-surface text-ink-muted hover:border-brand/35 hover:bg-brand-subtle/50 hover:text-brand-hover',
-        'disabled:cursor-not-allowed disabled:opacity-45',
-        focusRing,
-      )}
-    >
-      <svg aria-hidden="true" viewBox="0 0 20 20" className="size-4 shrink-0 fill-none stroke-current stroke-[1.7]">
-        <rect x="3.25" y="3.5" width="13.5" height="13" rx="2.25" />
-        <path d="M3.5 7.5h13M7.5 7.5v8.75" strokeLinejoin="round" />
-      </svg>
-      <span className="font-semibold">网页</span>
-    </button>
+    <div className="mx-auto mb-2 w-full max-w-[44rem] sm:w-[calc(100%-2rem)]">
+      <button
+        type="button"
+        aria-pressed={selected}
+        disabled={disabled}
+        onClick={onClick}
+        className={cn(
+          'inline-flex h-9 items-center justify-center gap-1.5 rounded-full border px-3 text-xs transition-colors',
+          selected
+            ? 'border-brand/45 bg-brand-subtle text-brand-hover dark:text-brand-light'
+            : 'border-line-soft bg-surface text-ink-muted hover:border-brand/35 hover:bg-brand-subtle/50 hover:text-brand-hover',
+          'disabled:cursor-not-allowed disabled:opacity-45',
+          focusRing,
+        )}
+      >
+        <svg aria-hidden="true" viewBox="0 0 20 20" className="size-4 shrink-0 fill-none stroke-current stroke-[1.7]">
+          <rect x="3.25" y="3.5" width="13.5" height="13" rx="2.25" />
+          <path d="M3.5 7.5h13M7.5 7.5v8.75" strokeLinejoin="round" />
+        </svg>
+        <span className="font-semibold">网页</span>
+      </button>
+    </div>
   );
 }
 
