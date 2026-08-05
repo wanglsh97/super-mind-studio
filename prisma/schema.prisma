@@ -136,6 +136,36 @@ enum AuthProvider {
   GOOGLE
 }
 
+enum CreationType {
+  WEBSITE
+  IMAGE
+  VIDEO
+}
+
+enum CreationStatus {
+  PENDING
+  RUNNING
+  SUCCEEDED
+  FAILED
+  EXPIRED
+}
+
+enum WebProjectStatus {
+  PENDING
+  GENERATING
+  SUCCEEDED
+  FAILED
+  EXPIRED
+}
+
+enum CreationAssetKind {
+  SOURCE_ZIP
+  DIST_ZIP
+  PREVIEW
+  IMAGE
+  VIDEO
+}
+
 model User {
   id             String                @id @default(uuid()) @db.Uuid
   authProvider   AuthProvider
@@ -157,6 +187,8 @@ model User {
   files          UserFile[]
   skillUploads   SkillUploadSession[]
   modelInvocations AgentModelInvocation[]
+  creations       Creation[]
+  webProjects     WebProject[]
 
   @@unique([authProvider, providerUserId])
   @@index([userName])
@@ -388,11 +420,71 @@ model ImageGenerationTask {
   userId         String          @db.Uuid
   user           User            @relation(fields: [userId], references: [id], onDelete: Restrict)
   requestLog     RequestLog      @relation(fields: [requestLogId], references: [id], onDelete: Cascade)
+  creation       Creation?
 
   @@unique([provider, providerTaskId])
   @@index([userId, createdAt])
   @@index([status, createdAt])
   @@index([createdAt])
+}
+
+model Creation {
+  id          String         @id @default(uuid()) @db.Uuid
+  userId      String         @db.Uuid
+  type        CreationType
+  status      CreationStatus @default(PENDING)
+  title       String         @db.VarChar(200)
+  expiresAt   DateTime?      @db.Timestamptz(3)
+  createdAt   DateTime       @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime       @updatedAt @db.Timestamptz(3)
+  user        User           @relation(fields: [userId], references: [id], onDelete: Restrict)
+  webProject  WebProject?
+  imageTaskId String?        @unique @db.Uuid
+  imageTask   ImageGenerationTask? @relation(fields: [imageTaskId], references: [id], onDelete: SetNull)
+  assets      CreationAsset[]
+
+  @@index([userId, createdAt])
+  @@index([userId, type, createdAt])
+  @@index([expiresAt])
+}
+
+model WebProject {
+  id            String           @id @default(uuid()) @db.Uuid
+  creationId    String           @unique @db.Uuid
+  userId        String           @db.Uuid
+  agentThreadId String?          @db.Uuid
+  agentRunId    String?          @db.Uuid
+  status        WebProjectStatus @default(PENDING)
+  framework     String?          @db.VarChar(64)
+  buildCommand  String?          @db.VarChar(512)
+  outputDir     String?          @db.VarChar(256)
+  errorCode     String?          @db.VarChar(64)
+  errorMessage  String?          @db.Text
+  createdAt     DateTime         @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime         @updatedAt @db.Timestamptz(3)
+  creation      Creation         @relation(fields: [creationId], references: [id], onDelete: Cascade)
+  user          User             @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([userId, createdAt])
+  @@index([agentThreadId])
+  @@index([agentRunId])
+}
+
+model CreationAsset {
+  id          String            @id @default(uuid()) @db.Uuid
+  creationId  String            @db.Uuid
+  kind        CreationAssetKind
+  name        String            @db.VarChar(255)
+  mimeType    String            @db.VarChar(255)
+  objectKey   String            @unique @db.VarChar(1024)
+  sizeBytes   BigInt
+  sha256      String?           @db.Char(64)
+  expiresAt   DateTime?         @db.Timestamptz(3)
+  createdAt   DateTime          @default(now()) @db.Timestamptz(3)
+  creation    Creation          @relation(fields: [creationId], references: [id], onDelete: Cascade)
+
+  @@index([creationId, kind])
+  @@index([expiresAt])
 }
 
 model AdminAuditLog {
