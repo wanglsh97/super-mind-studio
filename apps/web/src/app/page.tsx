@@ -150,6 +150,7 @@ function AgentConsole() {
   const [webCreationSelected, setWebCreationSelected] = useState(false);
   const [websiteStartError, setWebsiteStartError] = useState<string | null>(null);
   const [websiteStarting, setWebsiteStarting] = useState(false);
+  const [githubLoginPromptOpen, setGithubLoginPromptOpen] = useState(false);
 
   const skipHydrationRef = useRef(false);
   const dismissedQuestionIdsRef = useRef(new Set<string>());
@@ -350,7 +351,7 @@ function AgentConsole() {
 
   const handleWebsiteCreation = async (prompt: string) => {
     if (!canCreateWebsite) {
-      window.location.assign(githubLoginUrl('/'));
+      setGithubLoginPromptOpen(true);
       return;
     }
 
@@ -518,7 +519,7 @@ function AgentConsole() {
                     disabled={submitBlocked}
                     onClick={() => {
                       if (!canCreateWebsite) {
-                        window.location.assign(githubLoginUrl('/'));
+                        setGithubLoginPromptOpen(true);
                         return;
                       }
                       setWebsiteStartError(null);
@@ -606,6 +607,57 @@ function AgentConsole() {
           </AgentThreadRoot>
         </AgentConsolePanel>
       </AgentPageShell>
+      {githubLoginPromptOpen ? (
+        <div
+          role="presentation"
+          className="fixed inset-0 z-50 grid place-items-center bg-black/25 p-4 backdrop-blur-sm"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setGithubLoginPromptOpen(false);
+          }}
+        >
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="github-login-prompt-title"
+            className="w-full max-w-sm rounded-2xl border border-line bg-surface-card p-5 shadow-[0_20px_50px_rgb(0_0_0/0.18)]"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold tracking-[0.12em] text-brand">网页创作</p>
+                <h2 id="github-login-prompt-title" className="mt-2 text-lg font-bold text-ink">
+                  请换用 GitHub 账号登录
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setGithubLoginPromptOpen(false)}
+                aria-label="关闭提示"
+                className="grid size-8 place-items-center rounded-full text-lg text-ink-muted transition hover:bg-surface-inset hover:text-ink"
+              >
+                ×
+              </button>
+            </div>
+            <p className="mt-3 text-sm leading-6 text-ink-muted">
+              网页创作目前仅支持 GitHub 账号。切换登录后即可生成并保存静态网站。
+            </p>
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setGithubLoginPromptOpen(false)}
+                className="rounded-xl px-3 py-2 text-sm font-semibold text-ink-muted transition hover:bg-surface-inset"
+              >
+                暂不登录
+              </button>
+              <a
+                href={githubLoginUrl('/')}
+                className="rounded-xl bg-brand px-3 py-2 text-sm font-semibold text-white transition hover:bg-brand-hover"
+              >
+                使用 GitHub 登录
+              </a>
+            </div>
+          </section>
+        </div>
+      ) : null}
     </AssistantRuntimeProvider>
   );
 }
