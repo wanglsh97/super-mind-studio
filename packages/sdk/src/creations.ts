@@ -31,6 +31,8 @@ export interface WebProject {
 
 export interface CreateWebProjectRequest { prompt: string; model?: string }
 
+export type WebsiteArtifactKind = 'source' | 'dist'
+
 export async function requestCreativeJson<T>(
   fetchImplementation: typeof globalThis.fetch,
   url: string,

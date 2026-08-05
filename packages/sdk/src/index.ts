@@ -9,7 +9,7 @@ export { decodeAgentEvent, encodeAgentEvent } from './agent-events.js'
 export type { AgentEventWire } from './agent-events.js'
 export { parseAgentOutputFileReference } from './agent-files.js'
 export type { AgentOutputFileReference } from './agent-files.js'
-export type { CreativeItem, CreativeItemType, CreateWebProjectRequest, WebProject } from './creations.js'
+export type { CreativeItem, CreativeItemType, CreateWebProjectRequest, WebProject, WebsiteArtifactKind } from './creations.js'
 export type {
   AgentClient,
   AgentEventSubscribeOptions,
