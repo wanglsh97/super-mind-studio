@@ -4,13 +4,21 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { createAIGatewayClient, type CreativeItem } from '@supermind/sdk';
 
+import { ProtectedUserPage } from '@/components/protected-user-page';
 import { useUserSession } from '@/components/user-session-provider';
-import { githubLoginUrl } from '@/utils/auth/user-auth-client';
 import { creationExpiryLabel, filterCreations, type CreationFilter } from './creations-view';
 
 const client = createAIGatewayClient();
 
 export default function CreationsPage() {
+  return (
+    <ProtectedUserPage>
+      <CreationsContent />
+    </ProtectedUserPage>
+  );
+}
+
+function CreationsContent() {
   const session = useUserSession();
   const [items, setItems] = useState<CreativeItem[]>([]);
   const [filter, setFilter] = useState<CreationFilter>('all');
@@ -19,33 +27,13 @@ export default function CreationsPage() {
   const visibleItems = useMemo(() => filterCreations(items, filter), [filter, items]);
 
   useEffect(() => {
-    if (session.status !== 'authenticated' || session.user?.authProvider !== 'GITHUB') {
-      setLoading(false);
-      return;
-    }
+    if (session.status !== 'authenticated') return;
     void client.creations
       .list()
       .then(setItems)
       .catch((cause: unknown) => setError(cause instanceof Error ? cause.message : '加载创作失败'))
       .finally(() => setLoading(false));
-  }, [session.status, session.user?.authProvider]);
-
-  if (session.status === 'loading')
-    return <main className="p-10 text-sm text-ink-muted">正在恢复会话…</main>;
-  if (session.status !== 'authenticated' || session.user?.authProvider !== 'GITHUB') {
-    return (
-      <main className="mx-auto max-w-2xl px-6 py-24 text-center">
-        <h1 className="text-3xl font-semibold">我的创作</h1>
-        <p className="mt-4 text-ink-muted">网页创作需要使用 GitHub 账号登录。</p>
-        <a
-          className="mt-6 inline-flex rounded-xl bg-brand px-4 py-2 font-semibold text-white"
-          href={githubLoginUrl('/creations')}
-        >
-          使用 GitHub 登录
-        </a>
-      </main>
-    );
-  }
+  }, [session.status]);
 
   return (
     <main className="mx-auto max-w-6xl px-6 py-10">
