@@ -60,6 +60,7 @@ export interface AIGatewayClient {
     createWebsite(input: CreateWebProjectRequest, options?: RequestOptions): Promise<WebProject>
     getWebsite(projectId: string, options?: RequestOptions): Promise<CreativeItem>
     downloadWebsiteAssetUrl(projectId: string, kind: WebsiteArtifactKind): string
+    previewWebsiteUrl(projectId: string): string
   }
   skills: SkillMarketClient
   admin: {
@@ -104,6 +105,7 @@ export function createAIGatewayClient(options: CreateAIGatewayClientOptions = {}
       createWebsite: (input, requestOptions) => requestCreativeJson<WebProject>(fetchWithCredentials, `${baseUrl}/api/v1/creations/websites`, { method: 'POST', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify(input), ...(requestOptions?.signal === undefined ? {} : { signal: requestOptions.signal }) }),
       getWebsite: (projectId, requestOptions) => requestCreativeJson<CreativeItem>(fetchWithCredentials, `${baseUrl}/api/v1/creations/websites/${encodeURIComponent(projectId)}`, { headers: { accept: 'application/json' }, ...(requestOptions?.signal === undefined ? {} : { signal: requestOptions.signal }) }),
       downloadWebsiteAssetUrl: (projectId, kind) => `${baseUrl}/api/v1/creations/websites/${encodeURIComponent(projectId)}/assets/${kind}`,
+      previewWebsiteUrl: (projectId) => `${baseUrl}/api/v1/creations/websites/${encodeURIComponent(projectId)}/preview`,
     },
     skills: createSkillMarketClient(fetchWithCredentials, baseUrl),
     admin: {

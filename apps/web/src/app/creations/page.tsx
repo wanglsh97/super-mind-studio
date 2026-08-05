@@ -62,6 +62,7 @@ function CreationCard({ item }: { item: CreativeItem }) {
     <p className="mt-3 text-xs text-ink-muted">创建于 {new Date(item.createdAt).toLocaleString('zh-CN')}</p>
     {expiresAt ? <p className="mt-1 text-xs text-ink-muted">{item.status === 'expired' ? '产物已过期' : `将于 ${expiresAt.toLocaleDateString('zh-CN')} 删除`}</p> : null}
     {item.type === 'website' && item.threadId ? <Link className="mt-4 inline-block text-sm font-semibold text-brand-hover" href={`/?thread=${encodeURIComponent(item.threadId)}`}>查看生成对话 →</Link> : null}
+    {item.type === 'website' && item.status === 'succeeded' && item.projectId ? <a className="mt-3 mr-3 inline-block text-sm font-semibold text-brand-hover" href={client.creations.previewWebsiteUrl(item.projectId)} target="_blank" rel="noopener noreferrer">打开预览 ↗</a> : null}
     {item.type === 'website' && item.assets?.filter((asset) => asset.downloadUrl).map((asset) => <a key={asset.id} className="mt-3 mr-3 inline-block text-sm font-semibold text-brand-hover" href={asset.downloadUrl}>下载 {asset.name}</a>)}
   </article>
 }
