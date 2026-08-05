@@ -92,6 +92,7 @@ import {
 import { activeRunForThread } from '@/utils/agent/agent-active-runs';
 import { initialAgentRunViewState } from '@/utils/agent/agent-run-reducer';
 import { threadTokenUsagePercentage } from '@/utils/agent/agent-thread-token-usage';
+import { logoutUser } from '@/utils/auth/user-auth-client';
 import {
   parseNamespacedMcpToolName,
   summarizeAgentMcpStatuses,
@@ -151,6 +152,8 @@ function AgentConsole() {
   const [websiteStartError, setWebsiteStartError] = useState<string | null>(null);
   const [websiteStarting, setWebsiteStarting] = useState(false);
   const [githubLoginPromptOpen, setGithubLoginPromptOpen] = useState(false);
+  const [githubLoginSwitching, setGithubLoginSwitching] = useState(false);
+  const [githubLoginPromptError, setGithubLoginPromptError] = useState<string | null>(null);
 
   const skipHydrationRef = useRef(false);
   const dismissedQuestionIdsRef = useRef(new Set<string>());
@@ -373,6 +376,22 @@ function AgentConsole() {
       );
     } finally {
       setWebsiteStarting(false);
+    }
+  };
+
+  const switchToGithubLogin = async () => {
+    if (githubLoginSwitching) return;
+    setGithubLoginPromptError(null);
+    setGithubLoginSwitching(true);
+    try {
+      await logoutUser();
+      session.clear();
+      window.location.assign('/login?returnTo=%2F');
+    } catch (error) {
+      setGithubLoginPromptError(
+        error instanceof Error && error.message ? error.message : '当前账号退出失败，请重试。',
+      );
+      setGithubLoginSwitching(false);
     }
   };
 
@@ -643,20 +662,28 @@ function AgentConsole() {
                 <p className="mt-3 text-sm leading-6 text-ink-muted">
                   当前账号类型不支持网页创作。
                 </p>
+                {githubLoginPromptError ? (
+                  <p role="alert" className="mt-2 text-xs text-danger">
+                    {githubLoginPromptError}
+                  </p>
+                ) : null}
                 <div className="mt-5 flex justify-end gap-2">
                   <button
                     type="button"
                     onClick={() => setGithubLoginPromptOpen(false)}
+                    disabled={githubLoginSwitching}
                     className="rounded-xl px-3 py-2 text-sm font-semibold text-ink-muted transition hover:bg-surface-inset"
                   >
                     暂不登录
                   </button>
-                  <a
-                href="/login?returnTo=%2F"
-                    className="rounded-xl bg-brand px-3 py-2 text-sm font-semibold text-white transition hover:bg-brand-hover"
+                  <button
+                    type="button"
+                    onClick={() => void switchToGithubLogin()}
+                    disabled={githubLoginSwitching}
+                    className="rounded-xl bg-brand px-3 py-2 text-sm font-semibold text-white transition hover:bg-brand-hover disabled:cursor-wait disabled:opacity-65"
                   >
-                    使用 GitHub 登录
-                  </a>
+                    {githubLoginSwitching ? '正在切换账号…' : '使用 GitHub 登录'}
+                  </button>
                 </div>
               </section>
             </div>,
