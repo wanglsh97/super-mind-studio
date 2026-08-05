@@ -35,12 +35,12 @@ The system SHALL archive a source ZIP and a static build ZIP from the explicit p
 - **THEN** its owner can download both assets using same-origin authorized routes after the Sandbox is destroyed
 
 ### Requirement: Website previews are private and temporary
-The system SHALL proxy a generated static preview only to the project owner using a short-lived server-issued route. It MUST NOT expose a Sandbox port directly or provide a public share URL.
+The system SHALL serve a generated static preview only to the project owner through a same-origin route backed by the validated archived static build. It MUST NOT expose a Sandbox port, persistent OSS URL, or public share URL.
 
 #### Scenario: Owner opens a preview
 - **GIVEN** an owner has a completed project with an active preview
 - **WHEN** the owner opens its preview route
-- **THEN** the system proxies only that project's static content to the authenticated owner
+- **THEN** the system serves only that project's archived static content to the authenticated owner
 
 #### Scenario: Another user opens a preview
 - **GIVEN** a project belongs to user A

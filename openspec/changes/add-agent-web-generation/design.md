@@ -45,9 +45,9 @@ Agent 可以选择 Next.js static export、Vite、Astro 或其他可在 Sandbox 
 
 所有列表、详情和下载均以当前 session userId 查询。下载继续通过同源 API，不向数据库或 Agent event 保存持久 OSS URL。
 
-### Decision 5: 预览是短期、同源、用户私有的 Sandbox 代理
+### Decision 5: 预览是同源、用户私有的归档静态包读取
 
-构建成功后 Sandbox 以目录为根启动本地静态 server。API 保存短期 preview route/token 并只向项目所有者代理，不直接暴露 Sandbox 端口。Sandbox 销毁或预览过期后预览 URL 失效，不影响 OSS ZIP 下载。
+构建成功后，API 从已验证并归档的 `dist.zip` 按请求路径精确读取静态文件，只允许项目所有者访问；不直接暴露 Sandbox 端口或存储持久 URL。该方式使预览不依赖 Sandbox 的存活，符合 Sandbox 销毁后仍保留产物的边界；预览会在产物到期后立即失效。
 
 未来部署 Connector 读取已经验证的 `dist` ZIP；它是额外授权动作，不能复用预览 URL 作为生产发布。
 
