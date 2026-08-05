@@ -11,6 +11,7 @@ import { ConfigService } from '@nestjs/config'
 
 import { PrismaService } from '../database/prisma.service'
 import {
+  CreationStatus,
   ImageTaskStatus,
   Prisma,
   RequestCapability,
@@ -118,6 +119,7 @@ export class ImageService {
         create: { requestLogId: task.requestLogId, usageUnknown: true },
         update: { usageUnknown: true },
       })
+      await upsertImageCreation(transaction, updated)
       return updated
     })
   }
@@ -173,6 +175,12 @@ export class ImageService {
         where: { requestLogId: task.requestLogId },
         create: { requestLogId: task.requestLogId, usageUnknown: true },
         update: { usageUnknown: true },
+      })
+      await upsertImageCreation(transaction, {
+        id: task.id,
+        userId: task.userId,
+        prompt: task.prompt,
+        status: nextStatus,
       })
     })
 
@@ -246,6 +254,24 @@ export class ImageService {
       updatedAt: task.updatedAt.toISOString(),
     }
   }
+}
+
+async function upsertImageCreation(
+  transaction: Prisma.TransactionClient,
+  task: { id: string; userId: string; prompt: string; status: ImageTaskStatus },
+): Promise<void> {
+  const status = task.status === ImageTaskStatus.SUCCEEDED ? CreationStatus.SUCCEEDED : CreationStatus.FAILED
+  await transaction.creation.upsert({
+    where: { imageTaskId: task.id },
+    create: {
+      userId: task.userId,
+      type: 'IMAGE',
+      status,
+      title: task.prompt.slice(0, 80) || '图片创作',
+      imageTaskId: task.id,
+    },
+    update: { status, title: task.prompt.slice(0, 80) || '图片创作' },
+  })
 }
 
 function toPublicStatus(status: ImageTaskStatus): ImageTask['status'] {

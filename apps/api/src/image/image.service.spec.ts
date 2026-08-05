@@ -12,6 +12,7 @@ const baseTask = {
   taskId: '00000000-0000-4000-8000-000000000120',
   requestLogId: 'log-1',
   userId,
+  prompt: '测试图片创作',
   modelAlias: 'mock-image',
   provider: 'mock',
   providerTaskId: 'provider-task-1',
@@ -30,10 +31,12 @@ function setup(tasks: unknown[], status: ImageAdapterStatus = { status: 'running
   const updateManyTask = jest.fn().mockResolvedValue({ count: 1 })
   const updateManyLog = jest.fn().mockResolvedValue({ count: 1 })
   const upsert = jest.fn().mockResolvedValue({})
+  const creationUpsert = jest.fn().mockResolvedValue({})
   const transactionClient = {
     imageGenerationTask: { updateMany: updateManyTask },
     requestLog: { updateMany: updateManyLog },
     billingRecord: { upsert },
+    creation: { upsert: creationUpsert },
   }
   const transaction = jest.fn(async (operation: (client: typeof transactionClient) => unknown) =>
     operation(transactionClient),
@@ -55,7 +58,7 @@ function setup(tasks: unknown[], status: ImageAdapterStatus = { status: 'running
     new ImageAdapterRegistry([adapter]),
     new ConfigService({ IMAGE_DOWNLOAD_MAX_BYTES: 1024 }),
   )
-  return { adapter, getStatus, service, transaction, updateManyLog, updateManyTask, upsert }
+  return { adapter, creationUpsert, getStatus, service, transaction, updateManyLog, updateManyTask, upsert }
 }
 
 describe('ImageService.get', () => {
@@ -148,10 +151,12 @@ describe('ImageService.recordSubmission', () => {
     const imageUpdate = jest.fn().mockResolvedValue(updated)
     const requestUpdate = jest.fn().mockResolvedValue({})
     const billingUpsert = jest.fn().mockResolvedValue({})
+    const creationUpsert = jest.fn().mockResolvedValue({})
     const transactionClient = {
       imageGenerationTask: { findFirst: imageFindFirst, update: imageUpdate },
       requestLog: { update: requestUpdate },
       billingRecord: { upsert: billingUpsert },
+      creation: { upsert: creationUpsert },
     }
     const transaction = jest.fn(async (operation: (client: typeof transactionClient) => unknown) =>
       operation(transactionClient),
@@ -185,6 +190,9 @@ describe('ImageService.recordSubmission', () => {
     )
     expect(billingUpsert).toHaveBeenCalledWith(
       expect.objectContaining({ where: { requestLogId: task.requestLogId } }),
+    )
+    expect(creationUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { imageTaskId: task.id } }),
     )
   })
 })
