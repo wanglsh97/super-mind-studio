@@ -61,9 +61,12 @@ import {
   ThinkingEffortSelect,
   NewThreadButton,
   UserMessage,
+  AgentWebCreationOption,
+  AgentWebCreationSelection,
 } from '@/components/chat-thread-ui';
 import { AssistantMarkdown } from '@/components/chat/assistant-markdown';
 import { ProtectedUserPage } from '@/components/protected-user-page';
+import { useUserSession } from '@/components/user-session-provider';
 import { useAgentActiveThreadId } from '@/hooks/use-agent-active-thread-id';
 import { useAgentWorkspace } from '@/hooks/use-agent-workspace';
 import { useAuthenticationFailure } from '@/hooks/use-authentication-failure';
@@ -88,6 +91,7 @@ import {
 import { activeRunForThread } from '@/utils/agent/agent-active-runs';
 import { initialAgentRunViewState } from '@/utils/agent/agent-run-reducer';
 import { threadTokenUsagePercentage } from '@/utils/agent/agent-thread-token-usage';
+import { githubLoginUrl } from '@/utils/auth/user-auth-client';
 import {
   parseNamespacedMcpToolName,
   summarizeAgentMcpStatuses,
@@ -113,6 +117,7 @@ export default function AgentPage() {
 
 function AgentConsole() {
   const handleAuthenticationFailure = useAuthenticationFailure();
+  const session = useUserSession();
   const {
     models,
     selectedModel,
@@ -142,6 +147,9 @@ function AgentConsole() {
   const [runProgress, setRunProgress] = useState<AgentRunProgressStage | null>(null);
   const [pendingQuestion, setPendingQuestion] = useState<AgentUserQuestion | null>(null);
   const [questionActionError, setQuestionActionError] = useState<string | null>(null);
+  const [webCreationSelected, setWebCreationSelected] = useState(false);
+  const [websiteStartError, setWebsiteStartError] = useState<string | null>(null);
+  const [websiteStarting, setWebsiteStarting] = useState(false);
 
   const skipHydrationRef = useRef(false);
   const dismissedQuestionIdsRef = useRef(new Set<string>());
@@ -337,7 +345,37 @@ function AgentConsole() {
   const aui = useAui({ tools: Tools({ toolkit: agentToolUiToolkit }) });
   const modelDisabled = modelOptions.length === 0;
   const currentActiveRun = activeRunForThread(activeRuns, activeThreadId);
-  const submitBlocked = modelDisabled || currentActiveRun !== null;
+  const submitBlocked = modelDisabled || currentActiveRun !== null || websiteStarting;
+  const canCreateWebsite = session.user?.authProvider === 'GITHUB';
+
+  const handleWebsiteCreation = async (prompt: string) => {
+    if (!canCreateWebsite) {
+      window.location.assign(githubLoginUrl('/'));
+      return;
+    }
+
+    setWebsiteStartError(null);
+    setWebsiteStarting(true);
+    try {
+      const project = await client.creations.createWebsite({
+        prompt,
+        ...(selectedModel ? { model: selectedModel } : {}),
+      });
+      if (!project.threadId) throw new Error('网页创作会话未能启动，请重试。');
+      setWebCreationSelected(false);
+      await refreshThreads();
+      openThread(project.threadId);
+    } catch (error) {
+      handleAuthenticationFailure(error);
+      setWebsiteStartError(
+        error instanceof Error && error.message
+          ? error.message
+          : '网页创作启动失败，请稍后重试。',
+      );
+    } finally {
+      setWebsiteStarting(false);
+    }
+  };
 
   return (
     <AssistantRuntimeProvider runtime={runtime} aui={aui}>
@@ -475,7 +513,27 @@ function AgentConsole() {
                   {activeRuns.some((run) => run.threadId !== activeThreadId) ? (
                     <AgentActiveRunHint message="其他会话正在后台运行；当前会话仍可独立提交" />
                   ) : null}
-                  <AgentComposerRoot>
+                  <AgentWebCreationOption
+                    selected={webCreationSelected}
+                    disabled={submitBlocked}
+                    onClick={() => {
+                      if (!canCreateWebsite) {
+                        window.location.assign(githubLoginUrl('/'));
+                        return;
+                      }
+                      setWebsiteStartError(null);
+                      setWebCreationSelected((current) => !current);
+                    }}
+                  />
+                  <AgentComposerRoot
+                    {...(webCreationSelected
+                      ? {
+                          onSubmitText: (prompt: string) => {
+                            void handleWebsiteCreation(prompt);
+                          },
+                        }
+                      : {})}
+                  >
                     <AgentSkillSlashPicker
                       candidates={skillCandidates}
                       selectedNames={selectedSkillNames}
@@ -502,6 +560,12 @@ function AgentConsole() {
                     <AgentDictationTranscript />
                     <AgentComposerFooter>
                       <AgentComposerActions>
+                        {webCreationSelected ? (
+                          <AgentWebCreationSelection
+                            disabled={websiteStarting}
+                            onClear={() => setWebCreationSelected(false)}
+                          />
+                        ) : null}
                         <NewThreadButton onNewThread={startNewThread} />
                       </AgentComposerActions>
                       <AgentComposerSubmitGroup>
@@ -534,6 +598,7 @@ function AgentConsole() {
                       </AgentComposerSubmitGroup>
                     </AgentComposerFooter>
                   </AgentComposerRoot>
+                  {websiteStartError ? <p role="alert" className="mx-auto mt-1.5 w-full max-w-[44rem] text-xs text-danger sm:w-[calc(100%-2rem)]">{websiteStartError}</p> : null}
                   <AgentPrivacyNote />
                 </>
               )}

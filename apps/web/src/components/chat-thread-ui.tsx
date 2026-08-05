@@ -211,7 +211,13 @@ export function AgentComposerDock({ children }: Readonly<{ children: ReactNode }
   );
 }
 
-export function AgentComposerRoot({ children }: Readonly<{ children: ReactNode }>) {
+export function AgentComposerRoot({
+  children,
+  onSubmitText,
+}: Readonly<{
+  children: ReactNode;
+  onSubmitText?: (text: string) => void;
+}>) {
   const aui = useAui();
   const composerText = useAuiState(({ composer }) => composer.text);
   const [hasFocus, setHasFocus] = useState(false);
@@ -240,6 +246,11 @@ export function AgentComposerRoot({ children }: Readonly<{ children: ReactNode }
           }
 
           if (trimmedText !== composerText) aui.composer().setText(trimmedText);
+          if (onSubmitText) {
+            event.preventDefault();
+            aui.composer().setText('');
+            onSubmitText(trimmedText);
+          }
         }}
         className={cn(
           'liquid-glass relative mx-auto w-full max-w-[44rem] rounded-[1.125rem] p-2 pb-2.5 transition-[border-color,box-shadow] sm:w-[calc(100%-2rem)]',
@@ -289,6 +300,68 @@ export function AgentComposerFooter({ children }: Readonly<{ children: ReactNode
 
 export function AgentComposerActions({ children }: Readonly<{ children: ReactNode }>) {
   return <div className="flex min-w-0 items-center gap-0.5 md:gap-1">{children}</div>;
+}
+
+export function AgentWebCreationOption({
+  selected,
+  disabled,
+  onClick,
+}: Readonly<{
+  selected: boolean;
+  disabled?: boolean;
+  onClick: () => void;
+}>) {
+  return (
+    <button
+      type="button"
+      aria-pressed={selected}
+      disabled={disabled}
+      onClick={onClick}
+      className={cn(
+        'mx-auto mb-2 flex w-full max-w-[44rem] items-center gap-2 rounded-xl border px-3 py-2 text-left text-xs transition-colors sm:w-[calc(100%-2rem)]',
+        selected
+          ? 'border-brand/45 bg-brand-subtle text-brand-hover dark:text-brand-light'
+          : 'border-line bg-surface/80 text-ink-muted hover:border-brand/35 hover:bg-brand-subtle/50 hover:text-brand-hover',
+        'disabled:cursor-not-allowed disabled:opacity-45',
+        focusRing,
+      )}
+    >
+      <span aria-hidden="true" className="grid size-6 shrink-0 place-items-center rounded-lg bg-brand/12 text-brand">
+        <svg viewBox="0 0 20 20" className="size-3.5 fill-none stroke-current stroke-[1.7]">
+          <path d="M3.5 3.5h13v13h-13zM3.5 7.5h13M7.5 7.5v9" strokeLinejoin="round" />
+          <path d="m10.25 12.5 1.5 1.5 3-3" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </span>
+      <span className="font-semibold">网页创作</span>
+      <span className="min-w-0 truncate text-ink-subtle">生成可预览、可下载的静态网站</span>
+      <span className="ml-auto shrink-0 font-semibold">{selected ? '已选中' : '选择'}</span>
+    </button>
+  );
+}
+
+export function AgentWebCreationSelection({
+  onClear,
+  disabled,
+}: Readonly<{
+  onClear: () => void;
+  disabled?: boolean;
+}>) {
+  return (
+    <button
+      type="button"
+      onClick={onClear}
+      disabled={disabled}
+      className={cn(
+        'inline-flex min-h-8 items-center gap-1.5 rounded-lg bg-brand-subtle px-2 text-[0.66rem] font-semibold whitespace-nowrap text-brand-hover transition-colors hover:bg-brand/18 dark:text-brand-light disabled:cursor-not-allowed disabled:opacity-45',
+        focusRing,
+      )}
+      aria-label="取消网页创作"
+      title="取消网页创作"
+    >
+      <span>网页创作</span>
+      <span aria-hidden="true" className="text-[0.85rem] leading-none">×</span>
+    </button>
+  );
 }
 
 export function AgentComposerAction({
