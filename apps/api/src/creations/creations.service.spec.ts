@@ -67,9 +67,9 @@ describe('CreationsService', () => {
     const result = await service.getWebsite(githubUser, projectId)
 
     expect(result.status).toBe('failed')
-    expect(prisma.webProject.update).toHaveBeenCalledWith(expect.objectContaining({
-      data: expect.objectContaining({ status: 'FAILED', errorCode: 'WEB_PROJECT_ARTIFACTS_MISSING' }),
-    }))
+    expect(prisma.webProject.update).toHaveBeenCalledWith(
+      projectId, 'FAILED', 'FAILED', 'WEB_PROJECT_ARTIFACTS_MISSING', expect.any(String),
+    )
   })
 })
 
@@ -84,10 +84,15 @@ function setup() {
     agentRun: { findMany: jest.Mock }
   }
   const outputs = { loadForOwner: jest.fn() } as unknown as AgentOutputFileService
+  const projects = {
+    findWebsiteForOwner: prisma.webProject.findFirst,
+    listWebsitesForOwner: jest.fn(),
+    updateTerminalStatus: prisma.webProject.update,
+  }
   return {
     prisma,
     outputs,
-    service: new CreationsService(prisma as unknown as PrismaService, {} as AgentService, outputs, new WebProjectArchiveValidator(), { loadUserFile: jest.fn(), writeUserFile: jest.fn() } as never),
+    service: new CreationsService(prisma as unknown as PrismaService, {} as AgentService, outputs, new WebProjectArchiveValidator(), { loadUserFile: jest.fn(), writeUserFile: jest.fn() } as never, projects as never),
   }
 }
 

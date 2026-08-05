@@ -18,6 +18,7 @@ import { PrismaService } from '../database/prisma.service'
 import { AgentService } from '../agent/agent.service'
 import type { AuthenticatedUser } from '../user/user.types'
 import { WebProjectArchiveValidationError, WebProjectArchiveValidator } from './web-project-archive.validator'
+import { CreationRepository } from './creation.repository'
 
 const WEB_ARTIFACT_RETENTION_MS = 30 * 24 * 60 * 60 * 1_000
 const DEFAULT_AGENT_MODEL = 'qwen3.7-plus'
@@ -30,6 +31,7 @@ export class CreationsService {
     @Inject(AgentOutputFileService) private readonly outputFiles: AgentOutputFileService,
     @Inject(WebProjectArchiveValidator) private readonly archives: WebProjectArchiveValidator,
     @Inject(SKILL_OBJECT_STORE_PORT) private readonly objects: SkillObjectStorePort,
+    @Inject(CreationRepository) private readonly projects: CreationRepository,
   ) {}
 
   async createWebsite(user: AuthenticatedUser, input: { prompt: string; model?: string }) {
@@ -85,11 +87,7 @@ export class CreationsService {
     this.requireGithub(user)
     const now = new Date()
     const [websites, images] = await Promise.all([
-      this.prisma.webProject.findMany({
-        where: { userId: user.id },
-        include: { creation: { include: { assets: { orderBy: { createdAt: 'asc' } } } } },
-        orderBy: { createdAt: 'desc' },
-      }),
+      this.projects.listWebsitesForOwner(user.id),
       this.prisma.imageGenerationTask.findMany({
         where: { userId: user.id },
         orderBy: { createdAt: 'desc' },
@@ -116,10 +114,7 @@ export class CreationsService {
 
   async getWebsite(user: AuthenticatedUser, projectId: string) {
     this.requireGithub(user)
-    const project = await this.prisma.webProject.findFirst({
-      where: { id: projectId, userId: user.id },
-      include: { creation: { include: { assets: true } } },
-    })
+    const project = await this.projects.findWebsiteForOwner(projectId, user.id)
     if (!project) throw new NotFoundException('网页项目不存在')
     const outputs = await this.findWebsiteOutputs(user.id, [project])
     const statuses = await this.syncTerminalProjectStatuses([project], outputs)
@@ -199,15 +194,7 @@ export class CreationsService {
       }
       resolved.set(project.id, transition.status)
       if (project.status === transition.status) return
-      await this.prisma.webProject.update({
-        where: { id: project.id },
-        data: {
-          status: transition.status,
-          errorCode: transition.errorCode,
-          errorMessage: transition.errorMessage,
-          creation: { update: { status: transition.creationStatus } },
-        },
-      })
+      await this.projects.updateTerminalStatus(project.id, transition.status, transition.creationStatus, transition.errorCode, transition.errorMessage)
     }))
     return resolved
   }
