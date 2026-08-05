@@ -70,6 +70,9 @@ import { webFetchTool } from './tools/web-fetch/tool'
 import { createWebSearchTool } from './tools/web-search/tool'
 import { createCallMcpTool, createDiscoverMcpToolsTool } from './tools/mcp-meta.tools'
 import { createAskUserQuestionTool } from './tools/ask-user-question.tool'
+import { createWebsiteTool } from './tools/create-website.tool'
+import { WebsiteDeliveryService } from './website/website-delivery.service'
+import { WebProjectArchiveValidator } from '../creations/web-project-archive.validator'
 
 export function resolveAgentTools(
   config: ConfigService,
@@ -77,6 +80,7 @@ export function resolveAgentTools(
   outputs: AgentOutputFileService,
   questions?: AgentUserQuestionService,
   mcp?: McpToolDispatcher,
+  websiteDelivery?: WebsiteDeliveryService,
 ): readonly AgentToolDefinition[] {
   // CI/确定性 E2E 可显式启用 fixture；默认使用生产级联网 web_fetch。
   const webTool =
@@ -104,6 +108,7 @@ export function resolveAgentTools(
     createReadFileTool(sessions),
     createWriteFileTool(sessions),
     createExportFileTool(outputs),
+    ...(websiteDelivery === undefined ? [] : [createWebsiteTool(websiteDelivery)]),
     ...(mcp === undefined ? [] : [createDiscoverMcpToolsTool(mcp), createCallMcpTool(mcp)]),
   ]
 }
@@ -197,6 +202,8 @@ export function createSandboxRuntime(config: ConfigService): SandboxRuntimePort 
     AgentExecutionSessionService,
     AgentOutputFileRepository,
     AgentOutputFileService,
+    WebProjectArchiveValidator,
+    WebsiteDeliveryService,
     AgentMcpSdkClient,
     AgentMcpPreferenceRepository,
     PlatformAgentMcpRegistry,
@@ -212,6 +219,7 @@ export function createSandboxRuntime(config: ConfigService): SandboxRuntimePort 
         AgentOutputFileService,
         AgentUserQuestionService,
         McpToolDispatcher,
+        WebsiteDeliveryService,
       ],
       useFactory: (
         config: ConfigService,
@@ -219,8 +227,9 @@ export function createSandboxRuntime(config: ConfigService): SandboxRuntimePort 
         outputs: AgentOutputFileService,
         questions: AgentUserQuestionService,
         mcp: McpToolDispatcher,
+        websiteDelivery: WebsiteDeliveryService,
       ): readonly AgentToolDefinition[] =>
-        resolveAgentTools(config, sessions, outputs, questions, mcp),
+        resolveAgentTools(config, sessions, outputs, questions, mcp, websiteDelivery),
     },
     AgentToolRegistry,
   ],

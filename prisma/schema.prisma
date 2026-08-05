@@ -468,6 +468,7 @@ model WebProject {
   @@index([userId, createdAt])
   @@index([agentThreadId])
   @@index([agentRunId])
+  @@unique([userId, agentThreadId])
 }
 
 model CreationAsset {

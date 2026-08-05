@@ -15,23 +15,14 @@ export interface CreativeItem {
   runId?: string | null
   imageTaskId?: string
   imageCount?: number
-  assets?: Array<{ id: string; kind: string; name: string; expiresAt: string | null; downloadUrl?: string }>
+  assets?: Array<{
+    id: string
+    kind: string
+    name: string
+    expiresAt: string | null
+    downloadUrl?: string
+  }>
 }
-
-export interface WebProject {
-  id: string
-  creationId: string
-  status: string
-  title: string
-  threadId: string | null
-  runId: string | null
-  expiresAt: string | null
-  createdAt: string
-}
-
-export interface CreateWebProjectRequest { prompt: string; model?: string }
-
-export type WebsiteArtifactKind = 'source' | 'dist'
 
 export async function requestCreativeJson<T>(
   fetchImplementation: typeof globalThis.fetch,
@@ -39,6 +30,14 @@ export async function requestCreativeJson<T>(
   init: RequestInit,
 ): Promise<T> {
   const response = await fetchImplementation(url, init)
-  if (!response.ok) throw new AIGatewayProtocolError(response.headers.get('x-request-id') ?? 'unknown', `Creative API request failed (${response.status})`)
-  try { return await response.json() as T } catch (error) { throw new AIGatewayProtocolError('unknown', 'Creative API response is not valid JSON', error) }
+  if (!response.ok)
+    throw new AIGatewayProtocolError(
+      response.headers.get('x-request-id') ?? 'unknown',
+      `Creative API request failed (${response.status})`,
+    )
+  try {
+    return (await response.json()) as T
+  } catch (error) {
+    throw new AIGatewayProtocolError('unknown', 'Creative API response is not valid JSON', error)
+  }
 }

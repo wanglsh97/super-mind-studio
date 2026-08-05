@@ -15,7 +15,7 @@ import {
 import { createAgentClient } from './agent-client.js'
 import type { AgentClient } from './agent-client.js'
 import type { SkillDirectUploadTransport } from './skill-upload.js'
-import type { CreativeItem, CreateWebProjectRequest, WebProject, WebsiteArtifactKind } from './creations.js'
+import type { CreativeItem } from './creations.js'
 import { requestCreativeJson } from './creations.js'
 import {
   createAdminSkillClient,
@@ -57,10 +57,6 @@ export interface AIGatewayClient {
   agent: AgentClient
   creations: {
     list(options?: RequestOptions): Promise<CreativeItem[]>
-    createWebsite(input: CreateWebProjectRequest, options?: RequestOptions): Promise<WebProject>
-    getWebsite(projectId: string, options?: RequestOptions): Promise<CreativeItem>
-    downloadWebsiteAssetUrl(projectId: string, kind: WebsiteArtifactKind): string
-    previewWebsiteUrl(projectId: string): string
   }
   skills: SkillMarketClient
   admin: {
@@ -101,11 +97,11 @@ export function createAIGatewayClient(options: CreateAIGatewayClientOptions = {}
         : { skillUploadTransport: options.skillUploadTransport }),
     }),
     creations: {
-      list: (requestOptions) => requestCreativeJson<CreativeItem[]>(fetchWithCredentials, `${baseUrl}/api/v1/creations`, { headers: { accept: 'application/json' }, ...(requestOptions?.signal === undefined ? {} : { signal: requestOptions.signal }) }),
-      createWebsite: (input, requestOptions) => requestCreativeJson<WebProject>(fetchWithCredentials, `${baseUrl}/api/v1/creations/websites`, { method: 'POST', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify(input), ...(requestOptions?.signal === undefined ? {} : { signal: requestOptions.signal }) }),
-      getWebsite: (projectId, requestOptions) => requestCreativeJson<CreativeItem>(fetchWithCredentials, `${baseUrl}/api/v1/creations/websites/${encodeURIComponent(projectId)}`, { headers: { accept: 'application/json' }, ...(requestOptions?.signal === undefined ? {} : { signal: requestOptions.signal }) }),
-      downloadWebsiteAssetUrl: (projectId, kind) => `${baseUrl}/api/v1/creations/websites/${encodeURIComponent(projectId)}/assets/${kind}`,
-      previewWebsiteUrl: (projectId) => `${baseUrl}/api/v1/creations/websites/${encodeURIComponent(projectId)}/preview`,
+      list: (requestOptions) =>
+        requestCreativeJson<CreativeItem[]>(fetchWithCredentials, `${baseUrl}/api/v1/creations`, {
+          headers: { accept: 'application/json' },
+          ...(requestOptions?.signal === undefined ? {} : { signal: requestOptions.signal }),
+        }),
     },
     skills: createSkillMarketClient(fetchWithCredentials, baseUrl),
     admin: {

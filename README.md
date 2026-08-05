@@ -76,11 +76,11 @@ Agent Thread 在第一次 Run 时按需创建一个隔离沙箱，同一 Thread 
 
 ## 网页创作与产物保留
 
-使用 GitHub 登录的用户可以通过 Agent 创建一次性静态网站。Agent 必须导出 `source.zip` 与 `dist.zip`；服务端会校验源码包的 `package.json`/锁文件以及构建包根目录的 `index.html`，然后归档到私有 OSS 的 `creations/{userId}/{creationId}/` 前缀。网站预览和 ZIP 下载均通过同源、owner-scoped API 提供，不暴露 Sandbox 地址或 OSS 持久 URL。
+使用 GitHub 登录的用户可以在既有 Agent Run 中传入 `mode: website` 创建静态网站，不存在独立网站 Agent API。每个网页 Run 会自动加载平台内置 `static-website-builder` Skill，固定使用 React + TypeScript + Vite + Tailwind CSS + shadcn/ui + Lucide。Agent 只能通过 `create_website` Tool 完成交付：Tool 统一执行 `pnpm build`、校验 `dist/index.html`、生成 `source.zip`/`dist.zip`并原子覆盖同一 Thread 的最终产物。
 
-网页产物保留 30 天。生产部署前，必须为 OSS bucket 应用 [creations-lifecycle.xml](infra/oss/creations-lifecycle.xml) 中 `creations/` 前缀的 Lifecycle 规则；API 仍会以数据库 `expiresAt` 拒绝到期访问，避免依赖 OSS 异步删除窗口。Sandbox 销毁不影响已归档 ZIP 与预览。
+预览仅依赖当前 Thread Sandbox，删除 Thread 后立即失效；最新成功的两个 ZIP 仍可在“我的创作”下载。每次成功覆盖都会把保留期重置为 30 天；不保留旧版本、不提供回滚。生产部署前，必须为 OSS bucket 应用 [creations-lifecycle.xml](infra/oss/creations-lifecycle.xml) 中 `creations/` 前缀的 Lifecycle 规则；API 仍会以数据库 `expiresAt` 拒绝到期访问。
 
-当前 V1 仅交付静态站点，不支持数据库、服务端 API、认证、支付、私密环境变量或部署。GitHub/Cloudflare Connector 与自定义域名部署将作为后续独立 change 实现。
+网页创作只支持静态站点，不支持或预留数据库、服务端 API、认证、支付、私密环境变量和全栈 Skill。当前 change 不实现 GitHub/Cloudflare Connector、公网发布或自定义域名。
 
 本地开发与生产环境都只使用真实 OpenSandbox Server，不提供进程内 Sandbox fallback。API 启动前必须配置 `OPEN_SANDBOX_DOMAIN`、`OPEN_SANDBOX_API_KEY`，并按需配置协议、镜像、请求/就绪超时和 server proxy；缺少连接配置时 API 会直接拒绝启动。
 
