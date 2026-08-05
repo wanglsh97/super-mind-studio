@@ -94,7 +94,9 @@ describe('AgentExecutionSessionService Thread sandbox lifecycle', () => {
       'user-1',
       '/workspace/.platform-skills/static-website-builder/package.py',
     )
-    expect(new TextDecoder().decode(init?.bytes)).toContain('pnpm create vite@latest')
+    const initScript = new TextDecoder().decode(init?.bytes)
+    expect(initScript).toContain('npm install --global pnpm@9.15.9')
+    expect(initScript).toContain('pnpm create vite@6.5.0')
     expect(new TextDecoder().decode(packager?.bytes)).toContain("excluded_dirs = {'.git'")
 
     await service.finishRun('run-web')

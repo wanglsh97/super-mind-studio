@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
 
 export const STATIC_WEBSITE_BUILDER_SKILL_ID = 'static-website-builder'
-export const STATIC_WEBSITE_BUILDER_SKILL_VERSION = '1.0.0'
+export const STATIC_WEBSITE_BUILDER_SKILL_VERSION = '1.0.1'
 
 export const STATIC_WEBSITE_BUILDER_SKILL_MARKDOWN = `# Static Website Builder
 
@@ -49,9 +49,13 @@ if [ -e package.json ]; then
   exit 2
 fi
 
-pnpm create vite@latest . --template react-ts
-pnpm add react react-dom tailwindcss @tailwindcss/vite lucide-react clsx tailwind-merge class-variance-authority @radix-ui/react-slot
-pnpm add -D @vitejs/plugin-react @types/node @types/react @types/react-dom
+if ! pnpm --version >/dev/null 2>&1; then
+  npm install --global pnpm@9.15.9
+fi
+
+pnpm create vite@6.5.0 . --template react-ts
+pnpm add react@19 react-dom@19 tailwindcss@4 @tailwindcss/vite@4 lucide-react clsx tailwind-merge class-variance-authority @radix-ui/react-slot
+pnpm add -D vite@6 @vitejs/plugin-react@4 typescript@5.9 @types/node@22 @types/react@19 @types/react-dom@19
 
 cat > vite.config.ts <<'EOF'
 import path from 'node:path'
