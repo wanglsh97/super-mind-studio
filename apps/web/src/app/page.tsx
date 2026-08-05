@@ -27,6 +27,7 @@ import {
   WebSpeechDictationAdapter,
 } from '@assistant-ui/react';
 import { Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 
 import { AgentSkillSlashPicker } from '@/components/agent-skill-slash-picker';
 import { AgentUserQuestionCard } from '@/components/agent-user-question-card';
@@ -607,7 +608,7 @@ function AgentConsole() {
           </AgentThreadRoot>
         </AgentConsolePanel>
       </AgentPageShell>
-      {githubLoginPromptOpen ? (
+      {githubLoginPromptOpen ? createPortal(
         <div
           role="presentation"
           className="fixed inset-0 z-50 grid place-items-center bg-black/25 p-4 backdrop-blur-sm"
@@ -657,7 +658,7 @@ function AgentConsole() {
             </div>
           </section>
         </div>
-      ) : null}
+      , document.body) : null}
     </AssistantRuntimeProvider>
   );
 }
