@@ -24,4 +24,4 @@
 - [ ] 4.1 配置并记录 OSS `creations/` 30 天 Lifecycle，API 层屏蔽已过期对象
 - [ ] 4.2 补充 Pino/RequestLog/Agent event 审计字段，确保不记录凭证或持久 OSS URL
 - [ ] 4.3 运行 API、SDK、Web 的相关测试、typecheck、lint、build 与 OpenSpec strict 校验
-- [ ] 4.4 更新 README/.env.example/部署文档，并记录独立 Sandbox 与未来 Connector 边界
+- [x] 4.4 更新 README/.env.example/部署文档，并记录独立 Sandbox 与未来 Connector 边界

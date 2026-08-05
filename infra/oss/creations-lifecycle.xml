@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LifecycleConfiguration>
+  <Rule>
+    <ID>expire-creations-after-30-days</ID>
+    <Prefix>creations/</Prefix>
+    <Status>Enabled</Status>
+    <Expiration><Days>30</Days></Expiration>
+  </Rule>
+</LifecycleConfiguration>

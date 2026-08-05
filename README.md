@@ -74,6 +74,14 @@ Agent Thread 在第一次 Run 时按需创建一个隔离沙箱，同一 Thread 
 
 `SANDBOX_TIMEOUT_SECONDS` 同时控制沙箱最大生命周期和空闲保留上限，默认值为 `3600`（1 小时）。OpenSandbox 的创建请求会接收同样的硬 TTL，API 重启后会从 PostgreSQL 恢复未过期 Thread 沙箱的清理期限。
 
+## 网页创作与产物保留
+
+使用 GitHub 登录的用户可以通过 Agent 创建一次性静态网站。Agent 必须导出 `source.zip` 与 `dist.zip`；服务端会校验源码包的 `package.json`/锁文件以及构建包根目录的 `index.html`，然后归档到私有 OSS 的 `creations/{userId}/{creationId}/` 前缀。网站预览和 ZIP 下载均通过同源、owner-scoped API 提供，不暴露 Sandbox 地址或 OSS 持久 URL。
+
+网页产物保留 30 天。生产部署前，必须为 OSS bucket 应用 [creations-lifecycle.xml](infra/oss/creations-lifecycle.xml) 中 `creations/` 前缀的 Lifecycle 规则；API 仍会以数据库 `expiresAt` 拒绝到期访问，避免依赖 OSS 异步删除窗口。Sandbox 销毁不影响已归档 ZIP 与预览。
+
+当前 V1 仅交付静态站点，不支持数据库、服务端 API、认证、支付、私密环境变量或部署。GitHub/Cloudflare Connector 与自定义域名部署将作为后续独立 change 实现。
+
 本地开发与生产环境都只使用真实 OpenSandbox Server，不提供进程内 Sandbox fallback。API 启动前必须配置 `OPEN_SANDBOX_DOMAIN`、`OPEN_SANDBOX_API_KEY`，并按需配置协议、镜像、请求/就绪超时和 server proxy；缺少连接配置时 API 会直接拒绝启动。
 
 `/api/v1/admin/*` 使用另一枚 `aigateway_admin_session` Cookie，与用户 Session 完全隔离。Swagger 只描述 Cookie 认证边界，不展示或接收 OAuth code、Provider access token、Client Secret 或原始 Session token。
