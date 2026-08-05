@@ -20,6 +20,7 @@ import { ObservabilityModule } from './observability/observability.module'
 import { PromptModule } from './prompt/prompt.module'
 import { RedisModule } from './redis/redis.module'
 import { UserAuthModule } from './user-auth/user-auth.module'
+import { CreationsModule } from './creations/creations.module'
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { UserAuthModule } from './user-auth/user-auth.module'
     ImageModule,
     PromptModule,
     AgentModule,
+    CreationsModule,
     AdminAuthModule,
     AdminDashboardModule,
     AdminRequestLogsModule,

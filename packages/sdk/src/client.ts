@@ -15,6 +15,8 @@ import {
 import { createAgentClient } from './agent-client.js'
 import type { AgentClient } from './agent-client.js'
 import type { SkillDirectUploadTransport } from './skill-upload.js'
+import type { CreativeItem, CreateWebProjectRequest, WebProject } from './creations.js'
+import { requestCreativeJson } from './creations.js'
 import {
   createAdminSkillClient,
   createSkillMarketClient,
@@ -53,6 +55,11 @@ export interface AIGatewayClient {
     list(options?: RequestOptions): Promise<ModelSummary[]>
   }
   agent: AgentClient
+  creations: {
+    list(options?: RequestOptions): Promise<CreativeItem[]>
+    createWebsite(input: CreateWebProjectRequest, options?: RequestOptions): Promise<WebProject>
+    getWebsite(projectId: string, options?: RequestOptions): Promise<CreativeItem>
+  }
   skills: SkillMarketClient
   admin: {
     skills: AdminSkillClient
@@ -91,6 +98,11 @@ export function createAIGatewayClient(options: CreateAIGatewayClientOptions = {}
         ? {}
         : { skillUploadTransport: options.skillUploadTransport }),
     }),
+    creations: {
+      list: (requestOptions) => requestCreativeJson<CreativeItem[]>(fetchWithCredentials, `${baseUrl}/api/v1/creations`, { headers: { accept: 'application/json' }, ...(requestOptions?.signal === undefined ? {} : { signal: requestOptions.signal }) }),
+      createWebsite: (input, requestOptions) => requestCreativeJson<WebProject>(fetchWithCredentials, `${baseUrl}/api/v1/creations/websites`, { method: 'POST', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify(input), ...(requestOptions?.signal === undefined ? {} : { signal: requestOptions.signal }) }),
+      getWebsite: (projectId, requestOptions) => requestCreativeJson<CreativeItem>(fetchWithCredentials, `${baseUrl}/api/v1/creations/websites/${encodeURIComponent(projectId)}`, { headers: { accept: 'application/json' }, ...(requestOptions?.signal === undefined ? {} : { signal: requestOptions.signal }) }),
+    },
     skills: createSkillMarketClient(fetchWithCredentials, baseUrl),
     admin: {
       skills: createAdminSkillClient(fetchWithCredentials, baseUrl),

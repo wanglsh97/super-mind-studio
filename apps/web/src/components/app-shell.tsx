@@ -284,6 +284,20 @@ function SidebarCapabilityLinks({
       )}
     >
       <Link
+        href="/creations"
+        aria-current={pathname === '/creations' ? 'page' : undefined}
+        title={collapsed ? '我的创作' : undefined}
+        className={cn(
+          capabilityLinkClass,
+          pathname === '/creations' && capabilityLinkActiveClass,
+          collapsed && 'size-10 justify-center px-0',
+          focusRing,
+        )}
+      >
+        <SparkIcon />
+        {!collapsed && <span>我的创作</span>}
+      </Link>
+      <Link
         href="/plugin"
         aria-current={pathname === '/plugin' ? 'page' : undefined}
         title={collapsed ? '插件市场' : undefined}
