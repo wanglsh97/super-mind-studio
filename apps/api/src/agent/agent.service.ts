@@ -7,6 +7,7 @@ import type {
 } from '@supermind/sdk'
 import {
   BadRequestException,
+  BadGatewayException,
   ConflictException,
   ForbiddenException,
   Inject,
@@ -264,13 +265,46 @@ export class AgentService {
   }
 
   async createPreviewEndpoint(user: AuthenticatedUser, runId: string, port: number) {
+    return this.createPreviewEndpointForOwner(user.id, runId, port)
+  }
+
+  async readPreviewAsset(
+    userId: string,
+    runId: string,
+    port: number,
+    assetPath: string | string[],
+  ) {
+    const normalizedPath = normalizePreviewAssetPath(assetPath)
+    const preview = await this.createPreviewEndpointForOwner(userId, runId, port)
+    const upstreamUrl = new URL(normalizedPath, ensureTrailingSlash(preview.url))
+    let upstream: Response
+    try {
+      upstream = await fetch(upstreamUrl, {
+        redirect: 'follow',
+        signal: AbortSignal.timeout(15_000),
+      })
+    } catch {
+      throw new BadGatewayException('Sandbox 网站预览暂时不可用')
+    }
+    if (!upstream.ok) {
+      throw new BadGatewayException(`Sandbox 网站预览返回 ${upstream.status}`)
+    }
+    return {
+      status: upstream.status,
+      contentType: upstream.headers.get('content-type') ?? 'application/octet-stream',
+      body: new Uint8Array(await upstream.arrayBuffer()),
+    }
+  }
+
+  private async createPreviewEndpointForOwner(userId: string, runId: string, port: number) {
     if (!Number.isInteger(port) || port < 1 || port > 65_535) {
       throw new BadRequestException('预览端口必须介于 1 与 65535 之间')
     }
-    const run = await this.assertRunOwner(user, runId)
+    const run = await this.runs.findForOwner(runId, userId)
+    if (!run) throw new NotFoundException('Agent 运行不存在')
     const current = await this.prisma.webProject.findFirst({
       where: {
-        userId: user.id,
+        userId,
         agentThreadId: run.threadId,
         agentRunId: run.id,
         status: 'SUCCEEDED',
@@ -278,7 +312,7 @@ export class AgentService {
       select: { id: true },
     })
     if (!current) throw new NotFoundException('网站预览已被覆盖或不存在')
-    return this.executionSessions.createThreadPreviewEndpoint(run.threadId, user.id, port)
+    return this.executionSessions.createThreadPreviewEndpoint(run.threadId, userId, port)
   }
 
   private async createWebsiteProjection(
@@ -308,4 +342,26 @@ export class AgentService {
       })
     })
   }
+}
+
+function normalizePreviewAssetPath(assetPath: string | string[]): string {
+  let decoded: string
+  try {
+    decoded = (Array.isArray(assetPath) ? assetPath : [assetPath])
+      .map((segment) => decodeURIComponent(segment))
+      .join('/')
+  } catch {
+    throw new BadRequestException('网站预览资源路径无效')
+  }
+  const segments = decoded.replace(/^\/+/, '').split('/')
+  if (segments.some((segment) => segment === '..' || segment === '.')) {
+    throw new BadRequestException('网站预览资源路径无效')
+  }
+  return segments.map((segment) => encodeURIComponent(segment)).join('/')
+}
+
+function ensureTrailingSlash(value: string): string {
+  const url = new URL(value)
+  if (!url.pathname.endsWith('/')) url.pathname += '/'
+  return url.toString()
 }

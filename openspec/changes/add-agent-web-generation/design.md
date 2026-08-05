@@ -55,7 +55,7 @@ Tool 不接受任意构建命令或路径，它在受控目录中固定执行：
 
 ### Decision 6: 预览凭证不入库
 
-Tool event 只记录同源 `previewPath`、run/project/artifact ID、有界构建摘要和过期时间。浏览器访问同源 Agent 预览路径时，API 验证 Session、Run owner、当前 WebProject 和 Thread Sandbox，然后临时换取 Sandbox 签名 endpoint 并重定向。签名 URL 不写入 Agent event、Pino 或数据库。
+Tool event 只记录同源 `previewPath`、run/project/artifact ID、有界构建摘要和过期时间。浏览器访问同源 Agent 预览路径时，API 验证 Session、Run owner、当前 WebProject 和 Thread Sandbox，然后签发十五分钟有效的平台预览 capability，并通过不要求用户 Session 的静态代理读取 Sandbox 资源。代理响应强制 CSP sandbox，预览 capability 不写入 Agent event、Pino 或数据库，避免 Docker runtime 的远端 IP endpoint 暴露给浏览器或被客户端安全策略拦截。
 
 ## Risks / Trade-offs
 

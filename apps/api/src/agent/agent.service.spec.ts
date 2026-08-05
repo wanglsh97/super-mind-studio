@@ -553,6 +553,29 @@ describe('AgentService', () => {
     )
   })
 
+  it('proxies nested preview assets through the current owner-scoped Sandbox endpoint', async () => {
+    const { service, runs, prisma } = setup()
+    ;(runs.findForOwner as jest.Mock).mockResolvedValue({ id: 'run-current', threadId: 'thread-1' })
+    ;(
+      prisma as unknown as { webProject: { findFirst: jest.Mock } }
+    ).webProject.findFirst.mockResolvedValue({ id: 'project-1' })
+    const fetchSpy = jest.spyOn(global, 'fetch').mockResolvedValue(
+      new Response('console.log("preview")', {
+        status: 200,
+        headers: { 'content-type': 'text/javascript' },
+      }),
+    )
+
+    await expect(
+      service.readPreviewAsset(user.id, 'run-current', 4173, ['assets', 'index.js']),
+    ).resolves.toMatchObject({ status: 200, contentType: 'text/javascript' })
+    expect(fetchSpy).toHaveBeenCalledWith(
+      new URL('https://sandbox.invalid/preview/assets/index.js'),
+      expect.objectContaining({ redirect: 'follow' }),
+    )
+    fetchSpy.mockRestore()
+  })
+
   it('passes manually selected global Skill names into the asynchronous Run executor', async () => {
     const { service, models, threads, runs, runService } = setup()
     ;(threads.findSummaryForOwner as jest.Mock).mockResolvedValue(threadRow())

@@ -83,6 +83,19 @@ describe('authentication log redaction', () => {
   })
 })
 
+describe('preview capability logging', () => {
+  it('disables automatic request logs for capability-bearing preview paths', () => {
+    const options = createPinoHttpOptions()
+
+    expect(
+      options.autoLogging.ignore({ url: '/api/v1/agent/preview/secret/index.html' } as never),
+    ).toBe(true)
+    expect(options.autoLogging.ignore({ url: '/api/v1/agent/runs/run-1/preview' } as never)).toBe(
+      false,
+    )
+  })
+})
+
 describe('HTTP access-log levels', () => {
   const request = {} as IncomingMessage
 

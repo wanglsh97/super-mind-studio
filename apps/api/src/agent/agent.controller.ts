@@ -50,6 +50,7 @@ import {
 import { AnswerAgentUserQuestionDto } from './dto/answer-agent-user-question.dto'
 import { AgentSkillService } from './skills/agent-skill.service'
 import { ExecutableSkillService } from './skills/executable-skill.service'
+import { AgentPreviewTokenService } from './website/agent-preview-token.service'
 import {
   SkillUploadSessionError,
   SkillUploadSessionService,
@@ -71,6 +72,7 @@ export class AgentController {
     @Inject(SkillUploadSessionService) private readonly skillUploads: SkillUploadSessionService,
     @Inject(AGENT_MCP_REGISTRY) private readonly mcp: AgentMcpRegistry,
     @Inject(TokenAnalyticsService) private readonly tokenAnalytics: TokenAnalyticsService,
+    @Inject(AgentPreviewTokenService) private readonly previewTokens: AgentPreviewTokenService,
   ) {}
 
   @Get('token-analytics')
@@ -284,8 +286,12 @@ export class AgentController {
     @CurrentUser() user: AuthenticatedUser,
     @Res() response: Response,
   ): Promise<void> {
-    const preview = await this.agent.createPreviewEndpoint(user, runId, port)
-    response.redirect(HttpStatus.FOUND, preview.url)
+    await this.agent.createPreviewEndpoint(user, runId, port)
+    const token = this.previewTokens.issue({ runId, userId: user.id, port })
+    response.redirect(
+      HttpStatus.FOUND,
+      `/api/v1/agent/preview/${encodeURIComponent(token)}/index.html`,
+    )
   }
 
   @Post('questions/:questionId/answer')

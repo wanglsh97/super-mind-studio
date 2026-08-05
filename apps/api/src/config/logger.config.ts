@@ -48,5 +48,10 @@ export function createPinoHttpOptions() {
       // 成功请求会在页面初始化和轮询期间大量出现；业务生命周期日志仍由 Nest Logger 保留。
       return 'silent' as const
     },
+    autoLogging: {
+      // 短期预览 capability 位于路径中；无论成功或失败都不把它写入 Pino。
+      ignore: (request: IncomingMessage) =>
+        request.url?.startsWith('/api/v1/agent/preview/') ?? false,
+    },
   }
 }

@@ -72,6 +72,8 @@ import { createCallMcpTool, createDiscoverMcpToolsTool } from './tools/mcp-meta.
 import { createAskUserQuestionTool } from './tools/ask-user-question.tool'
 import { createWebsiteTool } from './tools/create-website.tool'
 import { WebsiteDeliveryService } from './website/website-delivery.service'
+import { AgentPreviewProxyController } from './website/agent-preview-proxy.controller'
+import { AgentPreviewTokenService } from './website/agent-preview-token.service'
 import { WebProjectArchiveValidator } from '../creations/web-project-archive.validator'
 
 export function resolveAgentTools(
@@ -141,7 +143,7 @@ export function createSandboxRuntime(config: ConfigService): SandboxRuntimePort 
     RedisModule,
     TokenAnalyticsModule,
   ],
-  controllers: [AgentController, SkillMarketController],
+  controllers: [AgentController, AgentPreviewProxyController, SkillMarketController],
   providers: [
     AgentThreadRepository,
     AgentRunRepository,
@@ -204,6 +206,7 @@ export function createSandboxRuntime(config: ConfigService): SandboxRuntimePort 
     AgentOutputFileService,
     WebProjectArchiveValidator,
     WebsiteDeliveryService,
+    AgentPreviewTokenService,
     AgentMcpSdkClient,
     AgentMcpPreferenceRepository,
     PlatformAgentMcpRegistry,

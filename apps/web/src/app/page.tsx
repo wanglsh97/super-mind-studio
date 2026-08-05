@@ -1520,7 +1520,7 @@ function WebsiteDeliveryCard({
           src={previewUrl}
           title="网站预览"
           className="h-[30rem] w-full border-0 bg-white"
-          sandbox="allow-forms allow-modals allow-popups allow-scripts allow-same-origin"
+          sandbox="allow-forms allow-modals allow-popups allow-scripts"
         />
       ) : (
         <div className="grid h-40 place-items-center bg-surface-inset px-6 text-center text-sm text-ink-muted">
