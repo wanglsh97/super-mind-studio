@@ -92,6 +92,30 @@ describe('AgentPromptComposer', () => {
     expect(result.systemPrompt).not.toContain('<mcp_context>')
   })
 
+  it('injects the immutable static website Skill only for website mode', async () => {
+    const composer = new AgentPromptComposer(
+      new AgentToolRegistry([]),
+      { listCandidates: async () => [] },
+      mcpRegistry(),
+      { recall: async () => [] },
+    )
+    const base = {
+      userId: 'u1',
+      threadId: 't1',
+      modelId: 'mock',
+      provider: 'mock',
+      contextWindowTokens: 100_000,
+    }
+
+    const normal = await composer.compose(base)
+    const website = await composer.compose({ ...base, mode: 'website' })
+
+    expect(normal.systemPrompt).not.toContain('static-website-builder')
+    expect(website.systemPrompt).toContain('<built_in_skill id="static-website-builder"')
+    expect(website.systemPrompt).toContain('React and TypeScript')
+    expect(website.systemPrompt).toContain('call `create_website`')
+  })
+
   it('exposes only the provider-neutral web_search capability to the model', async () => {
     const composer = new AgentPromptComposer(
       new AgentToolRegistry([

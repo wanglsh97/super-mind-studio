@@ -10,6 +10,11 @@ import {
 import { AgentThreadRepository } from '../agent-thread.repository'
 import type { ActivatedSkill } from '../skills/executable-skill.service'
 import { ExecutableSkillService } from '../skills/executable-skill.service'
+import {
+  STATIC_WEBSITE_BUILDER_INIT_SCRIPT,
+  STATIC_WEBSITE_BUILDER_PACKAGE_SCRIPT,
+  STATIC_WEBSITE_BUILDER_SKILL_MARKDOWN,
+} from '../skills/builtin/static-website-builder.skill'
 
 interface ThreadExecutionSession {
   threadId: string
@@ -104,6 +109,35 @@ export class AgentExecutionSessionService {
     return { sandboxId: session.thread.sandboxId, skill, alreadyActive: false }
   }
 
+  async installStaticWebsiteBuilder(
+    runId: string,
+    userId: string,
+    signal?: AbortSignal,
+  ): Promise<void> {
+    const session = this.requireRunSession(runId, userId)
+    const root = '/workspace/.platform-skills/static-website-builder'
+    await Promise.all([
+      this.sandboxes.writeFile({
+        sandboxId: session.thread.sandboxId,
+        path: `${root}/SKILL.md`,
+        bytes: new TextEncoder().encode(STATIC_WEBSITE_BUILDER_SKILL_MARKDOWN),
+        ...(signal === undefined ? {} : { signal }),
+      }),
+      this.sandboxes.writeFile({
+        sandboxId: session.thread.sandboxId,
+        path: `${root}/init.sh`,
+        bytes: new TextEncoder().encode(STATIC_WEBSITE_BUILDER_INIT_SCRIPT),
+        ...(signal === undefined ? {} : { signal }),
+      }),
+      this.sandboxes.writeFile({
+        sandboxId: session.thread.sandboxId,
+        path: `${root}/package.py`,
+        bytes: new TextEncoder().encode(STATIC_WEBSITE_BUILDER_PACKAGE_SCRIPT),
+        ...(signal === undefined ? {} : { signal }),
+      }),
+    ])
+  }
+
   activeSkillNames(runId: string, userId: string): string[] {
     const session = this.requireRunSession(runId, userId)
     return [...session.activeSkills.values()]
@@ -159,6 +193,21 @@ export class AgentExecutionSessionService {
       bytes,
       ...(signal === undefined ? {} : { signal }),
     })
+  }
+
+  async createThreadPreviewEndpoint(
+    threadId: string,
+    userId: string,
+    port: number,
+    signal?: AbortSignal,
+  ) {
+    const session =
+      this.threadSessions.get(threadId) ?? (await this.restoreOneThreadSession(threadId))
+    this.assertThreadOwner(session ?? undefined, userId)
+    if (!session || session.expiresAt.getTime() <= Date.now()) {
+      throw new Error('当前 Thread 的 Sandbox 已不可用')
+    }
+    return this.sandboxes.createPreviewEndpoint(session.sandboxId, port, 15 * 60, signal)
   }
 
   async finishRun(runId: string): Promise<void> {

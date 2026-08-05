@@ -30,6 +30,10 @@ export class CreateAgentRunDto implements CreateAgentRunRequest {
   declare thinkingEffort?: AgentThinkingEffort
 
   @IsOptional()
+  @IsIn(['website'])
+  declare mode?: 'website'
+
+  @IsOptional()
   @IsArray()
   @ArrayMaxSize(50)
   @ValidateNested({ each: true })

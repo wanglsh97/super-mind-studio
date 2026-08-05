@@ -8,6 +8,7 @@ import type {
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Inject,
   Injectable,
   Logger,
@@ -17,6 +18,7 @@ import { ConfigService } from '@nestjs/config'
 import { randomUUID } from 'node:crypto'
 
 import { ChatModelCatalog } from '../chat/chat-model-catalog'
+import { PrismaService } from '../database/prisma.service'
 import type { AgentRun } from '../generated/prisma/client'
 import type { AuthenticatedUser } from '../user-auth/user-session.service'
 import { AgentActiveRunLock } from './agent-active-run.lock'
@@ -66,6 +68,7 @@ export class AgentService {
     private readonly executionSessions: AgentExecutionSessionService,
     @Inject(AgentUserQuestionService)
     private readonly userQuestions: AgentUserQuestionService,
+    @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(ConfigService) private readonly config: ConfigService,
   ) {}
 
@@ -178,7 +181,11 @@ export class AgentService {
     input: string,
     skills: readonly { name: string }[] = [],
     thinkingEffort: AgentThinkingEffort = 'balanced',
+    mode?: 'website',
   ): Promise<AgentRunSummary> {
+    if (mode === 'website' && user.authProvider !== 'GITHUB') {
+      throw new ForbiddenException('网页创作需要使用 GitHub 账号登录')
+    }
     const thread = await this.threads.findSummaryForOwner(threadId, user.id)
     if (!thread) throw new NotFoundException('Agent 会话不存在')
 
@@ -210,6 +217,10 @@ export class AgentService {
           : {}),
       })
 
+      if (mode === 'website') {
+        await this.createWebsiteProjection(user.id, threadId, input)
+      }
+
       void this.runService
         .execute({
           runId: run.id,
@@ -219,6 +230,7 @@ export class AgentService {
           provider: model.provider,
           contextWindowTokens: model.contextWindowTokens,
           input,
+          ...(mode === undefined ? {} : { mode }),
           thinkingEffort,
           selectedSkillNames: skills.map((skill) => skill.name),
           activeRunLockToken: lockToken,
@@ -249,5 +261,51 @@ export class AgentService {
     await this.userQuestions.cancelForRun(runId)
     this.runService.cancel(runId)
     return toRunSummary(run)
+  }
+
+  async createPreviewEndpoint(user: AuthenticatedUser, runId: string, port: number) {
+    if (!Number.isInteger(port) || port < 1 || port > 65_535) {
+      throw new BadRequestException('预览端口必须介于 1 与 65535 之间')
+    }
+    const run = await this.assertRunOwner(user, runId)
+    const current = await this.prisma.webProject.findFirst({
+      where: {
+        userId: user.id,
+        agentThreadId: run.threadId,
+        agentRunId: run.id,
+        status: 'SUCCEEDED',
+      },
+      select: { id: true },
+    })
+    if (!current) throw new NotFoundException('网站预览已被覆盖或不存在')
+    return this.executionSessions.createThreadPreviewEndpoint(run.threadId, user.id, port)
+  }
+
+  private async createWebsiteProjection(
+    userId: string,
+    threadId: string,
+    input: string,
+  ): Promise<void> {
+    const title = input.replace(/\s+/g, ' ').trim().slice(0, 80) || '网页创作'
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1_000)
+    const existing = await this.prisma.webProject.findFirst({
+      where: { userId, agentThreadId: threadId },
+      select: { id: true },
+    })
+    if (existing) return
+    await this.prisma.$transaction(async (tx) => {
+      const creation = await tx.creation.create({
+        data: { userId, type: 'WEBSITE', status: 'RUNNING', title, expiresAt },
+      })
+      await tx.webProject.create({
+        data: {
+          creationId: creation.id,
+          userId,
+          agentThreadId: threadId,
+          agentRunId: null,
+          status: 'GENERATING',
+        },
+      })
+    })
   }
 }

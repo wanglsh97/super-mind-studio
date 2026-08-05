@@ -97,6 +97,10 @@ class StubOpenSandboxInstance implements OpenSandboxInstance {
     return { memoryUsedMiB: 32 }
   }
 
+  async getSignedEndpoint(port: number, expires: number) {
+    return { endpoint: `preview.invalid/${this.id}/${port}?expires=${expires}` }
+  }
+
   async interrupt(): Promise<void> {}
 
   async kill(): Promise<void> {

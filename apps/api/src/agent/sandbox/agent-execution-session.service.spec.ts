@@ -71,6 +71,36 @@ function setup(
 }
 
 describe('AgentExecutionSessionService Thread sandbox lifecycle', () => {
+  it('installs the immutable static website Skill files into a website Run sandbox', async () => {
+    const { service } = setup()
+    await service.startRun('run-web', 'thread-web', 'user-1')
+
+    await service.installStaticWebsiteBuilder('run-web', 'user-1')
+
+    await expect(
+      service.readFile(
+        'run-web',
+        'user-1',
+        '/workspace/.platform-skills/static-website-builder/SKILL.md',
+      ),
+    ).resolves.toMatchObject({ sizeBytes: expect.any(Number) })
+    const init = await service.readFile(
+      'run-web',
+      'user-1',
+      '/workspace/.platform-skills/static-website-builder/init.sh',
+    )
+    const packager = await service.readFile(
+      'run-web',
+      'user-1',
+      '/workspace/.platform-skills/static-website-builder/package.py',
+    )
+    expect(new TextDecoder().decode(init?.bytes)).toContain('pnpm create vite@latest')
+    expect(new TextDecoder().decode(packager?.bytes)).toContain("excluded_dirs = {'.git'")
+
+    await service.finishRun('run-web')
+    await service.destroyThread('thread-web')
+  })
+
   it('keeps base file tools available while resetting per-Run Skill activation', async () => {
     const { service, sandboxes, skills } = setup()
     const createSandbox = jest.spyOn(sandboxes, 'createSandbox')

@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   HttpException,
   NotFoundException,
 } from '@nestjs/common'
@@ -16,6 +17,7 @@ import type { AgentRunService } from './agent-run.service'
 import type { AgentThreadRepository } from './agent-thread.repository'
 import type { AgentUserQuestionService } from './agent-user-question.service'
 import type { AgentExecutionSessionService } from './sandbox/agent-execution-session.service'
+import type { PrismaService } from '../database/prisma.service'
 import { AgentService } from './agent.service'
 
 const user: AuthenticatedUser = {
@@ -81,6 +83,10 @@ function setup() {
   } as unknown as jest.Mocked<AgentContextSummaryRepository>
   const executionSessions = {
     destroyThread: jest.fn().mockResolvedValue(undefined),
+    createThreadPreviewEndpoint: jest.fn().mockResolvedValue({
+      url: 'https://sandbox.invalid/preview',
+      expiresAt: '2026-08-05T01:00:00.000Z',
+    }),
   } as unknown as jest.Mocked<AgentExecutionSessionService>
   const userQuestions = {
     pendingForThread: jest.fn().mockResolvedValue(null),
@@ -89,6 +95,10 @@ function setup() {
   const config = {
     get: jest.fn((_key: string, fallback: unknown) => fallback),
   } as unknown as ConfigService
+  const prisma = {
+    $transaction: jest.fn(),
+    webProject: { findFirst: jest.fn() },
+  } as unknown as PrismaService
   const service = new AgentService(
     threads,
     runs,
@@ -99,6 +109,7 @@ function setup() {
     contextSummaries,
     executionSessions,
     userQuestions,
+    prisma,
     config,
   )
   return {
@@ -110,6 +121,7 @@ function setup() {
     activeRunLock,
     executionSessions,
     userQuestions,
+    prisma,
     service,
   }
 }
@@ -131,6 +143,27 @@ function threadRow(
     createdAt: new Date('2026-07-20T00:00:00.000Z'),
     updatedAt: new Date('2026-07-20T00:00:00.000Z'),
     ...overrides,
+  }
+}
+
+function runRow(id: string) {
+  return {
+    id,
+    threadId: 'thread-1',
+    status: 'RUNNING',
+    limitReason: null,
+    usageUnknown: false,
+    inputTokens: 0,
+    outputTokens: 0,
+    totalTokens: 0,
+    estimatedCostCny: null,
+    modelCallCount: 0,
+    toolCallCount: 0,
+    webFetchCount: 0,
+    lastSequence: -1,
+    createdAt: new Date('2026-07-20T00:00:00.000Z'),
+    startedAt: null,
+    completedAt: null,
   }
 }
 
@@ -431,6 +464,92 @@ describe('AgentService', () => {
         activeRunLockToken: expect.any(String),
         selectedSkillNames: [],
       }),
+    )
+  })
+
+  it('rejects website mode for a non-GitHub identity before creating a project or Sandbox', async () => {
+    const { service, threads, runs, runService } = setup()
+
+    await expect(
+      service.createRun(
+        { ...user, authProvider: 'ANONYMOUS' },
+        'thread-1',
+        '创建官网',
+        [],
+        'balanced',
+        'website',
+      ),
+    ).rejects.toBeInstanceOf(ForbiddenException)
+
+    expect(threads.findSummaryForOwner).not.toHaveBeenCalled()
+    expect(runs.admit).not.toHaveBeenCalled()
+    expect(runService.execute).not.toHaveBeenCalled()
+  })
+
+  it('keeps the original user message and starts website mode on the existing Agent Run', async () => {
+    const { service, threads, runs, runService, models, prisma } = setup()
+    ;(threads.findSummaryForOwner as jest.Mock).mockResolvedValue(threadRow())
+    ;(models.resolve as jest.Mock).mockReturnValue({
+      id: 'qwen3.7-plus',
+      provider: 'qwen',
+      contextWindowTokens: 128_000,
+    })
+    ;(runs.admit as jest.Mock).mockResolvedValue(runRow('run-website'))
+    const tx = {
+      creation: { create: jest.fn().mockResolvedValue({ id: 'creation-1' }) },
+      webProject: { create: jest.fn() },
+    }
+    ;(
+      prisma as unknown as { webProject: { findFirst: jest.Mock } }
+    ).webProject.findFirst.mockResolvedValue(null)
+    ;(prisma as unknown as { $transaction: jest.Mock }).$transaction.mockImplementation(
+      async (operation: (client: typeof tx) => Promise<void>) => operation(tx),
+    )
+
+    await service.createRun(user, 'thread-1', '创建一个极简作品集', [], 'balanced', 'website')
+
+    expect(runs.admit).toHaveBeenCalledWith(
+      expect.objectContaining({ input: '创建一个极简作品集' }),
+    )
+    expect(tx.webProject.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          agentThreadId: 'thread-1',
+          agentRunId: null,
+          status: 'GENERATING',
+        }),
+      }),
+    )
+    expect(runService.execute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        runId: 'run-website',
+        input: '创建一个极简作品集',
+        mode: 'website',
+      }),
+    )
+  })
+
+  it('resolves preview only for the current successful website delivery owned by the user', async () => {
+    const { service, runs, prisma, executionSessions } = setup()
+    ;(runs.findForOwner as jest.Mock).mockResolvedValue({ id: 'run-current', threadId: 'thread-1' })
+    ;(
+      prisma as unknown as { webProject: { findFirst: jest.Mock } }
+    ).webProject.findFirst.mockResolvedValue({ id: 'project-1' })
+
+    await expect(service.createPreviewEndpoint(user, 'run-current', 4173)).resolves.toEqual(
+      expect.objectContaining({ url: 'https://sandbox.invalid/preview' }),
+    )
+    expect(executionSessions.createThreadPreviewEndpoint).toHaveBeenCalledWith(
+      'thread-1',
+      user.id,
+      4173,
+    )
+
+    ;(
+      prisma as unknown as { webProject: { findFirst: jest.Mock } }
+    ).webProject.findFirst.mockResolvedValue(null)
+    await expect(service.createPreviewEndpoint(user, 'run-current', 4173)).rejects.toBeInstanceOf(
+      NotFoundException,
     )
   })
 

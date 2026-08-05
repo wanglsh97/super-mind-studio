@@ -6,9 +6,10 @@ import { AgentToolRegistry } from './tools/agent-tool.registry'
 export async function createAgentRunToolRegistry(
   builtIns: AgentToolRegistry,
   _mcp: unknown,
-  _input: unknown,
+  input: { mode?: 'website'; runId?: string; userId?: string; signal?: AbortSignal },
 ): Promise<AgentToolRegistry> {
   void _mcp
-  void _input
-  return new AgentToolRegistry(builtIns.list())
+  return new AgentToolRegistry(
+    builtIns.list().filter((tool) => input.mode === 'website' || tool.name !== 'create_website'),
+  )
 }

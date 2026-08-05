@@ -40,4 +40,14 @@ describe('createAgentRunToolRegistry', () => {
     expect(resolveTools).not.toHaveBeenCalled()
     expect(registry.list().map((item) => item.name)).toEqual(['web_fetch'])
   })
+
+  it('exposes create_website only for website mode', async () => {
+    const builtIns = new AgentToolRegistry([tool('shell'), tool('create_website')])
+
+    const normal = await createAgentRunToolRegistry(builtIns, {}, {})
+    const website = await createAgentRunToolRegistry(builtIns, {}, { mode: 'website' })
+
+    expect(normal.list().map((item) => item.name)).toEqual(['shell'])
+    expect(website.list().map((item) => item.name)).toEqual(['shell', 'create_website'])
+  })
 })

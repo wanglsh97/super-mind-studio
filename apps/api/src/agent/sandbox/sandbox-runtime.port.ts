@@ -110,6 +110,11 @@ export interface InstalledSandboxSkillPackage {
   files: AgentSkillFileEntry[]
 }
 
+export interface SandboxPreviewEndpoint {
+  url: string
+  expiresAt: string
+}
+
 export interface SandboxRuntimePort {
   healthCheck(signal?: AbortSignal): Promise<void>
   createSandbox(input: CreateSandboxInput): Promise<SandboxDescriptor>
@@ -125,6 +130,13 @@ export interface SandboxRuntimePort {
     signal?: AbortSignal,
   ): Promise<SandboxFileResult | null>
   getUsage(sandboxId: string, signal?: AbortSignal): Promise<SandboxUsage>
+  /** 创建一个短时效的 Sandbox HTTP 预览入口，不得当作可持久部署地址。 */
+  createPreviewEndpoint(
+    sandboxId: string,
+    port: number,
+    expiresInSeconds: number,
+    signal?: AbortSignal,
+  ): Promise<SandboxPreviewEndpoint>
   /** 中断遗留命令并重置下一 Run 的计数，保留 Thread workspace 文件。 */
   resetRunState(sandboxId: string, signal?: AbortSignal): Promise<void>
   cancelSandbox(sandboxId: string, signal?: AbortSignal): Promise<void>

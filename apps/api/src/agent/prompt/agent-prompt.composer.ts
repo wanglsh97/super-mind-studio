@@ -7,6 +7,7 @@ import { AGENT_MEMORY_PROVIDER, type AgentMemoryProvider } from '../memory/agent
 import { AGENT_SKILL_REGISTRY, type AgentSkillRegistry } from '../skills/agent-skill.registry'
 import type { AgentToolDefinition } from '../tools/agent-tool'
 import { AgentToolRegistry } from '../tools/agent-tool.registry'
+import { renderStaticWebsiteBuilderSkill } from '../skills/builtin/static-website-builder.skill'
 
 export const AGENT_PROMPT_PROFILE_VERSION = 'web-agent-v5'
 export const MAX_PROMPT_CANDIDATE_SKILLS = 50
@@ -55,6 +56,7 @@ export class AgentPromptComposer {
     modelId: string
     provider: string
     contextWindowTokens: number
+    mode?: 'website'
     summaryId?: string | null
     now?: Date
     tools?: readonly AgentToolDefinition[]
@@ -99,6 +101,15 @@ export class AgentPromptComposer {
           'Stop calling tools and answer once you have enough information. Ask the user only when a missing choice would materially change the goal or an action would create an unauthorized external effect.',
         ].join('\n'),
       ),
+      input.mode === 'website'
+        ? section(
+            'website_generation_profile',
+            [
+              'Website mode is active. Follow the immutable built-in Skill below as platform execution policy.',
+              renderStaticWebsiteBuilderSkill(),
+            ].join('\n'),
+          )
+        : '',
       section(
         'security_boundary',
         [

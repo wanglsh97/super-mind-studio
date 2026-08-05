@@ -11,6 +11,7 @@ import {
   NotFoundException,
   Param,
   ParseUUIDPipe,
+  ParseIntPipe,
   Patch,
   Post,
   Put,
@@ -264,6 +265,7 @@ export class AgentController {
       body.input,
       body.skills ?? [],
       body.thinkingEffort ?? 'balanced',
+      body.mode,
     )
   }
 
@@ -273,6 +275,17 @@ export class AgentController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.agent.cancelRun(user, runId)
+  }
+
+  @Get('runs/:runId/preview')
+  async openRunPreview(
+    @Param('runId', ParseUUIDPipe) runId: string,
+    @Query('port', ParseIntPipe) port: number,
+    @CurrentUser() user: AuthenticatedUser,
+    @Res() response: Response,
+  ): Promise<void> {
+    const preview = await this.agent.createPreviewEndpoint(user, runId, port)
+    response.redirect(HttpStatus.FOUND, preview.url)
   }
 
   @Post('questions/:questionId/answer')

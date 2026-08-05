@@ -79,6 +79,7 @@ export interface OpenSandboxInstance {
   writeFile(path: string, bytes: Uint8Array): Promise<void>
   readFile(path: string): Promise<Uint8Array | null>
   getMetrics(): Promise<OpenSandboxMetrics>
+  getSignedEndpoint(port: number, expires: number): Promise<{ endpoint: string }>
   interrupt(commandId: string): Promise<void>
   kill(): Promise<void>
   close(): Promise<void>
@@ -454,6 +455,34 @@ export class OpenSandboxRuntime implements SandboxRuntimePort, OnModuleDestroy {
     return { ...state.usage }
   }
 
+  async createPreviewEndpoint(
+    sandboxId: string,
+    port: number,
+    expiresInSeconds: number,
+    signal?: AbortSignal,
+  ): Promise<{ url: string; expiresAt: string }> {
+    throwIfAborted(signal)
+    if (!Number.isInteger(port) || port < 1 || port > 65_535) {
+      throw executionError('INVALID_PREVIEW_PORT', '预览端口必须介于 1 与 65535 之间', false)
+    }
+    const state = await this.requireReadyState(sandboxId)
+    const expiresAt = new Date(this.now().getTime() + expiresInSeconds * 1_000)
+    try {
+      const endpoint = await state.instance.getSignedEndpoint(
+        port,
+        Math.floor(expiresAt.getTime() / 1_000),
+      )
+      throwIfAborted(signal)
+      const url = /^https?:\/\//i.test(endpoint.endpoint)
+        ? endpoint.endpoint
+        : `https://${endpoint.endpoint}`
+      return { url, expiresAt: expiresAt.toISOString() }
+    } catch (error) {
+      if (signal?.aborted) throw abortReason(signal)
+      throw normalizeUnavailable(error, '创建 Sandbox 预览地址失败')
+    }
+  }
+
   async resetRunState(sandboxId: string, signal?: AbortSignal): Promise<void> {
     throwIfAborted(signal)
     const state = await this.requireReadyState(sandboxId)
@@ -697,6 +726,10 @@ class SdkOpenSandboxInstance implements OpenSandboxInstance {
   async getMetrics(): Promise<OpenSandboxMetrics> {
     const metrics = await this.sandbox.getMetrics()
     return { memoryUsedMiB: metrics.memoryUsedMiB }
+  }
+
+  async getSignedEndpoint(port: number, expires: number): Promise<{ endpoint: string }> {
+    return this.sandbox.getSignedEndpoint(port, expires)
   }
 
   async interrupt(commandId: string): Promise<void> {

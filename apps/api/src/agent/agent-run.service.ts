@@ -55,6 +55,7 @@ export interface ExecuteAgentRunInput {
   provider: string
   contextWindowTokens: number
   input: string
+  mode?: 'website'
   thinkingEffort: AgentThinkingEffort
   selectedSkillNames: readonly string[]
   /** createRun 持有的用户级 Redis 锁 token，终态 finally 中释放。 */
@@ -181,6 +182,13 @@ export class AgentRunService {
         )
         await this.runs.markSandboxReady(input.runId, sandboxId)
         await persistAndPublish(projector.sandboxStatus({ status: 'ready', sandboxId }))
+        if (input.mode === 'website') {
+          await this.executionSessions.installStaticWebsiteBuilder(
+            input.runId,
+            input.userId,
+            controller.signal,
+          )
+        }
       } catch (error) {
         await persistAndPublish(projector.sandboxStatus({ status: 'failed' }))
         throw error
@@ -249,9 +257,7 @@ export class AgentRunService {
       ])
       let activeSummary = initialSummary
       const runTools = await createAgentRunToolRegistry(this.tools, this.mcp, {
-        runId: input.runId,
-        userId: input.userId,
-        signal: controller.signal,
+        ...(input.mode === undefined ? {} : { mode: input.mode }),
       })
       const composedPrompt = await this.promptComposer.compose({
         userId: input.userId,
@@ -259,6 +265,7 @@ export class AgentRunService {
         modelId: input.modelId,
         provider: input.provider,
         contextWindowTokens: input.contextWindowTokens,
+        ...(input.mode === undefined ? {} : { mode: input.mode }),
         summaryId: activeSummary?.id ?? null,
         tools: runTools.list(),
         mcpServers: await this.mcp.listServers(input.userId),

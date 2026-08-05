@@ -70,6 +70,11 @@ export const AGENT_EXECUTION_ERROR_CODES = [
   'OUTPUT_RUN_QUOTA_EXCEEDED',
   'OUTPUT_USER_QUOTA_EXCEEDED',
   'OUTPUT_STORAGE_FAILED',
+  'INVALID_PREVIEW_PORT',
+  'WEBSITE_PROJECT_INVALID',
+  'WEBSITE_BUILD_FAILED',
+  'WEBSITE_ARCHIVE_FAILED',
+  'WEBSITE_PREVIEW_FAILED',
   'RUN_CANCELLED',
 ] as const
 export type AgentExecutionErrorCode = (typeof AGENT_EXECUTION_ERROR_CODES)[number]
@@ -361,6 +366,7 @@ export type AgentThinkingEffort = 'fast' | 'balanced' | 'deep'
 
 export interface CreateAgentRunRequest {
   input: string
+  mode?: 'website'
   /**
    * 三档用户表达在所有模型上保持一致，服务端映射为厂商支持的开关、budget 或 effort。
    * 省略时服务端默认 `balanced`。
