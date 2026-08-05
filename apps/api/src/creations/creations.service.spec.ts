@@ -30,7 +30,7 @@ describe('CreationsService', () => {
       id: projectId,
       userId: githubUser.id,
       agentRunId: runId,
-      creation: { expiresAt: new Date('2026-09-04T00:00:00.000Z') },
+      creation: { expiresAt: new Date('2026-09-04T00:00:00.000Z'), assets: [] },
     })
     prisma.userFile.findFirst.mockResolvedValue({ id: crypto.randomUUID() })
 
@@ -48,7 +48,7 @@ describe('CreationsService', () => {
       id: crypto.randomUUID(),
       userId: githubUser.id,
       agentRunId: crypto.randomUUID(),
-      creation: { expiresAt: new Date('2026-08-04T00:00:00.000Z') },
+      creation: { expiresAt: new Date('2026-08-04T00:00:00.000Z'), assets: [] },
     })
 
     await expect(service.downloadWebsiteAsset(githubUser, crypto.randomUUID(), 'source')).rejects.toBeInstanceOf(NotFoundException)
@@ -87,7 +87,7 @@ function setup() {
   return {
     prisma,
     outputs,
-    service: new CreationsService(prisma as unknown as PrismaService, {} as AgentService, outputs, new WebProjectArchiveValidator()),
+    service: new CreationsService(prisma as unknown as PrismaService, {} as AgentService, outputs, new WebProjectArchiveValidator(), { loadUserFile: jest.fn(), writeUserFile: jest.fn() } as never),
   }
 }
 

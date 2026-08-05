@@ -237,6 +237,7 @@ export function createSandboxRuntime(config: ConfigService): SandboxRuntimePort 
     AgentOutputFileService,
     SkillUploadSessionService,
     SANDBOX_RUNTIME_PORT,
+    SKILL_OBJECT_STORE_PORT,
   ],
 })
 export class AgentModule {}

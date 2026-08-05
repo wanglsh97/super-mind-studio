@@ -10,6 +10,10 @@ import type {
   WebProjectStatus,
 } from '../generated/prisma/client'
 import { AgentOutputFileService } from '../agent/files/agent-output-file.service'
+import {
+  SKILL_OBJECT_STORE_PORT,
+  type SkillObjectStorePort,
+} from '../agent/skills/storage/skill-object-store.port'
 import { PrismaService } from '../database/prisma.service'
 import { AgentService } from '../agent/agent.service'
 import type { AuthenticatedUser } from '../user/user.types'
@@ -25,6 +29,7 @@ export class CreationsService {
     @Inject(AgentService) private readonly agent: AgentService,
     @Inject(AgentOutputFileService) private readonly outputFiles: AgentOutputFileService,
     @Inject(WebProjectArchiveValidator) private readonly archives: WebProjectArchiveValidator,
+    @Inject(SKILL_OBJECT_STORE_PORT) private readonly objects: SkillObjectStorePort,
   ) {}
 
   async createWebsite(user: AuthenticatedUser, input: { prompt: string; model?: string }) {
@@ -126,10 +131,16 @@ export class CreationsService {
     const fileName = websiteAssetFileName(kind)
     const project = await this.prisma.webProject.findFirst({
       where: { id: projectId, userId: user.id },
-      include: { creation: true },
+      include: { creation: { include: { assets: true } } },
     })
     if (!project || !project.agentRunId || isExpired(project.creation.expiresAt, new Date())) {
       throw new NotFoundException('网页产物不存在或已过期')
+    }
+    const archived = project.creation.assets.find((asset) => asset.kind === (kind === 'source' ? 'SOURCE_ZIP' : kind === 'dist' ? 'DIST_ZIP' : null))
+    if (archived) {
+      const stored = await this.objects.loadUserFile(archived.objectKey)
+      if (!stored) throw new NotFoundException('网页归档产物不存在')
+      return { record: { name: archived.name, mimeType: archived.mimeType }, stored }
     }
     const file = await this.prisma.userFile.findFirst({
       where: {
@@ -215,6 +226,7 @@ export class CreationsService {
       ])
       await this.archives.validateSource(sourceFile.stored.bytes)
       await this.archives.validateDist(distFile.stored.bytes)
+      await this.archiveProjectArtifacts(project, sourceFile, distFile)
       return { status: 'SUCCEEDED', creationStatus: 'SUCCEEDED', errorCode: null, errorMessage: null }
     } catch (error) {
       const message = error instanceof Error ? error.message : '网页 ZIP 校验失败'
@@ -224,6 +236,46 @@ export class CreationsService {
         errorCode: error instanceof WebProjectArchiveValidationError ? error.code : 'WEB_PROJECT_ARCHIVE_UNAVAILABLE',
         errorMessage: message,
       }
+    }
+  }
+
+  private async archiveProjectArtifacts(
+    project: WebsiteProject,
+    source: Awaited<ReturnType<AgentOutputFileService['loadForOwner']>>,
+    dist: Awaited<ReturnType<AgentOutputFileService['loadForOwner']>>,
+  ): Promise<void> {
+    const artifacts = [
+      { kind: 'SOURCE_ZIP' as const, name: 'source.zip', source },
+      { kind: 'DIST_ZIP' as const, name: 'dist.zip', source: dist },
+    ]
+    for (const artifact of artifacts) {
+      const objectKey = `creations/${project.userId}/${project.creationId}/${artifact.name}`
+      const stored = await this.objects.writeUserFile({
+        objectKey,
+        direction: 'output',
+        fileName: artifact.name,
+        contentType: artifact.source.record.mimeType ?? 'application/zip',
+        bytes: artifact.source.stored.bytes,
+      })
+      await this.prisma.creationAsset.upsert({
+        where: { objectKey },
+        create: {
+          creationId: project.creationId,
+          kind: artifact.kind,
+          name: artifact.name,
+          mimeType: stored.metadata.contentType,
+          objectKey,
+          sizeBytes: BigInt(stored.metadata.sizeBytes),
+          sha256: stored.metadata.sha256,
+          expiresAt: project.creation.expiresAt,
+        },
+        update: {
+          mimeType: stored.metadata.contentType,
+          sizeBytes: BigInt(stored.metadata.sizeBytes),
+          sha256: stored.metadata.sha256,
+          expiresAt: project.creation.expiresAt,
+        },
+      })
     }
   }
 
