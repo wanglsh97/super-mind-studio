@@ -1,5 +1,7 @@
 import { ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common'
 
+import type { Creation, CreationAsset, UserFile, WebProject } from '../generated/prisma/client'
+import { AgentOutputFileService } from '../agent/files/agent-output-file.service'
 import { PrismaService } from '../database/prisma.service'
 import { AgentService } from '../agent/agent.service'
 import type { AuthenticatedUser } from '../user/user.types'
@@ -12,6 +14,7 @@ export class CreationsService {
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(AgentService) private readonly agent: AgentService,
+    @Inject(AgentOutputFileService) private readonly outputFiles: AgentOutputFileService,
   ) {}
 
   async createWebsite(user: AuthenticatedUser, input: { prompt: string; model?: string }) {
@@ -78,8 +81,9 @@ export class CreationsService {
         select: { taskId: true, prompt: true, status: true, createdAt: true, updatedAt: true, results: true },
       }),
     ])
+    const outputs = await this.findWebsiteOutputs(user.id, websites)
     return [
-      ...websites.map((project) => toCreationItem(project, now)),
+      ...websites.map((project) => toCreationItem(project, now, outputs.get(project.agentRunId ?? '') ?? [])),
       ...images.map((image) => ({
         id: `image:${image.taskId}`,
         type: 'image' as const,
@@ -101,7 +105,50 @@ export class CreationsService {
       include: { creation: { include: { assets: true } } },
     })
     if (!project) throw new NotFoundException('网页项目不存在')
-    return toCreationItem(project, new Date())
+    const outputs = await this.findWebsiteOutputs(user.id, [project])
+    return toCreationItem(project, new Date(), outputs.get(project.agentRunId ?? '') ?? [])
+  }
+
+  async downloadWebsiteAsset(user: AuthenticatedUser, projectId: string, kind: string) {
+    this.requireGithub(user)
+    const fileName = websiteAssetFileName(kind)
+    const project = await this.prisma.webProject.findFirst({
+      where: { id: projectId, userId: user.id },
+      include: { creation: true },
+    })
+    if (!project || !project.agentRunId || isExpired(project.creation.expiresAt, new Date())) {
+      throw new NotFoundException('网页产物不存在或已过期')
+    }
+    const file = await this.prisma.userFile.findFirst({
+      where: {
+        userId: user.id,
+        runId: project.agentRunId,
+        direction: 'OUTPUT',
+        status: 'AVAILABLE',
+        name: fileName,
+      },
+      orderBy: { createdAt: 'desc' },
+      select: { id: true },
+    })
+    if (!file) throw new NotFoundException('网页产物尚未生成')
+    return this.outputFiles.loadForOwner(file.id, user.id)
+  }
+
+  private async findWebsiteOutputs(userId: string, projects: readonly WebsiteProject[]): Promise<Map<string, WebsiteOutput[]>> {
+    const runIds = projects.flatMap((project) => project.agentRunId === null ? [] : [project.agentRunId])
+    if (runIds.length === 0) return new Map()
+    const files = await this.prisma.userFile.findMany({
+      where: { userId, runId: { in: runIds }, direction: 'OUTPUT', status: 'AVAILABLE', name: { in: ['source.zip', 'dist.zip'] } },
+      select: { id: true, runId: true, name: true, createdAt: true },
+      orderBy: { createdAt: 'asc' },
+    })
+    return files.reduce((outputs, file) => {
+      if (file.runId === null) return outputs
+      const existing = outputs.get(file.runId) ?? []
+      existing.push(file)
+      outputs.set(file.runId, existing)
+      return outputs
+    }, new Map<string, WebsiteOutput[]>())
   }
 
   private requireGithub(user: AuthenticatedUser) {
@@ -136,21 +183,42 @@ function toWebsite(project: { id: string; status: string; agentThreadId: string 
   }
 }
 
-function toCreationItem(project: any, now: Date) {
-  const expired = project.creation.expiresAt !== null && project.creation.expiresAt <= now
+type WebsiteProject = WebProject & { creation: Creation & { assets: CreationAsset[] } }
+type WebsiteOutput = Pick<UserFile, 'id' | 'runId' | 'name' | 'createdAt'>
+
+function toCreationItem(project: WebsiteProject, now: Date, outputs: readonly WebsiteOutput[]) {
+  const expired = isExpired(project.creation.expiresAt, now)
+  const storedAssets = project.creation.assets.map((asset) => ({
+    id: asset.id, kind: asset.kind.toLowerCase(), name: asset.name, expiresAt: asset.expiresAt?.toISOString() ?? null,
+  }))
+  const exportedAssets = expired ? [] : outputs.map((file) => ({
+    id: file.id,
+    kind: file.name === 'source.zip' ? 'source_zip' : 'dist_zip',
+    name: file.name,
+    expiresAt: project.creation.expiresAt?.toISOString() ?? null,
+    downloadUrl: `/api/v1/creations/websites/${project.id}/assets/${file.name === 'source.zip' ? 'source' : 'dist'}`,
+  }))
   return {
     id: project.creation.id,
     projectId: project.id,
     type: 'website' as const,
-    status: expired ? 'expired' : project.status.toLowerCase(),
+    status: expired ? 'expired' : exportedAssets.some((asset) => asset.kind === 'dist_zip') ? 'succeeded' : project.status.toLowerCase(),
     title: project.creation.title,
     createdAt: project.creation.createdAt.toISOString(),
     updatedAt: project.updatedAt.toISOString(),
     expiresAt: project.creation.expiresAt?.toISOString() ?? null,
     threadId: project.agentThreadId,
     runId: project.agentRunId,
-    assets: project.creation.assets.map((asset: any) => ({
-      id: asset.id, kind: asset.kind.toLowerCase(), name: asset.name, expiresAt: asset.expiresAt?.toISOString() ?? null,
-    })),
+    assets: [...storedAssets, ...exportedAssets],
   }
+}
+
+function websiteAssetFileName(kind: string): 'source.zip' | 'dist.zip' {
+  if (kind === 'source') return 'source.zip'
+  if (kind === 'dist') return 'dist.zip'
+  throw new NotFoundException('网页产物不存在')
+}
+
+function isExpired(expiresAt: Date | null, now: Date): boolean {
+  return expiresAt !== null && expiresAt <= now
 }

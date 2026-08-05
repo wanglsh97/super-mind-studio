@@ -15,7 +15,7 @@ export interface CreativeItem {
   runId?: string | null
   imageTaskId?: string
   imageCount?: number
-  assets?: Array<{ id: string; kind: string; name: string; expiresAt: string | null }>
+  assets?: Array<{ id: string; kind: string; name: string; expiresAt: string | null; downloadUrl?: string }>
 }
 
 export interface WebProject {

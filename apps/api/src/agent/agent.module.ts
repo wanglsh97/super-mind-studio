@@ -234,6 +234,7 @@ export function createSandboxRuntime(config: ConfigService): SandboxRuntimePort 
     AgentToolRegistry,
     ExecutableSkillService,
     AgentExecutionSessionService,
+    AgentOutputFileService,
     SkillUploadSessionService,
     SANDBOX_RUNTIME_PORT,
   ],
