@@ -50,7 +50,10 @@ export class SkillZipInspectionError extends Error {
 }
 
 export class SkillZipInspector {
-  constructor(private readonly limits: SkillZipLimits = DEFAULT_SKILL_ZIP_LIMITS) {}
+  constructor(
+    private readonly limits: SkillZipLimits = DEFAULT_SKILL_ZIP_LIMITS,
+    private readonly requireRootSkillMarkdown = true,
+  ) {}
 
   async inspect(archive: Uint8Array): Promise<InspectedSkillZip> {
     if (archive.byteLength > this.limits.maxCompressedBytes) {
@@ -117,7 +120,7 @@ export class SkillZipInspector {
         }
       })
       zip.on('end', () => {
-        if (!hasRootSkillMarkdown) {
+        if (this.requireRootSkillMarkdown && !hasRootSkillMarkdown) {
           reject(
             new SkillZipInspectionError(
               'ZIP_SKILL_MD_MISSING',

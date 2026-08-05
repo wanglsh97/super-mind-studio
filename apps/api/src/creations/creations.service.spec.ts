@@ -5,6 +5,7 @@ import type { AgentService } from '../agent/agent.service'
 import type { PrismaService } from '../database/prisma.service'
 import type { AuthenticatedUser } from '../user/user.types'
 import { CreationsService } from './creations.service'
+import { WebProjectArchiveValidator } from './web-project-archive.validator'
 
 const githubUser: AuthenticatedUser = {
   id: '00000000-0000-4000-8000-000000000001',
@@ -86,7 +87,7 @@ function setup() {
   return {
     prisma,
     outputs,
-    service: new CreationsService(prisma as unknown as PrismaService, {} as AgentService, outputs),
+    service: new CreationsService(prisma as unknown as PrismaService, {} as AgentService, outputs, new WebProjectArchiveValidator()),
   }
 }
 

@@ -13,6 +13,7 @@ import { AgentOutputFileService } from '../agent/files/agent-output-file.service
 import { PrismaService } from '../database/prisma.service'
 import { AgentService } from '../agent/agent.service'
 import type { AuthenticatedUser } from '../user/user.types'
+import { WebProjectArchiveValidationError, WebProjectArchiveValidator } from './web-project-archive.validator'
 
 const WEB_ARTIFACT_RETENTION_MS = 30 * 24 * 60 * 60 * 1_000
 const DEFAULT_AGENT_MODEL = 'qwen3.7-plus'
@@ -23,6 +24,7 @@ export class CreationsService {
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(AgentService) private readonly agent: AgentService,
     @Inject(AgentOutputFileService) private readonly outputFiles: AgentOutputFileService,
+    @Inject(WebProjectArchiveValidator) private readonly archives: WebProjectArchiveValidator,
   ) {}
 
   async createWebsite(user: AuthenticatedUser, input: { prompt: string; model?: string }) {
@@ -179,8 +181,11 @@ export class CreationsService {
     const resolved = new Map<string, WebProjectStatus>()
     await Promise.all(projects.map(async (project) => {
       if (project.agentRunId === null) return
-      const transition = resolveTerminalProjectStatus(project, byRunId.get(project.agentRunId), outputs.get(project.agentRunId) ?? [])
+      let transition = resolveTerminalProjectStatus(project, byRunId.get(project.agentRunId), outputs.get(project.agentRunId) ?? [])
       if (transition === null) return
+      if (transition.status === 'SUCCEEDED') {
+        transition = await this.validateCompletedProject(project, outputs.get(project.agentRunId) ?? [])
+      }
       resolved.set(project.id, transition.status)
       if (project.status === transition.status) return
       await this.prisma.webProject.update({
@@ -194,6 +199,32 @@ export class CreationsService {
       })
     }))
     return resolved
+  }
+
+  private async validateCompletedProject(
+    project: WebsiteProject,
+    outputs: readonly WebsiteOutput[],
+  ): Promise<ProjectTransition> {
+    const source = outputs.find((output) => output.name === 'source.zip')
+    const dist = outputs.find((output) => output.name === 'dist.zip')
+    if (!source || !dist) return missingArtifactsTransition()
+    try {
+      const [sourceFile, distFile] = await Promise.all([
+        this.outputFiles.loadForOwner(source.id, project.userId),
+        this.outputFiles.loadForOwner(dist.id, project.userId),
+      ])
+      await this.archives.validateSource(sourceFile.stored.bytes)
+      await this.archives.validateDist(distFile.stored.bytes)
+      return { status: 'SUCCEEDED', creationStatus: 'SUCCEEDED', errorCode: null, errorMessage: null }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '网页 ZIP 校验失败'
+      return {
+        status: 'FAILED',
+        creationStatus: 'FAILED',
+        errorCode: error instanceof WebProjectArchiveValidationError ? error.code : 'WEB_PROJECT_ARCHIVE_UNAVAILABLE',
+        errorMessage: message,
+      }
+    }
   }
 
   private requireGithub(user: AuthenticatedUser) {
@@ -263,29 +294,35 @@ function toCreationItem(
   }
 }
 
+type ProjectTransition = { status: WebProjectStatus; creationStatus: CreationStatus; errorCode: string | null; errorMessage: string | null }
+
 function resolveTerminalProjectStatus(
   project: WebsiteProject,
   run: Pick<AgentRun, 'status' | 'errorCode' | 'errorMessage'> | undefined,
   outputs: readonly WebsiteOutput[],
-): { status: WebProjectStatus; creationStatus: CreationStatus; errorCode: string | null; errorMessage: string | null } | null {
+): ProjectTransition | null {
   if (run === undefined || ['RUNNING', 'CANCELLING', 'WAITING_FOR_USER'].includes(run.status)) return null
   if (run.status === 'SUCCEEDED') {
     const names = new Set(outputs.map((output) => output.name))
     if (names.has('source.zip') && names.has('dist.zip')) {
       return { status: 'SUCCEEDED', creationStatus: 'SUCCEEDED', errorCode: null, errorMessage: null }
     }
-    return {
-      status: 'FAILED',
-      creationStatus: 'FAILED',
-      errorCode: 'WEB_PROJECT_ARTIFACTS_MISSING',
-      errorMessage: 'Agent 已结束，但未导出完整的 source.zip 和 dist.zip',
-    }
+    return missingArtifactsTransition()
   }
   return {
     status: 'FAILED',
     creationStatus: 'FAILED',
     errorCode: run.errorCode ?? `AGENT_RUN_${run.status}`,
     errorMessage: run.errorMessage ?? '网页生成未完成',
+  }
+}
+
+function missingArtifactsTransition(): ProjectTransition {
+  return {
+    status: 'FAILED',
+    creationStatus: 'FAILED',
+    errorCode: 'WEB_PROJECT_ARTIFACTS_MISSING',
+    errorMessage: 'Agent 已结束，但未导出完整的 source.zip 和 dist.zip',
   }
 }
 
