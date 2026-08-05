@@ -6,9 +6,9 @@ import { createAIGatewayClient, type CreativeItem } from '@supermind/sdk'
 
 import { useUserSession } from '@/components/user-session-provider'
 import { githubLoginUrl } from '@/utils/auth/user-auth-client'
+import { creationExpiryLabel, filterCreations, type CreationFilter } from './creations-view'
 
 const client = createAIGatewayClient()
-type CreationFilter = 'all' | 'website' | 'image'
 
 export default function CreationsPage() {
   const session = useUserSession()
@@ -17,7 +17,7 @@ export default function CreationsPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
   const visibleItems = useMemo(
-    () => filter === 'all' ? items : items.filter((item) => item.type === filter),
+    () => filterCreations(items, filter),
     [filter, items],
   )
 
@@ -55,12 +55,12 @@ export default function CreationsPage() {
 }
 
 function CreationCard({ item }: { item: CreativeItem }) {
-  const expiresAt = item.expiresAt ? new Date(item.expiresAt) : null
+  const expiryLabel = creationExpiryLabel(item)
   return <article className="rounded-2xl border border-line bg-surface-card p-5">
     <div className="flex items-center justify-between"><span className="rounded-full bg-brand/10 px-2 py-1 text-xs font-semibold text-brand-hover">{item.type === 'website' ? '网站' : '图片'}</span><span className="text-xs text-ink-muted">{item.status}</span></div>
     <h2 className="mt-4 line-clamp-2 font-semibold">{item.title}</h2>
     <p className="mt-3 text-xs text-ink-muted">创建于 {new Date(item.createdAt).toLocaleString('zh-CN')}</p>
-    {expiresAt ? <p className="mt-1 text-xs text-ink-muted">{item.status === 'expired' ? '产物已过期' : `将于 ${expiresAt.toLocaleDateString('zh-CN')} 删除`}</p> : null}
+    {expiryLabel ? <p className="mt-1 text-xs text-ink-muted">{expiryLabel}</p> : null}
     {item.type === 'website' && item.threadId ? <Link className="mt-4 inline-block text-sm font-semibold text-brand-hover" href={`/?thread=${encodeURIComponent(item.threadId)}`}>查看生成对话 →</Link> : null}
     {item.type === 'website' && item.status === 'succeeded' && item.projectId ? <a className="mt-3 mr-3 inline-block text-sm font-semibold text-brand-hover" href={client.creations.previewWebsiteUrl(item.projectId)} target="_blank" rel="noopener noreferrer">打开预览 ↗</a> : null}
     {item.type === 'website' && item.assets?.filter((asset) => asset.downloadUrl).map((asset) => <a key={asset.id} className="mt-3 mr-3 inline-block text-sm font-semibold text-brand-hover" href={asset.downloadUrl}>下载 {asset.name}</a>)}
