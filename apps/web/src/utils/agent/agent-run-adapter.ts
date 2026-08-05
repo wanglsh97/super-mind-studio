@@ -22,6 +22,7 @@ export interface AgentRunAdapterContext {
   model: string
   thinkingEffort: AgentThinkingEffort
   selectedSkillNames: readonly string[]
+  websiteMode?: boolean
   onThreadCreated: (thread: AgentThreadSummary) => void
   onRunCreated?: (run: { id: string; threadId: string }) => void
   onRunFinished?: (status: AgentRunTerminalStatus) => void
@@ -29,14 +30,13 @@ export interface AgentRunAdapterContext {
   onContextCompressed?: (event: Extract<AgentStreamEvent, { type: 'context-compressed' }>) => void
   onSandboxStatus?: (status: AgentSandboxStatus, sandboxId?: string) => void
   onRunProgressChange?: (stage: AgentRunProgressStage | null) => void
-  onUserQuestion?: (question: Extract<AgentStreamEvent, { type: 'user-question-asked' }>['question'] | null) => void
+  onUserQuestion?: (
+    question: Extract<AgentStreamEvent, { type: 'user-question-asked' }>['question'] | null,
+  ) => void
 }
 
 export type AgentRunProgressStage =
-  | 'creating-thread'
-  | 'starting-run'
-  | 'preparing-sandbox'
-  | 'thinking'
+  'creating-thread' | 'starting-run' | 'preparing-sandbox' | 'thinking'
 
 export interface AgentRunMetadata extends Record<string, unknown> {
   model?: string
@@ -96,6 +96,7 @@ export function createAgentRunAdapter(
         ...(context.selectedSkillNames.length === 0
           ? {}
           : { skills: context.selectedSkillNames.map((name) => ({ name })) }),
+        ...(context.websiteMode ? { mode: 'website' as const } : {}),
       })
       context.onRunCreated?.({ id: run.id, threadId })
       context.onRunProgressChange?.('preparing-sandbox')
@@ -113,7 +114,8 @@ export function createAgentRunAdapter(
           if (event.type === 'context-budget') context.onContextBudget?.(event)
           if (event.type === 'context-compressed') context.onContextCompressed?.(event)
           if (event.type === 'user-question-asked') context.onUserQuestion?.(event.question)
-          if (event.type === 'user-question-answered' || event.type === 'user-question-skipped') context.onUserQuestion?.(null)
+          if (event.type === 'user-question-answered' || event.type === 'user-question-skipped')
+            context.onUserQuestion?.(null)
           if (event.type === 'sandbox-status') {
             context.onSandboxStatus?.(event.status, event.sandboxId)
             context.onRunProgressChange?.(
@@ -180,7 +182,9 @@ export function createAgentRunAdapter(
 }
 
 function isRenderableAgentEvent(event: AgentStreamEvent): boolean {
-  return event.type === 'reasoning-delta' || event.type === 'text-delta' || event.type === 'tool-call'
+  return (
+    event.type === 'reasoning-delta' || event.type === 'text-delta' || event.type === 'tool-call'
+  )
 }
 
 export function agentMessagesToThreadMessages(

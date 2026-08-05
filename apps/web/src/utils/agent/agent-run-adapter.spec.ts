@@ -252,6 +252,47 @@ test('forwards live Sandbox status events to the workspace status module', async
   assert.deepEqual(received, [{ status: 'creating' }, { status: 'ready', sandboxId: 'sandbox-1' }])
 })
 
+test('forwards website mode through the existing Agent run request', async () => {
+  let request: Record<string, unknown> | undefined
+  const client = {
+    agent: {
+      runs: {
+        create: async (_threadId: string, input: Record<string, unknown>) => {
+          request = input
+          return { id: 'run-web', threadId: 'thread-1' }
+        },
+        subscribe: async function* () {
+          yield {
+            type: 'run-terminal',
+            sequence: 0,
+            runId: 'run-web',
+            status: 'succeeded',
+            limitReason: null,
+          } as const
+        },
+      },
+    },
+  } as unknown as AIGatewayClient
+  const adapter = createAgentRunAdapter(client, () => ({
+    threadId: 'thread-1',
+    model: 'mock',
+    thinkingEffort: 'balanced',
+    selectedSkillNames: [],
+    websiteMode: true,
+    onThreadCreated: () => undefined,
+  }))
+
+  for await (const chunk of adapter.run({
+    messages: [{ role: 'user', content: [{ type: 'text', text: '创建官网' }] }],
+    abortSignal: new AbortController().signal,
+  } as never) as AsyncGenerator<unknown>) {
+    void chunk
+  }
+
+  assert.equal(request?.mode, 'website')
+  assert.equal(request?.input, '创建官网')
+})
+
 test('reports progress until the first renderable Agent event arrives', async () => {
   const progress: Array<string | null> = []
   const client = {

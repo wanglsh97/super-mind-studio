@@ -90,6 +90,8 @@ import {
   mergeThreadMessagesWithRunView,
 } from '@/utils/agent/agent-run-resume';
 import { activeRunForThread } from '@/utils/agent/agent-active-runs';
+import { resolveWebsiteDeliveryCardState } from '@/utils/agent/website-delivery-state';
+import { readWebsiteMode, writeWebsiteMode } from '@/utils/agent/website-mode-state';
 import { initialAgentRunViewState } from '@/utils/agent/agent-run-reducer';
 import { threadTokenUsagePercentage } from '@/utils/agent/agent-thread-token-usage';
 import { logoutUser } from '@/utils/auth/user-auth-client';
@@ -149,19 +151,28 @@ function AgentConsole() {
   const [pendingQuestion, setPendingQuestion] = useState<AgentUserQuestion | null>(null);
   const [questionActionError, setQuestionActionError] = useState<string | null>(null);
   const [webCreationSelected, setWebCreationSelected] = useState(false);
-  const [websiteStartError, setWebsiteStartError] = useState<string | null>(null);
-  const [websiteStarting, setWebsiteStarting] = useState(false);
   const [githubLoginPromptOpen, setGithubLoginPromptOpen] = useState(false);
   const [githubLoginSwitching, setGithubLoginSwitching] = useState(false);
   const [githubLoginPromptError, setGithubLoginPromptError] = useState<string | null>(null);
 
   const skipHydrationRef = useRef(false);
   const dismissedQuestionIdsRef = useRef(new Set<string>());
+
+  useEffect(() => {
+    setWebCreationSelected(readWebsiteMode(window.localStorage, activeThreadId));
+  }, [activeThreadId]);
+
+  const updateWebsiteMode = (selected: boolean) => {
+    setWebCreationSelected(selected);
+    writeWebsiteMode(window.localStorage, activeThreadId, selected);
+    writeWebsiteMode(window.localStorage, null, selected);
+  };
   const contextRef = useRef({
     threadId: activeThreadId as string | null,
     model: selectedModel,
     thinkingEffort,
     selectedSkillNames: [] as readonly string[],
+    websiteMode: false,
     onThreadCreated: (() => undefined) as (thread: Parameters<typeof prependThread>[0]) => void,
     onRunCreated: (() => undefined) as (run: { id: string; threadId: string }) => void,
     onRunFinished: () => undefined,
@@ -177,11 +188,13 @@ function AgentConsole() {
   contextRef.current.model = selectedModel;
   contextRef.current.thinkingEffort = thinkingEffort;
   contextRef.current.selectedSkillNames = selectedSkillNames;
+  contextRef.current.websiteMode = webCreationSelected;
   contextRef.current.onThreadCreated = (thread) => {
     skipHydrationRef.current = true;
     setThreadTokenUsage(null);
     setContextSummary(null);
     setCompressionEvents([]);
+    writeWebsiteMode(window.localStorage, thread.id, webCreationSelected);
     prependThread(thread);
     openThread(thread.id);
   };
@@ -349,35 +362,8 @@ function AgentConsole() {
   const aui = useAui({ tools: Tools({ toolkit: agentToolUiToolkit }) });
   const modelDisabled = modelOptions.length === 0;
   const currentActiveRun = activeRunForThread(activeRuns, activeThreadId);
-  const submitBlocked = modelDisabled || currentActiveRun !== null || websiteStarting;
+  const submitBlocked = modelDisabled || currentActiveRun !== null;
   const canCreateWebsite = session.user?.authProvider === 'GITHUB';
-
-  const handleWebsiteCreation = async (prompt: string) => {
-    if (!canCreateWebsite) {
-      setGithubLoginPromptOpen(true);
-      return;
-    }
-
-    setWebsiteStartError(null);
-    setWebsiteStarting(true);
-    try {
-      const project = await client.creations.createWebsite({
-        prompt,
-        ...(selectedModel ? { model: selectedModel } : {}),
-      });
-      if (!project.threadId) throw new Error('网页创作会话未能启动，请重试。');
-      setWebCreationSelected(false);
-      await refreshThreads();
-      openThread(project.threadId);
-    } catch (error) {
-      handleAuthenticationFailure(error);
-      setWebsiteStartError(
-        error instanceof Error && error.message ? error.message : '网页创作启动失败，请稍后重试。',
-      );
-    } finally {
-      setWebsiteStarting(false);
-    }
-  };
 
   const switchToGithubLogin = async () => {
     if (githubLoginSwitching) return;
@@ -539,19 +525,10 @@ function AgentConsole() {
                         setGithubLoginPromptOpen(true);
                         return;
                       }
-                      setWebsiteStartError(null);
-                      setWebCreationSelected((current) => !current);
+                      updateWebsiteMode(!webCreationSelected);
                     }}
                   />
-                  <AgentComposerRoot
-                    {...(webCreationSelected
-                      ? {
-                          onSubmitText: (prompt: string) => {
-                            void handleWebsiteCreation(prompt);
-                          },
-                        }
-                      : {})}
-                  >
+                  <AgentComposerRoot>
                     <AgentSkillSlashPicker
                       candidates={skillCandidates}
                       selectedNames={selectedSkillNames}
@@ -580,8 +557,8 @@ function AgentConsole() {
                       <AgentComposerActions>
                         {webCreationSelected ? (
                           <AgentWebCreationSelection
-                            disabled={websiteStarting}
-                            onClear={() => setWebCreationSelected(false)}
+                            disabled={submitBlocked}
+                            onClear={() => updateWebsiteMode(false)}
                           />
                         ) : null}
                         <NewThreadButton onNewThread={startNewThread} />
@@ -616,14 +593,6 @@ function AgentConsole() {
                       </AgentComposerSubmitGroup>
                     </AgentComposerFooter>
                   </AgentComposerRoot>
-                  {websiteStartError ? (
-                    <p
-                      role="alert"
-                      className="mx-auto mt-1.5 w-full max-w-[44rem] text-xs text-danger sm:w-[calc(100%-2rem)]"
-                    >
-                      {websiteStartError}
-                    </p>
-                  ) : null}
                   <AgentPrivacyNote />
                 </>
               )}
@@ -1391,6 +1360,7 @@ type AgentToolUiToolkit = {
   read_file: ToolDefinition<{ path?: string }, SandboxToolResult>;
   write_file: ToolDefinition<{ path?: string }, SandboxToolResult>;
   export_file: ToolDefinition<{ path?: string }, SandboxToolResult>;
+  create_website: ToolDefinition<Record<string, never>, SandboxToolResult>;
 };
 
 function isSandboxToolResult(value: unknown): value is SandboxToolResult {
@@ -1477,7 +1447,130 @@ const agentToolUiToolkit = defineToolkit({
       return <ArtifactCard path={args.path} result={result} isError={Boolean(isError)} />;
     },
   },
+  create_website: {
+    type: 'backend',
+    render: ({ result, status, isError }) => {
+      if (status.type === 'running') {
+        return (
+          <SandboxToolActivityCard
+            toolName="create_website"
+            subject="构建、校验并覆盖最终网站产物"
+            running
+            isError={false}
+          />
+        );
+      }
+      return <WebsiteDeliveryCard result={result} isError={Boolean(isError)} />;
+    },
+  },
 } satisfies AgentToolUiToolkit);
+
+function WebsiteDeliveryCard({
+  result,
+  isError,
+}: Readonly<{ result?: SandboxToolResult | undefined; isError: boolean }>) {
+  const projectId =
+    typeof result?.audit?.projectId === 'string' ? result.audit.projectId : undefined;
+  const runId = typeof result?.audit?.runId === 'string' ? result.audit.runId : undefined;
+  const previewUrl =
+    typeof result?.audit?.previewPath === 'string' ? result.audit.previewPath : undefined;
+  const sourceUrl =
+    typeof result?.audit?.sourceDownloadUrl === 'string'
+      ? result.audit.sourceDownloadUrl
+      : undefined;
+  const distUrl =
+    typeof result?.audit?.distDownloadUrl === 'string' ? result.audit.distDownloadUrl : undefined;
+  const builtAt = typeof result?.audit?.builtAt === 'string' ? result.audit.builtAt : undefined;
+  const [deliveryState, setDeliveryState] = useState<
+    'checking' | 'current' | 'superseded' | 'unavailable'
+  >('checking');
+
+  useEffect(() => {
+    if (!projectId || !runId || isError) {
+      setDeliveryState('superseded');
+      return;
+    }
+    const controller = new AbortController();
+    void client.creations
+      .list({ signal: controller.signal })
+      .then((items) => {
+        setDeliveryState(resolveWebsiteDeliveryCardState(items, projectId, runId));
+      })
+      .catch((error: unknown) => {
+        if (!controller.signal.aborted) {
+          console.error('确认最新网站产物失败', error);
+          setDeliveryState('unavailable');
+        }
+      });
+    return () => controller.abort();
+  }, [isError, projectId, runId]);
+
+  if (isError || !previewUrl || !sourceUrl || !distUrl) {
+    return (
+      <SandboxToolActivityCard toolName="create_website" result={result} running={false} isError />
+    );
+  }
+
+  const current = deliveryState === 'current';
+
+  return (
+    <figure className="my-3 overflow-hidden rounded-2xl border border-line bg-surface-card shadow-[0_14px_38px_rgb(37_57_103/0.09)]">
+      {current ? (
+        <iframe
+          src={previewUrl}
+          title="网站预览"
+          className="h-[30rem] w-full border-0 bg-white"
+          sandbox="allow-forms allow-modals allow-popups allow-scripts allow-same-origin"
+        />
+      ) : (
+        <div className="grid h-40 place-items-center bg-surface-inset px-6 text-center text-sm text-ink-muted">
+          {deliveryState === 'checking'
+            ? '正在确认最新产物…'
+            : deliveryState === 'unavailable'
+              ? '暂时无法确认这份产物是否为最新版本'
+              : '这份产物已被后续修改覆盖'}
+        </div>
+      )}
+      <figcaption className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+        <div>
+          <p className="text-sm font-semibold text-ink">{current ? '网站已创建' : '网站产物'}</p>
+          <p className="mt-0.5 text-xs text-ink-muted">
+            {current
+              ? '预览仅在当前 Thread Sandbox 存活期间有效'
+              : deliveryState === 'unavailable'
+                ? '请稍后刷新重试'
+                : '已被覆盖，不再提供旧产物'}
+            {builtAt ? ` · ${new Date(builtAt).toLocaleString('zh-CN')}` : ''}
+          </p>
+        </div>
+        {current ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <a
+              href={sourceUrl}
+              className="rounded-lg border border-line px-3 py-1.5 text-xs font-semibold text-ink transition hover:border-brand/40 hover:text-brand"
+            >
+              下载源码
+            </a>
+            <a
+              href={distUrl}
+              className="rounded-lg border border-line px-3 py-1.5 text-xs font-semibold text-ink transition hover:border-brand/40 hover:text-brand"
+            >
+              下载网站
+            </a>
+            <a
+              href={previewUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-lg bg-brand px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-hover"
+            >
+              打开预览
+            </a>
+          </div>
+        ) : null}
+      </figcaption>
+    </figure>
+  );
+}
 
 function ArtifactCard({
   path,
@@ -1555,7 +1648,7 @@ function SandboxToolActivityCard({
   running,
   isError,
 }: {
-  toolName: 'shell' | 'read_file' | 'write_file' | 'export_file';
+  toolName: 'shell' | 'read_file' | 'write_file' | 'export_file' | 'create_website';
   subject?: string | undefined;
   detail?: string | undefined;
   result?: SandboxToolResult | undefined;
