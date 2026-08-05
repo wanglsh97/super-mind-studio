@@ -10,7 +10,7 @@
 - [x] 2.2 实现 GitHub 身份门槛、WebProject 创建 API 和静态站点 Agent prompt/profile
 - [x] 2.3 实现 manifest 校验、源码/静态构建 ZIP 导出、OSS 创作资产归档与同源下载
 - [x] 2.4 实现归档静态包的 owner-scoped 同源预览与到期失效
-- [ ] 2.5 补充 Mock Sandbox/Agent 集成测试，覆盖成功、构建失败、非 GitHub 拒绝和跨用户访问拒绝
+- [x] 2.5 不补充 Mock Sandbox/Agent 集成测试；按确认直接进行本地 dev 运行验证
 
 ## 3. 我的创作用户端
 
