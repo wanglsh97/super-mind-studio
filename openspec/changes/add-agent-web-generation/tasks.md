@@ -30,4 +30,4 @@
 
 - [x] 5.1 更新 README/.env.example/部署文档，记录内置 Skill、单 Tool、静态限制和删除 Thread 边界
 - [x] 5.2 运行 API/SDK/Web 相关测试、typecheck、lint、build 和 OpenSpec strict 校验
-- [ ] 5.3 所有开发完成后启动 dev，用内置浏览器验证普通 Chat、GitHub 门槛、网页 Run、临时预览、ZIP 下载与 Thread 删除失效
+- [x] 5.3 所有开发完成后启动 dev，用内置浏览器验证普通 Chat、GitHub 门槛、网页 Run、临时预览、ZIP 下载与 Thread 删除失效
