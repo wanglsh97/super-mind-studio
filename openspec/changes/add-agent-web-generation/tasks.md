@@ -2,7 +2,7 @@
 
 - [x] 1.1 新增 Creation、CreationAsset、WebProject Prisma 模型及 ImageGenerationTask 关联，并创建正式 migration
 - [ ] 1.2 实现 owner-scoped Creation/WebProject repository、状态机和 30 天 expiresAt 计算
-- [ ] 1.3 为新模型、状态转换和 owner 隔离补充单元测试
+- [x] 1.3 为新模型、状态转换和 owner 隔离补充单元测试
 
 ## 2. 网页生成 Agent 闭环
 
