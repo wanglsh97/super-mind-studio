@@ -92,7 +92,6 @@ import {
 import { activeRunForThread } from '@/utils/agent/agent-active-runs';
 import { initialAgentRunViewState } from '@/utils/agent/agent-run-reducer';
 import { threadTokenUsagePercentage } from '@/utils/agent/agent-thread-token-usage';
-import { githubLoginUrl } from '@/utils/auth/user-auth-client';
 import {
   parseNamespacedMcpToolName,
   summarizeAgentMcpStatuses,
@@ -370,9 +369,7 @@ function AgentConsole() {
     } catch (error) {
       handleAuthenticationFailure(error);
       setWebsiteStartError(
-        error instanceof Error && error.message
-          ? error.message
-          : '网页创作启动失败，请稍后重试。',
+        error instanceof Error && error.message ? error.message : '网页创作启动失败，请稍后重试。',
       );
     } finally {
       setWebsiteStarting(false);
@@ -600,7 +597,14 @@ function AgentConsole() {
                       </AgentComposerSubmitGroup>
                     </AgentComposerFooter>
                   </AgentComposerRoot>
-                  {websiteStartError ? <p role="alert" className="mx-auto mt-1.5 w-full max-w-[44rem] text-xs text-danger sm:w-[calc(100%-2rem)]">{websiteStartError}</p> : null}
+                  {websiteStartError ? (
+                    <p
+                      role="alert"
+                      className="mx-auto mt-1.5 w-full max-w-[44rem] text-xs text-danger sm:w-[calc(100%-2rem)]"
+                    >
+                      {websiteStartError}
+                    </p>
+                  ) : null}
                   <AgentPrivacyNote />
                 </>
               )}
@@ -608,57 +612,57 @@ function AgentConsole() {
           </AgentThreadRoot>
         </AgentConsolePanel>
       </AgentPageShell>
-      {githubLoginPromptOpen ? createPortal(
-        <div
-          role="presentation"
-          className="fixed inset-0 z-[100] grid place-items-center bg-black/25 p-4 backdrop-blur-sm"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) setGithubLoginPromptOpen(false);
-          }}
-        >
-          <section
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="github-login-prompt-title"
-            className="w-full max-w-sm rounded-2xl border border-line bg-surface-card p-5 shadow-[0_20px_50px_rgb(0_0_0/0.18)]"
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-xs font-semibold tracking-[0.12em] text-brand">网页创作</p>
-                <h2 id="github-login-prompt-title" className="mt-2 text-lg font-bold text-ink">
-                  请换用 GitHub 账号登录
-                </h2>
-              </div>
-              <button
-                type="button"
-                onClick={() => setGithubLoginPromptOpen(false)}
-                aria-label="关闭提示"
-                className="grid size-8 place-items-center rounded-full text-lg text-ink-muted transition hover:bg-surface-inset hover:text-ink"
+      {githubLoginPromptOpen
+        ? createPortal(
+            <div
+              role="presentation"
+              className="fixed inset-0 z-[100] grid place-items-center bg-black/25 p-4 backdrop-blur-sm"
+              onMouseDown={(event) => {
+                if (event.target === event.currentTarget) setGithubLoginPromptOpen(false);
+              }}
+            >
+              <section
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="github-login-prompt-title"
+                className="w-full max-w-sm rounded-2xl border border-line bg-surface-card p-5 shadow-[0_20px_50px_rgb(0_0_0/0.18)]"
               >
-                ×
-              </button>
-            </div>
-            <p className="mt-3 text-sm leading-6 text-ink-muted">
-              网页创作目前仅支持 GitHub 账号。切换登录后即可生成并保存静态网站。
-            </p>
-            <div className="mt-5 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setGithubLoginPromptOpen(false)}
-                className="rounded-xl px-3 py-2 text-sm font-semibold text-ink-muted transition hover:bg-surface-inset"
-              >
-                暂不登录
-              </button>
-              <a
-                href={githubLoginUrl('/')}
-                className="rounded-xl bg-brand px-3 py-2 text-sm font-semibold text-white transition hover:bg-brand-hover"
-              >
-                使用 GitHub 登录
-              </a>
-            </div>
-          </section>
-        </div>
-      , document.body) : null}
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-xs font-semibold tracking-[0.12em] text-brand">网页创作</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setGithubLoginPromptOpen(false)}
+                    aria-label="关闭提示"
+                    className="grid size-8 place-items-center rounded-full text-lg text-ink-muted transition hover:bg-surface-inset hover:text-ink"
+                  >
+                    ×
+                  </button>
+                </div>
+                <p className="mt-3 text-sm leading-6 text-ink-muted">
+                  当前账号类型不支持网页创作。
+                </p>
+                <div className="mt-5 flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setGithubLoginPromptOpen(false)}
+                    className="rounded-xl px-3 py-2 text-sm font-semibold text-ink-muted transition hover:bg-surface-inset"
+                  >
+                    暂不登录
+                  </button>
+                  <a
+                href="/login?returnTo=%2F"
+                    className="rounded-xl bg-brand px-3 py-2 text-sm font-semibold text-white transition hover:bg-brand-hover"
+                  >
+                    使用 GitHub 登录
+                  </a>
+                </div>
+              </section>
+            </div>,
+            document.body,
+          )
+        : null}
     </AssistantRuntimeProvider>
   );
 }
