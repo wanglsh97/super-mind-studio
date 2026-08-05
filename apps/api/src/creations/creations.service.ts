@@ -1,6 +1,14 @@
 import { ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common'
 
-import type { Creation, CreationAsset, UserFile, WebProject } from '../generated/prisma/client'
+import type {
+  AgentRun,
+  Creation,
+  CreationAsset,
+  CreationStatus,
+  UserFile,
+  WebProject,
+  WebProjectStatus,
+} from '../generated/prisma/client'
 import { AgentOutputFileService } from '../agent/files/agent-output-file.service'
 import { PrismaService } from '../database/prisma.service'
 import { AgentService } from '../agent/agent.service'
@@ -82,8 +90,9 @@ export class CreationsService {
       }),
     ])
     const outputs = await this.findWebsiteOutputs(user.id, websites)
+    const statuses = await this.syncTerminalProjectStatuses(websites, outputs)
     return [
-      ...websites.map((project) => toCreationItem(project, now, outputs.get(project.agentRunId ?? '') ?? [])),
+      ...websites.map((project) => toCreationItem(project, now, outputs.get(project.agentRunId ?? '') ?? [], statuses.get(project.id))),
       ...images.map((image) => ({
         id: `image:${image.taskId}`,
         type: 'image' as const,
@@ -106,7 +115,8 @@ export class CreationsService {
     })
     if (!project) throw new NotFoundException('网页项目不存在')
     const outputs = await this.findWebsiteOutputs(user.id, [project])
-    return toCreationItem(project, new Date(), outputs.get(project.agentRunId ?? '') ?? [])
+    const statuses = await this.syncTerminalProjectStatuses([project], outputs)
+    return toCreationItem(project, new Date(), outputs.get(project.agentRunId ?? '') ?? [], statuses.get(project.id))
   }
 
   async downloadWebsiteAsset(user: AuthenticatedUser, projectId: string, kind: string) {
@@ -151,6 +161,41 @@ export class CreationsService {
     }, new Map<string, WebsiteOutput[]>())
   }
 
+  /**
+   * AgentRun 是执行真源；网页项目只在读取时把已经终结的 run 收敛一次，避免新增 worker。
+   * 成功 run 必须同时导出 source.zip 与 dist.zip，否则静态交付不完整，项目明确失败。
+   */
+  private async syncTerminalProjectStatuses(
+    projects: readonly WebsiteProject[],
+    outputs: ReadonlyMap<string, readonly WebsiteOutput[]>,
+  ): Promise<Map<string, WebProjectStatus>> {
+    const runIds = projects.flatMap((project) => project.agentRunId === null ? [] : [project.agentRunId])
+    if (runIds.length === 0) return new Map()
+    const runs = await this.prisma.agentRun.findMany({
+      where: { id: { in: runIds } },
+      select: { id: true, status: true, errorCode: true, errorMessage: true },
+    })
+    const byRunId = new Map(runs.map((run) => [run.id, run]))
+    const resolved = new Map<string, WebProjectStatus>()
+    await Promise.all(projects.map(async (project) => {
+      if (project.agentRunId === null) return
+      const transition = resolveTerminalProjectStatus(project, byRunId.get(project.agentRunId), outputs.get(project.agentRunId) ?? [])
+      if (transition === null) return
+      resolved.set(project.id, transition.status)
+      if (project.status === transition.status) return
+      await this.prisma.webProject.update({
+        where: { id: project.id },
+        data: {
+          status: transition.status,
+          errorCode: transition.errorCode,
+          errorMessage: transition.errorMessage,
+          creation: { update: { status: transition.creationStatus } },
+        },
+      })
+    }))
+    return resolved
+  }
+
   private requireGithub(user: AuthenticatedUser) {
     if (user.authProvider !== 'GITHUB') {
       throw new ForbiddenException({
@@ -186,7 +231,12 @@ function toWebsite(project: { id: string; status: string; agentThreadId: string 
 type WebsiteProject = WebProject & { creation: Creation & { assets: CreationAsset[] } }
 type WebsiteOutput = Pick<UserFile, 'id' | 'runId' | 'name' | 'createdAt'>
 
-function toCreationItem(project: WebsiteProject, now: Date, outputs: readonly WebsiteOutput[]) {
+function toCreationItem(
+  project: WebsiteProject,
+  now: Date,
+  outputs: readonly WebsiteOutput[],
+  synchronizedStatus?: WebProjectStatus,
+) {
   const expired = isExpired(project.creation.expiresAt, now)
   const storedAssets = project.creation.assets.map((asset) => ({
     id: asset.id, kind: asset.kind.toLowerCase(), name: asset.name, expiresAt: asset.expiresAt?.toISOString() ?? null,
@@ -202,7 +252,7 @@ function toCreationItem(project: WebsiteProject, now: Date, outputs: readonly We
     id: project.creation.id,
     projectId: project.id,
     type: 'website' as const,
-    status: expired ? 'expired' : exportedAssets.some((asset) => asset.kind === 'dist_zip') ? 'succeeded' : project.status.toLowerCase(),
+    status: expired ? 'expired' : (synchronizedStatus ?? project.status).toLowerCase(),
     title: project.creation.title,
     createdAt: project.creation.createdAt.toISOString(),
     updatedAt: project.updatedAt.toISOString(),
@@ -210,6 +260,32 @@ function toCreationItem(project: WebsiteProject, now: Date, outputs: readonly We
     threadId: project.agentThreadId,
     runId: project.agentRunId,
     assets: [...storedAssets, ...exportedAssets],
+  }
+}
+
+function resolveTerminalProjectStatus(
+  project: WebsiteProject,
+  run: Pick<AgentRun, 'status' | 'errorCode' | 'errorMessage'> | undefined,
+  outputs: readonly WebsiteOutput[],
+): { status: WebProjectStatus; creationStatus: CreationStatus; errorCode: string | null; errorMessage: string | null } | null {
+  if (run === undefined || ['RUNNING', 'CANCELLING', 'WAITING_FOR_USER'].includes(run.status)) return null
+  if (run.status === 'SUCCEEDED') {
+    const names = new Set(outputs.map((output) => output.name))
+    if (names.has('source.zip') && names.has('dist.zip')) {
+      return { status: 'SUCCEEDED', creationStatus: 'SUCCEEDED', errorCode: null, errorMessage: null }
+    }
+    return {
+      status: 'FAILED',
+      creationStatus: 'FAILED',
+      errorCode: 'WEB_PROJECT_ARTIFACTS_MISSING',
+      errorMessage: 'Agent 已结束，但未导出完整的 source.zip 和 dist.zip',
+    }
+  }
+  return {
+    status: 'FAILED',
+    creationStatus: 'FAILED',
+    errorCode: run.errorCode ?? `AGENT_RUN_${run.status}`,
+    errorMessage: run.errorMessage ?? '网页生成未完成',
   }
 }
 

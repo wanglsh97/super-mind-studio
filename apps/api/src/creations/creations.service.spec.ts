@@ -54,17 +54,49 @@ describe('CreationsService', () => {
     expect(prisma.userFile.findFirst).not.toHaveBeenCalled()
     expect(outputs.loadForOwner).not.toHaveBeenCalled()
   })
+
+  it('marks a completed run as failed when either required website archive is missing', async () => {
+    const { service, prisma } = setup()
+    const projectId = crypto.randomUUID()
+    const runId = crypto.randomUUID()
+    prisma.webProject.findFirst.mockResolvedValue(webProject(projectId, runId))
+    prisma.userFile.findMany.mockResolvedValue([{ id: crypto.randomUUID(), runId, name: 'dist.zip', createdAt: new Date() }])
+    prisma.agentRun.findMany.mockResolvedValue([{ id: runId, status: 'SUCCEEDED', errorCode: null, errorMessage: null }])
+
+    const result = await service.getWebsite(githubUser, projectId)
+
+    expect(result.status).toBe('failed')
+    expect(prisma.webProject.update).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ status: 'FAILED', errorCode: 'WEB_PROJECT_ARTIFACTS_MISSING' }),
+    }))
+  })
 })
 
 function setup() {
   const prisma = {
-    webProject: { findFirst: jest.fn() },
-    userFile: { findFirst: jest.fn() },
-  } as unknown as { webProject: { findFirst: jest.Mock }; userFile: { findFirst: jest.Mock } }
+    webProject: { findFirst: jest.fn(), update: jest.fn() },
+    userFile: { findFirst: jest.fn(), findMany: jest.fn() },
+    agentRun: { findMany: jest.fn() },
+  } as unknown as {
+    webProject: { findFirst: jest.Mock; update: jest.Mock }
+    userFile: { findFirst: jest.Mock; findMany: jest.Mock }
+    agentRun: { findMany: jest.Mock }
+  }
   const outputs = { loadForOwner: jest.fn() } as unknown as AgentOutputFileService
   return {
     prisma,
     outputs,
     service: new CreationsService(prisma as unknown as PrismaService, {} as AgentService, outputs),
+  }
+}
+
+function webProject(id: string, agentRunId: string) {
+  const now = new Date('2026-08-05T00:00:00.000Z')
+  return {
+    id,
+    agentRunId,
+    status: 'GENERATING',
+    updatedAt: now,
+    creation: { id: crypto.randomUUID(), title: '测试网站', expiresAt: new Date('2026-09-04T00:00:00.000Z'), createdAt: now, assets: [] },
   }
 }
