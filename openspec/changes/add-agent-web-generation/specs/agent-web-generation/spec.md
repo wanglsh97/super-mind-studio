@@ -14,7 +14,7 @@ The system SHALL allow only an authenticated GitHub user to send `mode: website`
 - **THEN** the server rejects the run before creating a project or Sandbox and the Web presents a GitHub login action
 
 ### Requirement: Website mode automatically loads one immutable static-site Skill
-Every website-mode run SHALL automatically load the platform-owned `static-website-builder` Skill before the first model call. The Skill SHALL require React, TypeScript, Vite, Tailwind CSS, shadcn/ui, Lucide, pnpm, `/workspace/work` and a `pnpm build` output at `/workspace/work/dist`. It SHALL prohibit databases, server runtimes, authentication backends, payments, private environment variables and private API keys.
+Every website-mode run SHALL automatically load the platform-owned `static-website-builder` Skill before the first model call. The Skill SHALL require React, TypeScript, Vite, Tailwind CSS, shadcn/ui, Lucide, pnpm, `/workspace/work` and a `pnpm build -- --base=./` output at `/workspace/work/dist` so the static artifact uses relative asset paths. It SHALL prohibit databases, server runtimes, authentication backends, payments, private environment variables and private API keys.
 
 #### Scenario: Agent builds a website
 - **GIVEN** a website-mode run has started

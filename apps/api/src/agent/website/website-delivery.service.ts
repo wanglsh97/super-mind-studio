@@ -68,7 +68,7 @@ export class WebsiteDeliveryService {
 
     await this.validateProject(runId, userId, signal)
     const build = await this.sessions.runShell(runId, userId, {
-      command: 'pnpm build',
+      command: 'pnpm build -- --base=./',
       workingDirectory: PROJECT_ROOT,
       ...(signal === undefined ? {} : { signal }),
     })
@@ -186,7 +186,7 @@ export class WebsiteDeliveryService {
             agentRunId: runId,
             status: 'SUCCEEDED',
             framework: 'react-vite',
-            buildCommand: 'pnpm build',
+            buildCommand: 'pnpm build -- --base=./',
             outputDir: 'dist',
             errorCode: null,
             errorMessage: null,

@@ -97,6 +97,10 @@ class StubOpenSandboxInstance implements OpenSandboxInstance {
     return { memoryUsedMiB: 32 }
   }
 
+  async getEndpointUrl(port: number) {
+    return `http://127.0.0.1:${port}`
+  }
+
   async getSignedEndpoint(port: number, expires: number) {
     return { endpoint: `preview.invalid/${this.id}/${port}?expires=${expires}` }
   }
@@ -126,6 +130,27 @@ sandboxRuntimeContract('OpenSandbox', () => {
 })
 
 describe('OpenSandboxRuntime adapter mapping', () => {
+  it('falls back to the Docker proxy endpoint when signed routes are unavailable', async () => {
+    const client = new StubOpenSandboxClient()
+    const runtime = createRuntime(client)
+    const sandbox = await runtime.createSandbox({ runId: 'run-docker-preview' })
+    await runtime.waitUntilReady(sandbox.sandboxId)
+    const instance = (await client.connect(sandbox.sandboxId)) as StubOpenSandboxInstance
+    jest
+      .spyOn(instance, 'getSignedEndpoint')
+      .mockRejectedValue(
+        new Error(
+          "Signed routes (expires parameter) are not supported when runtime.type='docker'. Use the Kubernetes runtime for signed routes.",
+        ),
+      )
+
+    await expect(runtime.createPreviewEndpoint(sandbox.sandboxId, 4173, 900)).resolves.toEqual({
+      url: 'http://127.0.0.1:4173/',
+      expiresAt: '2026-07-26T00:15:01.000Z',
+    })
+    await runtime.onModuleDestroy()
+  })
+
   it('retries a failed health check exactly once', async () => {
     const client = new StubOpenSandboxClient()
     const healthCheck = jest

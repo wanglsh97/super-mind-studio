@@ -103,6 +103,10 @@ class TestOpenSandboxInstance implements OpenSandboxInstance {
     return { memoryUsedMiB: 32 }
   }
 
+  async getEndpointUrl(port: number) {
+    return `http://127.0.0.1:${port}`
+  }
+
   async getSignedEndpoint(port: number, expires: number) {
     return { endpoint: `preview.invalid/${this.id}/${port}?expires=${expires}` }
   }

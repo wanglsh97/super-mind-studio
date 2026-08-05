@@ -464,6 +464,8 @@ model WebProject {
   updatedAt     DateTime         @updatedAt @db.Timestamptz(3)
   creation      Creation         @relation(fields: [creationId], references: [id], onDelete: Cascade)
   user          User             @relation(fields: [userId], references: [id], onDelete: Restrict)
+  agentThread   AgentThread?     @relation(fields: [agentThreadId], references: [id], onDelete: SetNull)
+  agentRun      AgentRun?        @relation(fields: [agentRunId], references: [id], onDelete: SetNull)
 
   @@index([userId, createdAt])
   @@index([agentThreadId])
@@ -523,6 +525,7 @@ model AgentThread {
   messages           AgentMessage[]
   runs               AgentRun[]
   contextSummary     AgentContextSummary?
+  webProjects        WebProject[]
 
   @@index([userId, updatedAt])
   @@index([userId, createdAt])
@@ -605,6 +608,7 @@ model AgentRun {
   files                UserFile[]
   modelInvocations     AgentModelInvocation[]
   userQuestions        AgentUserQuestion[]
+  webProjects          WebProject[]
 
   @@index([threadId, createdAt])
   @@index([userId, status])

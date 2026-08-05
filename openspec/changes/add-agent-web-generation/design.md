@@ -31,7 +31,7 @@ SDK 只为 `CreateAgentRunRequest` 增加 `mode?: 'website'`。GitHub 门槛、S
 - Tailwind CSS + shadcn/ui + Lucide
 - `/workspace/work` 为项目根目录
 - `pnpm` 为唯一包管理器
-- `pnpm build` 产生 `/workspace/work/dist`
+- `pnpm build -- --base=./` 产生 `/workspace/work/dist`，并强制相对资源路径以兼容 ZIP 与 Sandbox 代理预览
 - 纯静态资源，禁止数据库、服务端、登录、支付和私密配置
 
 ### Decision 3: 唯一 `create_website` Tool 独占“交付和预览”
@@ -39,7 +39,7 @@ SDK 只为 `CreateAgentRunRequest` 增加 `mode?: 'website'`。GitHub 门槛、S
 Tool 不接受任意构建命令或路径，它在受控目录中固定执行：
 
 1. 校验项目根目录、`package.json`、`pnpm-lock.yaml` 和禁止文件。
-2. 执行 `pnpm build`；失败时返回有界日志，不改写已有最终产物。Agent 必须继续修复并重试。
+2. 执行 `pnpm build -- --base=./`；失败时返回有界日志，不改写已有最终产物。Agent 必须继续修复并重试。
 3. 校验 `dist/index.html` 和静态资源边界。
 4. 在 `/workspace/output` 生成排除 `node_modules`、`.git`、`dist`、缓存和密钥文件的 `source.zip`，以及根目录包含 `index.html` 的 `dist.zip`。
 5. 将两个 ZIP 先写入新的私有对象，校验完整性后在数据库事务中切换唯一 WebProject/CreationAsset 指针，再 best-effort 删除旧对象。

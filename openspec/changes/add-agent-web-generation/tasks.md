@@ -13,7 +13,7 @@
 ## 3. create_website 交付 Tool
 
 - [x] 3.1 只向 website mode 注册 `create_website`，不暴露任意路径或构建命令
-- [x] 3.2 实现固定项目校验、`pnpm build`、有界失败日志与 `dist/index.html` 校验
+- [x] 3.2 实现固定项目校验、`pnpm build -- --base=./`、有界失败日志与 `dist/index.html` 校验
 - [x] 3.3 实现受控 `source.zip`/`dist.zip` 生成、二次校验和私有 OSS 临时对象写入
 - [x] 3.4 实现数据库事务原子切换产物指针、旧对象 best-effort 删除和 expiresAt 重置
 - [x] 3.5 实现受控静态服务、owner-scoped 同源预览重定向与 Thread 删除失效

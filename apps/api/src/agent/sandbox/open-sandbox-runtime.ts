@@ -79,6 +79,7 @@ export interface OpenSandboxInstance {
   writeFile(path: string, bytes: Uint8Array): Promise<void>
   readFile(path: string): Promise<Uint8Array | null>
   getMetrics(): Promise<OpenSandboxMetrics>
+  getEndpointUrl(port: number): Promise<string>
   getSignedEndpoint(port: number, expires: number): Promise<{ endpoint: string }>
   interrupt(commandId: string): Promise<void>
   kill(): Promise<void>
@@ -468,14 +469,24 @@ export class OpenSandboxRuntime implements SandboxRuntimePort, OnModuleDestroy {
     const state = await this.requireReadyState(sandboxId)
     const expiresAt = new Date(this.now().getTime() + expiresInSeconds * 1_000)
     try {
-      const endpoint = await state.instance.getSignedEndpoint(
-        port,
-        Math.floor(expiresAt.getTime() / 1_000),
-      )
+      let rawUrl: string
+      let dockerFallback = false
+      try {
+        const endpoint = await state.instance.getSignedEndpoint(
+          port,
+          Math.floor(expiresAt.getTime() / 1_000),
+        )
+        rawUrl = endpoint.endpoint
+      } catch (error) {
+        if (!isDockerSignedRouteUnsupported(error)) throw error
+        // OpenSandbox 的本地 Docker runtime 不支持签名路由；开发环境退回到
+        // 生命周期与 Sandbox 一致的普通代理路由。Kubernetes/生产仍使用签名入口。
+        rawUrl = await state.instance.getEndpointUrl(port)
+        dockerFallback = true
+      }
       throwIfAborted(signal)
-      const url = /^https?:\/\//i.test(endpoint.endpoint)
-        ? endpoint.endpoint
-        : `https://${endpoint.endpoint}`
+      const absoluteUrl = /^https?:\/\//i.test(rawUrl) ? rawUrl : `https://${rawUrl}`
+      const url = dockerFallback ? withTrailingPathSlash(absoluteUrl) : absoluteUrl
       return { url, expiresAt: expiresAt.toISOString() }
     } catch (error) {
       if (signal?.aborted) throw abortReason(signal)
@@ -728,6 +739,10 @@ class SdkOpenSandboxInstance implements OpenSandboxInstance {
     return { memoryUsedMiB: metrics.memoryUsedMiB }
   }
 
+  async getEndpointUrl(port: number): Promise<string> {
+    return this.sandbox.getEndpointUrl(port)
+  }
+
   async getSignedEndpoint(port: number, expires: number): Promise<{ endpoint: string }> {
     return this.sandbox.getSignedEndpoint(port, expires)
   }
@@ -886,6 +901,16 @@ function normalizeUnavailable(error: unknown, message: string): AgentExecutionEr
   return executionError('SANDBOX_UNAVAILABLE', message, true, {
     cause: error instanceof Error ? error.message : String(error),
   })
+}
+
+function isDockerSignedRouteUnsupported(error: unknown): boolean {
+  return error instanceof Error && /signed routes.*not supported.*runtime\.type=['"]docker['"]/i.test(error.message)
+}
+
+function withTrailingPathSlash(url: string): string {
+  const parsed = new URL(url)
+  if (!parsed.pathname.endsWith('/')) parsed.pathname += '/'
+  return parsed.toString()
 }
 
 function isAgentExecutionError(error: unknown): error is AgentExecutionError {

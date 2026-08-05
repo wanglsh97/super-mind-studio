@@ -35,7 +35,10 @@ describe('WebsiteDeliveryService', () => {
       1,
       runId,
       userId,
-      expect.objectContaining({ command: 'pnpm build', workingDirectory: '/workspace/work' }),
+      expect.objectContaining({
+        command: 'pnpm build -- --base=./',
+        workingDirectory: '/workspace/work',
+      }),
     )
     expect(fixture.tx.creationAsset.deleteMany).toHaveBeenCalledWith({
       where: { creationId, kind: { in: ['SOURCE_ZIP', 'DIST_ZIP'] } },

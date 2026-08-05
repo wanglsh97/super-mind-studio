@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
 
 export const STATIC_WEBSITE_BUILDER_SKILL_ID = 'static-website-builder'
-export const STATIC_WEBSITE_BUILDER_SKILL_VERSION = '1.0.1'
+export const STATIC_WEBSITE_BUILDER_SKILL_VERSION = '1.0.2'
 
 export const STATIC_WEBSITE_BUILDER_SKILL_MARKDOWN = `# Static Website Builder
 
@@ -24,7 +24,7 @@ Do not replace this stack. Do not add a database, server runtime, authentication
 - Platform Skill files: \`/workspace/.platform-skills/static-website-builder\`
 - Initialize a new empty project by running \`bash /workspace/.platform-skills/static-website-builder/init.sh\` from \`/workspace/work\`.
 - Keep application code under \`src\`, public static files under \`public\`, and reusable shadcn-style primitives under \`src/components/ui\`.
-- The package scripts must include \`build\`, and \`pnpm build\` must create \`/workspace/work/dist/index.html\`.
+- The package scripts must include \`build\`, and \`pnpm build -- --base=./\` must create \`/workspace/work/dist/index.html\` with relative asset paths so the ZIP and Sandbox proxy preview both work.
 
 ## Product and design workflow
 
@@ -64,6 +64,7 @@ import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 
 export default defineConfig({
+  base: './',
   plugins: [react(), tailwindcss()],
   resolve: { alias: { '@': path.resolve(import.meta.dirname, './src') } },
 })

@@ -17,7 +17,7 @@ The server-owned Agent tool registry SHALL expose `create_website` only to a run
 `create_website` SHALL execute the fixed production build, validate the static output, generate `source.zip` and `dist.zip`, archive them and return an owner-scoped temporary preview path before reporting success. A shell command, model text or generic `export_file` result alone MUST NOT transition the website Creation to succeeded.
 
 #### Scenario: Build fails
-- **GIVEN** the current project does not pass `pnpm build`
+- **GIVEN** the current project does not pass `pnpm build -- --base=./`
 - **WHEN** the Agent calls `create_website`
 - **THEN** the tool returns a bounded actionable failure without replacing the last successful artifacts and the Agent remains responsible for fixing and retrying
 
