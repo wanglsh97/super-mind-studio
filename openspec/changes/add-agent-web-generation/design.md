@@ -1,80 +1,71 @@
 ## Context
 
-项目已有 GitHub 用户认证、持久 Agent thread/run、独立 OpenSandbox 执行会话、`write_file`/`run_shell`/`export_file` 工具、私有 OSS 用户文件和图片任务。它们以单个文件和当前 Thread 为核心，尚未表达一个完整可下载的网站项目或统一的创作列表。
-
-本 change 新增网站项目和创作资产层。网页生成仍由现有 Agent loop 在独立沙箱执行；Sandbox 已经是独立部署，允许 npm、shell 和公网访问。平台只持有项目元数据和归档，不持久化运行中的工作区。
+网页创作不建立独立 Agent 服务。前端仍通过 `POST /api/v1/agent/threads/:threadId/runs` 发送消息，只在选中网页时附加 `mode: website`。服务端据此自动加载内置 Skill、缩小 Tool 集并投影唯一 WebProject。
 
 ## Goals / Non-Goals
 
 **Goals:**
 
-- 让 GitHub 登录用户通过正常 Agent 对话创建一个静态站点项目，并在同一 run 中生成、构建和导出。
-- 允许 Agent 选择适合需求的前端技术栈，同时用可验证的静态交付契约保证预览与下载。
-- 将源码 ZIP、构建 ZIP、缩略图以及图片结果投影到用户隔离的“我的创作”。
-- 让 OSS 对象和数据库元数据在 30 天后进入不可见/清理状态，并为未来部署 Connector 留下标准 `dist` 边界。
+- 用内置 Skill 稳定脚手架、目录、UI 标准和构建命令。
+- 用单一 `create_website` Tool 统一交付成功语义，Agent 不能仅根据文本或 shell 输出声称完成。
+- 同一 Thread 可在 Sandbox 存活期内继续修改，每次成功交付覆盖上一份最终产物。
+- 预览仅依赖当前 Thread Sandbox；删除 Thread 后只保留 ZIP 下载。
 
 **Non-Goals:**
 
-- 不支持数据库、认证、支付、服务端 API、私密环境变量、GitHub/Cloudflare OAuth、仓库推送或公网部署。
-- 不支持文件树、可视化编辑器、跨会话继续修改同一网页项目、共享预览或永久存储。
-- 不新增后台 Worker；清理依赖 OSS Lifecycle，API 查询只负责屏蔽过期资产。
+- 不实现版本快照、版本列表、回滚、跨 Thread 继续修改。
+- 不支持任何后端能力或预留全栈扩展层。
+- 不提供公网部署、公开分享或 Connector。
 
 ## Decisions
 
-### Decision 1: 用 WebProject 表达一次性网站交付，而不扩展 AgentThread
+### Decision 1: website 是 Run mode，不是新接口链路
 
-`WebProject` 属于用户、关联创建它的 Agent thread/run，保存标题、技术栈、状态、构建目录、预览信息、过期时间。它独立于 thread 生命周期：删除聊天不会删除已交付项目，符合“产物保留、不可跨会话编辑”。
+SDK 只为 `CreateAgentRunRequest` 增加 `mode?: 'website'`。GitHub 门槛、Skill 注入和 Tool 可见性都在既有 Agent 服务端处理。前端选择态按 `threadId` 存入 localStorage；取消只影响后续 Run，不删除 Thread 源码。
 
-替代方案是直接在 `AgentThread` 上记录网站字段；这会把一次性产物与可多次运行的对话混为一体，也无法支持未来从图片/视频进入统一创作列表。
+### Decision 2: 内置 Skill 独占“怎么建”
 
-### Decision 2: 静态交付契约优先于固定技术栈
+`static-website-builder` 由平台随发布提供，不出现在市场、不允许用户编辑，website mode 每个 Run 都在模型调用前自动激活。Skill 固定：
 
-Agent 可以选择 Next.js static export、Vite、Astro 或其他可在 Sandbox 中构建的技术栈，但必须产生 `package.json`、锁文件、可执行 build 命令和无服务端依赖的静态 `dist` 目录。服务端在归档前验证这些边界；未满足即项目失败，不能宣称完成。
+- React + TypeScript + Vite
+- Tailwind CSS + shadcn/ui + Lucide
+- `/workspace/work` 为项目根目录
+- `pnpm` 为唯一包管理器
+- `pnpm build` 产生 `/workspace/work/dist`
+- 纯静态资源，禁止数据库、服务端、登录、支付和私密配置
 
-固定 Next.js 可以降低实现复杂度，但违背已确认的“Agent 根据需求选择技术栈”决定。任意框架但不要求静态输出则无法提供稳定预览和后续静态部署，因此不采用。
+### Decision 3: 唯一 `create_website` Tool 独占“交付和预览”
 
-### Decision 3: 复用 Agent 输出工具归档 ZIP，新增项目级 manifest
+Tool 不接受任意构建命令或路径，它在受控目录中固定执行：
 
-网页 Agent 将源码 ZIP、`dist` ZIP 和可选截图放在 `/workspace/output`，通过既有 `export_file` 进入私有 OSS。`WebProjectService` 在 run 结束时以导出的受控文件创建 `CreativeAsset` 记录，并将 `expiresAt` 固定为创建后 30 天。为避免 Agent 任意命名造成歧义，服务端只接受项目 manifest 指定的 source/dist/preview 路径与 MIME 类型。
+1. 校验项目根目录、`package.json`、`pnpm-lock.yaml` 和禁止文件。
+2. 执行 `pnpm build`；失败时返回有界日志，不改写已有最终产物。Agent 必须继续修复并重试。
+3. 校验 `dist/index.html` 和静态资源边界。
+4. 在 `/workspace/output` 生成排除 `node_modules`、`.git`、`dist`、缓存和密钥文件的 `source.zip`，以及根目录包含 `index.html` 的 `dist.zip`。
+5. 将两个 ZIP 先写入新的私有对象，校验完整性后在数据库事务中切换唯一 WebProject/CreationAsset 指针，再 best-effort 删除旧对象。
+6. 启动受控静态 HTTP 服务，返回不含 Sandbox 签名凭证的同源 Agent 预览路径。
 
-替代方案是让 API 直接读取完整 Sandbox 工作区；这会上传依赖缓存、临时文件或敏感意外文件，且扩大沙箱权限面。
+### Decision 4: 单产物覆盖，不建立版本模型
 
-### Decision 4: 创作列表采用规范化 Creation + CreationAsset 投影
+一个 Thread 对应一个 WebProject 和一个 Creation。`create_website` 每次成功时更新 `agentRunId`、产物指针、成功时间和 `expiresAt = now + 30 days`。旧 Agent tool event只保留审计信息，UI 对比当前 WebProject `agentRunId` 后标记为“已被覆盖”，不提供旧产物或回滚。
 
-`Creation` 是用户可见聚合，类型为 website/image/video；`CreationAsset` 是其受保护对象引用。`WebProject` 一对一关联 website Creation；`ImageGenerationTask` 成功时创建或更新 image Creation。视频暂不建业务任务，仅由 UI 显示空状态。
+### Decision 5: 删除 Thread 是预览终止点
 
-所有列表、详情和下载均以当前 session userId 查询。下载继续通过同源 API，不向数据库或 Agent event 保存持久 OSS URL。
+切换 Thread 或刷新页面不销毁 Sandbox，用户返回同一 Thread 仍可修改。删除 Thread 时先销毁 Sandbox，后删除对话数据；WebProject 与 CreationAsset 不与 Thread 建立级联外键，ZIP 保留至最后成功交付后 30 天。
 
-### Decision 5: 预览是同源、用户私有的归档静态包读取
+### Decision 6: 预览凭证不入库
 
-构建成功后，API 从已验证并归档的 `dist.zip` 按请求路径精确读取静态文件，只允许项目所有者访问；不直接暴露 Sandbox 端口或存储持久 URL。该方式使预览不依赖 Sandbox 的存活，符合 Sandbox 销毁后仍保留产物的边界；预览会在产物到期后立即失效。
-
-未来部署 Connector 读取已经验证的 `dist` ZIP；它是额外授权动作，不能复用预览 URL 作为生产发布。
-
-### Decision 6: GitHub 登录是网页生成功能门槛
-
-创建网站项目和浏览“我的创作”均要求 authenticated user 的 provider 为 GitHub。匿名、Google 或未来其他身份访问时，API 返回明确拒绝码，Web 显示 GitHub 登录引导；客户端不能只靠路由隐藏实现该限制。
-
-### Decision 7: 30 天保留使用 OSS Lifecycle + 过期读屏蔽
-
-所有 creation object key 使用 `creations/{userId}/{creationId}/` 前缀并设置 `expiresAt`。部署必须为该前缀配置 30 天 Lifecycle 删除；查询在 `expiresAt <= now` 时返回 expired 状态并拒绝内容读取。数据库元数据通过受控清理任务或管理员操作最终移除，但安全不依赖该清理及时执行。
+Tool event 只记录同源 `previewPath`、run/project/artifact ID、有界构建摘要和过期时间。浏览器访问同源 Agent 预览路径时，API 验证 Session、Run owner、当前 WebProject 和 Thread Sandbox，然后临时换取 Sandbox 签名 endpoint 并重定向。签名 URL 不写入 Agent event、Pino 或数据库。
 
 ## Risks / Trade-offs
 
-- [任意 shell/npm/公网可运行不可信代码] → 依赖独立 Sandbox 的无宿主挂载、无平台密钥、用户隔离和基础设施级资源回收；应用不在 Agent prompt 中暗示其安全。
-- [技术栈多样造成构建失败] → 静态交付 manifest、确定性 Mock fixture、完整命令日志和失败状态；首次仅验证已知的 Vite/Next static fixture。
-- [OSS Lifecycle 删除存在异步窗口] → API 用 expiresAt 立即屏蔽，不能仅依赖对象是否仍存在。
-- [用户素材可经 Agent 外发] → 在创建网页前显示一次明确告知，并审计命令/目标域名而不记录凭证。
-- [图片历史与新创作投影不一致] → Creation 以业务原表为真源，投影失败不影响 ImageGenerationTask；提供幂等回填路径。
+- 固定技术栈减少自由度，但能使 Skill、Tool、构建校验和预览保持一致。
+- Sandbox 仍允许 npm、shell 和公网；安全边界依赖独立 Sandbox 资源隔离、无平台密钥和及时销毁。
+- 不保留版本意味着成功覆盖后无法恢复旧版；UI 必须明示“已被覆盖”而不伪装历史版本仍可用。
 
 ## Migration Plan
 
-1. 添加 Prisma enum、Creation、CreationAsset、WebProject 和 ImageGenerationTask 关联字段，并创建正式 migration。
-2. 上线 API/SDK 和前端入口，但仅在 Sandbox/OSS 配置有效时显示网站创建能力。
-3. 配置 OSS `creations/` 30 天 Lifecycle，先在 staging 用短生命周期验证；生产失败时保留 API 过期屏蔽。
-4. 回滚时关闭创建入口和 API 写入；现有对象继续按 lifecycle 过期，不批量删除用户数据。
-
-## Open Questions
-
-- V1 不提供跨会话编辑；后续恢复项目时应创建新的 WebProject revision，而不是重新打开已过期 Sandbox。
-- GitHub/Cloudflare Connector 的 OAuth scope、部署回调和自定义域名属于后续独立 change。
+1. 删除旧 `/creations/websites*` 套件及归档预览实现。
+2. 增加 Run mode、内置 Skill 和 `create_website`，保持普通 Chat 工具集不变。
+3. 将前端网页选择态按 Thread 持久化，渲染最新/已覆盖产物卡。
+4. 完成测试、build 和 strict 校验后才启动 dev 做真实 Sandbox 冒烟。

@@ -1,48 +1,48 @@
 ## ADDED Requirements
 
-### Requirement: GitHub users can create a static web project through Agent
-The system SHALL allow only an authenticated GitHub user to create a website project from an Agent conversation. It SHALL create an owner-scoped WebProject before the Agent starts generation and SHALL associate the project with the originating Agent thread and run.
+### Requirement: Website creation is an existing Agent run mode
+The system SHALL allow only an authenticated GitHub user to send `mode: website` through the existing Agent thread run API. It MUST reuse the same Thread, Run, SSE, context, Sandbox and cancellation lifecycle as normal Chat and MUST NOT expose a separate website creation API.
 
-#### Scenario: GitHub user starts a website project
+#### Scenario: GitHub user starts website mode
 - **GIVEN** a user has an authenticated GitHub session
-- **WHEN** the user starts a website generation request
-- **THEN** the system creates an owner-scoped project and starts an Agent run with the static-site instructions
+- **WHEN** the frontend sends an Agent run with `mode: website`
+- **THEN** the server admits the normal Agent run and applies the built-in static website Skill and website-only tool profile
 
-#### Scenario: Anonymous user attempts website generation
-- **GIVEN** a user has no GitHub-authenticated session
-- **WHEN** the user attempts website generation
-- **THEN** the API rejects the request without creating a sandbox or project and the UI presents a GitHub login action
+#### Scenario: Unsupported identity starts website mode
+- **GIVEN** the current identity is anonymous, Google or unauthenticated
+- **WHEN** it submits `mode: website`
+- **THEN** the server rejects the run before creating a project or Sandbox and the Web presents a GitHub login action
 
-### Requirement: Generated projects conform to the static delivery contract
-The Agent SHALL be free to select a framework, but a completed project MUST contain a package manifest, dependency lockfile, repeatable build command and a static output directory. It MUST NOT require database access, server runtime, private environment variables, login, payment processing or a private upstream API to render its delivered website.
+### Requirement: Website mode automatically loads one immutable static-site Skill
+Every website-mode run SHALL automatically load the platform-owned `static-website-builder` Skill before the first model call. The Skill SHALL require React, TypeScript, Vite, Tailwind CSS, shadcn/ui, Lucide, pnpm, `/workspace/work` and a `pnpm build` output at `/workspace/work/dist`. It SHALL prohibit databases, server runtimes, authentication backends, payments, private environment variables and private API keys.
 
-#### Scenario: Static build succeeds
-- **GIVEN** the Agent has generated a project in its Sandbox workspace
-- **WHEN** it executes the declared build command and produces the declared output directory
-- **THEN** the project becomes eligible for preview and artifact export
+#### Scenario: Agent builds a website
+- **GIVEN** a website-mode run has started
+- **WHEN** the model receives its system context
+- **THEN** the immutable Skill content and fixed stack workflow are active without model discovery or user-managed Skill activation
 
-#### Scenario: Project requires server execution
-- **GIVEN** a generated project has no static output directory or declares a server-only runtime
-- **WHEN** the delivery validator runs
-- **THEN** the project is marked failed and the Agent does not claim a downloadable website is ready
+### Requirement: One Thread retains one current website delivery
+A Thread SHALL have at most one current WebProject delivery. Each successful `create_website` call SHALL replace the current source/build assets and reset their expiry to thirty days after that success. The system SHALL NOT expose versions, rollback or old downloads.
 
-### Requirement: Website source and build outputs remain downloadable after Sandbox destruction
-The system SHALL archive a source ZIP and a static build ZIP from the explicit project output manifest to private OSS before ending a successful project. It SHALL never archive dependency caches, arbitrary Sandbox paths, platform secrets or persistent OSS URLs into Agent messages or database records.
+#### Scenario: User modifies a delivered website
+- **GIVEN** the same Thread already has a successful website delivery
+- **WHEN** a later website-mode run successfully calls `create_website`
+- **THEN** the new artifacts become current, the prior artifacts become unavailable and prior tool cards are marked superseded
 
-#### Scenario: Successful project is archived
-- **GIVEN** a project has passed the static delivery validation
-- **WHEN** the Agent exports its source and build artifacts
-- **THEN** its owner can download both assets using same-origin authorized routes after the Sandbox is destroyed
+#### Scenario: Modification build fails
+- **GIVEN** a previous successful delivery exists
+- **WHEN** the modified project fails delivery validation
+- **THEN** the failed attempt does not replace the current artifacts and the Agent continues fixing the Sandbox project
 
-### Requirement: Website previews are private and temporary
-The system SHALL serve a generated static preview only to the project owner through a same-origin route backed by the validated archived static build. It MUST NOT expose a Sandbox port, persistent OSS URL, or public share URL.
+### Requirement: Preview exists only with the originating Thread Sandbox
+The current delivery SHALL have an owner-scoped same-origin preview only while the originating Thread Sandbox exists. Switching threads or refreshing SHALL NOT destroy the Sandbox. Deleting the Thread SHALL destroy it and invalidate preview while the final ZIP assets remain downloadable until expiry.
 
-#### Scenario: Owner opens a preview
-- **GIVEN** an owner has a completed project with an active preview
-- **WHEN** the owner opens its preview route
-- **THEN** the system serves only that project's archived static content to the authenticated owner
+#### Scenario: Owner opens current preview
+- **GIVEN** the owner requests the current project preview and the Thread Sandbox is alive
+- **WHEN** the API validates owner, run, current project and port
+- **THEN** it obtains a short-lived Sandbox endpoint without persisting its credential and redirects the owner
 
-#### Scenario: Another user opens a preview
-- **GIVEN** a project belongs to user A
-- **WHEN** user B requests its preview route
-- **THEN** the system returns no project content
+#### Scenario: Thread is deleted
+- **GIVEN** a website has been delivered
+- **WHEN** its owner deletes the originating Thread
+- **THEN** the Sandbox and preview become unavailable while source and dist downloads remain owner-accessible until their expiry

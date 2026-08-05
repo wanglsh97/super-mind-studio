@@ -1,9 +1,14 @@
 ## ADDED Requirements
 
-### Requirement: Website artifacts use a separate expiring creation namespace
-The system SHALL store website project artifacts under a private creation namespace with a thirty-day expiry rather than treating them as permanent generic Agent output files. The owner-facing API SHALL return same-origin content and download routes and MUST NOT expose a persistent OSS URL.
+### Requirement: Website delivery assets use a private replaceable creation namespace
+The system SHALL write each successful website delivery to new private temporary object keys, validate both ZIP files and atomically switch the current CreationAsset pointers before best-effort deletion of the replaced objects. Only the current assets SHALL be downloadable, and no persistent OSS URL SHALL be stored or returned.
 
-#### Scenario: Artifact storage route remains private
-- **GIVEN** a website artifact has been archived
-- **WHEN** its owner requests a download before expiry
-- **THEN** the system authorizes ownership and serves or redirects to a fresh short-lived object URL without persisting that URL
+#### Scenario: New delivery replaces old objects
+- **GIVEN** a WebProject already references valid source and dist assets
+- **WHEN** a new delivery has been fully uploaded and validated
+- **THEN** one database transaction makes both new assets current and resets expiry before the old object keys are deleted
+
+#### Scenario: Upload or transaction fails
+- **GIVEN** the previous delivery is current
+- **WHEN** any new object upload, validation or database switch fails
+- **THEN** the previous database pointers remain current and newly written temporary objects are cleaned up best-effort

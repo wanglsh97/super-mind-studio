@@ -1,30 +1,38 @@
 ## ADDED Requirements
 
-### Requirement: Users can browse a unified creative library
-The system SHALL provide an owner-scoped “我的创作” list containing website and image creations. It SHALL expose type, title, status, cover asset, creation time and expiration state without leaking another user's assets. Video SHALL render as an explicit future empty state until a video producer exists.
+### Requirement: Users can browse a unified owner-scoped creative library
+The system SHALL provide a “我的创作” list containing only the owner's successful current website deliveries and image creations. It SHALL support website/image filtering and an explicit future video empty state without leaking another user's records or assets.
 
-#### Scenario: User lists their creations
-- **GIVEN** a user owns completed website and image creations
+#### Scenario: User lists creations
+- **GIVEN** a user owns a successfully delivered website and image tasks
 - **WHEN** the user opens 我的创作
-- **THEN** the system returns only that user's items and allows filtering by website or image
+- **THEN** the list contains only that user's items and only one current card for each website Thread
 
-#### Scenario: User requests another user's creation
-- **GIVEN** a creation belongs to user A
-- **WHEN** user B requests its detail or asset
-- **THEN** the system responds as if the creation does not exist
+### Requirement: Website cards expose only current expiring downloads
+A website creation card SHALL expose its current `source.zip` and `dist.zip` through generic same-origin Creation Asset routes. It SHALL NOT expose an archived website preview, old delivery, persistent OSS URL or rollback action.
 
-### Requirement: Creation assets expire after thirty days
-Website source/build assets SHALL become unavailable at their recorded expiry time, which is thirty days after archival. The API SHALL hide expired assets even if OSS lifecycle deletion has not completed.
+#### Scenario: Current asset is downloaded
+- **GIVEN** a current asset belongs to the authenticated user and has not expired
+- **WHEN** its generic asset route is requested
+- **THEN** the API serves it as a private attachment
 
-#### Scenario: Expired asset download
-- **GIVEN** a website asset has passed its expiresAt timestamp
-- **WHEN** its owner requests its content
-- **THEN** the API denies the content and returns the creation as expired
+#### Scenario: Asset is old, expired or owned by another user
+- **GIVEN** an asset is no longer current, has expired or belongs to another user
+- **WHEN** it is requested
+- **THEN** the API responds without revealing its content or ownership
 
-### Requirement: Image results are represented as creations
-The system SHALL create or update an image Creation when an owner submits an image generation task, and SHALL associate successful result assets with it without changing ImageGenerationTask as the generation source of truth.
+### Requirement: Successful overwrite resets website retention
+The current website source/build assets SHALL expire thirty days after the most recent successful `create_website` delivery. Failed modification attempts SHALL NOT change that timestamp.
+
+#### Scenario: Website is successfully overwritten
+- **GIVEN** a current delivery has an earlier expiry
+- **WHEN** a replacement delivery succeeds
+- **THEN** both replacement assets and their Creation record receive a new thirty-day expiry
+
+### Requirement: Image results remain represented as creations
+The system SHALL continue to project image generation results into the same list without changing ImageGenerationTask as their generation source of truth.
 
 #### Scenario: Image generation completes
-- **GIVEN** an owner submits an image generation task
-- **WHEN** the task succeeds with result images
-- **THEN** the owner's creative library shows an image creation whose assets resolve through the existing safe image download path
+- **GIVEN** an owner has a successful image generation task
+- **WHEN** the creative library is loaded
+- **THEN** its image creation appears and resolves content through the existing safe image route
