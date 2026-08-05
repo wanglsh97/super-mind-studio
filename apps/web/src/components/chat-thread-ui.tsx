@@ -318,7 +318,7 @@ export function AgentWebCreationOption({
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        'mx-auto mb-2 flex w-full max-w-[44rem] items-center gap-2 rounded-xl border px-3 py-2 text-left text-xs transition-colors sm:w-[calc(100%-2rem)]',
+        'mx-auto mb-2 flex h-9 w-28 items-center justify-center gap-1.5 rounded-xl border px-2 text-xs transition-colors',
         selected
           ? 'border-brand/45 bg-brand-subtle text-brand-hover dark:text-brand-light'
           : 'border-line bg-surface/80 text-ink-muted hover:border-brand/35 hover:bg-brand-subtle/50 hover:text-brand-hover',
@@ -333,8 +333,6 @@ export function AgentWebCreationOption({
         </svg>
       </span>
       <span className="font-semibold">网页创作</span>
-      <span className="min-w-0 truncate text-ink-subtle">生成可预览、可下载的静态网站</span>
-      <span className="ml-auto shrink-0 font-semibold">{selected ? '已选中' : '选择'}</span>
     </button>
   );
 }
