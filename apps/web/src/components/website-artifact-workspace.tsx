@@ -124,7 +124,7 @@ export function WebsiteArtifactWorkspace({
         className={cn(
           'flex h-full min-h-0 w-full min-w-0',
           artifact
-            ? 'min-[1024px]:grid min-[1024px]:grid-cols-[minmax(0,1fr)_clamp(32rem,48%,56rem)] min-[1024px]:grid-rows-[minmax(0,1fr)] min-[1024px]:pr-4'
+            ? 'min-[1024px]:grid min-[1024px]:grid-cols-[minmax(0,1fr)_clamp(32rem,48%,56rem)] min-[1024px]:grid-rows-[minmax(0,1fr)]'
             : 'min-[1024px]:grid min-[1024px]:grid-cols-1 min-[1024px]:grid-rows-[minmax(0,1fr)]',
         )}
         style={
@@ -283,7 +283,7 @@ function WebsiteArtifactPanel({
       </header>
 
       {tab === 'preview' ? (
-        <div className="relative min-h-0 flex-1 bg-[linear-gradient(135deg,#f5f6f8_25%,transparent_25%),linear-gradient(225deg,#f5f6f8_25%,transparent_25%),linear-gradient(45deg,#f5f6f8_25%,transparent_25%),linear-gradient(315deg,#f5f6f8_25%,#fff_25%)] bg-[length:18px_18px] bg-[position:9px_0,9px_0,0_0,0_0] p-3">
+        <div className="relative min-h-0 flex-1 p-3">
           <iframe
             key={artifact.previewUrl}
             src={artifact.previewUrl}
