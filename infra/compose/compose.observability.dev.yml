@@ -9,7 +9,7 @@ services:
       - '127.0.0.1:4318:4318'
     depends_on:
       tempo:
-        condition: service_healthy
+        condition: service_started
     networks: [backend, development]
 
   tempo:

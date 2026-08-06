@@ -163,11 +163,16 @@ if [ "$nginx_was_running" -eq 1 ]; then
   enter_maintenance_mode
 fi
 
-if ! compose up -d --remove-orphans postgres redis tempo otel-collector migrate api web; then
+# 业务主链路与 Tempo 解耦：Trace 存储不 ready 不得阻塞发布。
+if ! compose up -d --remove-orphans postgres redis migrate api web; then
   if [ "$nginx_was_running" -eq 1 ]; then
     echo '应用启动失败，维护页将继续显示；修复后重新执行发布脚本。' >&2
   fi
   exit 1
+fi
+
+if ! compose up -d --remove-orphans tempo otel-collector; then
+  echo '警告：Tempo/otel-collector 启动失败，已继续发布（不影响业务主链路）。' >&2
 fi
 
 if [ "$nginx_was_running" -eq 0 ]; then

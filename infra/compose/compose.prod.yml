@@ -264,7 +264,8 @@ services:
     expose: ['4318']
     depends_on:
       tempo:
-        condition: service_healthy
+        # Trace 存储启动慢或短暂不 ready 时，不应阻塞 Collector / 业务发布。
+        condition: service_started
     networks: [backend]
     cpus: '0.35'
     mem_limit: 384m
@@ -281,13 +282,12 @@ services:
     expose: ['3200', '4318']
     networks: [backend]
     healthcheck:
-      # Tempo /ready returns 503 while replaying WAL / polling a large local blocklist.
-      # Give startup headroom so compose up is not marked failed during that window.
+      # /ready 在 WAL replay / 大 blocklist poll 期间会持续 503；放宽启动窗口供运维观察。
       test: ['CMD-SHELL', 'wget -qO- http://127.0.0.1:3200/ready >/dev/null || exit 1']
       interval: 15s
       timeout: 5s
       retries: 10
-      start_period: 180s
+      start_period: 300s
     cpus: '0.60'
     mem_limit: 768m
     pids_limit: 256
