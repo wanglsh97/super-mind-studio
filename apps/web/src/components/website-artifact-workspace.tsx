@@ -15,7 +15,15 @@ import {
   RocketIcon,
   XIcon,
 } from 'lucide-react';
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { materialLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
@@ -47,6 +55,10 @@ interface WebsiteArtifactContextValue {
 }
 
 const WebsiteArtifactContext = createContext<WebsiteArtifactContextValue | null>(null);
+const ARTIFACT_MIN_WIDTH = 26 * 16;
+const ARTIFACT_MAX_WIDTH = 40 * 16;
+const CHAT_MIN_WIDTH = 22 * 16;
+const ARTIFACT_RESIZE_STEP = 24;
 
 export function useWebsiteArtifactWorkspace() {
   const value = useContext(WebsiteArtifactContext);
@@ -59,6 +71,8 @@ export function WebsiteArtifactWorkspace({
   scopeKey,
 }: Readonly<{ children: ReactNode; scopeKey: string }>) {
   const [artifact, setArtifact] = useState<WebsiteArtifactDescriptor | null>(null);
+  const [artifactWidth, setArtifactWidth] = useState<number | null>(null);
+  const workspaceRef = useRef<HTMLDivElement>(null);
   const openArtifact = useCallback((nextArtifact: WebsiteArtifactDescriptor) => {
     setArtifact(nextArtifact);
   }, []);
@@ -70,18 +84,65 @@ export function WebsiteArtifactWorkspace({
 
   useEffect(() => setArtifact(null), [scopeKey]);
 
+  const constrainArtifactWidth = useCallback((nextWidth: number) => {
+    const workspace = workspaceRef.current;
+    if (!workspace) return ARTIFACT_MIN_WIDTH;
+    const paddingRight = Number.parseFloat(getComputedStyle(workspace).paddingRight) || 0;
+    const availableWidth = workspace.getBoundingClientRect().width - paddingRight;
+    const maximumWidth = Math.max(
+      ARTIFACT_MIN_WIDTH,
+      Math.min(ARTIFACT_MAX_WIDTH, availableWidth - CHAT_MIN_WIDTH),
+    );
+    return Math.round(Math.min(Math.max(nextWidth, ARTIFACT_MIN_WIDTH), maximumWidth));
+  }, []);
+
+  const resizeArtifactAt = useCallback(
+    (clientX: number) => {
+      const workspace = workspaceRef.current;
+      if (!workspace) return;
+      const paddingRight = Number.parseFloat(getComputedStyle(workspace).paddingRight) || 0;
+      const contentRight = workspace.getBoundingClientRect().right - paddingRight;
+      setArtifactWidth(constrainArtifactWidth(contentRight - clientX));
+    },
+    [constrainArtifactWidth],
+  );
+
+  const resizeArtifactBy = useCallback(
+    (delta: number) => {
+      const panel = workspaceRef.current?.querySelector<HTMLElement>('[aria-label="网站产物"]');
+      setArtifactWidth((current) =>
+        constrainArtifactWidth((current ?? panel?.getBoundingClientRect().width ?? 0) + delta),
+      );
+    },
+    [constrainArtifactWidth],
+  );
+
   return (
     <WebsiteArtifactContext.Provider value={contextValue}>
       <div
+        ref={workspaceRef}
         className={cn(
           'flex h-full min-h-0 w-full min-w-0',
           artifact
-            ? 'min-[1024px]:grid min-[1024px]:grid-cols-[minmax(0,1fr)_clamp(22rem,42%,40rem)] min-[1024px]:grid-rows-[minmax(0,1fr)]'
+            ? 'min-[1024px]:grid min-[1024px]:grid-cols-[minmax(0,1fr)_clamp(26rem,42%,40rem)] min-[1024px]:grid-rows-[minmax(0,1fr)] min-[1024px]:pr-4'
             : 'min-[1024px]:grid min-[1024px]:grid-cols-1 min-[1024px]:grid-rows-[minmax(0,1fr)]',
         )}
+        style={
+          artifact && artifactWidth !== null
+            ? { gridTemplateColumns: `minmax(0, 1fr) ${artifactWidth}px` }
+            : undefined
+        }
       >
         <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">{children}</div>
-        {artifact ? <WebsiteArtifactPanel artifact={artifact} onClose={closeArtifact} /> : null}
+        {artifact ? (
+          <WebsiteArtifactPanel
+            artifact={artifact}
+            width={artifactWidth}
+            onClose={closeArtifact}
+            onResize={resizeArtifactAt}
+            onResizeBy={resizeArtifactBy}
+          />
+        ) : null}
       </div>
     </WebsiteArtifactContext.Provider>
   );
@@ -89,8 +150,17 @@ export function WebsiteArtifactWorkspace({
 
 function WebsiteArtifactPanel({
   artifact,
+  width,
   onClose,
-}: Readonly<{ artifact: WebsiteArtifactDescriptor; onClose: () => void }>) {
+  onResize,
+  onResizeBy,
+}: Readonly<{
+  artifact: WebsiteArtifactDescriptor;
+  width: number | null;
+  onClose: () => void;
+  onResize: (clientX: number) => void;
+  onResizeBy: (delta: number) => void;
+}>) {
   const [tab, setTab] = useState<'preview' | 'code'>('preview');
   const [sourceState, setSourceState] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
   const [sourceFiles, setSourceFiles] = useState<WebsiteSourceFile[]>([]);
@@ -132,6 +202,45 @@ function WebsiteArtifactPanel({
       aria-label="网站产物"
       className="fixed inset-0 z-[80] flex min-h-0 flex-col overflow-hidden bg-surface-card min-[1024px]:relative min-[1024px]:inset-auto min-[1024px]:z-auto min-[1024px]:h-full min-[1024px]:w-full min-[1024px]:min-w-0 min-[1024px]:border-l min-[1024px]:border-line"
     >
+      {/* A focusable ARIA separator is intentionally implemented with button mechanics. */}
+      {/* eslint-disable jsx-a11y/no-interactive-element-to-noninteractive-role */}
+      <button
+        type="button"
+        role="separator"
+        aria-label="调整网站产物宽度"
+        aria-orientation="vertical"
+        aria-valuemin={ARTIFACT_MIN_WIDTH}
+        aria-valuemax={ARTIFACT_MAX_WIDTH}
+        aria-valuenow={width ?? undefined}
+        aria-valuetext={width === null ? '自动宽度' : `${width} 像素`}
+        title="拖拽调整宽度"
+        className="group absolute inset-y-0 -left-2 z-40 hidden w-4 touch-none cursor-col-resize items-center justify-center focus-visible:outline-none min-[1024px]:flex"
+        onKeyDown={(event) => {
+          if (event.key === 'ArrowLeft') {
+            event.preventDefault();
+            onResizeBy(ARTIFACT_RESIZE_STEP);
+          } else if (event.key === 'ArrowRight') {
+            event.preventDefault();
+            onResizeBy(-ARTIFACT_RESIZE_STEP);
+          }
+        }}
+        onPointerDown={(event) => {
+          event.preventDefault();
+          onResize(event.clientX);
+          const handlePointerMove = (moveEvent: PointerEvent) => onResize(moveEvent.clientX);
+          const finishResize = () => {
+            window.removeEventListener('pointermove', handlePointerMove);
+            window.removeEventListener('pointerup', finishResize);
+            window.removeEventListener('pointercancel', finishResize);
+          };
+          window.addEventListener('pointermove', handlePointerMove);
+          window.addEventListener('pointerup', finishResize);
+          window.addEventListener('pointercancel', finishResize);
+        }}
+      >
+        <span className="h-14 w-1 rounded-full bg-line opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:bg-brand group-focus-visible:opacity-100 group-active:bg-brand group-active:opacity-100" />
+      </button>
+      {/* eslint-enable jsx-a11y/no-interactive-element-to-noninteractive-role */}
       <header className="flex min-h-16 shrink-0 flex-wrap items-center gap-3 border-b border-line px-4 py-3 lg:px-5">
         <div className="mr-auto min-w-0">
           <p className="truncate text-sm font-semibold text-ink">网页开发</p>
