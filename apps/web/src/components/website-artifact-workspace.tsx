@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { materialLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 import type {
   WebsiteSourceFile,
@@ -72,7 +72,7 @@ export function WebsiteArtifactWorkspace({
 
   return (
     <WebsiteArtifactContext.Provider value={contextValue}>
-      <div className="flex h-full min-h-0 w-full gap-3">
+      <div className="flex h-full min-h-0 w-full">
         <div
           className={cn(
             'relative flex min-w-0 flex-1 flex-col transition-[flex-basis,max-width] duration-300',
@@ -130,7 +130,7 @@ function WebsiteArtifactPanel({
   return (
     <aside
       aria-label="网站产物"
-      className="fixed inset-0 z-[80] flex min-h-0 flex-col overflow-hidden bg-surface-card shadow-2xl min-[1200px]:relative min-[1200px]:inset-auto min-[1200px]:z-auto min-[1200px]:min-w-0 min-[1200px]:flex-1 min-[1200px]:rounded-[1.4rem] min-[1200px]:border min-[1200px]:border-line min-[1200px]:shadow-[0_18px_54px_rgb(15_23_42/0.12)]"
+      className="fixed inset-0 z-[80] flex min-h-0 flex-col overflow-hidden bg-surface-card min-[1200px]:relative min-[1200px]:inset-auto min-[1200px]:z-auto min-[1200px]:min-w-0 min-[1200px]:flex-1 min-[1200px]:border-l min-[1200px]:border-line"
     >
       <header className="flex min-h-16 shrink-0 flex-wrap items-center gap-3 border-b border-line px-4 py-3 lg:px-5">
         <div className="mr-auto min-w-0">
@@ -423,6 +423,9 @@ function SourceCodeViewer({ file }: Readonly<{ file: WebsiteSourceFile | null }>
     <section aria-label={`查看 ${file.path}`} className="flex min-h-0 min-w-0 flex-1 flex-col">
       <div className="flex h-12 shrink-0 items-center gap-3 border-b border-line px-4">
         <p className="min-w-0 flex-1 truncate font-mono text-xs text-ink-secondary">{file.path}</p>
+        <span className="rounded-md border border-line bg-surface-inset px-1.5 py-0.5 font-mono text-[0.62rem] font-semibold tracking-wide text-ink-muted uppercase">
+          {file.language}
+        </span>
         <span className="text-[0.68rem] text-ink-muted">{formatBytes(file.sizeBytes)}</span>
         {file.content !== null ? (
           <button
@@ -452,18 +455,18 @@ function SourceCodeViewer({ file }: Readonly<{ file: WebsiteSourceFile | null }>
         <div className="min-h-0 flex-1 overflow-auto bg-white text-[0.8rem]">
           <SyntaxHighlighter
             language={file.language}
-            style={oneLight}
+            style={materialLight}
             showLineNumbers
             wrapLongLines={false}
             customStyle={{
               margin: 0,
               minHeight: '100%',
               padding: '1.25rem 1rem',
-              background: '#ffffff',
+              background: '#fafafa',
               fontSize: '0.8rem',
               lineHeight: '1.6',
             }}
-            lineNumberStyle={{ color: '#a1a1aa', minWidth: '2.5em' }}
+            lineNumberStyle={{ color: '#9ca3af', minWidth: '2.75em', paddingRight: '1em' }}
           >
             {file.content}
           </SyntaxHighlighter>
