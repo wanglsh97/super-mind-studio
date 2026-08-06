@@ -26,6 +26,21 @@ import {
   useLocalRuntime,
   WebSpeechDictationAdapter,
 } from '@assistant-ui/react';
+import {
+  BanIcon,
+  CheckIcon,
+  ChevronRightIcon,
+  CircleAlertIcon,
+  CodeXmlIcon,
+  DownloadIcon,
+  FilePenLineIcon,
+  FileTextIcon,
+  GlobeIcon,
+  LoaderCircleIcon,
+  TerminalSquareIcon,
+  WrenchIcon,
+  XIcon,
+} from 'lucide-react';
 import { Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -55,8 +70,6 @@ import {
   AgentThreadRoot,
   AgentThreadNavigator,
   AgentThreadViewport,
-  AgentToolCall,
-  AgentToolResult,
   AssistantMessage,
   ModelSelect,
   ThinkingEffortSelect,
@@ -1381,15 +1394,15 @@ const agentToolUiToolkit = defineToolkit({
       const httpStatus =
         typeof result?.audit?.status === 'number' ? result.audit.status : undefined;
 
-      if (status.type === 'running') return <AgentToolCall url={url} />;
-
       return (
-        <AgentToolResult
+        <ToolActivityCard
+          toolName="web_fetch"
+          subject={finalUrl ?? url}
+          detail={httpStatus === undefined ? undefined : `HTTP ${httpStatus}`}
+          args={url ? { url } : undefined}
+          result={result}
+          running={status.type === 'running'}
           isError={Boolean(isError)}
-          status={result?.status ?? (isError ? 'failed' : 'succeeded')}
-          httpStatus={httpStatus}
-          summary={result?.summary}
-          finalUrl={finalUrl}
         />
       );
     },
@@ -1655,40 +1668,15 @@ function SandboxToolActivityCard({
   running: boolean;
   isError: boolean;
 }) {
-  const exitCode = typeof result?.audit?.exitCode === 'number' ? result.audit.exitCode : undefined;
-  const size = typeof result?.audit?.size === 'number' ? result.audit.size : undefined;
-  const label = toolCallLabel(toolName);
-  const activityState = resolveAgentToolActivityState({
-    running,
-    status: result?.status,
-    isError,
-    audit: result?.audit,
-  });
-  const statusLabel = AGENT_TOOL_ACTIVITY_LABELS[activityState];
-  const hasDetails = Boolean(subject || detail || result);
-
   return (
-    <div className="py-1 text-[0.9rem] leading-6 text-ink">
-      <div className="flex min-w-0 flex-wrap items-center gap-2">
-        <span className="font-sans font-normal">
-          {running ? <ShimmerText>{label}</ShimmerText> : label}
-        </span>
-        <span className="font-sans text-[0.78rem] opacity-70">{statusLabel}</span>
-        {exitCode !== undefined ? <span className="font-sans">exit {exitCode}</span> : null}
-        {size !== undefined ? <span className="font-sans">{size} B</span> : null}
-      </div>
-      {hasDetails ? (
-        <div className="mt-1.5 space-y-1">
-          {subject ? (
-            <code className="block max-h-24 overflow-auto whitespace-pre-wrap break-all font-sans text-inherit">
-              {subject}
-            </code>
-          ) : null}
-          {detail ? <p className="font-sans">{detail}</p> : null}
-          <ToolExecutionResult result={result} />
-        </div>
-      ) : null}
-    </div>
+    <ToolActivityCard
+      toolName={toolName}
+      subject={subject}
+      detail={detail}
+      result={result}
+      running={running}
+      isError={isError}
+    />
   );
 }
 
@@ -1707,30 +1695,152 @@ function McpToolActivityCard({
   running: boolean;
   isError: boolean;
 }) {
-  const label = toolCallLabel(remoteToolName);
+  return (
+    <div data-mcp-server-id={serverId}>
+      <ToolActivityCard
+        toolName={remoteToolName}
+        subject={serverId}
+        args={args}
+        result={result}
+        running={running}
+        isError={isError}
+      />
+    </div>
+  );
+}
+
+function ToolActivityCard({
+  toolName,
+  subject,
+  detail,
+  args,
+  result,
+  running,
+  isError,
+}: {
+  toolName: string;
+  subject?: string | undefined;
+  detail?: string | undefined;
+  args?: Record<string, unknown> | undefined;
+  result?: SandboxToolResult | undefined;
+  running: boolean;
+  isError: boolean;
+}) {
   const activityState = resolveAgentToolActivityState({
     running,
     status: result?.status,
     isError,
     audit: result?.audit,
   });
+  const statusLabel = AGENT_TOOL_ACTIVITY_LABELS[activityState];
+  const hasDetails = Boolean(subject || detail || args || result);
 
   return (
-    <div data-mcp-server-id={serverId} className="py-1 text-[0.9rem] leading-6 text-ink">
-      <div className="flex min-w-0 flex-wrap items-center gap-2">
-        <span className="font-sans font-normal">
-          {running ? <ShimmerText>{label}</ShimmerText> : label}
+    <section
+      aria-label={`${toolCallLabel(toolName)}：${statusLabel}`}
+      aria-busy={running}
+      className="my-2 min-w-0 overflow-hidden rounded-xl border border-line/85 bg-surface-card/75 text-[0.84rem] leading-5 text-ink shadow-[0_4px_14px_rgb(37_57_103/0.04)]"
+    >
+      <div className="flex min-w-0 items-center gap-2.5 px-3 py-2.5">
+        <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-surface-muted text-ink-muted">
+          <ToolIcon toolName={toolName} />
         </span>
-        <span className="font-sans text-[0.78rem] opacity-70">
-          {AGENT_TOOL_ACTIVITY_LABELS[activityState]}
-        </span>
+        <span className="shrink-0 font-medium">{toolCallLabel(toolName)}</span>
+        <ToolStatus state={activityState} label={statusLabel} />
+        {subject ? (
+          <code
+            className="min-w-0 flex-1 truncate text-right font-mono text-[0.76rem] text-ink-muted"
+            title={subject}
+          >
+            {subject}
+          </code>
+        ) : null}
       </div>
-      <div className="mt-1.5 space-y-1">
-        <code className="block max-h-24 overflow-auto whitespace-pre-wrap break-all font-sans text-inherit">
-          {JSON.stringify(args)}
-        </code>
-        <ToolExecutionResult result={result} />
-      </div>
+      {hasDetails ? (
+        <details className="group/details border-t border-line/70">
+          <summary className="flex cursor-pointer list-none items-center gap-1.5 px-3 py-2 text-[0.74rem] text-ink-muted transition hover:bg-surface-muted/55 hover:text-ink [&::-webkit-details-marker]:hidden">
+            <ChevronRightIcon
+              aria-hidden="true"
+              className="size-3.5 transition-transform group-open/details:rotate-90"
+            />
+            查看执行详情
+          </summary>
+          <div className="min-w-0 space-y-3 border-t border-line/60 bg-surface-inset/45 px-3 py-3">
+            {subject ? <ToolDetail label="目标" value={subject} code /> : null}
+            {detail ? <ToolDetail label="上下文" value={detail} /> : null}
+            {args ? <ToolDetail label="参数" value={JSON.stringify(args, null, 2)} code /> : null}
+            <ToolExecutionResult result={result} />
+          </div>
+        </details>
+      ) : null}
+    </section>
+  );
+}
+
+function ToolStatus({
+  state,
+  label,
+}: Readonly<{
+  state: ReturnType<typeof resolveAgentToolActivityState>;
+  label: string;
+}>) {
+  const className = cn(
+    'inline-flex shrink-0 items-center gap-1 rounded-full px-1.5 py-0.5 text-[0.68rem] font-medium',
+    state === 'success' && 'bg-success/10 text-success',
+    (state === 'failed' || state === 'limit') && 'bg-danger/10 text-danger',
+    state === 'cancelled' && 'bg-surface-muted text-ink-muted',
+    (state === 'loading' || state === 'running') && 'bg-brand-subtle text-brand',
+  );
+  const iconClassName = 'size-3';
+
+  return (
+    <span className={className} role={state === 'running' ? 'status' : undefined}>
+      {state === 'running' || state === 'loading' ? (
+        <LoaderCircleIcon aria-hidden="true" className={cn(iconClassName, 'animate-spin')} />
+      ) : state === 'success' ? (
+        <CheckIcon aria-hidden="true" className={iconClassName} />
+      ) : state === 'cancelled' ? (
+        <BanIcon aria-hidden="true" className={iconClassName} />
+      ) : state === 'limit' ? (
+        <CircleAlertIcon aria-hidden="true" className={iconClassName} />
+      ) : (
+        <XIcon aria-hidden="true" className={iconClassName} />
+      )}
+      {state === 'running' ? <ShimmerText>{label}</ShimmerText> : label}
+    </span>
+  );
+}
+
+function ToolIcon({ toolName }: Readonly<{ toolName: string }>) {
+  const className = 'size-3.5';
+  if (toolName === 'shell') return <TerminalSquareIcon aria-hidden="true" className={className} />;
+  if (toolName === 'read_file') return <FileTextIcon aria-hidden="true" className={className} />;
+  if (toolName === 'write_file')
+    return <FilePenLineIcon aria-hidden="true" className={className} />;
+  if (toolName === 'export_file') return <DownloadIcon aria-hidden="true" className={className} />;
+  if (toolName === 'create_website')
+    return <CodeXmlIcon aria-hidden="true" className={className} />;
+  if (toolName === 'web_fetch') return <GlobeIcon aria-hidden="true" className={className} />;
+  return <WrenchIcon aria-hidden="true" className={className} />;
+}
+
+function ToolDetail({
+  label,
+  value,
+  code = false,
+}: Readonly<{ label: string; value: string; code?: boolean }>) {
+  return (
+    <div className="min-w-0">
+      <p className="mb-1 text-[0.68rem] font-medium uppercase tracking-[0.08em] text-ink-subtle">
+        {label}
+      </p>
+      {code ? (
+        <pre className="max-h-56 min-w-0 overflow-auto whitespace-pre-wrap break-all rounded-lg border border-line/70 bg-surface-card px-2.5 py-2 font-mono text-[0.73rem] leading-5 text-ink">
+          {value}
+        </pre>
+      ) : (
+        <p className="break-words text-[0.78rem] text-ink-muted">{value}</p>
+      )}
     </div>
   );
 }
@@ -1743,11 +1853,11 @@ function ToolExecutionResult({ result }: Readonly<{ result?: SandboxToolResult |
   if (!summary && !hasAudit) return null;
 
   return (
-    <div className="space-y-1.5 pt-1">
-      <p className="font-normal">调用结果</p>
-      {summary ? <p>{summary}</p> : null}
+    <div className="min-w-0 space-y-2">
+      <p className="text-[0.68rem] font-medium uppercase tracking-[0.08em] text-ink-subtle">结果</p>
+      {summary ? <p className="break-words text-[0.78rem] text-ink-muted">{summary}</p> : null}
       {hasAudit ? (
-        <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-all rounded-lg bg-surface-muted px-2.5 py-2 font-sans text-inherit leading-7">
+        <pre className="max-h-56 min-w-0 overflow-auto whitespace-pre-wrap break-all rounded-lg border border-line/70 bg-surface-card px-2.5 py-2 font-mono text-[0.73rem] leading-5 text-ink">
           {JSON.stringify(audit, null, 2)}
         </pre>
       ) : null}
@@ -1756,7 +1866,15 @@ function ToolExecutionResult({ result }: Readonly<{ result?: SandboxToolResult |
 }
 
 function toolCallLabel(toolName: string): string {
-  return `ToolCall · ${toolName}`;
+  const labels: Record<string, string> = {
+    web_fetch: '读取网页',
+    shell: '运行命令',
+    read_file: '读取文件',
+    write_file: '写入文件',
+    export_file: '导出文件',
+    create_website: '生成网站',
+  };
+  return labels[toolName] ?? toolName;
 }
 
 function AgentMessageMetadata() {

@@ -4,8 +4,8 @@ export interface AgentActivityPartLike {
 }
 
 /**
- * 将一次工具辅助推理中的 reasoning、工具调用和中间进度文本归入同一思考模块。
- * 最后一次工具调用之后的文本视为最终回答，继续留在思考模块之外。
+ * 只把 provider reasoning 与工具执行前的中间进度归入思考记录。
+ * 工具调用必须保留在折叠项外，作为独立执行卡按消息顺序展示。
  */
 export function agentActivityPartIndices(
   parts: readonly AgentActivityPartLike[],
@@ -24,7 +24,6 @@ export function agentActivityPartIndices(
   parts.forEach((part, index) => {
     if (
       part.type === 'reasoning' ||
-      (part.type === 'tool-call' && part.toolName !== 'create_website') ||
       (part.type === 'text' && lastToolCallIndex >= 0 && index < lastToolCallIndex)
     ) {
       indices.add(index);

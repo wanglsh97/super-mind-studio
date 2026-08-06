@@ -8,7 +8,7 @@ describe('agentActivityPartIndices', () => {
     assert.deepEqual([...agentActivityPartIndices([{ type: 'text' }])], []);
   });
 
-  it('keeps an entire tool-assisted thought run in one group', () => {
+  it('keeps tool calls outside the thought disclosure', () => {
     const parts = [
       { type: 'text' },
       { type: 'reasoning' },
@@ -19,7 +19,7 @@ describe('agentActivityPartIndices', () => {
       { type: 'text' },
     ];
 
-    assert.deepEqual([...agentActivityPartIndices(parts)], [0, 1, 2, 3, 4, 5]);
+    assert.deepEqual([...agentActivityPartIndices(parts)], [0, 1, 3, 4]);
   });
 
   it('groups provider reasoning without pulling the answer into the disclosure', () => {
@@ -36,6 +36,6 @@ describe('agentActivityPartIndices', () => {
       { type: 'text' },
     ];
 
-    assert.deepEqual([...agentActivityPartIndices(parts)], [0, 1, 2, 3]);
+    assert.deepEqual([...agentActivityPartIndices(parts)], [0, 1, 3]);
   });
 });

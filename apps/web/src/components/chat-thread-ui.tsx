@@ -938,6 +938,9 @@ export function AssistantMessage({
 }>) {
   const isRunning = useAuiState(({ message }) => message.status?.type === 'running');
   const messageParts = useAuiState(({ message }) => message.parts);
+  const hasRunningTool = messageParts.some(
+    (part) => part.type === 'tool-call' && part.status?.type === 'running',
+  );
   const groupAgentActivity = useMemo(() => {
     const activityIndices = agentActivityPartIndices(messageParts);
 
@@ -961,7 +964,7 @@ export function AssistantMessage({
             {({ part, children }) => {
               if (part.type === 'group-agent-activity') {
                 return (
-                  <AgentActivityDisclosure isRunning={isRunning}>
+                  <AgentActivityDisclosure isThinking={isRunning && !hasRunningTool}>
                     {children}
                   </AgentActivityDisclosure>
                 );
@@ -1048,27 +1051,27 @@ function formatDuration(durationMs: number): string {
 
 function AgentActivityDisclosure({
   children,
-  isRunning,
+  isThinking,
 }: Readonly<{
   children: ReactNode;
-  isRunning: boolean;
+  isThinking: boolean;
 }>) {
-  const [open, setOpen] = useState(isRunning);
+  const [open, setOpen] = useState(isThinking);
 
   useEffect(() => {
-    setOpen(isRunning);
-  }, [isRunning]);
+    setOpen(isThinking);
+  }, [isThinking]);
 
   return (
     <details
       data-testid="agent-activity-disclosure"
-      aria-busy={isRunning}
+      aria-busy={isThinking}
       className="group text-[0.97rem] leading-7 text-ink opacity-55 transition-opacity duration-150 hover:opacity-85 open:opacity-75"
       open={open}
       onToggle={(event) => setOpen(event.currentTarget.open)}
     >
       <summary className="flex cursor-pointer list-none items-center py-1 font-normal tracking-[0.02em] [&::-webkit-details-marker]:hidden">
-        {isRunning ? <ShimmerText>正在思考</ShimmerText> : <span>思考过程</span>}
+        {isThinking ? <ShimmerText>正在思考</ShimmerText> : <span>思考记录</span>}
         <AgentDisclosureChevron />
       </summary>
       <div className="mt-1.5 space-y-2 border-l border-current/15 pl-3">{children}</div>
@@ -1140,51 +1143,6 @@ export function AgentDisclosureChevron() {
       className="size-4 shrink-0 opacity-75 transition-[opacity,transform] duration-150 group-hover:opacity-100 [details[open]>summary>&]:rotate-90 motion-reduce:transition-none"
       strokeWidth={2}
     />
-  );
-}
-
-export function AgentToolCall({ url }: Readonly<{ url?: string }>) {
-  return (
-    <div className="flex flex-wrap items-center gap-2 text-[0.9rem] leading-6 text-ink">
-      <span className="font-sans font-semibold">web_fetch</span>
-      {url ? <span className="break-all">{url}</span> : null}
-      <span>调用中…</span>
-    </div>
-  );
-}
-
-export function AgentToolResult({
-  isError,
-  status,
-  httpStatus,
-  summary,
-  finalUrl,
-}: Readonly<{
-  isError?: boolean | undefined;
-  status?: string | undefined;
-  httpStatus?: number | undefined;
-  summary?: string | undefined;
-  finalUrl?: string | undefined;
-}>) {
-  return (
-    <div className="text-[0.9rem] leading-6 text-ink">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="font-sans font-semibold">web_fetch</span>
-        <span>{status ?? (isError ? 'failed' : 'succeeded')}</span>
-        {httpStatus ? <span>HTTP {httpStatus}</span> : null}
-      </div>
-      {summary ? <p className="mt-1.5">{summary}</p> : null}
-      {finalUrl ? (
-        <a
-          className="mt-1 inline-block break-all text-inherit hover:underline"
-          href={finalUrl}
-          target="_blank"
-          rel="noreferrer noopener"
-        >
-          {finalUrl}
-        </a>
-      ) : null}
-    </div>
   );
 }
 
