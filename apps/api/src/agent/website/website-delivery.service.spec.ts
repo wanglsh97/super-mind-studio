@@ -28,8 +28,8 @@ describe('WebsiteDeliveryService', () => {
       creationId,
       runId,
       previewPath: `/api/v1/agent/runs/${runId}/preview?port=4173`,
-      source: { name: 'source.zip' },
-      dist: { name: 'dist.zip' },
+      source: { name: 'long-connection-check.zip' },
+      dist: { name: 'long-connection-check-dist.zip' },
     })
     expect(fixture.sessions.runShell).toHaveBeenNthCalledWith(
       1,
@@ -45,10 +45,13 @@ describe('WebsiteDeliveryService', () => {
     })
     expect(fixture.tx.creationAsset.createMany).toHaveBeenCalledWith({
       data: expect.arrayContaining([
-        expect.objectContaining({ kind: 'SOURCE_ZIP', name: 'source.zip' }),
-        expect.objectContaining({ kind: 'DIST_ZIP', name: 'dist.zip' }),
+        expect.objectContaining({ kind: 'SOURCE_ZIP', name: 'long-connection-check.zip' }),
+        expect.objectContaining({ kind: 'DIST_ZIP', name: 'long-connection-check-dist.zip' }),
       ]),
     })
+    expect(fixture.objects.writeUserFile).toHaveBeenCalledWith(
+      expect.objectContaining({ fileName: 'long-connection-check.zip' }),
+    )
     expect(fixture.tx.webProject.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: projectId },
@@ -73,13 +76,51 @@ describe('WebsiteDeliveryService', () => {
     }
     expect(fixture.objects.deleteObject).not.toHaveBeenCalledWith('creations/old/source.zip')
   })
+
+  it('keeps a scoped package name recognizable while making the archive name filesystem-safe', async () => {
+    const fixture = setup({ projectName: '@studio/brand-site' })
+
+    await expect(fixture.service.deliver(runId, userId)).resolves.toMatchObject({
+      source: { name: 'studio-brand-site.zip' },
+      dist: { name: 'studio-brand-site-dist.zip' },
+    })
+  })
+
+  it('rejects delivery when package.json has no real project name', async () => {
+    const fixture = setup({ projectName: null })
+
+    await expect(fixture.service.deliver(runId, userId)).rejects.toMatchObject({
+      code: 'WEBSITE_PROJECT_INVALID',
+      message: 'package.json 必须声明非空 name',
+    } satisfies Partial<WebsiteDeliveryError>)
+    expect(fixture.sessions.runShell).not.toHaveBeenCalled()
+  })
+
+  it('rejects a generic scaffold project name so the Agent must assign a real name', async () => {
+    const fixture = setup({ projectName: 'work' })
+
+    await expect(fixture.service.deliver(runId, userId)).rejects.toMatchObject({
+      code: 'WEBSITE_PROJECT_INVALID',
+      message: 'package.json.name 不能保留脚手架默认项目名: work',
+    } satisfies Partial<WebsiteDeliveryError>)
+    expect(fixture.sessions.runShell).not.toHaveBeenCalled()
+  })
 })
 
-function setup(options: { buildExitCode?: number; transactionError?: Error } = {}) {
+function setup(
+  options: {
+    buildExitCode?: number
+    transactionError?: Error
+    projectName?: string | null
+  } = {},
+) {
   const sourceBytes = new TextEncoder().encode('source-zip')
   const distBytes = new TextEncoder().encode('dist-zip')
   const packageBytes = new TextEncoder().encode(
     JSON.stringify({
+      ...(options.projectName === null
+        ? {}
+        : { name: options.projectName ?? 'long-connection-check' }),
       scripts: { build: 'vite build' },
       dependencies: {
         react: '19.0.0',

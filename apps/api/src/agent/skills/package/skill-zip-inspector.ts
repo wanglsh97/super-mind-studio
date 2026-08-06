@@ -1,7 +1,7 @@
-import type { Entry, ZipFile } from 'yauzl'
 import { fromBuffer } from 'yauzl'
 
 import type { AgentSkillFileEntry } from '@supermind/sdk'
+import type { Entry, ZipFile } from 'yauzl'
 
 export interface SkillZipLimits {
   maxCompressedBytes: number
@@ -78,6 +78,23 @@ export class SkillZipInspector {
     }
   }
 
+  async readFile(archive: Uint8Array, targetPath: string): Promise<Uint8Array | null> {
+    if (archive.byteLength > this.limits.maxCompressedBytes) {
+      throw new SkillZipInspectionError(
+        'ZIP_COMPRESSED_SIZE_LIMIT',
+        `Skill ZIP 压缩大小不能超过 ${this.limits.maxCompressedBytes} 字节`,
+      )
+    }
+    const zip = await openZip(Buffer.from(archive))
+    try {
+      return await this.readFileEntry(zip, targetPath)
+    } catch (error) {
+      zip.close()
+      if (error instanceof SkillZipInspectionError) throw error
+      throw normalizeZipError(error)
+    }
+  }
+
   private inspectEntries(zip: ZipFile, compressedSizeBytes: number): Promise<InspectedSkillZip> {
     return new Promise((resolve, reject) => {
       const files: AgentSkillFileEntry[] = []
@@ -136,6 +153,65 @@ export class SkillZipInspector {
           files: files.sort((left, right) => left.path.localeCompare(right.path)),
         })
       })
+      zip.readEntry()
+    })
+  }
+
+  private readFileEntry(zip: ZipFile, targetPath: string): Promise<Uint8Array | null> {
+    return new Promise((resolve, reject) => {
+      const paths = new Set<string>()
+      const localHeaderOffsets = new Set<number>()
+      let settled = false
+
+      const complete = (value: Uint8Array | null) => {
+        if (settled) return
+        settled = true
+        zip.close()
+        resolve(value)
+      }
+      const fail = (error: unknown) => {
+        if (settled) return
+        settled = true
+        zip.close()
+        reject(error)
+      }
+
+      zip.on('error', fail)
+      zip.on('entry', (entry: Entry) => {
+        try {
+          const inspected = inspectEntry(entry, this.limits, paths, localHeaderOffsets)
+          if (inspected.type !== 'file' || inspected.path !== targetPath) {
+            zip.readEntry()
+            return
+          }
+          zip.openReadStream(entry, (error, stream) => {
+            if (error || !stream) {
+              fail(error ?? new Error(`ZIP 文件无法读取: ${targetPath}`))
+              return
+            }
+            const chunks: Buffer[] = []
+            let sizeBytes = 0
+            stream.on('data', (chunk: Buffer) => {
+              sizeBytes += chunk.byteLength
+              if (sizeBytes > this.limits.maxFileBytes) {
+                stream.destroy(
+                  new SkillZipInspectionError(
+                    'ZIP_FILE_SIZE_LIMIT',
+                    `Skill ZIP 单文件不能超过 ${this.limits.maxFileBytes} 字节: ${targetPath}`,
+                  ),
+                )
+                return
+              }
+              chunks.push(Buffer.from(chunk))
+            })
+            stream.on('error', fail)
+            stream.on('end', () => complete(Buffer.concat(chunks)))
+          })
+        } catch (error) {
+          fail(error)
+        }
+      })
+      zip.on('end', () => complete(null))
       zip.readEntry()
     })
   }

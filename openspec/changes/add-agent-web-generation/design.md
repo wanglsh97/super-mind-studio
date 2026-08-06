@@ -31,6 +31,7 @@ SDK 只为 `CreateAgentRunRequest` 增加 `mode?: 'website'`。GitHub 门槛、S
 - Tailwind CSS + shadcn/ui + Lucide
 - `/workspace/work` 为项目根目录
 - `pnpm` 为唯一包管理器
+- 初始化后必须将脚手架默认 `package.json.name` 改成由用户目标派生的、有意义的 kebab-case 项目名，后续修改保持该名称
 - `pnpm build -- --base=./` 产生 `/workspace/work/dist`，并强制相对资源路径以兼容 ZIP 与 Sandbox 代理预览
 - 纯静态资源，禁止数据库、服务端、登录、支付和私密配置
 
@@ -38,11 +39,11 @@ SDK 只为 `CreateAgentRunRequest` 增加 `mode?: 'website'`。GitHub 门槛、S
 
 Tool 不接受任意构建命令或路径，它在受控目录中固定执行：
 
-1. 校验项目根目录、`package.json`、`pnpm-lock.yaml` 和禁止文件。
+1. 校验项目根目录、`package.json.name`、`pnpm-lock.yaml` 和禁止文件；项目名是用户下载归档的命名真源。
 2. 执行 `pnpm build -- --base=./`；失败时返回有界日志，不改写已有最终产物。Agent 必须继续修复并重试。
 3. 校验 `dist/index.html` 和静态资源边界。
 4. 在 `/workspace/output` 生成排除 `node_modules`、`.git`、`dist`、缓存和密钥文件的 `source.zip`，以及根目录包含 `index.html` 的 `dist.zip`。
-5. 将两个 ZIP 先写入新的私有对象，校验完整性后在数据库事务中切换唯一 WebProject/CreationAsset 指针，再 best-effort 删除旧对象。
+5. 将两个 ZIP 先写入新的私有对象，源码下载名为 `<package-name>.zip`、构建归档名为 `<package-name>-dist.zip`；校验完整性后在数据库事务中切换唯一 WebProject/CreationAsset 指针，再 best-effort 删除旧对象。OSS 内部对象键和 Sandbox 打包临时文件仍可使用固定 `source.zip`/`dist.zip`，不作为用户下载名。
 6. 启动受控静态 HTTP 服务，返回不含 Sandbox 签名凭证的同源 Agent 预览路径。
 
 ### Decision 4: 单产物覆盖，不建立版本模型
@@ -62,8 +63,8 @@ Tool event 只记录同源 `previewPath`、run/project/artifact ID、有界构�
 成功的 `create_website` Tool UI 在消息流中只渲染一张紧凑交付卡，卡片负责显示“网页开发”、构建时间和当前/覆盖状态；当前产物卡可打开对话右侧的 Website Artifact 工作区。工作区不新增网站 API，而是复用 Tool result 已有的 `previewPath`、`sourceDownloadUrl` 和 `distDownloadUrl`：
 
 - “预览”页签通过隔离 iframe 加载仅在当前 Thread Sandbox 存活期有效的同源预览。
-- “代码”页签由浏览器按需下载当前 `source.zip`，在有界文件数与解压体积内解析文件树；源码只作为文本交给开源 Prism 高亮组件，按扩展名选择语法，不执行归档中的代码。
-- 顶部只保留一个文案为“下载”的动作，通过 owner-scoped 通用 Creation Asset 路由获取 `source.zip`；同一源码包同时供代码页按需读取，不再显示 `dist.zip` 下载按钮。
+- “代码”页签由浏览器按需下载当前源码 ZIP，在有界文件数与解压体积内解析文件树；源码只作为文本交给开源 Prism 高亮组件，按扩展名选择语法，不执行归档中的代码。
+- 顶部只保留一个文案为“下载”的动作，通过 owner-scoped 通用 Creation Asset 路由获取 `<package-name>.zip`；同一源码包同时供代码页按需读取，不再显示构建 ZIP 下载按钮。旧产物若仍记录为 `source.zip`，下载路由从归档根 `package.json.name` 恢复真实文件名。
 - “部署”按钮首版保持禁用展示，不绑定点击处理、不调用 API，也不暗示已经发布。
 
 宽屏时工作区以无圆角、无卡片阴影的直角分栏与聊天并排，只用边线区分区域；窄屏时使用无圆角覆盖式面板。关闭后仍可从当前交付卡再次打开。新的成功覆盖会切换到最新产物，已覆盖卡不再打开旧预览或下载。

@@ -14,7 +14,7 @@ The server-owned Agent tool registry SHALL expose `create_website` only to a run
 - **THEN** it does not contain `create_website` or the built-in website Skill instructions
 
 ### Requirement: The delivery tool is the website success authority
-`create_website` SHALL execute the fixed production build, validate the static output, generate `source.zip` and `dist.zip`, archive them and return an owner-scoped temporary preview path before reporting success. A shell command, model text or generic `export_file` result alone MUST NOT transition the website Creation to succeeded.
+`create_website` SHALL execute the fixed production build, validate the static output, generate the controlled source/build ZIP files, expose them as `<package-name>.zip` and `<package-name>-dist.zip` using the validated Sandbox `package.json.name`, and return an owner-scoped temporary preview path before reporting success. A shell command, model text or generic `export_file` result alone MUST NOT transition the website Creation to succeeded.
 
 #### Scenario: Build fails
 - **GIVEN** the current project does not pass `pnpm build -- --base=./`

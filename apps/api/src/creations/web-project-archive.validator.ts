@@ -29,6 +29,19 @@ export class WebProjectArchiveValidator {
     }
   }
 
+  async readSourceProjectName(archive: Uint8Array): Promise<string | null> {
+    try {
+      const packageFile = await this.zip.readFile(archive, 'package.json')
+      if (!packageFile) return null
+      const manifest = JSON.parse(new TextDecoder().decode(packageFile)) as unknown
+      if (typeof manifest !== 'object' || manifest === null || Array.isArray(manifest)) return null
+      const name = (manifest as Record<string, unknown>).name
+      return typeof name === 'string' && name.trim() !== '' ? name.trim() : null
+    } catch {
+      return null
+    }
+  }
+
   private async inspect(archive: Uint8Array) {
     try {
       return await this.zip.inspect(archive)

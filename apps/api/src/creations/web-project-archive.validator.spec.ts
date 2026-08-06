@@ -9,6 +9,17 @@ describe('WebProjectArchiveValidator', () => {
     await expect(validator.validateSource(await zip([['package.json', '{}'], ['pnpm-lock.yaml', 'lockfileVersion: 9']]))).resolves.toBeUndefined()
   })
 
+  it('reads the actual project name from the source manifest for legacy downloads', async () => {
+    await expect(
+      validator.readSourceProjectName(
+        await zip([
+          ['package.json', '{"name":"long-connection-check"}'],
+          ['pnpm-lock.yaml', 'lockfileVersion: 9'],
+        ]),
+      ),
+    ).resolves.toBe('long-connection-check')
+  })
+
   it('rejects source archives without a package manifest or lockfile', async () => {
     await expect(validator.validateSource(await zip([['pnpm-lock.yaml', 'x']]))).rejects.toMatchObject({ code: 'WEB_PROJECT_PACKAGE_MISSING' })
     await expect(validator.validateSource(await zip([['package.json', '{}']]))).rejects.toMatchObject({ code: 'WEB_PROJECT_LOCKFILE_MISSING' })

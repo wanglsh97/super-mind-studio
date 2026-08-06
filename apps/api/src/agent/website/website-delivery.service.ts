@@ -2,14 +2,15 @@ import { randomUUID } from 'node:crypto'
 
 import { Inject, Injectable } from '@nestjs/common'
 
-import { PrismaService } from '../../database/prisma.service'
 import { WebProjectArchiveValidator } from '../../creations/web-project-archive.validator'
+import { PrismaService } from '../../database/prisma.service'
 import { AgentExecutionSessionService } from '../sandbox/agent-execution-session.service'
 import { SANDBOX_SKILLS_ROOT } from '../sandbox/sandbox-runtime.port'
-import {
-  SKILL_OBJECT_STORE_PORT,
-  type SkillObjectStorePort,
-} from '../skills/storage/skill-object-store.port'
+import { SKILL_OBJECT_STORE_PORT } from '../skills/storage/skill-object-store.port'
+
+import { readWebsiteProjectName, toWebsiteArchiveBasename } from './website-project-name'
+
+import type { SkillObjectStorePort } from '../skills/storage/skill-object-store.port'
 
 const PROJECT_ROOT = '/workspace/work'
 const OUTPUT_ROOT = '/workspace/output'
@@ -35,8 +36,8 @@ export interface WebsiteDeliveryResult {
   builtAt: string
   expiresAt: string
   previewPath: string
-  source: { id: string; name: 'source.zip'; downloadUrl: string; sizeBytes: number }
-  dist: { id: string; name: 'dist.zip'; downloadUrl: string; sizeBytes: number }
+  source: { id: string; name: string; downloadUrl: string; sizeBytes: number }
+  dist: { id: string; name: string; downloadUrl: string; sizeBytes: number }
 }
 
 @Injectable()
@@ -67,7 +68,10 @@ export class WebsiteDeliveryService {
       throw new WebsiteDeliveryError('WEBSITE_PROJECT_INVALID', '当前 Thread 没有网页项目')
     }
 
-    await this.validateProject(runId, userId, signal)
+    const projectName = await this.validateProject(runId, userId, signal)
+    const archiveBasename = toWebsiteArchiveBasename(projectName)
+    const sourceArchiveName = `${archiveBasename}.zip`
+    const distArchiveName = `${archiveBasename}-dist.zip`
     const build = await this.sessions.runShell(runId, userId, {
       command: 'pnpm build -- --base=./',
       workingDirectory: PROJECT_ROOT,
@@ -132,7 +136,7 @@ export class WebsiteDeliveryService {
         this.objects.writeUserFile({
           objectKey: sourceKey,
           direction: 'output',
-          fileName: 'source.zip',
+          fileName: sourceArchiveName,
           contentType: 'application/zip',
           bytes: source.bytes,
           ...(signal === undefined ? {} : { signal }),
@@ -140,7 +144,7 @@ export class WebsiteDeliveryService {
         this.objects.writeUserFile({
           objectKey: distKey,
           direction: 'output',
-          fileName: 'dist.zip',
+          fileName: distArchiveName,
           contentType: 'application/zip',
           bytes: dist.bytes,
           ...(signal === undefined ? {} : { signal }),
@@ -161,7 +165,7 @@ export class WebsiteDeliveryService {
               id: sourceId,
               creationId: project.creationId,
               kind: 'SOURCE_ZIP',
-              name: 'source.zip',
+              name: sourceArchiveName,
               mimeType: storedSource.metadata.contentType,
               objectKey: sourceKey,
               sizeBytes: BigInt(storedSource.metadata.sizeBytes),
@@ -172,7 +176,7 @@ export class WebsiteDeliveryService {
               id: distId,
               creationId: project.creationId,
               kind: 'DIST_ZIP',
-              name: 'dist.zip',
+              name: distArchiveName,
               mimeType: storedDist.metadata.contentType,
               objectKey: distKey,
               sizeBytes: BigInt(storedDist.metadata.sizeBytes),
@@ -210,13 +214,13 @@ export class WebsiteDeliveryService {
         previewPath: `/api/v1/agent/runs/${encodeURIComponent(runId)}/preview?port=${PREVIEW_PORT}`,
         source: {
           id: sourceId,
-          name: 'source.zip',
+          name: sourceArchiveName,
           downloadUrl: `/api/v1/creations/assets/${sourceId}/content`,
           sizeBytes: source.sizeBytes,
         },
         dist: {
           id: distId,
-          name: 'dist.zip',
+          name: distArchiveName,
           downloadUrl: `/api/v1/creations/assets/${distId}/content`,
           sizeBytes: dist.sizeBytes,
         },
@@ -228,7 +232,11 @@ export class WebsiteDeliveryService {
     }
   }
 
-  private async validateProject(runId: string, userId: string, signal?: AbortSignal) {
+  private async validateProject(
+    runId: string,
+    userId: string,
+    signal?: AbortSignal,
+  ): Promise<string> {
     const [packageFile, lockFile] = await Promise.all([
       this.sessions.readFile(runId, userId, `${PROJECT_ROOT}/package.json`, signal),
       this.sessions.readFile(runId, userId, `${PROJECT_ROOT}/pnpm-lock.yaml`, signal),
@@ -244,6 +252,15 @@ export class WebsiteDeliveryService {
       manifest = JSON.parse(new TextDecoder().decode(packageFile.bytes)) as Record<string, unknown>
     } catch {
       throw new WebsiteDeliveryError('WEBSITE_PROJECT_INVALID', 'package.json 不是有效 JSON')
+    }
+    let projectName: string
+    try {
+      projectName = readWebsiteProjectName(manifest)
+    } catch (error) {
+      throw new WebsiteDeliveryError(
+        'WEBSITE_PROJECT_INVALID',
+        error instanceof Error ? error.message : 'package.json 项目名无效',
+      )
     }
     const scripts = recordValue(manifest.scripts)
     if (typeof scripts?.build !== 'string' || scripts.build.trim() === '') {
@@ -272,6 +289,7 @@ export class WebsiteDeliveryService {
         `静态网站不允许服务端依赖: ${forbidden.join(', ')}`,
       )
     }
+    return projectName
   }
 
   private async ensurePreviewServer(runId: string, userId: string, signal?: AbortSignal) {

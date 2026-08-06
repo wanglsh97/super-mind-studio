@@ -1,13 +1,15 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common'
 
-import type { Creation, CreationAsset, WebProject } from '../generated/prisma/client'
-import {
-  SKILL_OBJECT_STORE_PORT,
-  type SkillObjectStorePort,
-} from '../agent/skills/storage/skill-object-store.port'
+import { SKILL_OBJECT_STORE_PORT } from '../agent/skills/storage/skill-object-store.port'
+import { toWebsiteArchiveBasename } from '../agent/website/website-project-name'
 import { PrismaService } from '../database/prisma.service'
-import type { AuthenticatedUser } from '../user/user.types'
+
 import { CreationRepository } from './creation.repository'
+import { WebProjectArchiveValidator } from './web-project-archive.validator'
+
+import type { SkillObjectStorePort } from '../agent/skills/storage/skill-object-store.port'
+import type { Creation, CreationAsset, WebProject } from '../generated/prisma/client'
+import type { AuthenticatedUser } from '../user/user.types'
 
 @Injectable()
 export class CreationsService {
@@ -15,6 +17,7 @@ export class CreationsService {
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(SKILL_OBJECT_STORE_PORT) private readonly objects: SkillObjectStorePort,
     @Inject(CreationRepository) private readonly projects: CreationRepository,
+    @Inject(WebProjectArchiveValidator) private readonly archives: WebProjectArchiveValidator,
   ) {}
 
   async list(user: AuthenticatedUser) {
@@ -69,7 +72,17 @@ export class CreationsService {
     }
     const stored = await this.objects.loadUserFile(asset.objectKey)
     if (!stored) throw new NotFoundException('创作产物不存在或已过期')
-    return { asset, stored }
+    if (asset.kind !== 'SOURCE_ZIP' || asset.name !== 'source.zip') {
+      return { asset, stored }
+    }
+    const legacyProjectName = await this.archives.readSourceProjectName(stored.bytes)
+    return {
+      asset: {
+        ...asset,
+        name: legacyProjectName ? `${toWebsiteArchiveBasename(legacyProjectName)}.zip` : asset.name,
+      },
+      stored,
+    }
   }
 }
 

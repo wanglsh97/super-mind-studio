@@ -14,7 +14,7 @@ The system SHALL allow only an authenticated GitHub user to send `mode: website`
 - **THEN** the server rejects the run before creating a project or Sandbox and the Web presents a GitHub login action
 
 ### Requirement: Website mode automatically loads one immutable static-site Skill
-Every website-mode run SHALL automatically load the platform-owned `website-building` Skill before the first model call. The Skill SHALL live in the repository as a standard root `SKILL.md` plus required `scripts` resources, and the API SHALL validate and cache it at startup instead of hard-coding its contents in TypeScript. The platform SHALL install it under `/workspace/.skills/website-building`, using the same `/workspace/.skills/<name>` root as every other Sandbox Skill. The Skill SHALL require React, TypeScript, Vite, Tailwind CSS, shadcn/ui, Lucide, pnpm, `/workspace/work` and a `pnpm build -- --base=./` output at `/workspace/work/dist` so the static artifact uses relative asset paths. It SHALL prohibit databases, server runtimes, authentication backends, payments, private environment variables and private API keys.
+Every website-mode run SHALL automatically load the platform-owned `website-building` Skill before the first model call. The Skill SHALL live in the repository as a standard root `SKILL.md` plus required `scripts` resources, and the API SHALL validate and cache it at startup instead of hard-coding its contents in TypeScript. The platform SHALL install it under `/workspace/.skills/website-building`, using the same `/workspace/.skills/<name>` root as every other Sandbox Skill. The Skill SHALL require React, TypeScript, Vite, Tailwind CSS, shadcn/ui, Lucide, pnpm, `/workspace/work`, a meaningful kebab-case `package.json.name`, and a `pnpm build -- --base=./` output at `/workspace/work/dist` so the static artifact uses relative asset paths. It SHALL prohibit databases, server runtimes, authentication backends, payments, private environment variables and private API keys.
 
 #### Scenario: Agent builds a website
 - **GIVEN** a website-mode run has started
@@ -53,7 +53,7 @@ The current delivery SHALL have an owner-scoped same-origin preview only while t
 - **THEN** the Sandbox and preview become unavailable while source and dist downloads remain owner-accessible until their expiry
 
 ### Requirement: Current website delivery opens in an in-thread Artifact workspace
-The Web SHALL render a successful current `create_website` result as a compact delivery card in the conversation and SHALL open an adjacent Website Artifact workspace from that card. The workspace SHALL provide isolated temporary webpage preview, bounded read-only source ZIP browsing, and one owner-scoped source ZIP download without introducing a separate website API. The only download control SHALL be labeled “下载”, target `source.zip`, and MUST NOT render a redundant `dist.zip` download beside it.
+The Web SHALL render a successful current `create_website` result as a compact delivery card in the conversation and SHALL open an adjacent Website Artifact workspace from that card. The workspace SHALL provide isolated temporary webpage preview, bounded read-only source ZIP browsing, and one owner-scoped source ZIP download without introducing a separate website API. The only download control SHALL be labeled “下载”, target the source archive named `<package-name>.zip`, and MUST NOT render a redundant build ZIP download beside it.
 
 #### Scenario: Current delivery is completed
 - **GIVEN** `create_website` has successfully made a delivery current
@@ -61,7 +61,7 @@ The Web SHALL render a successful current `create_website` result as a compact d
 - **THEN** the conversation shows only the compact card and the Artifact workspace can display preview, source files and current downloads from the Tool result metadata
 
 #### Scenario: Source is browsed
-- **GIVEN** the current delivery exposes an owner-scoped `source.zip`
+- **GIVEN** the current delivery exposes an owner-scoped source archive named from `package.json.name`
 - **WHEN** the user selects the code tab
 - **THEN** the browser fetches and parses the archive within configured compressed-size, entry-count, per-file and total-expanded-size limits, displays text files read-only and never executes archive contents
 

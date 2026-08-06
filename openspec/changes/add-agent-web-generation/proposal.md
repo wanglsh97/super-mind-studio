@@ -10,7 +10,7 @@
 - 一个 Thread 仅保留一份最新成功网站产物；修改不建立版本历史，新成功交付覆盖旧产物，失败构建必须由 Agent 继续修复。
 - 网页选择态由前端按 Thread 保留，每次 Run 都传 `mode: website`；用户手动取消后恢复普通 Chat。
 - 删除旧 `/creations/websites*` 创建、详情、预览和下载套件；“我的创作”仅通过通用列表和通用 Creation Asset 下载读取最终产物。
-- 删除 Thread 时立即销毁 Sandbox 并使预览失效；最终 `source.zip` 与 `dist.zip` 继续私有保留 30 天。
+- 删除 Thread 时立即销毁 Sandbox 并使预览失效；最终源码与构建 ZIP 继续私有保留 30 天，下载文件名使用 Sandbox `package.json.name` 派生的真实项目名。
 - 将成功交付在聊天流中收口为紧凑产物卡，并在当前对话右侧打开 Website Artifact 工作区；工作区提供 Sandbox 网页预览、源码 ZIP 文件树/代码查看和单一源码 ZIP 下载。部署按钮首版仅作为禁用的未来入口展示，不触发请求或状态变化。
 
 ## Capabilities

@@ -5,8 +5,9 @@ import {
   inspectEntry,
   SkillZipInspectionError,
   SkillZipInspector,
-  type SkillZipLimits,
 } from './skill-zip-inspector'
+
+import type { SkillZipLimits } from './skill-zip-inspector'
 
 describe('SkillZipInspector', () => {
   it('accepts a traditional package with root SKILL.md and returns a sorted safe tree', async () => {
@@ -23,6 +24,19 @@ describe('SkillZipInspector', () => {
         { path: 'SKILL.md', type: 'file', size: 9 },
       ],
     })
+  })
+
+  it('reads one bounded file without extracting the archive', async () => {
+    const archive = await zip([
+      ['SKILL.md', '# Cleaner'],
+      ['package.json', '{"name":"cleaner"}'],
+    ])
+    const inspector = new SkillZipInspector()
+
+    await expect(inspector.readFile(archive, 'package.json')).resolves.toEqual(
+      Buffer.from('{"name":"cleaner"}'),
+    )
+    await expect(inspector.readFile(archive, 'missing.json')).resolves.toBeNull()
   })
 
   it('requires a case-sensitive root SKILL.md', async () => {

@@ -1,8 +1,9 @@
 import { NotFoundException } from '@nestjs/common'
 
+import { CreationsService } from './creations.service'
+
 import type { PrismaService } from '../database/prisma.service'
 import type { AuthenticatedUser } from '../user/user.types'
-import { CreationsService } from './creations.service'
 
 const githubUser: AuthenticatedUser = {
   id: '00000000-0000-4000-8000-000000000001',
@@ -56,6 +57,26 @@ describe('CreationsService', () => {
     )
     expect(objects.loadUserFile).not.toHaveBeenCalled()
   })
+
+  it('uses the source manifest project name for a legacy source.zip download', async () => {
+    const { service, prisma, objects, archives } = setup()
+    const stored = { bytes: new TextEncoder().encode('archive') }
+    prisma.creationAsset.findFirst.mockResolvedValue({
+      id: crypto.randomUUID(),
+      kind: 'SOURCE_ZIP',
+      name: 'source.zip',
+      objectKey: 'creations/private/source.zip',
+      expiresAt: new Date('2099-01-01T00:00:00.000Z'),
+      creation: { expiresAt: new Date('2099-01-01T00:00:00.000Z') },
+    })
+    objects.loadUserFile.mockResolvedValue(stored)
+    archives.readSourceProjectName.mockResolvedValue('@studio/brand-site')
+
+    await expect(service.loadAsset(githubUser, crypto.randomUUID())).resolves.toMatchObject({
+      asset: { name: 'studio-brand-site.zip' },
+      stored,
+    })
+  })
 })
 
 function setup() {
@@ -68,14 +89,17 @@ function setup() {
   }
   const projects = { listWebsitesForOwner: jest.fn().mockResolvedValue([]) }
   const objects = { loadUserFile: jest.fn() }
+  const archives = { readSourceProjectName: jest.fn() }
   return {
     prisma,
     projects,
     objects,
+    archives,
     service: new CreationsService(
       prisma as unknown as PrismaService,
       objects as never,
       projects as never,
+      archives as never,
     ),
   }
 }

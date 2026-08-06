@@ -23,6 +23,7 @@ Do not replace this stack. Do not add a database, server runtime, authentication
 - Project root: `/workspace/work`
 - Skill files: `/workspace/.skills/website-building`
 - Initialize a new empty project by running `bash /workspace/.skills/website-building/scripts/init.sh` from `/workspace/work`.
+- Immediately after initialization, replace the scaffold default `package.json.name` with a concise, meaningful kebab-case project name derived from the user's website goal. Do not leave it as `work`, `app`, `vite-project`, or another generic workspace name. Preserve that name during later modifications because the platform uses it for the downloaded source archive.
 - Keep application code under `src`, public static files under `public`, and reusable shadcn-style primitives under `src/components/ui`.
 - The package scripts must include `build`, and `pnpm build -- --base=./` must create `/workspace/work/dist/index.html` with relative asset paths so the ZIP and Sandbox proxy preview both work.
 
