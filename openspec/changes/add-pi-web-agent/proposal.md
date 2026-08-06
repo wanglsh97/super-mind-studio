@@ -9,7 +9,7 @@
 - 新增服务端持久化 Agent 会话，支持列表、新建、重命名、删除和刷新恢复；模型与会话绑定，切换模型时创建新会话。
 - 新增 Agent run 与可续读事件流。浏览器断线不取消运行，可使用递增事件游标恢复；同一用户全局最多一个 active run。
 - 新增服务端 Tool registry 和首个只读工具 `web_fetch`。模型可自主访问通过安全校验的公网 HTTP/HTTPS URL，但不执行 JavaScript、不加载子资源，并限制协议、目标网络、重定向、内容类型、大小、超时和调用次数。
-- 持久化 provider 明确返回的 reasoning part；页面将 reasoning、tool call 和最终工具调用前的进度文本聚合为单一思考模块，运行中默认展开、结束时自动收起，且不诱导、推断或伪造模型未返回的隐藏推理。
+- 持久化 provider 明确返回的 reasoning part；页面将 reasoning 与中间进度聚合为思考记录，将 tool call 单独呈现为执行阶段，不再用“正在思考”包裹已开始的工具执行，且不诱导、推断或伪造模型未返回的隐藏推理。
 - 每次 Agent 内部模型调用继续生成独立 `RequestLog/BillingRecord`，`AgentRun` 聚合 Token、人民币费用、模型调用次数和工具调用次数。
 - 为后续 skill registry 和 MCP registry 预留稳定端口与模块边界，但本 change 不实现 skill 发现/加载、MCP 连接、凭证管理或用户配置界面。
 - 将 Agent system prompt 从运行服务中的硬编码常量重构为版本化、可测试的服务端 Prompt Composer。Composer 按固定信任层级动态装配平台核心规则、产品执行策略、运行时上下文、真实工具能力、平台 Skill、用户 Memory 和会话上下文；所有模型共享同一语义组装方法，只允许 renderer 做格式和长度适配。

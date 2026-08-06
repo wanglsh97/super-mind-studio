@@ -91,7 +91,7 @@ GET    /api/v1/agent/runs/:runId/events?after=<sequence>
 POST   /api/v1/agent/runs/:runId/cancel
 ```
 
-创建 run 返回 `202` 和 run ID，NestJS 进程内异步执行。每个对用户可见的增量或状态先写入 `AgentEvent`，再投影到 SSE；客户端保存最后 sequence，断线后使用 `after` 补读。服务端可对高频 text/reasoning delta 做短窗口合并后落库，但不得改变文本顺序。
+创建 run 返回 `202` 和 run ID，NestJS 进程内异步执行。每个对用户可见的增量或状态先写入 `AgentEvent`，再投影到 SSE；客户端保存最后 sequence，断线后使用 `after` 补读。SSE 在无业务事件时定期发送注释心跳，同源 Next.js 代理的超时必须大于最长 Agent Run；SDK 若在未收到 `[DONE]` 时遇到 EOF 或可重试网络错误，必须按最后 sequence 有界重连，不得把提前断流当作正常完成。服务端可对高频 text/reasoning delta 做短窗口合并后落库，但不得改变文本顺序。
 
 取消接口幂等，并通过 AbortController 传播到当前模型调用与 `web_fetch`。浏览器断线不触发取消。API 启动时将遗留 `running/cancelling` run 标记为 `interrupted`，不重放模型或工具。
 
@@ -124,7 +124,7 @@ Pino 与 AgentToolCall 记录 URL、最终 URL、状态、字节数、耗时和�
 
 `/agent` 使用 assistant-ui primitives，但不复用当前单次请求的 LocalRuntime adapter。新增 Agent runtime adapter 消费 SDK 的 thread/run/event API，按 sequence 投影 text、reasoning、tool 状态、usage 和终态。
 
-同一次工具辅助执行中的 reasoning、tool call 和最后一次 tool call 之前的中间进度文本聚合为一个思考模块，避免每个 part 重复生成独立折叠项。模块在 run 进行中默认展开，进入终态时自动收起，用户仍可手动重新展开；最后一次 tool call 之后的最终回答始终留在模块外。Provider 未返回 reasoning 时不得伪造 reasoning 文本，但已有 tool activity 仍可显示在思考模块中。Tool activity 展示工具名、目标域名/URL、running/succeeded/failed/cancelled 状态、HTTP 状态和简短摘要。最终回答中的链接经过现有 Markdown 消毒，并保留可点击来源 URL。
+同一次工具辅助执行中，reasoning 与最后一次 tool call 之前的中间进度文本聚合为一个“思考记录”；tool call 不再放入该折叠项，而是在消息流中按顺序显示为独立、紧凑的“执行工具”卡片。Pi harness 只能在当前 assistant message 结束后开始执行工具；UI 收到 `tool-status: running` 后必须将阶段标为“正在执行”，不得继续显示“正在思考”。工具卡片的摘要行固定显示可读名称、状态和主要目标，详细参数与结果默认折叠，成功/失败/取消/达到限制使用可区分但不喧宾夺主的状态标记，并在窄屏上防止命令、URL 或 JSON 溢出。最后一次 tool call 之后的最终回答始终留在思考记录外。Provider 未返回 reasoning 时不得伪造 reasoning 文本。最终回答中的链接经过现有 Markdown 消毒，并保留可点击来源 URL。
 
 ### Decision 10: Skills, MCP and Memory are ports only in this change
 

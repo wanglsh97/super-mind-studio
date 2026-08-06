@@ -79,12 +79,22 @@ The Agent system instructions and tool result envelope SHALL identify fetched co
 - **THEN** the content remains delimited as untrusted tool data and all subsequent tool calls remain subject to the same allowlist and network validation
 
 ### Requirement: Tool execution is visible and auditable
-The Agent event stream SHALL expose tool start, bounded progress or status, success, failure, cancellation, and result summary. For `web_fetch`, audit data SHALL include requested URL, final URL, status code when available, content type, bytes read, duration, truncation, and normalized error, while excluding credentials and sensitive response headers.
+The Agent event stream SHALL expose tool start, bounded progress or status, success, failure, cancellation, and result summary. Tool execution SHALL begin only after the requesting assistant message ends. The Web SHALL render a compact execution card whose summary row contains a readable tool name, current state and primary target, with bounded parameters and results in a disclosure that does not overflow narrow screens. For `web_fetch`, audit data SHALL include requested URL, final URL, status code when available, content type, bytes read, duration, truncation, and normalized error, while excluding credentials and sensitive response headers.
 
 #### Scenario: User observes a successful fetch
 - **GIVEN** `web_fetch` is called during an Agent run
 - **WHEN** it starts and succeeds
 - **THEN** the page shows the target, running state, final status, and a concise result summary in event order
+
+#### Scenario: User observes a long-running shell command
+- **GIVEN** a shell command is executing after the model turn has completed
+- **WHEN** its tool card is visible
+- **THEN** the card labels the phase as execution, keeps the command readable without horizontal page overflow, and updates the same card to its terminal state
+
+#### Scenario: Website bootstrap exceeds one minute
+- **GIVEN** a fresh website sandbox must install its fixed frontend dependencies
+- **WHEN** the bootstrap command runs longer than 60 seconds but remains within the bounded command budget
+- **THEN** the sandbox allows up to 180 seconds for that command while the Agent run remains protected by its independent total duration limit
 
 ### Requirement: Skill and MCP extension ports exist without active integrations
 The Agent composition layer SHALL depend on explicit Skill registry and MCP registry ports whose V1 implementations return no dynamic skills, servers, or tools. V1 MUST NOT scan skill directories, connect to MCP servers, store MCP credentials, or expose user configuration for either capability.

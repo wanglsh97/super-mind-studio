@@ -32,7 +32,7 @@ The NestJS Agent module SHALL run the Pi harness on the server and SHALL use a p
 - **THEN** the server records a failed tool result and continues or terminates according to the bounded Agent loop without executing arbitrary code
 
 ### Requirement: Agent runs expose replayable ordered events
-Creating an Agent run SHALL return a run resource independently of its SSE connection. Every user-visible text, reasoning, tool, usage, status, and terminal update SHALL have a monotonically increasing sequence persisted before or atomically with publication. A client SHALL be able to reconnect with its last sequence and receive later events without duplicating earlier events.
+Creating an Agent run SHALL return a run resource independently of its SSE connection. Every user-visible text, reasoning, tool, usage, status, and terminal update SHALL have a monotonically increasing sequence persisted before or atomically with publication. The SSE response SHALL emit an idle heartbeat frequently enough to remain open through the same-origin Web proxy. A client SHALL treat EOF before `[DONE]` as an interrupted stream, reconnect with its last sequence within a bounded retry policy, and receive later events without duplicating earlier events.
 
 #### Scenario: Reconnect after browser interruption
 - **GIVEN** an Agent run continues after the browser loses its SSE connection
@@ -43,6 +43,16 @@ Creating an Agent run SHALL return a run resource independently of its SSE conne
 - **GIVEN** an Agent run is active
 - **WHEN** its event-stream connection closes without an explicit cancel request
 - **THEN** the server continues the run until a terminal condition or configured limit
+
+#### Scenario: Long tool execution produces no business event
+- **GIVEN** an Agent tool runs longer than the Web proxy idle timeout
+- **WHEN** no text, reasoning or tool result event is ready
+- **THEN** SSE heartbeats keep the connection alive without advancing the event sequence or appearing as message content
+
+#### Scenario: Event stream ends before protocol completion
+- **GIVEN** the browser has received sequence N but has not received `[DONE]`
+- **WHEN** the transport reaches EOF or a retryable network failure
+- **THEN** the SDK reconnects with `after=N` and either reaches an explicit run terminal event or surfaces a bounded error instead of leaving the UI running forever
 
 ### Requirement: Agent runs are cancellable and terminal states are explicit
 The system SHALL provide an idempotent cancel operation and SHALL propagate cancellation best effort to the active model stream and tool request. A run SHALL end in one explicit terminal state including succeeded, failed, cancelled, limit_reached, or interrupted.
@@ -70,23 +80,28 @@ Each Agent run SHALL enforce authoritative configurable limits with defaults of 
 - **WHEN** a model call or tool request is active
 - **THEN** the server aborts active work best effort and persists a `limit_reached` terminal event
 
-### Requirement: Provider reasoning remains distinct and thought activity is grouped
-The system SHALL persist reasoning only when the provider protocol explicitly returns reasoning content. Reasoning SHALL remain a distinct limited-size message part, visible only to the thread owner, sanitized, and excluded from ordinary assistant text sent into later model turns. The Agent page SHALL group reasoning, tool activity, and intermediate progress text before the final tool call into one thought disclosure while keeping final answer text outside. The disclosure SHALL be expanded while its run is active and SHALL automatically collapse when the run reaches a terminal state. The system MUST NOT fabricate reasoning for models that do not provide it.
+### Requirement: Provider reasoning remains distinct from tool execution
+The system SHALL persist reasoning only when the provider protocol explicitly returns reasoning content. Reasoning SHALL remain a distinct limited-size message part, visible only to the thread owner, sanitized, and excluded from ordinary assistant text sent into later model turns. The Agent page SHALL group reasoning and intermediate progress text before the final tool call into one thought disclosure while rendering tool calls separately in event order. The harness SHALL start a tool only after the model assistant message that requested it has ended. While a tool is running, the UI SHALL identify the phase as execution rather than thinking. The system MUST NOT fabricate reasoning for models that do not provide it.
 
-#### Scenario: Active tool-assisted thought is shown as one module
+#### Scenario: Thinking and execution are separate stages
 - **GIVEN** an active Agent run emits reasoning, intermediate text, and tool calls
 - **WHEN** the Agent page renders the response
-- **THEN** those parts appear in one expanded thought disclosure without nested Reasoning or ToolCall disclosures
+- **THEN** reasoning and intermediate text appear in one thought disclosure while each tool appears outside it as an ordered execution card
 
-#### Scenario: Completed thought automatically collapses
+#### Scenario: Tool starts after the model turn ends
+- **GIVEN** a model emits reasoning followed by a valid tool call
+- **WHEN** the harness accepts the assistant message
+- **THEN** the event order records the assistant message end before the tool running status and the UI no longer labels that interval as thinking
+
+#### Scenario: Completed thought remains reviewable
 - **GIVEN** a visible thought disclosure belongs to a running Agent response
 - **WHEN** the response reaches a terminal state
-- **THEN** the disclosure automatically collapses, final answer text remains visible separately, and the user can reopen the disclosure
+- **THEN** final answer text remains visible separately and the user can independently review the thought disclosure and tool execution cards
 
 #### Scenario: Model provides tools without reasoning
 - **GIVEN** the selected model emits tool events and final text but no provider reasoning
 - **WHEN** the Agent page renders the response
-- **THEN** the tool activity appears in the thought disclosure and final text appears separately without artificial reasoning text
+- **THEN** tool execution cards appear without an empty thought disclosure and final text appears separately without artificial reasoning text
 
 #### Scenario: Model provides neither tools nor reasoning
 - **GIVEN** the selected model emits only a final text answer
