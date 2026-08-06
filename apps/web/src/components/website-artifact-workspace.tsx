@@ -152,7 +152,7 @@ function WebsiteArtifactPanel({
           </ArtifactTab>
         </div>
         <div className="flex items-center gap-1.5">
-          <ArtifactDownload href={artifact.distUrl} label="下载网站" />
+          <ArtifactDownload href={artifact.sourceUrl} label="下载" title="下载源码" />
           <button
             type="button"
             disabled
@@ -233,15 +233,19 @@ function ArtifactTab({
   );
 }
 
-function ArtifactDownload({ href, label }: Readonly<{ href: string; label: string }>) {
+function ArtifactDownload({
+  href,
+  label,
+  title,
+}: Readonly<{ href: string; label: string; title: string }>) {
   return (
     <a
       href={href}
-      title={`下载${label}`}
+      title={title}
       className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-line px-3 text-xs font-semibold text-ink transition hover:border-brand/40 hover:text-brand focus-visible:outline-3 focus-visible:outline-brand-focus"
     >
       <DownloadIcon aria-hidden="true" className="size-3.5" />
-      <span className="hidden 2xl:inline">{label}</span>
+      <span>{label}</span>
     </a>
   );
 }

@@ -11,7 +11,7 @@
 - 网页选择态由前端按 Thread 保留，每次 Run 都传 `mode: website`；用户手动取消后恢复普通 Chat。
 - 删除旧 `/creations/websites*` 创建、详情、预览和下载套件；“我的创作”仅通过通用列表和通用 Creation Asset 下载读取最终产物。
 - 删除 Thread 时立即销毁 Sandbox 并使预览失效；最终 `source.zip` 与 `dist.zip` 继续私有保留 30 天。
-- 将成功交付在聊天流中收口为紧凑产物卡，并在当前对话右侧打开 Website Artifact 工作区；工作区提供 Sandbox 网页预览、源码 ZIP 文件树/代码查看和单一网站 ZIP 下载。部署按钮首版仅作为禁用的未来入口展示，不触发请求或状态变化。
+- 将成功交付在聊天流中收口为紧凑产物卡，并在当前对话右侧打开 Website Artifact 工作区；工作区提供 Sandbox 网页预览、源码 ZIP 文件树/代码查看和单一源码 ZIP 下载。部署按钮首版仅作为禁用的未来入口展示，不触发请求或状态变化。
 
 ## Capabilities
 

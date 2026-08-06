@@ -53,7 +53,7 @@ The current delivery SHALL have an owner-scoped same-origin preview only while t
 - **THEN** the Sandbox and preview become unavailable while source and dist downloads remain owner-accessible until their expiry
 
 ### Requirement: Current website delivery opens in an in-thread Artifact workspace
-The Web SHALL render a successful current `create_website` result as a compact delivery card in the conversation and SHALL open an adjacent Website Artifact workspace from that card. The workspace SHALL provide isolated temporary webpage preview, bounded read-only source ZIP browsing, and one owner-scoped deployable build download without introducing a separate website API. It SHALL use `source.zip` only as the code browser data source and MUST NOT render a redundant source download beside the build download.
+The Web SHALL render a successful current `create_website` result as a compact delivery card in the conversation and SHALL open an adjacent Website Artifact workspace from that card. The workspace SHALL provide isolated temporary webpage preview, bounded read-only source ZIP browsing, and one owner-scoped source ZIP download without introducing a separate website API. The only download control SHALL be labeled “下载”, target `source.zip`, and MUST NOT render a redundant `dist.zip` download beside it.
 
 #### Scenario: Current delivery is completed
 - **GIVEN** `create_website` has successfully made a delivery current
