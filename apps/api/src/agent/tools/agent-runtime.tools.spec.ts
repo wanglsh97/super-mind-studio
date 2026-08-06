@@ -12,7 +12,7 @@ import { AgentToolRegistry } from './agent-tool.registry'
 import { createExportFileTool } from './export-file.tool'
 import { createReadFileTool } from './read-file.tool'
 import { createShellTool } from './shell.tool'
-import { createActivateSkillTool } from './activate-skill.tool'
+import { createSkillTool } from './skill.tool'
 import { createWriteFileTool } from './write-file.tool'
 
 const preparedSkill = {
@@ -73,7 +73,7 @@ function setup() {
     })),
   } as unknown as AgentOutputFileService
   const registry = new AgentToolRegistry([
-    createActivateSkillTool(sessions),
+    createSkillTool(sessions),
     createShellTool(sessions),
     createReadFileTool(sessions),
     createWriteFileTool(sessions),
@@ -93,7 +93,7 @@ describe('Agent runtime tools', () => {
     const { context, registry, sessions, skills } = setup()
     await sessions.startRun(context.runId, 'thread-1', context.userId)
 
-    expect(registry.get('activate_skill').parameters).toEqual({
+    expect(registry.get('skill').parameters).toEqual({
       type: 'object',
       additionalProperties: false,
       required: ['name'],
@@ -106,12 +106,9 @@ describe('Agent runtime tools', () => {
         },
       },
     })
+    expect(registry.has('activate_skill')).toBe(false)
 
-    const activation = await registry.execute(
-      'activate_skill',
-      { name: 'mock-data-cleaner' },
-      context,
-    )
+    const activation = await registry.execute('skill', { name: 'mock-data-cleaner' }, context)
     expect(activation).toMatchObject({
       isError: false,
       audit: {
@@ -122,33 +119,31 @@ describe('Agent runtime tools', () => {
       },
     })
     expect(activation.content).toContain('# Mock Data Cleaner')
-    expect(activation.content).toContain('<active_skill name="mock-data-cleaner"')
+    expect(activation.content).toContain('<skill_content name="mock-data-cleaner"')
     expect(activation.content).toContain(`package_sha256="${MOCK_EXECUTABLE_SKILL_SHA256}"`)
     expect(activation.content).toContain('registered tool permissions, or hard resource budgets')
     expect(registry.list().map((tool) => tool.name)).toEqual([
-      'activate_skill',
+      'skill',
       'shell',
       'read_file',
       'write_file',
       'export_file',
     ])
 
-    const duplicate = await registry.execute(
-      'activate_skill',
-      { name: 'mock-data-cleaner' },
-      { ...context, toolCallId: 'tool-2' },
-    )
+    const duplicate = await registry.execute('skill', { name: 'mock-data-cleaner' }, {
+      ...context,
+      toolCallId: 'tool-2',
+    })
     expect(duplicate.audit).toMatchObject({
       sandboxId: activation.audit?.sandboxId,
       alreadyActive: true,
     })
     expect(skills.prepareActivation).toHaveBeenCalledTimes(1)
 
-    const second = await registry.execute(
-      'activate_skill',
-      { name: 'second-skill' },
-      { ...context, toolCallId: 'tool-second-skill' },
-    )
+    const second = await registry.execute('skill', { name: 'second-skill' }, {
+      ...context,
+      toolCallId: 'tool-second-skill',
+    })
     expect(second).toMatchObject({
       isError: false,
       audit: {
@@ -215,13 +210,13 @@ describe('Agent runtime tools', () => {
     await sessions.startRun(context.runId, 'thread-1', context.userId)
 
     await expect(
-      registry.execute('activate_skill', { name: 'not-added' }, context),
+      registry.execute('skill', { name: 'not-added' }, context),
     ).resolves.toMatchObject({
       isError: true,
       audit: { code: 'SKILL_NOT_ADDED', retryable: false },
     })
     await expect(
-      registry.execute('activate_skill', { name: '', extra: true }, context),
+      registry.execute('skill', { name: '', extra: true }, context),
     ).resolves.toMatchObject({
       isError: true,
       audit: { code: 'AGENT_TOOL_INVALID_ARGS' },
@@ -232,7 +227,7 @@ describe('Agent runtime tools', () => {
   it('requires a bound Run/user scope and prevents cross-user session reuse', async () => {
     const { context, registry, sessions } = setup()
     await sessions.startRun(context.runId, 'thread-1', context.userId)
-    await registry.execute('activate_skill', { name: 'mock-data-cleaner' }, context)
+    await registry.execute('skill', { name: 'mock-data-cleaner' }, context)
 
     await expect(
       registry.execute(

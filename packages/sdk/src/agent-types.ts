@@ -374,7 +374,7 @@ export interface CreateAgentRunRequest {
   thinkingEffort?: AgentThinkingEffort
   /**
    * 在首次模型调用前预激活的、当前用户已添加的 Skill。
-   * 名称全局唯一；省略或传空数组时由模型自行决定是否调用 `activate_skill`。
+   * 名称全局唯一；省略或传空数组时由模型自行决定是否调用 `skill`。
    */
   skills?: SelectAgentSkill[]
 }

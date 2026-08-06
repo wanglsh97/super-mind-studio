@@ -1,9 +1,9 @@
 import type { AgentExecutionSessionService } from '../sandbox/agent-execution-session.service'
-import { renderActiveSkillPrompt } from '../skills/active-skill-prompt'
+import { renderSkillContentPrompt } from '../skills/skill-content-prompt'
 import type { AgentToolDefinition } from './agent-tool'
 import { createToolErrorResult, requireRunScope } from './run-scoped-tool.helpers'
 
-const ACTIVATE_SKILL_PARAMETERS = {
+const SKILL_PARAMETERS = {
   type: 'object',
   additionalProperties: false,
   required: ['name'],
@@ -17,17 +17,17 @@ const ACTIVATE_SKILL_PARAMETERS = {
   },
 } as const
 
-export function createActivateSkillTool(
+export function createSkillTool(
   sessions: AgentExecutionSessionService,
 ): AgentToolDefinition<{ name: string }> {
   return {
-    name: 'activate_skill',
+    name: 'skill',
     description:
       'Activate one Skill already added by the current user. Loads its current reviewed instructions and package into the current Thread sandbox.',
     label: '激活 Skill',
     riskLevel: 'read',
     approvalPolicy: 'none',
-    parameters: ACTIVATE_SKILL_PARAMETERS,
+    parameters: SKILL_PARAMETERS,
     async execute(args, context) {
       const scope = requireRunScope(context)
       try {
@@ -38,7 +38,7 @@ export function createActivateSkillTool(
           context.signal,
         )
         return {
-          content: renderActiveSkillPrompt({
+          content: renderSkillContentPrompt({
             name: result.skill.manifest.name,
             packageSha256: result.skill.manifest.packageSha256,
             skillMarkdown: result.skill.skillMarkdown,

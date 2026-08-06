@@ -18,7 +18,7 @@ The Agent runtime SHALL use one version-controlled Prompt Composer for every mod
 
 ### Requirement: Tool risk is explicit and enforced outside the prompt
 
-Every registered Agent tool SHALL declare a risk level and approval policy. This post-V1 change SHALL register `activate_skill`, Shell and Skill file tools with autonomous execution and no per-call approval, as explicitly accepted product behavior. The runtime SHALL still enforce user ownership, publication state, sandbox isolation and hard budgets outside the prompt, and the prompt SHALL advertise only tools actually registered for the active Run.
+Every registered Agent tool SHALL declare a risk level and approval policy. This post-V1 change SHALL register `skill`, Shell and Skill file tools with autonomous execution and no per-call approval, as explicitly accepted product behavior. The runtime SHALL still enforce user ownership, publication state, sandbox isolation and hard budgets outside the prompt, and the prompt SHALL advertise only tools actually registered for the active Run. Candidate metadata SHALL be wrapped by `<available_skills>`, while activated complete instructions SHALL be wrapped by `<skill_content>`.
 
 #### Scenario: The model autonomously calls Shell
 

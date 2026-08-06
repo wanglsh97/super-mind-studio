@@ -2,7 +2,7 @@
 
 ### Requirement: Agent tools are registered through a server allowlist
 
-The Agent runtime SHALL resolve every model tool call through a server-owned Tool registry. `activate_skill`, Shell, Skill file and `export_file` tools SHALL define stable names, English descriptions, JSON Schema parameters, abort handling and serializable results. The registry SHALL allow `activate_skill` to read a completed package from the current Thread sandbox without reauthorization, SHALL authorize any required new download against the current user's added published Skills, SHALL route Shell/file execution through `SandboxRuntimePort`, and SHALL allow `export_file` to persist only files under `/workspace/output` owned by the current Run. Shell and base file tools SHALL remain available in the current Run sandbox even when no Skill is active; Skill activation adds instructions and package resources but MUST NOT gate the sandbox's base workspace capability. Model-supplied names or parameters MUST NOT select an unregistered tool, another Thread's Skill cache, an arbitrary OSS object or execution outside the current Thread sandbox.
+The Agent runtime SHALL resolve every model tool call through a server-owned Tool registry. `skill`, Shell, Skill file and `export_file` tools SHALL define stable names, English descriptions, JSON Schema parameters, abort handling and serializable results. The registry SHALL allow `skill` to read a completed package from the current Thread sandbox without reauthorization, SHALL authorize any required new download against the current user's added published Skills, SHALL route Shell/file execution through `SandboxRuntimePort`, and SHALL allow `export_file` to persist only files under `/workspace/output` owned by the current Run. Shell and base file tools SHALL remain available in the current Run sandbox even when no Skill is active; Skill activation adds instructions and package resources but MUST NOT gate the sandbox's base workspace capability. Model-supplied names or parameters MUST NOT select an unregistered tool, another Thread's Skill cache, an arbitrary OSS object or execution outside the current Thread sandbox. The old `activate_skill` name SHALL NOT be registered as a compatibility alias.
 
 #### Scenario: A valid base workspace call is routed without an active Skill
 
@@ -12,7 +12,7 @@ The Agent runtime SHALL resolve every model tool call through a server-owned Too
 
 #### Scenario: An unknown Skill is requested
 
-- **GIVEN** the model calls `activate_skill` for a name the user has not added and the current Thread has no completed local package for that name
+- **GIVEN** the model calls `skill` for a name the user has not added and the current Thread has no completed local package for that name
 - **WHEN** the registry authorizes the call
 - **THEN** no package is downloaded, the existing Thread sandbox remains unchanged, and a normalized failed tool result is returned
 

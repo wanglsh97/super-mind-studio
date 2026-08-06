@@ -32,7 +32,7 @@ describe('resolveAgentTools', () => {
     const tools = resolveAgentTools(new ConfigService(), sessions, outputs)
     expect(tools.map((tool) => tool.name)).toEqual(
       expect.arrayContaining([
-        'activate_skill',
+        'skill',
         'web_fetch',
         'web_search',
         'shell',

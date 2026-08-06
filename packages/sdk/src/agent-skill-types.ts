@@ -41,7 +41,7 @@ export interface AgentSkillFilePreview {
  */
 export interface AgentSkillMarketSummary {
   id: string
-  /** 全局唯一、供 `activate_skill` 和 Run 手动选择使用的稳定名称。 */
+  /** 全局唯一、供 `skill` 和 Run 手动选择使用的稳定名称。 */
   name: string
   title: string
   description: string

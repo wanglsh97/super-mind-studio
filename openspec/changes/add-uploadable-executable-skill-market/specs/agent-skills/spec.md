@@ -24,7 +24,7 @@ The Skill registry SHALL resolve new downloads only from `published` database me
 
 ### Requirement: Added Skills can be selected manually or by the model
 
-After every Run binds to a ready Thread sandbox, the runtime SHALL asynchronously perform an incremental prefetch of every currently added published candidate Skill with at most four concurrent package operations. Prefetch MUST NOT block sandbox or Run readiness, and one failed candidate MUST NOT cancel other candidates or fail the Run. It SHALL skip a package whose candidate SHA-256 already matches its complete local marker. A user MAY explicitly select any published Skill they have added, causing it to activate before the first model invocation. The Agent Composer SHALL open a searchable Skill list when the user types `/`, and SHALL show each selected Skill as a removable selection inside the Composer instead of using a separate Run Skills panel. Otherwise the model SHALL receive the names and descriptions of the user's added published Skills and MAY call `activate_skill`.
+After every Run binds to a ready Thread sandbox, the runtime SHALL asynchronously perform an incremental prefetch of every currently added published candidate Skill with at most four concurrent package operations. Prefetch MUST NOT block sandbox or Run readiness, and one failed candidate MUST NOT cancel other candidates or fail the Run. It SHALL skip a package whose candidate SHA-256 already matches its complete local marker. A user MAY explicitly select any published Skill they have added, causing it to activate before the first model invocation. The Agent Composer SHALL open a searchable Skill list when the user types `/`, and SHALL show each selected Skill as a removable selection inside the Composer instead of using a separate Run Skills panel. Otherwise the model SHALL receive the names and descriptions of the user's added published Skills inside `<available_skills>` and MAY call `skill`.
 
 Activation SHALL await an in-flight prefetch of the same Skill and then load the complete `SKILL.md` from the cached ZIP when a valid local completion marker exists. It SHALL NOT perform a new authorization or OSS request on that local hit. When no completed package exists or background prefetch failed, activation SHALL authorize the current added/published state, issue a fresh short-lived read-only URL scoped to the current object and synchronously retry download, size/SHA-256 verification and simple-overwrite installation once. Installation SHALL invalidate the marker and clear the old fixed directory before writing files, then write the identity/SHA-256 completion marker last. Signed URLs MUST NOT be persisted or logged.
 
@@ -44,7 +44,7 @@ Activation SHALL await an in-flight prefetch of the same Skill and then load the
 
 - **GIVEN** the user has added a published Skill
 - **WHEN** the user types `/` in the Agent Composer, selects that Skill and creates a Run
-- **THEN** the Run activates it without first requiring an `activate_skill` model call
+- **THEN** the Run activates it without first requiring a `skill` model call
 
 #### Scenario: A user filters and removes a manual Skill selection
 
@@ -55,7 +55,7 @@ Activation SHALL await an in-flight prefetch of the same Skill and then load the
 #### Scenario: The model chooses a Skill
 
 - **GIVEN** the candidate directory contains an appropriate added Skill
-- **WHEN** the model calls `activate_skill` with its name
+- **WHEN** the model calls `skill` with its name
 - **THEN** the runtime reads a completed Thread-local package directly, or validates ownership and publication only when a download is required
 
 ### Requirement: Skill activation is bounded by Run budgets rather than a separate count
@@ -106,6 +106,6 @@ The `/skills` experience SHALL use `@supermind/sdk` for public discovery, authen
 
 ### Requirement: Enabled Skills load before every model invocation
 
-**Reason**: Added Skills are candidates, not automatically injected instructions; full instructions load only after manual selection or `activate_skill`.
+**Reason**: Added Skills are candidates, not automatically injected instructions; full instructions load only after manual selection or `skill`.
 
 **Migration**: Convert existing installed rows to added rows, ignore the prior enabled flag, and use candidate-directory activation on subsequent Runs.

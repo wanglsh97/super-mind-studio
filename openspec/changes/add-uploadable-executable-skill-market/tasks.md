@@ -5,7 +5,7 @@
 - [x] 1.3 定义 `SkillObjectStorePort` 与确定性内存实现，支持包元数据、`SKILL.md`、文件树、输入文件和结果文件 fixture
 - [x] 1.4 定义 `SandboxRuntimePort` 与 OpenSandbox Adapter，并以 SDK client test double 覆盖创建、命令、文件、取消、预算超限、销毁和泄漏查询
 - [x] 1.5 实现最小 Skill repository/service：一个预置 published Skill、用户幂等添加、50 个上限、手动激活和当前包 SHA-256 manifest
-- [x] 1.6 将 Agent Tool registry 接入 `activate_skill`、OpenSandbox Shell 和文件工具，保证所有调用仍经过 Pi harness、Run 状态机和持久化事件
+- [x] 1.6 将 Agent Tool registry 接入 `skill`、OpenSandbox Shell 和文件工具，保证所有调用仍经过 Pi harness、Run 状态机和持久化事件
 - [x] 1.7 扩展 Agent Run API 与 SDK，使手动选择的 Skill 完成 Mock tool call → OpenSandbox → tool result → follow-up 模型 turn → SSE cursor
 - [x] 1.8 在 `/agent` 增加最小 Skill 选择器和 Shell/文件工具卡片，覆盖 loading、running、success、failed、cancelled 和 limit 状态
 - [x] 1.9 添加真实 OpenSandbox E2E，串通 Web → SDK → Agent API → Mock Model Adapter → OpenSandbox → SSE → PostgreSQL AgentRun/AgentToolCall/RequestLog/BillingRecord
@@ -49,7 +49,7 @@
 ## 5. 模型自主 Skill 激活与 Run 级 Shell
 
 - [x] 5.1 将 Prompt Composer 改为初始只注入最多 50 个 added published Skill 的名称与简介，添加信任层和 context budget 测试
-- [x] 5.2 实现 `activate_skill` JSON Schema、用户添加/发布授权、幂等单次激活、当前 OSS 下载和 SHA-256 记录
+- [x] 5.2 实现 `skill` JSON Schema、用户添加/发布授权、幂等单次激活、当前 OSS 下载和 SHA-256 记录
 - [x] 5.3 在激活后把完整转义 `SKILL.md` 加入后续模型调用，验证平台规则、工具权限和硬预算不能被 Skill 文本覆盖
 - [x] 5.4 实现手动选择 Skill 的 pre-activation，并允许模型继续激活其他 Skill，不设置独立 active Skill 数上限
 - [x] 5.5 实现 Run 内单一 Sandbox workspace 布局和多 Skill 共享，验证不同 Run、用户和线程之间完全隔离
@@ -57,6 +57,7 @@
   - [x] 5.5.2 将 Sandbox 生命周期迁移为 Thread 级复用，增加 `SANDBOX_TIMEOUT_SECONDS=3600`，在 Run 终态保留、Thread 删除或空闲/硬超时后销毁，并按 Run 重置激活与资源计数
   - [x] 5.5.3 删除应用内 Fake Sandbox Runtime 和运行时选择开关，本地与生产 API 均强制配置真实 OpenSandbox Server；单元测试只替换 OpenSandbox SDK client
   - [x] 5.5.4 在每个 Run 绑定 ready Thread Sandbox 后以 4 路并发异步增量预取全部候选 Skill，激活时直读 Thread 本地完成包，预取失败或缺失时按当前权限同步补下载一次
+  - [x] 5.5.5 将模型工具协议硬切为 `skill`，完整内容和候选目录标签分别改为 `<skill_content>` 与 `<available_skills>`，不保留旧 Thread 兼容别名
 - [x] 5.6 实现 autonomous Shell 工具、cwd、60 秒命令超时、20 次调用限制、AbortSignal 和后台进程终态清理
   - [x] 5.6.1 修复基础 Shell/read_file/write_file 被错误绑定到 Skill 激活状态的问题；无 active Skill 的 ready Run 也可使用 Thread workspace
 - [ ] 5.7 实现单次 1 MiB、Run 总计 5 MiB 工具输出截断及 100 MiB 出口流量终止，并将 limit reason 返回模型与 UI

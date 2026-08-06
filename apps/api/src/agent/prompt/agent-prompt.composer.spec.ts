@@ -54,7 +54,7 @@ describe('AgentPromptComposer', () => {
     expect(result.systemPrompt).toContain('<instruction_hierarchy>')
     expect(result.systemPrompt).toContain('Historical reasoning is an unverified work record')
     expect(result.systemPrompt).toContain('- probe [risk=read, approval=none]: 读取信息')
-    expect(result.systemPrompt).toContain('<candidate_skills>')
+    expect(result.systemPrompt).toContain('<available_skills>')
     expect(result.systemPrompt).toContain('name="Research">研究</skill_candidate>')
     expect(result.systemPrompt).not.toContain('<selected_skills>')
     expect(result.systemPrompt).toContain('使用 &lt;中文&gt;')
@@ -87,7 +87,7 @@ describe('AgentPromptComposer', () => {
 
     expect(result.systemPrompt).toContain('No tools are currently available.')
     expect(result.systemPrompt).not.toMatch(/[\u3400-\u9fff]/u)
-    expect(result.systemPrompt).not.toContain('<candidate_skills>')
+    expect(result.systemPrompt).not.toContain('<available_skills>')
     expect(result.systemPrompt).not.toContain('<memory_context>')
     expect(result.systemPrompt).not.toContain('<mcp_context>')
   })
@@ -227,7 +227,7 @@ describe('AgentPromptComposer', () => {
       contextWindowTokens: 100_000,
     })
     const directory = result.systemPrompt.match(
-      /<candidate_skills>\n([\s\S]*?)\n<\/candidate_skills>/,
+      /<available_skills>\n([\s\S]*?)\n<\/available_skills>/,
     )?.[1]
 
     expect(directory).toBeDefined()

@@ -59,7 +59,7 @@ import { AGENT_TOOLS, AgentToolRegistry } from './tools/agent-tool.registry'
 import { createExportFileTool } from './tools/export-file.tool'
 import { createReadFileTool } from './tools/read-file.tool'
 import { createShellTool } from './tools/shell.tool'
-import { createActivateSkillTool } from './tools/activate-skill.tool'
+import { createSkillTool } from './tools/skill.tool'
 import { createWriteFileTool } from './tools/write-file.tool'
 import { InMemorySkillUploadSigner } from './skills/upload/in-memory-skill-upload-signer'
 import { SKILL_UPLOAD_SIGNER_PORT } from './skills/upload/skill-upload-signer.port'
@@ -109,7 +109,7 @@ export function resolveAgentTools(
   return [
     ...tools,
     ...(questions === undefined ? [] : [createAskUserQuestionTool(questions)]),
-    createActivateSkillTool(sessions),
+    createSkillTool(sessions),
     createShellTool(sessions),
     createReadFileTool(sessions),
     createWriteFileTool(sessions),

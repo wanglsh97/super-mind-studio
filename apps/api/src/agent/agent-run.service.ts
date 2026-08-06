@@ -41,7 +41,7 @@ import { AgentRunRepository } from './agent-run.repository'
 import { AgentPromptComposer } from './prompt/agent-prompt.composer'
 import { AgentExecutionSessionService } from './sandbox/agent-execution-session.service'
 import type { ActivatedSkill } from './skills/executable-skill.service'
-import { renderActiveSkillPrompt } from './skills/active-skill-prompt'
+import { renderSkillContentPrompt } from './skills/skill-content-prompt'
 import { AgentToolRegistry } from './tools/agent-tool.registry'
 import { loadPiAgentCore } from './pi-runtime'
 import { createPiModel, createPiStreamFn } from './pi-stream-bridge'
@@ -572,7 +572,7 @@ function appendManualSkillInstructions(
   skills: readonly { name: string; packageSha256: string; skillMarkdown: string }[],
 ): string {
   if (skills.length === 0) return systemPrompt
-  const instructions = skills.map(renderActiveSkillPrompt).join('\n\n')
+  const instructions = skills.map(renderSkillContentPrompt).join('\n\n')
   return `${systemPrompt}\n\n# Manually activated Skills\n\n${instructions}`
 }
 
