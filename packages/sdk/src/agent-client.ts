@@ -646,16 +646,15 @@ async function waitForAgentStreamRetry(
 ): Promise<void> {
   const delayMs = Math.min(100 * 2 ** reconnects, 800)
   await new Promise<void>((resolve, reject) => {
-    let onAbort: (() => void) | undefined
-    const timeout = setTimeout(() => {
-      if (onAbort) signal?.removeEventListener('abort', onAbort)
-      resolve()
-    }, delayMs)
-    if (!signal) return
-    onAbort = () => {
+    const onAbort = () => {
       clearTimeout(timeout)
       reject(abortError())
     }
+    const timeout = setTimeout(() => {
+      signal?.removeEventListener('abort', onAbort)
+      resolve()
+    }, delayMs)
+    if (!signal) return
     signal.addEventListener('abort', onAbort, { once: true })
     timeout.unref?.()
     void Promise.resolve().then(() => {
