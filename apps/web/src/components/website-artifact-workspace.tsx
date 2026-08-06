@@ -55,9 +55,9 @@ interface WebsiteArtifactContextValue {
 }
 
 const WebsiteArtifactContext = createContext<WebsiteArtifactContextValue | null>(null);
-const ARTIFACT_MIN_WIDTH = 26 * 16;
-const ARTIFACT_MAX_WIDTH = 40 * 16;
-const CHAT_MIN_WIDTH = 22 * 16;
+const ARTIFACT_MIN_WIDTH = 32 * 16;
+const ARTIFACT_MAX_WIDTH = 56 * 16;
+const CHAT_MIN_WIDTH = 20 * 16;
 const ARTIFACT_RESIZE_STEP = 24;
 
 export function useWebsiteArtifactWorkspace() {
@@ -124,7 +124,7 @@ export function WebsiteArtifactWorkspace({
         className={cn(
           'flex h-full min-h-0 w-full min-w-0',
           artifact
-            ? 'min-[1024px]:grid min-[1024px]:grid-cols-[minmax(0,1fr)_clamp(26rem,42%,40rem)] min-[1024px]:grid-rows-[minmax(0,1fr)] min-[1024px]:pr-4'
+            ? 'min-[1024px]:grid min-[1024px]:grid-cols-[minmax(0,1fr)_clamp(32rem,48%,56rem)] min-[1024px]:grid-rows-[minmax(0,1fr)] min-[1024px]:pr-4'
             : 'min-[1024px]:grid min-[1024px]:grid-cols-1 min-[1024px]:grid-rows-[minmax(0,1fr)]',
         )}
         style={
@@ -406,7 +406,7 @@ function SourceWorkspace({
     <div className="flex min-h-0 flex-1 flex-col md:flex-row">
       <nav
         aria-label="源码文件"
-        className="h-48 shrink-0 overflow-auto border-b border-line bg-surface-inset/35 p-2 md:h-auto md:w-64 md:border-r md:border-b-0 xl:w-72"
+        className="h-48 shrink-0 overflow-auto border-b border-line bg-surface-inset/35 p-2 md:h-auto md:w-56 md:border-r md:border-b-0 xl:w-64"
       >
         <SourceTree files={files} selectedPath={selectedFile?.path ?? null} onSelect={onSelect} />
       </nav>
