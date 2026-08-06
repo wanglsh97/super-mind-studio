@@ -43,6 +43,10 @@ import { SkillMarketController } from './skills/market/skill-market.controller'
 import { SkillMarketRepository } from './skills/market/skill-market.repository'
 import { SkillMarketService } from './skills/market/skill-market.service'
 import { PlatformAgentSkillCatalog } from './skills/platform-agent-skill.catalog'
+import {
+  loadWebsiteBuildingSkill,
+  WEBSITE_BUILDING_SKILL,
+} from './skills/builtin/website-building.skill'
 import { SkillPublishingRepository } from './skills/publishing/skill-publishing.repository'
 import { SkillPublishingService } from './skills/publishing/skill-publishing.service'
 import { InMemorySkillObjectStore } from './skills/storage/in-memory-skill-object-store'
@@ -161,6 +165,7 @@ export function createSandboxRuntime(config: ConfigService): SandboxRuntimePort 
     AgentService,
     AgentStartupCleanupService,
     AgentPromptComposer,
+    { provide: WEBSITE_BUILDING_SKILL, useFactory: loadWebsiteBuildingSkill },
     PlatformAgentSkillCatalog,
     AgentSkillRepository,
     AgentSkillService,

@@ -92,7 +92,7 @@ export class WebsiteDeliveryService {
     }
 
     const packaged = await this.sessions.runShell(runId, userId, {
-      command: 'python3 /workspace/.platform-skills/static-website-builder/package.py',
+      command: 'python3 /workspace/.platform-skills/website-building/scripts/package.py',
       workingDirectory: PROJECT_ROOT,
       ...(signal === undefined ? {} : { signal }),
     })

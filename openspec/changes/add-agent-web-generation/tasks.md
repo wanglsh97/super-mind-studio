@@ -6,9 +6,11 @@
 
 ## 2. 内置建站 Skill
 
-- [x] 2.1 新增平台内置不可编辑 `static-website-builder` Skill 及固定技术栈/目录/命令规范
+- [x] 2.1 新增平台内置不可编辑 `website-building` Skill 及固定技术栈/目录/命令规范
 - [x] 2.2 website mode 在每个 Run 模型调用前自动激活 Skill，普通 Chat 不加载
 - [x] 2.3 测试 Skill 内容完整、注入顺序和普通 Chat 隔离
+- [x] 2.4 将硬编码 Skill 迁移为仓库标准 `SKILL.md`/`scripts` 目录并同步 Sandbox 安装路径
+- [x] 2.5 启动时校验并缓存 `website-building`，测试损坏 fail-fast 和 website-only 正文注入
 
 ## 3. create_website 交付 Tool
 
@@ -31,3 +33,4 @@
 - [x] 5.1 更新 README/.env.example/部署文档，记录内置 Skill、单 Tool、静态限制和删除 Thread 边界
 - [x] 5.2 运行 API/SDK/Web 相关测试、typecheck、lint、build 和 OpenSpec strict 校验
 - [x] 5.3 所有开发完成后启动 dev，用内置浏览器验证普通 Chat、GitHub 门槛、网页 Run、临时预览、ZIP 下载与 Thread 删除失效
+- [x] 5.4 更新 Skill 名称、仓库路径和加载策略文档，运行相关测试、typecheck、build 与 strict 校验

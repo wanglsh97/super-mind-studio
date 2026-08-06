@@ -76,7 +76,7 @@ Agent Thread 在第一次 Run 时按需创建一个隔离沙箱，同一 Thread 
 
 ## 网页创作与产物保留
 
-使用 GitHub 登录的用户可以在既有 Agent Run 中传入 `mode: website` 创建静态网站，不存在独立网站 Agent API。每个网页 Run 会自动加载平台内置 `static-website-builder` Skill，固定使用 React + TypeScript + Vite + Tailwind CSS + shadcn/ui + Lucide。Agent 只能通过 `create_website` Tool 完成交付：Tool 统一执行 `pnpm build`、校验 `dist/index.html`、生成 `source.zip`/`dist.zip`并原子覆盖同一 Thread 的最终产物。
+使用 GitHub 登录的用户可以在既有 Agent Run 中传入 `mode: website` 创建静态网站，不存在独立网站 Agent API。服务启动时会从仓库标准 Skill 目录 `apps/api/skills/website-building` 读取并校验平台内置 `website-building`，每个网页 Run 自动激活它，固定使用 React + TypeScript + Vite + Tailwind CSS + shadcn/ui + Lucide；普通 Chat 不加载完整 Skill 正文。Agent 只能通过 `create_website` Tool 完成交付：Tool 统一执行 `pnpm build`、校验 `dist/index.html`、生成 `source.zip`/`dist.zip`并原子覆盖同一 Thread 的最终产物。
 
 预览仅依赖当前 Thread Sandbox，删除 Thread 后立即失效；最新成功的两个 ZIP 仍可在“我的创作”下载。每次成功覆盖都会把保留期重置为 30 天；不保留旧版本、不提供回滚。生产部署前，必须为 OSS bucket 应用 [creations-lifecycle.xml](infra/oss/creations-lifecycle.xml) 中 `creations/` 前缀的 Lifecycle 规则；API 仍会以数据库 `expiresAt` 拒绝到期访问。
 

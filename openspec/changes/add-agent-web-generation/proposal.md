@@ -5,7 +5,7 @@
 ## What Changes
 
 - 在既有 Agent Run 请求中增加 `mode: website`，继续复用同一 Thread、Run、SSE 和 Sandbox 链路。
-- 新增平台内置、不可编辑的 `static-website-builder` Skill，固定 React + TypeScript + Vite + Tailwind CSS + shadcn/ui + Lucide、项目目录、初始化脚本和构建命令。
+- 新增平台内置、不可编辑的标准 `website-building` Skill 目录，固定 React + TypeScript + Vite + Tailwind CSS + shadcn/ui + Lucide、项目目录、初始化脚本和构建命令；服务启动时读取、校验并缓存，只有 website mode 注入完整正文。
 - 新增唯一网站交付 Tool `create_website`：执行构建、校验静态产物、生成 ZIP、原子覆盖最终产物并返回当前 Thread 的临时预览入口。
 - 一个 Thread 仅保留一份最新成功网站产物；修改不建立版本历史，新成功交付覆盖旧产物，失败构建必须由 Agent 继续修复。
 - 网页选择态由前端按 Thread 保留，每次 Run 都传 `mode: website`；用户手动取消后恢复普通 Chat。

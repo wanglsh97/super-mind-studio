@@ -183,7 +183,7 @@ export class AgentRunService {
         await this.runs.markSandboxReady(input.runId, sandboxId)
         await persistAndPublish(projector.sandboxStatus({ status: 'ready', sandboxId }))
         if (input.mode === 'website') {
-          await this.executionSessions.installStaticWebsiteBuilder(
+          await this.executionSessions.installWebsiteBuildingSkill(
             input.runId,
             input.userId,
             controller.signal,

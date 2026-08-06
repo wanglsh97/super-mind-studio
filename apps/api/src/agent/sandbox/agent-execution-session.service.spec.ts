@@ -75,24 +75,24 @@ describe('AgentExecutionSessionService Thread sandbox lifecycle', () => {
     const { service } = setup()
     await service.startRun('run-web', 'thread-web', 'user-1')
 
-    await service.installStaticWebsiteBuilder('run-web', 'user-1')
+    await service.installWebsiteBuildingSkill('run-web', 'user-1')
 
     await expect(
       service.readFile(
         'run-web',
         'user-1',
-        '/workspace/.platform-skills/static-website-builder/SKILL.md',
+        '/workspace/.platform-skills/website-building/SKILL.md',
       ),
     ).resolves.toMatchObject({ sizeBytes: expect.any(Number) })
     const init = await service.readFile(
       'run-web',
       'user-1',
-      '/workspace/.platform-skills/static-website-builder/init.sh',
+      '/workspace/.platform-skills/website-building/scripts/init.sh',
     )
     const packager = await service.readFile(
       'run-web',
       'user-1',
-      '/workspace/.platform-skills/static-website-builder/package.py',
+      '/workspace/.platform-skills/website-building/scripts/package.py',
     )
     const initScript = new TextDecoder().decode(init?.bytes)
     expect(initScript).toContain('npm install --global pnpm@9.15.9')

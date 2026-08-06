@@ -14,12 +14,17 @@ The system SHALL allow only an authenticated GitHub user to send `mode: website`
 - **THEN** the server rejects the run before creating a project or Sandbox and the Web presents a GitHub login action
 
 ### Requirement: Website mode automatically loads one immutable static-site Skill
-Every website-mode run SHALL automatically load the platform-owned `static-website-builder` Skill before the first model call. The Skill SHALL require React, TypeScript, Vite, Tailwind CSS, shadcn/ui, Lucide, pnpm, `/workspace/work` and a `pnpm build -- --base=./` output at `/workspace/work/dist` so the static artifact uses relative asset paths. It SHALL prohibit databases, server runtimes, authentication backends, payments, private environment variables and private API keys.
+Every website-mode run SHALL automatically load the platform-owned `website-building` Skill before the first model call. The Skill SHALL live in the repository as a standard root `SKILL.md` plus required `scripts` resources, and the API SHALL validate and cache it at startup instead of hard-coding its contents in TypeScript. The Skill SHALL require React, TypeScript, Vite, Tailwind CSS, shadcn/ui, Lucide, pnpm, `/workspace/work` and a `pnpm build -- --base=./` output at `/workspace/work/dist` so the static artifact uses relative asset paths. It SHALL prohibit databases, server runtimes, authentication backends, payments, private environment variables and private API keys.
 
 #### Scenario: Agent builds a website
 - **GIVEN** a website-mode run has started
 - **WHEN** the model receives its system context
 - **THEN** the immutable Skill content and fixed stack workflow are active without model discovery or user-managed Skill activation
+
+#### Scenario: Built-in Skill package is invalid at startup
+- **GIVEN** `website-building/SKILL.md` or one of its required scripts is missing, malformed or renamed
+- **WHEN** the API initializes its built-in Skill registry
+- **THEN** startup fails before serving Agent runs instead of silently using partial or stale instructions
 
 ### Requirement: One Thread retains one current website delivery
 A Thread SHALL have at most one current WebProject delivery. Each successful `create_website` call SHALL replace the current source/build assets and reset their expiry to thirty days after that success. The system SHALL NOT expose versions, rollback or old downloads.
@@ -40,7 +45,7 @@ The current delivery SHALL have an owner-scoped same-origin preview only while t
 #### Scenario: Owner opens current preview
 - **GIVEN** the owner requests the current project preview and the Thread Sandbox is alive
 - **WHEN** the API validates owner, run, current project and port
-- **THEN** it obtains a short-lived Sandbox endpoint without persisting its credential and redirects the owner
+- **THEN** it obtains a short-lived Sandbox endpoint without persisting its credential and serves it through the isolated platform preview capability
 
 #### Scenario: Thread is deleted
 - **GIVEN** a website has been delivered

@@ -110,8 +110,8 @@ describe('AgentPromptComposer', () => {
     const normal = await composer.compose(base)
     const website = await composer.compose({ ...base, mode: 'website' })
 
-    expect(normal.systemPrompt).not.toContain('static-website-builder')
-    expect(website.systemPrompt).toContain('<built_in_skill id="static-website-builder"')
+    expect(normal.systemPrompt).not.toContain('website-building')
+    expect(website.systemPrompt).toContain('<built_in_skill id="website-building"')
     expect(website.systemPrompt).toContain('React and TypeScript')
     expect(website.systemPrompt).toContain('call `create_website`')
   })

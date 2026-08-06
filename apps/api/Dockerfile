@@ -48,6 +48,7 @@ RUN apt-get update \
 WORKDIR /app
 
 COPY --from=build --chown=node:node /prod/api ./
+COPY --from=build --chown=node:node /app/apps/api/skills ./skills
 
 USER node
 

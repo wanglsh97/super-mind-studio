@@ -11,10 +11,10 @@ import { AgentThreadRepository } from '../agent-thread.repository'
 import type { ActivatedSkill } from '../skills/executable-skill.service'
 import { ExecutableSkillService } from '../skills/executable-skill.service'
 import {
-  STATIC_WEBSITE_BUILDER_INIT_SCRIPT,
-  STATIC_WEBSITE_BUILDER_PACKAGE_SCRIPT,
-  STATIC_WEBSITE_BUILDER_SKILL_MARKDOWN,
-} from '../skills/builtin/static-website-builder.skill'
+  loadWebsiteBuildingSkill,
+  WEBSITE_BUILDING_SKILL,
+  type WebsiteBuildingSkill,
+} from '../skills/builtin/website-building.skill'
 
 interface ThreadExecutionSession {
   threadId: string
@@ -45,6 +45,8 @@ export class AgentExecutionSessionService {
     @Inject(SANDBOX_RUNTIME_PORT) private readonly sandboxes: SandboxRuntimePort,
     @Inject(AgentThreadRepository) private readonly threads: AgentThreadRepository,
     @Inject(ConfigService) config: ConfigService,
+    @Inject(WEBSITE_BUILDING_SKILL)
+    private readonly websiteSkill: WebsiteBuildingSkill = loadWebsiteBuildingSkill(),
   ) {
     this.timeoutMs = config.get<number>('SANDBOX_TIMEOUT_SECONDS', 3_600) * 1_000
   }
@@ -109,33 +111,23 @@ export class AgentExecutionSessionService {
     return { sandboxId: session.thread.sandboxId, skill, alreadyActive: false }
   }
 
-  async installStaticWebsiteBuilder(
+  async installWebsiteBuildingSkill(
     runId: string,
     userId: string,
     signal?: AbortSignal,
   ): Promise<void> {
     const session = this.requireRunSession(runId, userId)
-    const root = '/workspace/.platform-skills/static-website-builder'
-    await Promise.all([
-      this.sandboxes.writeFile({
-        sandboxId: session.thread.sandboxId,
-        path: `${root}/SKILL.md`,
-        bytes: new TextEncoder().encode(STATIC_WEBSITE_BUILDER_SKILL_MARKDOWN),
-        ...(signal === undefined ? {} : { signal }),
-      }),
-      this.sandboxes.writeFile({
-        sandboxId: session.thread.sandboxId,
-        path: `${root}/init.sh`,
-        bytes: new TextEncoder().encode(STATIC_WEBSITE_BUILDER_INIT_SCRIPT),
-        ...(signal === undefined ? {} : { signal }),
-      }),
-      this.sandboxes.writeFile({
-        sandboxId: session.thread.sandboxId,
-        path: `${root}/package.py`,
-        bytes: new TextEncoder().encode(STATIC_WEBSITE_BUILDER_PACKAGE_SCRIPT),
-        ...(signal === undefined ? {} : { signal }),
-      }),
-    ])
+    const root = `/workspace/.platform-skills/${this.websiteSkill.name}`
+    await Promise.all(
+      this.websiteSkill.files.map((file) =>
+        this.sandboxes.writeFile({
+          sandboxId: session.thread.sandboxId,
+          path: `${root}/${file.path}`,
+          bytes: file.bytes,
+          ...(signal === undefined ? {} : { signal }),
+        }),
+      ),
+    )
   }
 
   activeSkillNames(runId: string, userId: string): string[] {

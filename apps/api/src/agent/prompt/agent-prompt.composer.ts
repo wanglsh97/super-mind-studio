@@ -7,7 +7,12 @@ import { AGENT_MEMORY_PROVIDER, type AgentMemoryProvider } from '../memory/agent
 import { AGENT_SKILL_REGISTRY, type AgentSkillRegistry } from '../skills/agent-skill.registry'
 import type { AgentToolDefinition } from '../tools/agent-tool'
 import { AgentToolRegistry } from '../tools/agent-tool.registry'
-import { renderStaticWebsiteBuilderSkill } from '../skills/builtin/static-website-builder.skill'
+import {
+  loadWebsiteBuildingSkill,
+  renderWebsiteBuildingSkill,
+  WEBSITE_BUILDING_SKILL,
+  type WebsiteBuildingSkill,
+} from '../skills/builtin/website-building.skill'
 
 export const AGENT_PROMPT_PROFILE_VERSION = 'web-agent-v5'
 export const MAX_PROMPT_CANDIDATE_SKILLS = 50
@@ -48,6 +53,8 @@ export class AgentPromptComposer {
     @Inject(AGENT_SKILL_REGISTRY) private readonly skills: AgentSkillRegistry,
     @Inject(AGENT_MCP_REGISTRY) private readonly mcp: AgentMcpRegistry,
     @Inject(AGENT_MEMORY_PROVIDER) private readonly memory: AgentMemoryProvider,
+    @Inject(WEBSITE_BUILDING_SKILL)
+    private readonly websiteSkill: WebsiteBuildingSkill = loadWebsiteBuildingSkill(),
   ) {}
 
   async compose(input: {
@@ -106,7 +113,7 @@ export class AgentPromptComposer {
             'website_generation_profile',
             [
               'Website mode is active. Follow the immutable built-in Skill below as platform execution policy.',
-              renderStaticWebsiteBuilderSkill(),
+              renderWebsiteBuildingSkill(this.websiteSkill),
             ].join('\n'),
           )
         : '',
