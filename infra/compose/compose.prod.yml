@@ -281,10 +281,13 @@ services:
     expose: ['3200', '4318']
     networks: [backend]
     healthcheck:
+      # Tempo /ready returns 503 while replaying WAL / polling a large local blocklist.
+      # Give startup headroom so compose up is not marked failed during that window.
       test: ['CMD-SHELL', 'wget -qO- http://127.0.0.1:3200/ready >/dev/null || exit 1']
       interval: 15s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 180s
     cpus: '0.60'
     mem_limit: 768m
     pids_limit: 256
