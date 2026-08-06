@@ -242,6 +242,7 @@ V1 为联调和诊断在 PostgreSQL 与 Pino 中保存完整 Prompt，暂不自�
 - 每完成一个大模块并通过该模块验收后，立即 push 该模块累计的 commits。当前大模块按 `tasks.md` 一级板块定义：`1. API 网关服务建设`、`2. 管理员中后台`、`3. 用户端网页`；模块未完成时只 commit、不提前以“模块完成”名义 push。
 - commit 和 push 前必须保留用户已有改动，只暂存当前功能点范围内的文件；禁止为满足提交规则擅自覆盖、回滚或夹带无关修改。
 - 保持 TypeScript 类型边界，避免用 `any` 绕过公共契约和 Adapter 映射。
+- `apps/api/src/agent/prompt/agent-prompt.composer.ts` 中组装 Prompt 必须使用模板字符串；禁止使用字符串数组加 `.join()` 拼接 Prompt，动态条目应通过模板字符串辅助函数累加。
 - 不提交真实 `.env`、API Key、数据库密码、Cookie secret、证书私钥或生产备份。
 - 不覆盖或删除用户已有改动；发现工作区存在无关修改时应保留并绕开。
 - 不执行破坏性数据库、Git 或部署操作，除非用户明确授权且已有可恢复方案。
