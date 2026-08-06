@@ -33,6 +33,7 @@ import {
   CircleAlertIcon,
   CodeXmlIcon,
   DownloadIcon,
+  EyeIcon,
   FilePenLineIcon,
   FileTextIcon,
   GlobeIcon,
@@ -81,6 +82,11 @@ import {
 import { AssistantMarkdown } from '@/components/chat/assistant-markdown';
 import { ProtectedUserPage } from '@/components/protected-user-page';
 import { useUserSession } from '@/components/user-session-provider';
+import {
+  WebsiteArtifactWorkspace,
+  useWebsiteArtifactWorkspace,
+  type WebsiteArtifactDescriptor,
+} from '@/components/website-artifact-workspace';
 import { useAgentActiveThreadId } from '@/hooks/use-agent-active-thread-id';
 import { useAgentWorkspace } from '@/hooks/use-agent-workspace';
 import { useAuthenticationFailure } from '@/hooks/use-authentication-failure';
@@ -414,204 +420,206 @@ function AgentConsole() {
       />
       <AgentPageShell>
         <AgentConsolePanel label="智能体">
-          <AgentEnvironmentPanel
-            sandbox={sandboxTelemetry}
-            mcpServers={mcpServers}
-            mcpLoadState={mcpLoadState}
-            skillCandidates={skillCandidates}
-            selectedSkillNames={selectedSkillNames}
-            skillLoadState={skillLoadState}
-            tokenUsage={threadTokenUsage}
-          />
-          <AgentThreadRoot>
-            <div className="flex min-h-0 flex-1">
-              <AgentThreadNavigator />
-              <AgentThreadViewport>
-                <AuiIf condition={(state) => state.thread.isEmpty}>
-                  <AgentEmptyState
-                    kicker="AGENT THREAD · EMPTY"
-                    title="描述你的目标，Agent 来推进"
-                  />
-                </AuiIf>
-                <ThreadPrimitive.Messages>
-                  {({ message }) =>
-                    message.role === 'user' ? (
-                      <UserMessage messageId={message.id} />
-                    ) : (
-                      <AssistantMessage
-                        runProgress={runProgress}
-                        metadata={<AgentMessageMetadata />}
-                        renderPart={(part) => {
-                          if (part.type === 'tool-call') {
-                            if (part.toolUI) return part.toolUI;
-                            const toolPart = part as typeof part & {
-                              toolName?: unknown;
-                              args?: unknown;
-                              result?: unknown;
-                              isError?: unknown;
-                            };
-                            if (typeof toolPart.toolName !== 'string') return null;
-                            const parsed = parseNamespacedMcpToolName(toolPart.toolName);
-                            if (parsed) {
-                              const result = isSandboxToolResult(toolPart.result)
-                                ? toolPart.result
-                                : undefined;
-                              return (
-                                <McpToolActivityCard
-                                  serverId={parsed.serverId}
-                                  remoteToolName={parsed.remoteToolName}
-                                  args={isRecord(toolPart.args) ? toolPart.args : {}}
-                                  result={result}
-                                  running={part.status?.type === 'running'}
-                                  isError={toolPart.isError === true}
-                                />
-                              );
+          <WebsiteArtifactWorkspace scopeKey={activeThreadId ?? 'new-thread'}>
+            <AgentEnvironmentPanel
+              sandbox={sandboxTelemetry}
+              mcpServers={mcpServers}
+              mcpLoadState={mcpLoadState}
+              skillCandidates={skillCandidates}
+              selectedSkillNames={selectedSkillNames}
+              skillLoadState={skillLoadState}
+              tokenUsage={threadTokenUsage}
+            />
+            <AgentThreadRoot>
+              <div className="flex min-h-0 flex-1">
+                <AgentThreadNavigator />
+                <AgentThreadViewport>
+                  <AuiIf condition={(state) => state.thread.isEmpty}>
+                    <AgentEmptyState
+                      kicker="AGENT THREAD · EMPTY"
+                      title="描述你的目标，Agent 来推进"
+                    />
+                  </AuiIf>
+                  <ThreadPrimitive.Messages>
+                    {({ message }) =>
+                      message.role === 'user' ? (
+                        <UserMessage messageId={message.id} />
+                      ) : (
+                        <AssistantMessage
+                          runProgress={runProgress}
+                          metadata={<AgentMessageMetadata />}
+                          renderPart={(part) => {
+                            if (part.type === 'tool-call') {
+                              if (part.toolUI) return part.toolUI;
+                              const toolPart = part as typeof part & {
+                                toolName?: unknown;
+                                args?: unknown;
+                                result?: unknown;
+                                isError?: unknown;
+                              };
+                              if (typeof toolPart.toolName !== 'string') return null;
+                              const parsed = parseNamespacedMcpToolName(toolPart.toolName);
+                              if (parsed) {
+                                const result = isSandboxToolResult(toolPart.result)
+                                  ? toolPart.result
+                                  : undefined;
+                                return (
+                                  <McpToolActivityCard
+                                    serverId={parsed.serverId}
+                                    remoteToolName={parsed.remoteToolName}
+                                    args={isRecord(toolPart.args) ? toolPart.args : {}}
+                                    result={result}
+                                    running={part.status?.type === 'running'}
+                                    isError={toolPart.isError === true}
+                                  />
+                                );
+                              }
+                              return null;
+                            }
+                            if (part.type === 'text')
+                              return <AssistantMarkdown>{part.text ?? ''}</AssistantMarkdown>;
+                            if (part.type === 'reasoning') {
+                              return <AgentReasoning text={part.text ?? ''} />;
                             }
                             return null;
-                          }
-                          if (part.type === 'text')
-                            return <AssistantMarkdown>{part.text ?? ''}</AssistantMarkdown>;
-                          if (part.type === 'reasoning') {
-                            return <AgentReasoning text={part.text ?? ''} />;
-                          }
-                          return null;
-                        }}
-                      />
-                    )
-                  }
-                </ThreadPrimitive.Messages>
-                <AgentContextTimeline events={compressionEvents} summary={contextSummary} />
-              </AgentThreadViewport>
-            </div>
-            {pendingQuestion ? null : <AgentScrollToBottom />}
-            <AgentComposerDock>
-              {pendingQuestion ? (
-                <AgentUserQuestionCard
-                  key={pendingQuestion.id}
-                  question={pendingQuestion}
-                  actionError={questionActionError}
-                  onClearActionError={() => setQuestionActionError(null)}
-                  onAnswer={async (input) => {
-                    const submittedQuestion = pendingQuestion;
-                    const submittedThreadId = activeThreadId;
-                    dismissedQuestionIdsRef.current.add(submittedQuestion.id);
-                    setQuestionActionError(null);
-                    setPendingQuestion(null);
-                    try {
-                      await client.agent.questions.answer(submittedQuestion.id, input);
-                    } catch (cause) {
-                      dismissedQuestionIdsRef.current.delete(submittedQuestion.id);
-                      if (contextRef.current.threadId !== submittedThreadId) return;
-                      setQuestionActionError(
-                        toQuestionActionError(cause, '回答提交失败，请检查后重试。'),
-                      );
-                      setPendingQuestion((current) => current ?? submittedQuestion);
+                          }}
+                        />
+                      )
                     }
-                  }}
-                  onSkip={async () => {
-                    const skippedQuestion = pendingQuestion;
-                    const skippedThreadId = activeThreadId;
-                    dismissedQuestionIdsRef.current.add(skippedQuestion.id);
-                    setQuestionActionError(null);
-                    setPendingQuestion(null);
-                    try {
-                      await client.agent.questions.skip(skippedQuestion.id);
-                    } catch (cause) {
-                      dismissedQuestionIdsRef.current.delete(skippedQuestion.id);
-                      if (contextRef.current.threadId !== skippedThreadId) return;
-                      setQuestionActionError(
-                        toQuestionActionError(cause, '暂时无法跳过，请稍后重试。'),
-                      );
-                      setPendingQuestion((current) => current ?? skippedQuestion);
-                    }
-                  }}
-                />
-              ) : (
-                <>
-                  {activeRuns.some((run) => run.threadId !== activeThreadId) ? (
-                    <AgentActiveRunHint message="其他会话正在后台运行；当前会话仍可独立提交" />
-                  ) : null}
-                  <AgentWebCreationOption
-                    selected={webCreationSelected}
-                    disabled={submitBlocked}
-                    onClick={() => {
-                      if (!canCreateWebsite) {
-                        setGithubLoginPromptOpen(true);
-                        return;
+                  </ThreadPrimitive.Messages>
+                  <AgentContextTimeline events={compressionEvents} summary={contextSummary} />
+                </AgentThreadViewport>
+              </div>
+              {pendingQuestion ? null : <AgentScrollToBottom />}
+              <AgentComposerDock>
+                {pendingQuestion ? (
+                  <AgentUserQuestionCard
+                    key={pendingQuestion.id}
+                    question={pendingQuestion}
+                    actionError={questionActionError}
+                    onClearActionError={() => setQuestionActionError(null)}
+                    onAnswer={async (input) => {
+                      const submittedQuestion = pendingQuestion;
+                      const submittedThreadId = activeThreadId;
+                      dismissedQuestionIdsRef.current.add(submittedQuestion.id);
+                      setQuestionActionError(null);
+                      setPendingQuestion(null);
+                      try {
+                        await client.agent.questions.answer(submittedQuestion.id, input);
+                      } catch (cause) {
+                        dismissedQuestionIdsRef.current.delete(submittedQuestion.id);
+                        if (contextRef.current.threadId !== submittedThreadId) return;
+                        setQuestionActionError(
+                          toQuestionActionError(cause, '回答提交失败，请检查后重试。'),
+                        );
+                        setPendingQuestion((current) => current ?? submittedQuestion);
                       }
-                      updateWebsiteMode(!webCreationSelected);
+                    }}
+                    onSkip={async () => {
+                      const skippedQuestion = pendingQuestion;
+                      const skippedThreadId = activeThreadId;
+                      dismissedQuestionIdsRef.current.add(skippedQuestion.id);
+                      setQuestionActionError(null);
+                      setPendingQuestion(null);
+                      try {
+                        await client.agent.questions.skip(skippedQuestion.id);
+                      } catch (cause) {
+                        dismissedQuestionIdsRef.current.delete(skippedQuestion.id);
+                        if (contextRef.current.threadId !== skippedThreadId) return;
+                        setQuestionActionError(
+                          toQuestionActionError(cause, '暂时无法跳过，请稍后重试。'),
+                        );
+                        setPendingQuestion((current) => current ?? skippedQuestion);
+                      }
                     }}
                   />
-                  <AgentComposerRoot>
-                    <AgentSkillSlashPicker
-                      candidates={skillCandidates}
-                      selectedNames={selectedSkillNames}
-                      loadState={skillLoadState}
-                      disabled={currentActiveRun !== null}
-                      onToggle={(name) =>
-                        setSelectedSkillNames((current) =>
-                          current.includes(name)
-                            ? current.filter((item) => item !== name)
-                            : [...current, name],
-                        )
-                      }
-                      onRetry={() => void loadSkillCandidates()}
-                    />
-                    <AgentComposerInput
-                      placeholder={
-                        submitBlocked && !modelDisabled
-                          ? '上一个任务还在进行中，请等待结束后再提交…'
-                          : '有什么问题尽管问，输入/ 调用技能'
-                      }
+                ) : (
+                  <>
+                    {activeRuns.some((run) => run.threadId !== activeThreadId) ? (
+                      <AgentActiveRunHint message="其他会话正在后台运行；当前会话仍可独立提交" />
+                    ) : null}
+                    <AgentWebCreationOption
+                      selected={webCreationSelected}
                       disabled={submitBlocked}
-                      maxLength={8000}
+                      onClick={() => {
+                        if (!canCreateWebsite) {
+                          setGithubLoginPromptOpen(true);
+                          return;
+                        }
+                        updateWebsiteMode(!webCreationSelected);
+                      }}
                     />
-                    <AgentDictationTranscript />
-                    <AgentComposerFooter>
-                      <AgentComposerActions>
-                        {webCreationSelected ? (
-                          <AgentWebCreationSelection
-                            disabled={submitBlocked}
-                            onClear={() => updateWebsiteMode(false)}
+                    <AgentComposerRoot>
+                      <AgentSkillSlashPicker
+                        candidates={skillCandidates}
+                        selectedNames={selectedSkillNames}
+                        loadState={skillLoadState}
+                        disabled={currentActiveRun !== null}
+                        onToggle={(name) =>
+                          setSelectedSkillNames((current) =>
+                            current.includes(name)
+                              ? current.filter((item) => item !== name)
+                              : [...current, name],
+                          )
+                        }
+                        onRetry={() => void loadSkillCandidates()}
+                      />
+                      <AgentComposerInput
+                        placeholder={
+                          submitBlocked && !modelDisabled
+                            ? '上一个任务还在进行中，请等待结束后再提交…'
+                            : '有什么问题尽管问，输入/ 调用技能'
+                        }
+                        disabled={submitBlocked}
+                        maxLength={8000}
+                      />
+                      <AgentDictationTranscript />
+                      <AgentComposerFooter>
+                        <AgentComposerActions>
+                          {webCreationSelected ? (
+                            <AgentWebCreationSelection
+                              disabled={submitBlocked}
+                              onClear={() => updateWebsiteMode(false)}
+                            />
+                          ) : null}
+                          <NewThreadButton onNewThread={startNewThread} />
+                        </AgentComposerActions>
+                        <AgentComposerSubmitGroup>
+                          <ThinkingEffortSelect
+                            value={thinkingEffort}
+                            disabled={modelDisabled}
+                            onChange={setThinkingEffort}
                           />
-                        ) : null}
-                        <NewThreadButton onNewThread={startNewThread} />
-                      </AgentComposerActions>
-                      <AgentComposerSubmitGroup>
-                        <ThinkingEffortSelect
-                          value={thinkingEffort}
-                          disabled={modelDisabled}
-                          onChange={setThinkingEffort}
-                        />
-                        <ModelSelect
-                          value={
-                            (selectedModel as TextModelId) ||
-                            modelOptions[0]?.value ||
-                            'qwen3.7-plus'
-                          }
-                          options={modelOptions}
-                          disabled={modelDisabled}
-                          boundHint={activeThreadId !== null}
-                          onChange={handleModelChange}
-                        />
-                        {dictationSupported ? (
-                          <AgentDictationButton disabled={submitBlocked} />
-                        ) : null}
-                        <AgentStopButton />
-                        <AuiIf condition={({ thread }) => !thread.isRunning && !submitBlocked}>
-                          <AgentSendButton />
-                        </AuiIf>
-                        <AuiIf condition={({ thread }) => !thread.isRunning && submitBlocked}>
-                          <AgentSendButtonDisabled />
-                        </AuiIf>
-                      </AgentComposerSubmitGroup>
-                    </AgentComposerFooter>
-                  </AgentComposerRoot>
-                  <AgentPrivacyNote />
-                </>
-              )}
-            </AgentComposerDock>
-          </AgentThreadRoot>
+                          <ModelSelect
+                            value={
+                              (selectedModel as TextModelId) ||
+                              modelOptions[0]?.value ||
+                              'qwen3.7-plus'
+                            }
+                            options={modelOptions}
+                            disabled={modelDisabled}
+                            boundHint={activeThreadId !== null}
+                            onChange={handleModelChange}
+                          />
+                          {dictationSupported ? (
+                            <AgentDictationButton disabled={submitBlocked} />
+                          ) : null}
+                          <AgentStopButton />
+                          <AuiIf condition={({ thread }) => !thread.isRunning && !submitBlocked}>
+                            <AgentSendButton />
+                          </AuiIf>
+                          <AuiIf condition={({ thread }) => !thread.isRunning && submitBlocked}>
+                            <AgentSendButtonDisabled />
+                          </AuiIf>
+                        </AgentComposerSubmitGroup>
+                      </AgentComposerFooter>
+                    </AgentComposerRoot>
+                    <AgentPrivacyNote />
+                  </>
+                )}
+              </AgentComposerDock>
+            </AgentThreadRoot>
+          </WebsiteArtifactWorkspace>
         </AgentConsolePanel>
       </AgentPageShell>
       {githubLoginPromptOpen
@@ -769,7 +777,7 @@ function AgentEnvironmentPanel({
       aria-live="polite"
       aria-label={`运行环境：${overallLabel}`}
       className={cn(
-        'liquid-glass fixed top-4 right-4 z-30 overflow-hidden border-line/80 shadow-[0_24px_70px_rgb(41_54_88/0.18)] transition-[width,border-radius] duration-200 motion-reduce:transition-none',
+        'liquid-glass absolute top-4 right-4 z-30 overflow-hidden border-line/80 shadow-[0_24px_70px_rgb(41_54_88/0.18)] transition-[width,border-radius] duration-200 motion-reduce:transition-none',
         isCollapsed ? 'w-44 rounded-[1rem]' : 'w-[22rem] rounded-[1.35rem] p-2',
       )}
     >
@@ -1483,6 +1491,7 @@ function WebsiteDeliveryCard({
   result,
   isError,
 }: Readonly<{ result?: SandboxToolResult | undefined; isError: boolean }>) {
+  const { openArtifact } = useWebsiteArtifactWorkspace();
   const projectId =
     typeof result?.audit?.projectId === 'string' ? result.audit.projectId : undefined;
   const runId = typeof result?.audit?.runId === 'string' ? result.audit.runId : undefined;
@@ -1498,6 +1507,19 @@ function WebsiteDeliveryCard({
   const [deliveryState, setDeliveryState] = useState<
     'checking' | 'current' | 'superseded' | 'unavailable'
   >('checking');
+  const artifact = useMemo<WebsiteArtifactDescriptor | null>(
+    () =>
+      projectId && runId && previewUrl && sourceUrl && distUrl
+        ? {
+            id: `${projectId}:${runId}`,
+            previewUrl,
+            sourceUrl,
+            distUrl,
+            ...(builtAt ? { builtAt } : {}),
+          }
+        : null,
+    [builtAt, distUrl, previewUrl, projectId, runId, sourceUrl],
+  );
 
   useEffect(() => {
     if (!projectId || !runId || isError) {
@@ -1519,71 +1541,82 @@ function WebsiteDeliveryCard({
     return () => controller.abort();
   }, [isError, projectId, runId]);
 
+  const current = deliveryState === 'current';
+
+  useEffect(() => {
+    if (current && artifact) openArtifact(artifact);
+  }, [artifact, current, openArtifact]);
+
   if (isError || !previewUrl || !sourceUrl || !distUrl) {
     return (
       <SandboxToolActivityCard toolName="create_website" result={result} running={false} isError />
     );
   }
 
-  const current = deliveryState === 'current';
-
   return (
-    <figure className="my-3 overflow-hidden rounded-2xl border border-line bg-surface-card shadow-[0_14px_38px_rgb(37_57_103/0.09)]">
-      {current ? (
-        <iframe
-          src={previewUrl}
-          title="网站预览"
-          className="h-[30rem] w-full border-0 bg-white"
-          sandbox="allow-forms allow-modals allow-popups allow-scripts"
-        />
-      ) : (
-        <div className="grid h-40 place-items-center bg-surface-inset px-6 text-center text-sm text-ink-muted">
+    <button
+      type="button"
+      disabled={!current || !artifact}
+      onClick={() => {
+        if (artifact) openArtifact(artifact);
+      }}
+      className={cn(
+        'group my-3 flex w-full max-w-[30rem] items-stretch gap-4 rounded-[1.6rem] border border-line bg-surface-card p-4 text-left shadow-[0_10px_30px_rgb(37_57_103/0.07)] transition',
+        current &&
+          'cursor-pointer hover:-translate-y-0.5 hover:border-brand/35 hover:shadow-[0_16px_38px_rgb(37_57_103/0.12)] focus-visible:outline-3 focus-visible:outline-brand-focus',
+        !current && 'cursor-not-allowed opacity-70',
+      )}
+      aria-label={current ? '打开网页开发产物' : undefined}
+    >
+      <span
+        aria-hidden="true"
+        className="relative grid size-[5.6rem] shrink-0 place-items-center overflow-hidden rounded-[1.15rem] bg-[linear-gradient(145deg,#eef0f8,#fafbff)]"
+      >
+        <span className="absolute top-3 left-3 h-1.5 w-12 rounded-full bg-[#d6d8e4]" />
+        <span className="absolute top-6 left-3 h-1.5 w-8 rounded-full bg-[#dfe1ea]" />
+        <span className="absolute right-3 bottom-3 left-3 h-10 rounded-lg border border-[#e4e6ef] bg-white">
+          <span className="absolute top-2 left-2 size-1 rounded-full bg-[#ff908a]" />
+          <span className="absolute top-2 left-4 size-1 rounded-full bg-[#ffd06f]" />
+          <span className="absolute top-2 left-6 size-1 rounded-full bg-[#76d89a]" />
+          <span className="absolute right-2 bottom-2 left-2 h-4 rounded bg-[#f0f1f7]" />
+        </span>
+      </span>
+      <span className="flex min-w-0 flex-1 flex-col py-1">
+        <span className="text-base font-semibold text-ink">网页开发</span>
+        <span className="mt-1 text-xs text-ink-muted">
           {deliveryState === 'checking'
             ? '正在确认最新产物…'
             : deliveryState === 'unavailable'
-              ? '暂时无法确认这份产物是否为最新版本'
-              : '这份产物已被后续修改覆盖'}
-        </div>
-      )}
-      <figcaption className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-        <div>
-          <p className="text-sm font-semibold text-ink">{current ? '网站已创建' : '网站产物'}</p>
-          <p className="mt-0.5 text-xs text-ink-muted">
-            {current
-              ? '预览仅在当前 Thread Sandbox 存活期间有效'
-              : deliveryState === 'unavailable'
-                ? '请稍后刷新重试'
-                : '已被覆盖，不再提供旧产物'}
-            {builtAt ? ` · ${new Date(builtAt).toLocaleString('zh-CN')}` : ''}
-          </p>
-        </div>
-        {current ? (
-          <div className="flex flex-wrap items-center gap-2">
-            <a
-              href={sourceUrl}
-              className="rounded-lg border border-line px-3 py-1.5 text-xs font-semibold text-ink transition hover:border-brand/40 hover:text-brand"
-            >
-              下载源码
-            </a>
-            <a
-              href={distUrl}
-              className="rounded-lg border border-line px-3 py-1.5 text-xs font-semibold text-ink transition hover:border-brand/40 hover:text-brand"
-            >
-              下载网站
-            </a>
-            <a
-              href={previewUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="rounded-lg bg-brand px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-hover"
-            >
-              打开预览
-            </a>
-          </div>
-        ) : null}
-      </figcaption>
-    </figure>
+              ? '暂时无法确认产物状态'
+              : deliveryState === 'superseded'
+                ? '已被后续修改覆盖'
+                : '预览、查看代码或下载'}
+        </span>
+        <span className="mt-auto flex items-end justify-between gap-3 pt-4">
+          <time className="text-xs tabular-nums text-ink-muted" dateTime={builtAt}>
+            {formatWebsiteBuiltAt(builtAt)}
+          </time>
+          <EyeIcon
+            aria-hidden="true"
+            className={cn('size-5 text-ink-muted transition', current && 'group-hover:text-brand')}
+          />
+        </span>
+      </span>
+    </button>
   );
+}
+
+function formatWebsiteBuiltAt(value: string | undefined): string {
+  if (!value) return '刚刚完成';
+  const date = new Date(value);
+  if (Number.isNaN(date.valueOf())) return '刚刚完成';
+  return new Intl.DateTimeFormat('zh-CN', {
+    month: '2-digit',
+    day: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date);
 }
 
 function ArtifactCard({

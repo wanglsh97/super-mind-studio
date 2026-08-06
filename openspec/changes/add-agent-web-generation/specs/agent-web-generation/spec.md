@@ -51,3 +51,29 @@ The current delivery SHALL have an owner-scoped same-origin preview only while t
 - **GIVEN** a website has been delivered
 - **WHEN** its owner deletes the originating Thread
 - **THEN** the Sandbox and preview become unavailable while source and dist downloads remain owner-accessible until their expiry
+
+### Requirement: Current website delivery opens in an in-thread Artifact workspace
+The Web SHALL render a successful current `create_website` result as a compact delivery card in the conversation and SHALL open an adjacent Website Artifact workspace from that card. The workspace SHALL provide isolated temporary webpage preview, bounded read-only source ZIP browsing, and owner-scoped source/build downloads without introducing a separate website API.
+
+#### Scenario: Current delivery is completed
+- **GIVEN** `create_website` has successfully made a delivery current
+- **WHEN** its Tool UI is rendered or the user activates its delivery card
+- **THEN** the conversation shows only the compact card and the Artifact workspace can display preview, source files and current downloads from the Tool result metadata
+
+#### Scenario: Source is browsed
+- **GIVEN** the current delivery exposes an owner-scoped `source.zip`
+- **WHEN** the user selects the code tab
+- **THEN** the browser fetches and parses the archive within configured compressed-size, entry-count, per-file and total-expanded-size limits, displays text files read-only and never executes archive contents
+
+#### Scenario: Delivery has been superseded
+- **GIVEN** a later successful delivery has replaced the Tool result's project run
+- **WHEN** the older delivery card is rendered
+- **THEN** it is marked as superseded and cannot open an old preview, source archive or download
+
+### Requirement: Deployment control is presentational only
+The Website Artifact workspace SHALL show a disabled deployment control as a future-entry affordance. It MUST NOT register a click action, send a network request, mutate local state beyond native focus behavior or claim that the website has been deployed.
+
+#### Scenario: User sees deployment control
+- **GIVEN** the current website Artifact workspace is open
+- **WHEN** the header actions are rendered
+- **THEN** the deployment control is visibly disabled and communicates that deployment is not yet available

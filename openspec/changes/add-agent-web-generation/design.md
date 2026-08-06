@@ -57,11 +57,23 @@ Tool 不接受任意构建命令或路径，它在受控目录中固定执行：
 
 Tool event 只记录同源 `previewPath`、run/project/artifact ID、有界构建摘要和过期时间。浏览器访问同源 Agent 预览路径时，API 验证 Session、Run owner、当前 WebProject 和 Thread Sandbox，然后签发十五分钟有效的平台预览 capability，并通过不要求用户 Session 的静态代理读取 Sandbox 资源。代理响应强制 CSP sandbox，预览 capability 不写入 Agent event、Pino 或数据库，避免 Docker runtime 的远端 IP endpoint 暴露给浏览器或被客户端安全策略拦截。
 
+### Decision 7: 交付结果使用对话内 Artifact 工作区
+
+成功的 `create_website` Tool UI 在消息流中只渲染一张紧凑交付卡，卡片负责显示“网页开发”、构建时间和当前/覆盖状态；当前产物卡可打开对话右侧的 Website Artifact 工作区。工作区不新增网站 API，而是复用 Tool result 已有的 `previewPath`、`sourceDownloadUrl` 和 `distDownloadUrl`：
+
+- “预览”页签通过隔离 iframe 加载仅在当前 Thread Sandbox 存活期有效的同源预览。
+- “代码”页签由浏览器按需下载当前 `source.zip`，在有界文件数与解压体积内解析文件树；源码只作为文本展示，不执行归档中的代码。
+- 顶部下载动作仍直接使用 owner-scoped 通用 Creation Asset 路由。
+- “部署”按钮首版保持禁用展示，不绑定点击处理、不调用 API，也不暗示已经发布。
+
+宽屏时工作区与聊天并排，窄屏时使用覆盖式面板，关闭后仍可从当前交付卡再次打开。新的成功覆盖会切换到最新产物，已覆盖卡不再打开旧预览或下载。
+
 ## Risks / Trade-offs
 
 - 固定技术栈减少自由度，但能使 Skill、Tool、构建校验和预览保持一致。
 - Sandbox 仍允许 npm、shell 和公网；安全边界依赖独立 Sandbox 资源隔离、无平台密钥和及时销毁。
 - 不保留版本意味着成功覆盖后无法恢复旧版；UI 必须明示“已被覆盖”而不伪装历史版本仍可用。
+- 浏览器解析源码 ZIP 会占用客户端内存，因此必须限制压缩包大小、文件数量、单文件预览大小和总解压体积，并为二进制或超限文件提供不可预览状态。
 
 ## Migration Plan
 
