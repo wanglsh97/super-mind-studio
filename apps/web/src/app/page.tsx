@@ -94,6 +94,7 @@ import {
 import { shouldStartNewThreadOnModelChange } from '@/utils/agent/agent-model-policy';
 import {
   AGENT_TOOL_ACTIVITY_LABELS,
+  agentToolDetailLabels,
   resolveAgentToolActivityState,
 } from '@/utils/agent/agent-tool-activity';
 import { resetThreadIfIdle } from '@/utils/agent/agent-thread-hydration';
@@ -1734,14 +1735,22 @@ function ToolActivityCard({
   });
   const statusLabel = AGENT_TOOL_ACTIVITY_LABELS[activityState];
   const hasDetails = Boolean(subject || detail || args || result);
+  const detailLabels = agentToolDetailLabels(toolName);
 
   return (
-    <section
+    <details
+      role="region"
       aria-label={`${toolCallLabel(toolName)}：${statusLabel}`}
       aria-busy={running}
-      className="my-2 min-w-0 overflow-hidden rounded-xl border border-line/85 bg-surface-card/75 text-[0.84rem] leading-5 text-ink shadow-[0_4px_14px_rgb(37_57_103/0.04)]"
+      className="group/details my-2 min-w-0 overflow-hidden rounded-xl border border-line/85 bg-surface-card/75 text-[0.84rem] leading-5 text-ink shadow-[0_4px_14px_rgb(37_57_103/0.04)]"
     >
-      <div className="flex min-w-0 items-center gap-2.5 px-3 py-2.5">
+      <summary
+        className={cn(
+          'flex min-w-0 list-none items-center gap-2.5 px-3 py-2.5 transition [&::-webkit-details-marker]:hidden',
+          hasDetails &&
+            'cursor-pointer hover:bg-surface-muted/45 focus-visible:outline-3 focus-visible:outline-brand-focus focus-visible:outline-offset-[-3px]',
+        )}
+      >
         <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-surface-muted text-ink-muted">
           <ToolIcon toolName={toolName} />
         </span>
@@ -1755,25 +1764,22 @@ function ToolActivityCard({
             {subject}
           </code>
         ) : null}
-      </div>
+        {hasDetails ? (
+          <ChevronRightIcon
+            aria-hidden="true"
+            className="size-3.5 shrink-0 text-ink-subtle transition-transform group-open/details:rotate-90"
+          />
+        ) : null}
+      </summary>
       {hasDetails ? (
-        <details className="group/details border-t border-line/70">
-          <summary className="flex cursor-pointer list-none items-center gap-1.5 px-3 py-2 text-[0.74rem] text-ink-muted transition hover:bg-surface-muted/55 hover:text-ink [&::-webkit-details-marker]:hidden">
-            <ChevronRightIcon
-              aria-hidden="true"
-              className="size-3.5 transition-transform group-open/details:rotate-90"
-            />
-            查看执行详情
-          </summary>
-          <div className="min-w-0 space-y-3 border-t border-line/60 bg-surface-inset/45 px-3 py-3">
-            {subject ? <ToolDetail label="目标" value={subject} code /> : null}
-            {detail ? <ToolDetail label="上下文" value={detail} /> : null}
-            {args ? <ToolDetail label="参数" value={JSON.stringify(args, null, 2)} code /> : null}
-            <ToolExecutionResult result={result} />
-          </div>
-        </details>
+        <div className="min-w-0 space-y-3 border-t border-line/60 bg-surface-inset/45 px-3 py-3">
+          {subject ? <ToolDetail label={detailLabels.subject} value={subject} code /> : null}
+          {detail ? <ToolDetail label={detailLabels.detail} value={detail} /> : null}
+          {args ? <ToolDetail label="参数" value={JSON.stringify(args, null, 2)} code /> : null}
+          <ToolExecutionResult result={result} labels={detailLabels} />
+        </div>
       ) : null}
-    </section>
+    </details>
   );
 }
 
@@ -1845,7 +1851,13 @@ function ToolDetail({
   );
 }
 
-function ToolExecutionResult({ result }: Readonly<{ result?: SandboxToolResult | undefined }>) {
+function ToolExecutionResult({
+  result,
+  labels,
+}: Readonly<{
+  result?: SandboxToolResult | undefined;
+  labels: ReturnType<typeof agentToolDetailLabels>;
+}>) {
   const summary = result?.summary;
   const audit = result?.audit;
   const hasAudit = audit !== undefined && Object.keys(audit).length > 0;
@@ -1854,12 +1866,9 @@ function ToolExecutionResult({ result }: Readonly<{ result?: SandboxToolResult |
 
   return (
     <div className="min-w-0 space-y-2">
-      <p className="text-[0.68rem] font-medium uppercase tracking-[0.08em] text-ink-subtle">结果</p>
-      {summary ? <p className="break-words text-[0.78rem] text-ink-muted">{summary}</p> : null}
+      {summary ? <ToolDetail label={labels.summary} value={summary} /> : null}
       {hasAudit ? (
-        <pre className="max-h-56 min-w-0 overflow-auto whitespace-pre-wrap break-all rounded-lg border border-line/70 bg-surface-card px-2.5 py-2 font-mono text-[0.73rem] leading-5 text-ink">
-          {JSON.stringify(audit, null, 2)}
-        </pre>
+        <ToolDetail label={labels.audit} value={JSON.stringify(audit, null, 2)} code />
       ) : null}
     </div>
   );

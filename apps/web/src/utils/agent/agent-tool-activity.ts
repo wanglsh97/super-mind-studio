@@ -29,3 +29,29 @@ export const AGENT_TOOL_ACTIVITY_LABELS: Record<AgentToolActivityState, string> 
   cancelled: '已取消',
   limit: '达到限制',
 }
+
+export interface AgentToolDetailLabels {
+  subject: string
+  detail: string
+  summary: string
+  audit: string
+}
+
+export function agentToolDetailLabels(toolName: string): AgentToolDetailLabels {
+  switch (toolName) {
+    case 'shell':
+      return { subject: '命令', detail: '工作目录', summary: '执行摘要', audit: '运行数据' }
+    case 'read_file':
+      return { subject: '文件', detail: '读取范围', summary: '读取摘要', audit: '文件信息' }
+    case 'write_file':
+      return { subject: '文件', detail: '写入方式', summary: '写入摘要', audit: '文件信息' }
+    case 'export_file':
+      return { subject: '文件', detail: '导出位置', summary: '导出摘要', audit: '产物信息' }
+    case 'create_website':
+      return { subject: '任务', detail: '构建配置', summary: '构建摘要', audit: '交付信息' }
+    case 'web_fetch':
+      return { subject: '网址', detail: '响应状态', summary: '响应摘要', audit: '响应信息' }
+    default:
+      return { subject: '服务', detail: '调用上下文', summary: '调用摘要', audit: '调用数据' }
+  }
+}

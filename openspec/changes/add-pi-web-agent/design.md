@@ -124,7 +124,7 @@ Pino 与 AgentToolCall 记录 URL、最终 URL、状态、字节数、耗时和�
 
 `/agent` 使用 assistant-ui primitives，但不复用当前单次请求的 LocalRuntime adapter。新增 Agent runtime adapter 消费 SDK 的 thread/run/event API，按 sequence 投影 text、reasoning、tool 状态、usage 和终态。
 
-同一次工具辅助执行中，reasoning 与最后一次 tool call 之前的中间进度文本聚合为一个“思考记录”；tool call 不再放入该折叠项，而是在消息流中按顺序显示为独立、紧凑的“执行工具”卡片。Pi harness 只能在当前 assistant message 结束后开始执行工具；UI 收到 `tool-status: running` 后必须将阶段标为“正在执行”，不得继续显示“正在思考”。工具卡片的摘要行固定显示可读名称、状态和主要目标，详细参数与结果默认折叠，成功/失败/取消/达到限制使用可区分但不喧宾夺主的状态标记，并在窄屏上防止命令、URL 或 JSON 溢出。最后一次 tool call 之后的最终回答始终留在思考记录外。Provider 未返回 reasoning 时不得伪造 reasoning 文本。最终回答中的链接经过现有 Markdown 消毒，并保留可点击来源 URL。
+同一次工具辅助执行中，reasoning 与最后一次 tool call 之前的中间进度文本聚合为一个“思考记录”；tool call 不再放入该折叠项，而是在消息流中按顺序显示为独立、紧凑的“执行工具”卡片。Pi harness 只能在当前 assistant message 结束后开始执行工具；UI 收到 `tool-status: running` 后必须将阶段标为“正在执行”，不得继续显示“正在思考”。工具卡片的折叠态只保留一行摘要，整行均可点击展开，不再另设“查看执行详情”控制。摘要固定显示可读名称、状态和主要对象；展开内容按工具语义使用“命令、工作目录、文件、网址、参数、执行摘要、运行数据、响应信息”等分类，不使用笼统的“目标、结果”。成功/失败/取消/达到限制使用可区分但不喧宾夺主的状态标记，并在窄屏上防止命令、URL 或 JSON 溢出。最后一次 tool call 之后的最终回答始终留在思考记录外。Provider 未返回 reasoning 时不得伪造 reasoning 文本。最终回答中的链接经过现有 Markdown 消毒，并保留可点击来源 URL。
 
 ### Decision 10: Skills, MCP and Memory are ports only in this change
 

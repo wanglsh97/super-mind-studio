@@ -40,7 +40,7 @@
 - [ ] 3.9 持久化限长工具结果与 requested/final URL、状态、类型、字节、耗时、截断和错误审计，验证 Pino/数据库均不记录敏感响应头或凭证
 - [ ] 3.10 完善 `/agent` tool card，实时展示目标 URL、running/succeeded/failed/cancelled、HTTP 状态和简短摘要，并验证消毒和窄屏布局
 - [x] 3.10a 将 reasoning、中间进度文本与 tool call 聚合为单一思考模块，验证运行中默认展开、终态自动收起及手动重开
-- [x] 3.10b 用“思考记录 + 独立执行卡”取代合并式思考模块，保证 message-end 先于工具执行，工具运行时不再显示“正在思考”，并重做通用 Tool UI 的状态、折叠详情和窄屏布局
+- [x] 3.10b 用“思考记录 + 独立执行卡”取代合并式思考模块，保证 message-end 先于工具执行，工具运行时不再显示“正在思考”，并重做通用 Tool UI 的状态、整卡展开、按工具分类详情和窄屏布局
 - [x] 3.10c 将 Sandbox 单命令默认上限调整为 180 秒，验证 fresh website bootstrap 不再因刚超过 60 秒被误判失败，且仍受 Agent Run 总时长约束
 - [ ] 3.11 执行 `web_fetch` SSRF 安全测试、内容抽取单测、工具集成测试、Agent E2E、typecheck、lint 和 build，全套测试不得依赖公网
 
