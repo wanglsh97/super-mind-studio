@@ -544,6 +544,59 @@ describe('AgentClient runs.subscribe', () => {
     assert.equal(events[0]?.sequence, 5)
   })
 
+  it('reconnects from the last sequence when the stream ends before [DONE]', async () => {
+    const requestedUrls: string[] = []
+    let calls = 0
+    const client = createAIGatewayClient({
+      fetch: async (input) => {
+        requestedUrls.push(String(input))
+        calls += 1
+        if (calls === 1) {
+          return sseResponse(
+            frame({ type: 'run-status', sequence: 0, runId, status: 'running' }) +
+              frame({ type: 'text-delta', sequence: 1, runId, messageId: 'm1', delta: '前' }),
+          )
+        }
+        return sseResponse(
+          frame({ type: 'text-delta', sequence: 2, runId, messageId: 'm1', delta: '后' }) +
+            frame({
+              type: 'run-terminal',
+              sequence: 3,
+              runId,
+              status: 'succeeded',
+              limitReason: null,
+            }) +
+            'data: [DONE]\n\n',
+        )
+      },
+    })
+
+    const events = await collect(client.agent.runs.subscribe(runId))
+
+    assert.deepEqual(
+      events.map((event) => event.sequence),
+      [0, 1, 2, 3],
+    )
+    assert.match(requestedUrls[0] ?? '', /after=-1$/)
+    assert.match(requestedUrls[1] ?? '', /after=1$/)
+  })
+
+  it('bounds reconnect attempts when every response ends prematurely', async () => {
+    let calls = 0
+    const client = createAIGatewayClient({
+      fetch: async () => {
+        calls += 1
+        return sseResponse('')
+      },
+    })
+
+    await assert.rejects(
+      () => collect(client.agent.runs.subscribe(runId)),
+      /ended before \[DONE\]/,
+    )
+    assert.equal(calls, 5)
+  })
+
   it('rejects non-increasing sequences as a protocol error', async () => {
     const frames =
       frame({ type: 'run-status', sequence: 2, runId, status: 'running' }) +

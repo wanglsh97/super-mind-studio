@@ -30,7 +30,7 @@ export const DEFAULT_SANDBOX_LIMITS: Readonly<SandboxLimits> = Object.freeze({
   diskBytes: 2 * GIB,
   processLimit: 64,
   sandboxTimeoutMs: 120_000,
-  commandTimeoutMs: 60_000,
+  commandTimeoutMs: 180_000,
   shellCallLimit: 20,
   egressBytes: 100 * MIB,
   outputPerCallBytes: MIB,

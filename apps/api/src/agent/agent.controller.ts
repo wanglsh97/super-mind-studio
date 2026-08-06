@@ -56,6 +56,8 @@ import {
   SkillUploadSessionService,
 } from './skills/upload/skill-upload-session.service'
 
+const AGENT_SSE_HEARTBEAT_INTERVAL_MS = 15_000
+
 @ApiTags('Agent')
 @ApiCookieAuth(USER_SESSION_COOKIE)
 @UseGuards(UserSessionGuard)
@@ -375,6 +377,11 @@ export class AgentController {
     }
     request.once('aborted', onClose)
     response.once('close', onClose)
+    const heartbeat = setInterval(() => {
+      if (closed || response.writableEnded) return
+      response.write(': heartbeat\n\n')
+    }, AGENT_SSE_HEARTBEAT_INTERVAL_MS)
+    heartbeat.unref()
 
     const writeEvent = (event: AgentStreamEvent): boolean => {
       if (event.sequence <= lastSequence) return false
@@ -413,6 +420,7 @@ export class AgentController {
       for (const row of tail) writeEvent(row.payload as AgentStreamEvent)
       this.endStream(response)
     } finally {
+      clearInterval(heartbeat)
       unsubscribe()
       request.removeListener('aborted', onClose)
       response.removeListener('close', onClose)

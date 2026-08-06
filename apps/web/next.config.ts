@@ -8,6 +8,10 @@ const workspaceRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)),
 const nextConfig: NextConfig = {
   output: 'standalone',
   reactStrictMode: true,
+  experimental: {
+    // Agent SSE 需要穿过同源 rewrite；必须覆盖最长 1 小时的 Agent Run。
+    proxyTimeout: 3_660_000,
+  },
   transpilePackages: ['@supermind/sdk'],
   turbopack: {
     root: workspaceRoot,

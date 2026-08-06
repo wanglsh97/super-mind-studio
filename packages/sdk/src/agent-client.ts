@@ -568,40 +568,100 @@ async function* subscribeRunEvents(
   runId: string,
   options: AgentEventSubscribeOptions | undefined,
 ): AsyncGenerator<AgentStreamEvent, void, void> {
-  const after = options?.after ?? -1
-  const url = `${baseUrl}/api/v1/agent/runs/${encodeURIComponent(runId)}/events?after=${after}`
-  const response = await fetchImplementation(url, {
-    method: 'GET',
-    headers: { accept: 'text/event-stream' },
-    ...(options?.signal === undefined ? {} : { signal: options.signal }),
-  })
-  const requestId = response.headers.get('x-request-id')
-  if (!response.ok) throw await responseError(response, requestId)
-  if (!response.headers.get('content-type')?.toLowerCase().includes('text/event-stream')) {
-    throw new AIGatewayProtocolError(
-      requestId ?? 'unknown',
-      'Agent events response is not text/event-stream',
-    )
-  }
-  if (!response.body) {
-    throw new AIGatewayProtocolError(requestId ?? 'unknown', 'Agent events response has no body')
-  }
+  let previousSequence = options?.after ?? -1
+  const maximumReconnects = 4
 
-  let previousSequence = after
-  let done = false
-  for await (const data of readSseData(response.body)) {
-    if (done) throw new AIGatewayProtocolError(runId, 'Agent SSE emitted data after [DONE]')
-    if (data === '[DONE]') {
-      done = true
-      continue
+  for (let reconnects = 0; ; reconnects += 1) {
+    if (options?.signal?.aborted) throw abortError()
+
+    try {
+      const url = `${baseUrl}/api/v1/agent/runs/${encodeURIComponent(runId)}/events?after=${previousSequence}`
+      const response = await fetchImplementation(url, {
+        method: 'GET',
+        headers: { accept: 'text/event-stream' },
+        ...(options?.signal === undefined ? {} : { signal: options.signal }),
+      })
+      const requestId = response.headers.get('x-request-id')
+      if (!response.ok) throw await responseError(response, requestId)
+      if (!response.headers.get('content-type')?.toLowerCase().includes('text/event-stream')) {
+        throw new AIGatewayProtocolError(
+          requestId ?? 'unknown',
+          'Agent events response is not text/event-stream',
+        )
+      }
+      if (!response.body) {
+        throw new AIGatewayProtocolError(requestId ?? 'unknown', 'Agent events response has no body')
+      }
+
+      let done = false
+      for await (const data of readSseData(response.body)) {
+        if (done) throw new AIGatewayProtocolError(runId, 'Agent SSE emitted data after [DONE]')
+        if (data === '[DONE]') {
+          done = true
+          continue
+        }
+        const event = decodeAgentEvent(parseJson(data, runId), runId)
+        if (event.sequence <= previousSequence) {
+          throw new AIGatewayProtocolError(runId, 'Agent SSE emitted a non-increasing sequence')
+        }
+        previousSequence = event.sequence
+        yield event
+      }
+      if (done) return
+      throw new AgentEventStreamInterruptedError()
+    } catch (error) {
+      if (options?.signal?.aborted || isAbortError(error)) throw error
+      if (!isRetryableAgentStreamError(error) || reconnects >= maximumReconnects) throw error
+      await waitForAgentStreamRetry(reconnects, options?.signal)
     }
-    const event = decodeAgentEvent(parseJson(data, runId), runId)
-    if (event.sequence <= previousSequence) {
-      throw new AIGatewayProtocolError(runId, 'Agent SSE emitted a non-increasing sequence')
-    }
-    previousSequence = event.sequence
-    yield event
   }
+}
+
+class AgentEventStreamInterruptedError extends Error {
+  constructor() {
+    super('Agent event stream ended before [DONE]')
+    this.name = 'AgentEventStreamInterruptedError'
+  }
+}
+
+function isRetryableAgentStreamError(error: unknown): boolean {
+  return (
+    error instanceof AgentEventStreamInterruptedError ||
+    (!(error instanceof AIGatewayProtocolError) &&
+      ((error instanceof AIGatewayError && error.retryable) || error instanceof TypeError))
+  )
+}
+
+function isAbortError(error: unknown): boolean {
+  return error instanceof DOMException && error.name === 'AbortError'
+}
+
+function abortError(): DOMException {
+  return new DOMException('The operation was aborted', 'AbortError')
+}
+
+async function waitForAgentStreamRetry(
+  reconnects: number,
+  signal: AbortSignal | undefined,
+): Promise<void> {
+  const delayMs = Math.min(100 * 2 ** reconnects, 800)
+  await new Promise<void>((resolve, reject) => {
+    let onAbort: (() => void) | undefined
+    const timeout = setTimeout(() => {
+      if (onAbort) signal?.removeEventListener('abort', onAbort)
+      resolve()
+    }, delayMs)
+    if (!signal) return
+    onAbort = () => {
+      clearTimeout(timeout)
+      reject(abortError())
+    }
+    signal.addEventListener('abort', onAbort, { once: true })
+    timeout.unref?.()
+    void Promise.resolve().then(() => {
+      if (signal.aborted) onAbort()
+    })
+  })
 }
 
 function parseJson(data: string, runId: string): unknown {
