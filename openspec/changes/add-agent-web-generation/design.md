@@ -25,7 +25,7 @@ SDK 只为 `CreateAgentRunRequest` 增加 `mode?: 'website'`。GitHub 门槛、S
 
 ### Decision 2: 内置 Skill 独占“怎么建”
 
-`website-building` 以标准 `SKILL.md`、`scripts/init.sh` 和 `scripts/package.py` 目录由平台随发布提供，不出现在市场、不允许用户编辑。服务启动时读取、校验名称与必需文件并缓存，缺失或损坏时 fail fast；website mode 每个 Run 都在模型调用前自动激活完整正文，普通 Chat 不加载。Skill 固定：
+`website-building` 以标准 `SKILL.md`、`scripts/init.sh` 和 `scripts/package.py` 目录由平台随发布提供，不出现在市场、不允许用户编辑。服务启动时读取、校验名称与必需文件并缓存，缺失或损坏时 fail fast；website mode 每个 Run 都在模型调用前自动激活完整正文，普通 Chat 不加载。它与市场 Skill 使用同一 Sandbox 根目录 `/workspace/.skills/<name>`，不建立平台专用目录。Skill 固定：
 
 - React + TypeScript + Vite
 - Tailwind CSS + shadcn/ui + Lucide

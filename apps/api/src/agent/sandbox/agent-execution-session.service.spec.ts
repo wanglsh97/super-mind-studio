@@ -81,18 +81,18 @@ describe('AgentExecutionSessionService Thread sandbox lifecycle', () => {
       service.readFile(
         'run-web',
         'user-1',
-        '/workspace/.platform-skills/website-building/SKILL.md',
+        '/workspace/.skills/website-building/SKILL.md',
       ),
     ).resolves.toMatchObject({ sizeBytes: expect.any(Number) })
     const init = await service.readFile(
       'run-web',
       'user-1',
-      '/workspace/.platform-skills/website-building/scripts/init.sh',
+      '/workspace/.skills/website-building/scripts/init.sh',
     )
     const packager = await service.readFile(
       'run-web',
       'user-1',
-      '/workspace/.platform-skills/website-building/scripts/package.py',
+      '/workspace/.skills/website-building/scripts/package.py',
     )
     const initScript = new TextDecoder().decode(init?.bytes)
     expect(initScript).toContain('npm install --global pnpm@9.15.9')
@@ -115,6 +115,9 @@ describe('AgentExecutionSessionService Thread sandbox lifecycle', () => {
       new TextEncoder().encode('thread-workspace'),
     )
     await service.activateSkill('run-1', 'user-1', 'test-skill')
+    await expect(
+      service.readFile('run-1', 'user-1', '/workspace/.skills/test-skill/SKILL.md'),
+    ).resolves.toMatchObject({ path: '/workspace/.skills/test-skill/SKILL.md' })
     await service.finishRun('run-1')
 
     const secondSandbox = await service.startRun('run-2', 'thread-1', 'user-1')

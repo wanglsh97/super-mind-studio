@@ -195,7 +195,7 @@ export class MockChatAdapter implements ChatAdapter {
         name: 'shell',
         arguments: {
           command: 'node scripts/clean.mjs',
-          workingDirectory: '/workspace/skills/mock-data-cleaner',
+          workingDirectory: '/workspace/.skills/mock-data-cleaner',
         },
       }
     }

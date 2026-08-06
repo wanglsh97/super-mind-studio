@@ -163,7 +163,7 @@ describe('Agent runtime tools', () => {
       'shell',
       {
         command: 'node scripts/clean.mjs',
-        workingDirectory: '/workspace/skills/mock-data-cleaner',
+        workingDirectory: '/workspace/.skills/mock-data-cleaner',
       },
       { ...context, toolCallId: 'tool-3' },
     )

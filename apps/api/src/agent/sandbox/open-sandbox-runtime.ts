@@ -13,6 +13,7 @@ import type { OnModuleDestroy } from '@nestjs/common'
 
 import {
   DEFAULT_SANDBOX_LIMITS,
+  SANDBOX_SKILLS_ROOT,
   type CreateSandboxInput,
   type InstalledSandboxSkillPackage,
   type InstallSandboxSkillPackageInput,
@@ -294,7 +295,7 @@ export class OpenSandboxRuntime implements SandboxRuntimePort, OnModuleDestroy {
     assertSkillName(input.skillName)
     assertExpectedPackage(input.expectedSizeBytes, input.expectedSha256)
     const state = await this.requireReadyState(input.sandboxId)
-    const rootPath = `/workspace/skills/${input.skillName}`
+    const rootPath = `${SANDBOX_SKILLS_ROOT}/${input.skillName}`
     const packagePath = `${rootPath}/package.zip`
     await state.instance.ensureDirectory(rootPath)
 

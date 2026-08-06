@@ -5,6 +5,7 @@ import { Inject, Injectable } from '@nestjs/common'
 import { PrismaService } from '../../database/prisma.service'
 import { WebProjectArchiveValidator } from '../../creations/web-project-archive.validator'
 import { AgentExecutionSessionService } from '../sandbox/agent-execution-session.service'
+import { SANDBOX_SKILLS_ROOT } from '../sandbox/sandbox-runtime.port'
 import {
   SKILL_OBJECT_STORE_PORT,
   type SkillObjectStorePort,
@@ -92,7 +93,7 @@ export class WebsiteDeliveryService {
     }
 
     const packaged = await this.sessions.runShell(runId, userId, {
-      command: 'python3 /workspace/.platform-skills/website-building/scripts/package.py',
+      command: `python3 ${SANDBOX_SKILLS_ROOT}/website-building/scripts/package.py`,
       workingDirectory: PROJECT_ROOT,
       ...(signal === undefined ? {} : { signal }),
     })

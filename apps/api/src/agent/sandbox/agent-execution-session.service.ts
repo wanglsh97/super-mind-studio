@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config'
 
 import {
   SANDBOX_RUNTIME_PORT,
+  SANDBOX_SKILLS_ROOT,
   type SandboxCommandResult,
   type SandboxFileResult,
   type SandboxRuntimePort,
@@ -117,7 +118,7 @@ export class AgentExecutionSessionService {
     signal?: AbortSignal,
   ): Promise<void> {
     const session = this.requireRunSession(runId, userId)
-    const root = `/workspace/.platform-skills/${this.websiteSkill.name}`
+    const root = `${SANDBOX_SKILLS_ROOT}/${this.websiteSkill.name}`
     await Promise.all(
       this.websiteSkill.files.map((file) =>
         this.sandboxes.writeFile({

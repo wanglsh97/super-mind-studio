@@ -21,8 +21,8 @@ Do not replace this stack. Do not add a database, server runtime, authentication
 ## Workspace contract
 
 - Project root: `/workspace/work`
-- Platform Skill files: `/workspace/.platform-skills/website-building`
-- Initialize a new empty project by running `bash /workspace/.platform-skills/website-building/scripts/init.sh` from `/workspace/work`.
+- Skill files: `/workspace/.skills/website-building`
+- Initialize a new empty project by running `bash /workspace/.skills/website-building/scripts/init.sh` from `/workspace/work`.
 - Keep application code under `src`, public static files under `public`, and reusable shadcn-style primitives under `src/components/ui`.
 - The package scripts must include `build`, and `pnpm build -- --base=./` must create `/workspace/work/dist/index.html` with relative asset paths so the ZIP and Sandbox proxy preview both work.
 

@@ -52,7 +52,7 @@ The first Agent Run in a Thread SHALL create and wait for exactly one sandbox. L
 
 ### Requirement: Active Skill packages download from private OSS into the Thread sandbox
 
-Before the first model invocation of every Run, the platform SHALL authorize and install every manually selected active Skill into the Thread sandbox. Later model activations SHALL use the same installation flow. Retained package files from an earlier Run MUST NOT imply current activation or authorization. NestJS SHALL issue only a short-lived read-only URL scoped to the current private OSS object; the sandbox SHALL download the package, verify expected byte size and SHA-256, and extract it under `/workspace/skills/<name>`. Package files SHALL remain ephemeral and MUST NOT be persisted to PostgreSQL. Signed URLs MUST NOT enter Agent events, database records or application logs.
+Before the first model invocation of every Run, the platform SHALL authorize and install every manually selected active Skill into the Thread sandbox. Later model activations SHALL use the same installation flow. Retained package files from an earlier Run MUST NOT imply current activation or authorization. NestJS SHALL issue only a short-lived read-only URL scoped to the current private OSS object; the sandbox SHALL download the package, verify expected byte size and SHA-256, and extract it under `/workspace/.skills/<name>`. Package files SHALL remain ephemeral and MUST NOT be persisted to PostgreSQL. Signed URLs MUST NOT enter Agent events, database records or application logs.
 
 #### Scenario: A selected package is installed before inference
 

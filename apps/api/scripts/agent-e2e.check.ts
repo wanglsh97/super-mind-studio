@@ -154,7 +154,7 @@ async function main(): Promise<void> {
     assert.equal(toolCalls[0]?.status, 'SUCCEEDED')
     assert.deepEqual(toolCalls[0]?.args, {
       command: 'node scripts/clean.mjs',
-      workingDirectory: '/workspace/skills/mock-data-cleaner',
+      workingDirectory: '/workspace/.skills/mock-data-cleaner',
     })
 
     // 每次模型调用一条 RequestLog + 一对一 BillingRecord。

@@ -6,6 +6,7 @@ import type {
 } from '@supermind/sdk'
 
 export const SANDBOX_RUNTIME_PORT = Symbol('SANDBOX_RUNTIME_PORT')
+export const SANDBOX_SKILLS_ROOT = '/workspace/.skills'
 
 const MIB = 1024 * 1024
 const GIB = 1024 * MIB

@@ -112,7 +112,7 @@ const events: AgentStreamEvent[] = [
     status: 'succeeded',
     sandboxId: 'sandbox-1',
     command: 'node scripts/clean.mjs',
-    workingDirectory: '/workspace/skills/data-cleaner',
+    workingDirectory: '/workspace/.skills/data-cleaner',
     exitCode: 0,
     durationMs: 321,
     stdout: { bytes: 8, truncated: false, content: '完成\n' },

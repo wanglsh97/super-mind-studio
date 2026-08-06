@@ -11,6 +11,7 @@
 - [x] 2.3 测试 Skill 内容完整、注入顺序和普通 Chat 隔离
 - [x] 2.4 将硬编码 Skill 迁移为仓库标准 `SKILL.md`/`scripts` 目录并同步 Sandbox 安装路径
 - [x] 2.5 启动时校验并缓存 `website-building`，测试损坏 fail-fast 和 website-only 正文注入
+- [x] 2.6 将所有 Sandbox Skill 安装路径统一为 `/workspace/.skills/<name>` 并移除平台专用目录
 
 ## 3. create_website 交付 Tool
 
