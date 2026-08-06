@@ -39,7 +39,7 @@ export function AgentPageShell({
     <main
       {...props}
       className={cn(
-        'relative flex h-[calc(100dvh-4.5rem)] min-h-[34rem] flex-col overflow-hidden p-3 pt-14 md:h-dvh md:p-[clamp(0.8rem,2vw,1.4rem)]',
+        'relative flex h-[calc(100dvh-4.5rem)] min-h-[34rem] flex-col overflow-hidden md:h-dvh',
         props.className,
       )}
     >
@@ -55,7 +55,7 @@ export function AgentConsolePanel({
   return (
     <section
       aria-label={label}
-      className="agent-console-surface relative flex h-full min-h-0 flex-1 flex-col overflow-hidden"
+      className="agent-console-surface relative flex h-full min-h-0 flex-1 flex-col overflow-hidden p-3 pt-14 md:p-[clamp(0.8rem,2vw,1.4rem)]"
     >
       {children}
     </section>
