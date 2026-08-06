@@ -7,8 +7,8 @@
 - **BREAKING**：Skill 内容真源从随 API 发布的 TypeScript 清单改为 PostgreSQL 有界元数据加私有阿里云 OSS 资源包；数据库不保存 ZIP 或包内文件正文，全局唯一 Skill 名称由首次发布者持有。
 - 所有 GitHub 登录用户可通过短时、单对象 OSS 凭证直传传统 ZIP Skill 包；首次发布由固定管理员审核，已发布 Skill 的后续上传直接覆盖当前 OSS 对象且不再次审核。
 - 公共市场提供分页、关键词搜索、固定分类筛选、最新/添加人数排序、详情、`SKILL.md` 预览和文件树；用户最多添加 50 个 Skill。
-- **BREAKING**：取消已安装 Skill 的启用/停用语义，改为“已添加/未添加”；下架后所有用户的新 Agent Run 立即不能激活该 Skill。
-- 每个 Agent Thread 首次执行时创建一个可跨多轮 Run 复用的 OpenSandbox Linux 沙箱；默认最大生命周期和空闲清理上限均由 `SANDBOX_TIMEOUT_SECONDS=3600` 控制。手动选择的 active Skills 在首次模型调用前通过短时只读 OSS URL 下载并安装，模型也可从已添加 Skill 的名称与简介目录中调用 `activate_skill` 继续激活其他 Skill。
+- **BREAKING**：取消已安装 Skill 的启用/停用语义，改为“已添加/未添加”；下架后新 Thread 或当前 Thread 中尚未缓存的 Skill 不能再下载，但当前 Thread Sandbox 已完整下载的包在其剩余生命周期内仍可激活。
+- 每个 Agent Thread 首次执行时创建一个可跨多轮 Run 复用的 OpenSandbox Linux 沙箱；默认最大生命周期和空闲清理上限均由 `SANDBOX_TIMEOUT_SECONDS=3600` 控制。每个 Run 绑定到 ready Sandbox 后会以 4 路并发异步增量预取当前用户所有已添加且已发布的候选 Skill，不阻塞 Run 启动；手动选择或模型调用 `activate_skill` 时优先读取带完成标记的 Thread 本地包，不再访问 PostgreSQL 或 OSS，预取失败或本地缺失时才按当前权限签发短时只读 OSS URL 并同步补下载一次。
 - 新增永久用户文件能力：输入附件与 Skill 结果存入私有 OSS，使用短时签名 URL 上传/下载，每用户总配额 1 GiB。
 - 新增独立 OpenSandbox 执行节点，首选 Docker + gVisor；每个 Agent Thread 最多一个临时沙箱并强制 CPU、内存、磁盘、时长和进程上限，同时继续按 Run 重置流量、Shell 次数和输出预算。
 - 本地开发与生产 API 均强制连接真实 OpenSandbox Server，删除进程内 Fake Runtime 与运行时选择开关；单元测试只允许替换 OpenSandbox SDK client，不能形成可被应用启动选择的 fallback。

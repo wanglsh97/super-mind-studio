@@ -65,7 +65,11 @@ Client-side folder preparation and server-side package inspection enforce the ac
 
 ### Decision 5: Added Skills are candidates; activation is a runtime transition
 
-The initial model context receives a bounded catalog of at most 50 added published Skill names and descriptions plus the `activate_skill` tool. Manual selection is integrated into the Agent Composer: typing `/` opens a searchable list of added published Skills, and the selected Skills remain visible as removable tags inside the Composer. A manually selected Skill activates before the first main model invocation. Activation validates user add state and current publication, creates a short-lived read-only URL for the exact private OSS object, downloads it into the Thread sandbox, verifies size and SHA-256, installs the package under `/workspace/.skills/<name>` and adds the complete escaped `SKILL.md` read from that package to subsequent context. The URL is never persisted or logged. Package files may remain in the Thread workspace between Runs, but every Run re-authorizes activation and rebuilds its own active-Skill manifest; retained bytes never imply retained permission.
+The initial model context receives a bounded catalog of at most 50 added published Skill names and descriptions plus the `activate_skill` tool. Manual selection is integrated into the Agent Composer: typing `/` opens a searchable list of added published Skills, and the selected Skills remain visible as removable tags inside the Composer. After every Run binds to a ready Thread sandbox and resets Run state, the API starts a four-lane incremental background prefetch for every currently added published candidate. Prefetch first compares the current candidate hash with the sandbox completion marker, downloads only a missing or changed package, and never blocks sandbox or Run readiness. Candidate failures are isolated and logged without failing the Run. The same Skill has a single in-flight prefetch across Run refreshes.
+
+Installation deliberately uses the accepted simple-overwrite model. It invalidates the completion marker, clears `/workspace/.skills/<name>`, downloads and verifies the ZIP, expands every package file into the fixed directory, and writes a JSON completion marker containing Skill identity and SHA-256 last. No version directory or old-package fallback is retained. A manually selected Skill activates before the first main model invocation. Activation waits for an in-flight prefetch of the same name, then reads a complete local package without querying PostgreSQL or signing an OSS URL. If prefetch failed or the local package is absent/incomplete, activation performs the existing current added/published authorization and one synchronous signed download/install attempt. The complete escaped `SKILL.md` read from the sandbox-cached ZIP is then added to subsequent context. Signed URLs are never persisted or logged.
+
+The completion marker is intentionally treated as a Thread-local cached grant. Removing a Skill from the user's list or administrator delisting it prevents new downloads but does not revoke a package already completed in the current Thread sandbox; it remains activatable until that sandbox is destroyed. This also means a sandbox script can modify the local marker, an explicitly accepted simplicity/security trade-off. Every Run still rebuilds its in-memory active-Skill manifest, so one activation remains idempotent only within that Run.
 
 A Skill activates at most once per Run. There is no separate active-Skill count; context and Run budgets are authoritative. The manifest records the observed package hash because no retained revision is available after overwrite.
 
@@ -87,7 +91,7 @@ OpenSandbox is selected over E2B and Daytona after research: it is Apache-2.0, s
 
 ### Decision 7: Sandbox lifetime is one Agent Thread
 
-The first Agent Run in a Thread creates and waits for exactly one sandbox, including Runs with no selected Skill. Later Runs in the same Thread reuse that sandbox until its hard lifetime or idle cleanup deadline. Before the first model invocation of every Run, all manually selected active Skills are re-authorized and installed from the current private OSS object; later model-selected Skills use the same flow. Retained package files and work files remain available to later Runs in that Thread, while Run activation state and Shell/output counters reset at each Run boundary. All active Skills use `/workspace/.skills/<name>`, input files use `/workspace/input`, writable work uses `/workspace/work`, and explicit exports use `/workspace/output`.
+The first Agent Run in a Thread creates and waits for exactly one sandbox, including Runs with no selected Skill. Candidate Skill prefetch starts in the background after each Run reset and belongs to the Thread lifecycle: cancelling or finishing one Run stops waiting for it but does not cancel the download. Later Runs in the same Thread reuse that sandbox until its hard lifetime or idle cleanup deadline and run the same incremental cache check, so newly added and updated Skills can be prefetched without freezing the creation-time catalog. Removed or delisted candidates are no longer refreshed, while their already completed local packages remain available in that Thread by the accepted sticky-cache rule. Retained package files and work files remain available to later Runs in that Thread, while Run activation state and Shell/output counters reset at each Run boundary. All active Skills use `/workspace/.skills/<name>`, input files use `/workspace/input`, writable work uses `/workspace/work`, and explicit exports use `/workspace/output`.
 
 `AgentThread` persists sandbox ID, status, creation, last-use and expiry timestamps. `AgentRun.sandboxId` is no longer unique because multiple Runs may audit the same sandbox. Run terminal paths release the Run binding and mark the Thread sandbox idle instead of destroying it. Deleting the Thread destroys the sandbox before removing Thread metadata. A process-local deadline schedules idempotent cleanup; API startup restores future deadlines and reconciles already-expired Thread sandboxes without BullMQ. OpenSandbox's hard TTL remains the final safety boundary.
 
@@ -134,14 +138,15 @@ The existing fixed administrator session protects review and delist operations. 
 
 | Failure | Result |
 | --- | --- |
-| OSS package missing/hash mismatch | activation tool fails; no prior/local fallback |
+| Candidate prefetch fails | keep the sandbox and Run ready, log a bounded warning, and retry that Skill once synchronously if it is later activated |
+| OSS package missing/hash mismatch and no completed local package | activation tool fails; no old-directory fallback |
 | OpenSandbox unavailable | Run fails or reaches an explicit sandbox-unavailable terminal reason |
 | Sandbox command timeout | command is cancelled best effort and returns a bounded limit result |
 | Run cancellation | stop current work, export no new files, release the Run binding and retain the Thread sandbox if healthy |
 | Thread deletion or idle/hard expiry | destroy the Thread sandbox idempotently and persist destroyed state before metadata removal when possible |
 | Output export fails | preserve Run/tool error and do not advertise a downloadable file |
 | OSS file deletion fails | hide file, retain cleanup state and count bytes against quota |
-| Skill delisted during an active Run | current execution may finish; later activation is denied |
+| Skill removed or delisted after local installation | new downloads are denied, but the completed package remains activatable in the current Thread until sandbox destruction |
 
 ## Risks / Trade-offs
 
@@ -152,6 +157,9 @@ The existing fixed administrator session protects review and delist operations. 
 - [OpenSandbox or gVisor compatibility differs from ordinary Linux] → Pin tested versions and run a package compatibility/limit PoC before production rollout.
 - [A dedicated execution node adds cost and operations] → Lazy Thread sandboxes, strict 30-minute TTL, idle cleanup, metrics and leak reconciliation bound usage; publish measured concurrency and monthly ECS cost after PoC.
 - [Direct OSS finalization and database state can diverge] → Use explicit upload sessions, idempotent finalization and compensating cleanup rather than a distributed transaction.
+- [Prefetching up to 50 candidate packages increases OSS, CPU and sandbox-disk pressure] → Bound concurrent installs, isolate per-Skill failures and keep activation fallback authoritative; the existing sandbox disk limit may leave oversized candidate sets partially prefetched without failing Run startup.
+- [Sandbox scripts can modify a trusted local completion marker] → Accept the Thread-local risk for the simple cache design; destroying the Thread sandbox is the revocation boundary, and a future hardening change may move the grant to trusted server state.
+- [Administrator delisting does not revoke an already cached Thread package] → Accept execution until the Thread sandbox expires or is destroyed; operators must destroy affected Thread sandboxes when emergency revocation is required.
 - [Permanent user files accumulate cost] → Enforce 1 GiB per user, private object accounting and explicit deletion; no automatic retention is promised.
 
 ## Migration Plan

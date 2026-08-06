@@ -36,7 +36,7 @@ The first Agent Run in a Thread SHALL create and wait for exactly one sandbox. L
 
 - **GIVEN** a Thread has a healthy unexpired sandbox from an earlier completed Run
 - **WHEN** the user starts another Run in that Thread
-- **THEN** the platform reuses the same sandbox ID, resets Run-level counters and re-authorizes every active Skill
+- **THEN** the platform reuses the same sandbox ID, resets Run-level counters, incrementally prefetches current candidates and retains completed Thread-local Skill packages
 
 #### Scenario: A Run is cancelled
 

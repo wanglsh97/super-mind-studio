@@ -17,6 +17,7 @@ import {
   type CreateSandboxInput,
   type InstalledSandboxSkillPackage,
   type InstallSandboxSkillPackageInput,
+  type ReadInstalledSandboxSkillPackageInput,
   type RunSandboxCommandInput,
   type SandboxCommandResult,
   type SandboxDescriptor,
@@ -32,6 +33,14 @@ import { SkillPackageReader } from '../skills/package/skill-package-reader'
 const MIB = 1024 * 1024
 // Keep the legacy owner key so deployments can still discover and clean up pre-rebrand sandboxes.
 const RUNTIME_OWNER = 'ai-gateway-studio'
+const SKILL_PACKAGE_CACHE_DIRECTORY = '.packages'
+const SKILL_PACKAGE_MARKER = 'installed.json'
+
+interface CachedSkillPackageMarker {
+  skillId: string
+  skillName: string
+  packageSha256: string
+}
 
 interface OpenSandboxRuntimeState {
   descriptor: SandboxDescriptor
@@ -294,10 +303,20 @@ export class OpenSandboxRuntime implements SandboxRuntimePort, OnModuleDestroy {
     throwIfAborted(input.signal)
     assertSkillName(input.skillName)
     assertExpectedPackage(input.expectedSizeBytes, input.expectedSha256)
+    const cached = await this.readInstalledSkillPackage(input)
+    if (cached?.skillId === input.skillId && cached.packageSha256 === input.expectedSha256) {
+      return cached
+    }
+
     const state = await this.requireReadyState(input.sandboxId)
     const rootPath = `${SANDBOX_SKILLS_ROOT}/${input.skillName}`
-    const packagePath = `${rootPath}/package.zip`
+    const cachePath = `${SANDBOX_SKILLS_ROOT}/${SKILL_PACKAGE_CACHE_DIRECTORY}/${input.skillName}`
+    const packagePath = `${cachePath}/package.zip`
+    const markerPath = `${cachePath}/${SKILL_PACKAGE_MARKER}`
     await state.instance.ensureDirectory(rootPath)
+    await state.instance.ensureDirectory(cachePath)
+    await state.instance.writeFile(markerPath, new Uint8Array())
+    await this.clearSkillPackageRoot(state, rootPath, input.background === true, input.signal)
 
     let commandId = ''
     try {
@@ -313,7 +332,7 @@ export class OpenSandboxRuntime implements SandboxRuntimePort, OnModuleDestroy {
         ...(input.signal === undefined ? {} : { signal: input.signal }),
         onInit: (id) => {
           commandId = id
-          state.activeCommandIds.add(id)
+          if (!input.background) state.activeCommandIds.add(id)
         },
         onStdout: () => undefined,
         onStderr: () => undefined,
@@ -333,7 +352,7 @@ export class OpenSandboxRuntime implements SandboxRuntimePort, OnModuleDestroy {
       if (isAgentExecutionError(error)) throw error
       throw executionError('SKILL_PACKAGE_UNAVAILABLE', 'Sandbox 下载 Skill 资源包失败', true)
     } finally {
-      if (commandId) state.activeCommandIds.delete(commandId)
+      if (commandId && !input.background) state.activeCommandIds.delete(commandId)
     }
 
     const archive = await state.instance.readFile(packagePath)
@@ -355,12 +374,90 @@ export class OpenSandboxRuntime implements SandboxRuntimePort, OnModuleDestroy {
       await state.instance.ensureDirectory(posix.dirname(path))
       await state.instance.writeFile(path, file.bytes)
     }
-    state.usage.diskBytes += totalBytes
+    const marker = new TextEncoder().encode(
+      JSON.stringify({
+        skillId: input.skillId,
+        skillName: input.skillName,
+        packageSha256: input.expectedSha256,
+      } satisfies CachedSkillPackageMarker),
+    )
+    await state.instance.writeFile(markerPath, marker)
+    state.usage.diskBytes += totalBytes + marker.byteLength
     return {
       rootPath,
+      skillId: input.skillId,
+      skillName: input.skillName,
       packageSha256: input.expectedSha256,
       skillMarkdown: projection.skillMarkdown,
       files: projection.files.map((file) => ({ ...file })),
+    }
+  }
+
+  async readInstalledSkillPackage(
+    input: ReadInstalledSandboxSkillPackageInput,
+  ): Promise<InstalledSandboxSkillPackage | null> {
+    throwIfAborted(input.signal)
+    assertSkillName(input.skillName)
+    const state = await this.requireReadyState(input.sandboxId)
+    const rootPath = `${SANDBOX_SKILLS_ROOT}/${input.skillName}`
+    const cachePath = `${SANDBOX_SKILLS_ROOT}/${SKILL_PACKAGE_CACHE_DIRECTORY}/${input.skillName}`
+    try {
+      const marker = await state.instance.readFile(`${cachePath}/${SKILL_PACKAGE_MARKER}`)
+      if (!marker) return null
+      const manifest = parseCachedSkillPackageMarker(marker, input.skillName)
+      if (!manifest) return null
+      const archive = await state.instance.readFile(`${cachePath}/package.zip`)
+      if (
+        !archive ||
+        createHash('sha256').update(archive).digest('hex') !== manifest.packageSha256
+      ) {
+        return null
+      }
+      const projection = await new SkillPackageReader().read(archive)
+      return {
+        rootPath,
+        skillId: manifest.skillId,
+        skillName: manifest.skillName,
+        packageSha256: manifest.packageSha256,
+        skillMarkdown: projection.skillMarkdown,
+        files: projection.files.map((file) => ({ ...file })),
+      }
+    } catch (error) {
+      if (input.signal?.aborted) throw abortReason(input.signal)
+      if (isNotFoundError(error) || isInvalidLocalSkillPackage(error)) return null
+      throw normalizeUnavailable(error, '读取 Sandbox Skill 本地包失败')
+    }
+  }
+
+  private async clearSkillPackageRoot(
+    state: OpenSandboxRuntimeState,
+    rootPath: string,
+    background: boolean,
+    signal?: AbortSignal,
+  ): Promise<void> {
+    let commandId = ''
+    try {
+      const execution = await state.instance.runCommand({
+        command: `rm -rf -- ${shellQuote(rootPath)} && mkdir -p -- ${shellQuote(rootPath)}`,
+        workingDirectory: SANDBOX_SKILLS_ROOT,
+        timeoutSeconds: Math.max(1, Math.ceil(state.limits.commandTimeoutMs / 1_000)),
+        ...(signal === undefined ? {} : { signal }),
+        onInit: (id) => {
+          commandId = id
+          if (!background) state.activeCommandIds.add(id)
+        },
+        onStdout: () => undefined,
+        onStderr: () => undefined,
+      })
+      if (execution.exitCode !== 0) {
+        throw executionError('SKILL_PACKAGE_UNAVAILABLE', 'Sandbox 清理旧 Skill 目录失败', true)
+      }
+    } catch (error) {
+      if (signal?.aborted) throw abortReason(signal)
+      if (isAgentExecutionError(error)) throw error
+      throw executionError('SKILL_PACKAGE_UNAVAILABLE', 'Sandbox 清理旧 Skill 目录失败', true)
+    } finally {
+      if (commandId && !background) state.activeCommandIds.delete(commandId)
     }
   }
 
@@ -944,6 +1041,43 @@ function isNotFoundError(error: unknown): boolean {
     (typeof candidate.error?.message === 'string' &&
       /not found|no such/i.test(candidate.error.message))
   )
+}
+
+function isInvalidLocalSkillPackage(error: unknown): boolean {
+  return (
+    error instanceof Error &&
+    (error.name === 'SkillZipInspectionError' || error.name === 'SkillPackageReadError')
+  )
+}
+
+function parseCachedSkillPackageMarker(
+  bytes: Uint8Array,
+  expectedName: string,
+): CachedSkillPackageMarker | null {
+  try {
+    const value: unknown = JSON.parse(new TextDecoder().decode(bytes))
+    if (
+      typeof value !== 'object' ||
+      value === null ||
+      !('skillId' in value) ||
+      typeof value.skillId !== 'string' ||
+      value.skillId.length === 0 ||
+      !('skillName' in value) ||
+      value.skillName !== expectedName ||
+      !('packageSha256' in value) ||
+      typeof value.packageSha256 !== 'string' ||
+      !/^[a-f0-9]{64}$/.test(value.packageSha256)
+    ) {
+      return null
+    }
+    return {
+      skillId: value.skillId,
+      skillName: value.skillName,
+      packageSha256: value.packageSha256,
+    }
+  } catch {
+    return null
+  }
 }
 
 function validateLimits(limits: SandboxLimits): void {

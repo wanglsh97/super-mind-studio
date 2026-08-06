@@ -27,7 +27,7 @@
 - [x] 3.2 实现 pending_review → published/rejected 状态机、驳回原因和固定管理员审核 API
 - [x] 3.3 将审核、驳回和管理员下架与 `AdminAuditLog` 放入一致的事务边界，并覆盖失败回滚测试
 - [x] 3.4 实现 owner 对已发布 Skill 的同 key 直接覆盖和元数据更新，确认不创建 revision、不触发复审且更新 SHA-256
-- [x] 3.5 实现 owner/admin 立即下架、市场隐藏、既有添加记录保留和新 Run 激活拒绝
+- [x] 3.5 实现 owner/admin 立即下架、市场隐藏、既有添加记录保留和新 Thread/未缓存包下载拒绝
 - [x] 3.6 实现公开分页、关键词搜索、固定分类筛选、最新/添加人数排序和 Skill 详情 API
 - [x] 3.7 将 `UserAgentSkill` 迁移为无 enabled 的添加状态，实现幂等添加/移除、50 个上限、跨用户隔离和 addCount 一致性
 - [x] 3.8 扩展 `@supermind/sdk` 的市场、owner、添加/移除和管理员审核 client，覆盖 URL、credentials、分页和错误 envelope
@@ -56,6 +56,7 @@
   - [x] 5.5.1 改为每个 Run 启动即创建 Sandbox，active Skills 通过短时只读 OSS URL 下载、校验并安装；运行时不依赖 PostgreSQL 包内容投影
   - [x] 5.5.2 将 Sandbox 生命周期迁移为 Thread 级复用，增加 `SANDBOX_TIMEOUT_SECONDS=3600`，在 Run 终态保留、Thread 删除或空闲/硬超时后销毁，并按 Run 重置激活与资源计数
   - [x] 5.5.3 删除应用内 Fake Sandbox Runtime 和运行时选择开关，本地与生产 API 均强制配置真实 OpenSandbox Server；单元测试只替换 OpenSandbox SDK client
+  - [x] 5.5.4 在每个 Run 绑定 ready Thread Sandbox 后以 4 路并发异步增量预取全部候选 Skill，激活时直读 Thread 本地完成包，预取失败或缺失时按当前权限同步补下载一次
 - [x] 5.6 实现 autonomous Shell 工具、cwd、60 秒命令超时、20 次调用限制、AbortSignal 和后台进程终态清理
   - [x] 5.6.1 修复基础 Shell/read_file/write_file 被错误绑定到 Skill 激活状态的问题；无 active Skill 的 ready Run 也可使用 Thread workspace
 - [ ] 5.7 实现单次 1 MiB、Run 总计 5 MiB 工具输出截断及 100 MiB 出口流量终止，并将 limit reason 返回模型与 UI

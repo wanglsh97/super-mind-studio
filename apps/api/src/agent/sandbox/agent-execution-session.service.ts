@@ -23,6 +23,10 @@ interface ThreadExecutionSession {
   sandboxId: string
   createdAt: Date
   expiresAt: Date
+  skillPrefetches: Map<string, Promise<void>>
+  skillPrefetchLanes: Promise<void>[]
+  skillPrefetchCursor: number
+  skillPrefetchInitialization?: Promise<void>
   cleanupTimer?: ReturnType<typeof setTimeout>
 }
 
@@ -32,6 +36,8 @@ interface RunExecutionSession {
   thread: ThreadExecutionSession
   activeSkills: Map<string, ActivatedSkill>
 }
+
+const SKILL_PREFETCH_CONCURRENCY = 4
 
 @Injectable()
 export class AgentExecutionSessionService {
@@ -78,6 +84,7 @@ export class AgentExecutionSessionService {
       thread,
       activeSkills: new Map(),
     })
+    this.beginSkillPrefetch(thread)
     return thread.sandboxId
   }
 
@@ -93,18 +100,33 @@ export class AgentExecutionSessionService {
       return { sandboxId: session.thread.sandboxId, skill: active, alreadyActive: true }
     }
 
-    const [prepared] = await this.skills.prepareActivation(userId, [name], signal)
-    if (!prepared) throw new Error(`Skill activation returned no package: ${name}`)
-    const installed = await this.sandboxes.installSkillPackage({
+    await waitForPrefetch(session.thread.skillPrefetchInitialization, signal)
+    await waitForPrefetch(session.thread.skillPrefetches.get(name), signal)
+
+    let installed = await this.sandboxes.readInstalledSkillPackage({
       sandboxId: session.thread.sandboxId,
-      skillName: prepared.manifest.name,
-      downloadUrl: prepared.download.url,
-      expectedSha256: prepared.manifest.packageSha256,
-      expectedSizeBytes: prepared.download.metadata.sizeBytes,
+      skillName: name,
       ...(signal === undefined ? {} : { signal }),
     })
+    if (!installed) {
+      const [prepared] = await this.skills.prepareActivation(userId, [name], signal)
+      if (!prepared) throw new Error(`Skill activation returned no package: ${name}`)
+      installed = await this.sandboxes.installSkillPackage({
+        sandboxId: session.thread.sandboxId,
+        skillId: prepared.manifest.skillId,
+        skillName: prepared.manifest.name,
+        downloadUrl: prepared.download.url,
+        expectedSha256: prepared.manifest.packageSha256,
+        expectedSizeBytes: prepared.download.metadata.sizeBytes,
+        ...(signal === undefined ? {} : { signal }),
+      })
+    }
     const skill: ActivatedSkill = {
-      manifest: prepared.manifest,
+      manifest: {
+        skillId: installed.skillId,
+        name: installed.skillName,
+        packageSha256: installed.packageSha256,
+      },
       skillMarkdown: installed.skillMarkdown,
       files: installed.files.map((file) => ({ ...file })),
     }
@@ -315,6 +337,9 @@ export class AgentExecutionSessionService {
         sandboxId: ready.sandboxId,
         createdAt: new Date(ready.createdAt),
         expiresAt: new Date(ready.expiresAt),
+        skillPrefetches: new Map(),
+        skillPrefetchLanes: createSkillPrefetchLanes(),
+        skillPrefetchCursor: 0,
       }
       await this.threads.markSandboxReady(threadId, userId, {
         sandboxId: session.sandboxId,
@@ -357,7 +382,85 @@ export class AgentExecutionSessionService {
       sandboxId: row.sandboxId,
       createdAt: row.sandboxCreatedAt,
       expiresAt: row.sandboxExpiresAt,
+      skillPrefetches: new Map(),
+      skillPrefetchLanes: createSkillPrefetchLanes(),
+      skillPrefetchCursor: 0,
     }
+  }
+
+  private beginSkillPrefetch(session: ThreadExecutionSession): void {
+    const previous = session.skillPrefetchInitialization ?? Promise.resolve()
+    const initialization = previous.then(() => this.initializeSkillPrefetch(session))
+    session.skillPrefetchInitialization = initialization
+    void initialization
+  }
+
+  private async initializeSkillPrefetch(session: ThreadExecutionSession): Promise<void> {
+    let candidates: Awaited<ReturnType<ExecutableSkillService['listCandidates']>>
+    try {
+      candidates = await this.skills.listCandidates(session.userId)
+    } catch (error) {
+      this.logger.warn(
+        { error, threadId: session.threadId, sandboxId: session.sandboxId },
+        'Failed to list candidate Skills for sandbox prefetch',
+      )
+      return
+    }
+
+    for (const candidate of candidates) {
+      const existing = session.skillPrefetches.get(candidate.name)
+      if (existing) continue
+      const laneIndex = session.skillPrefetchCursor % SKILL_PREFETCH_CONCURRENCY
+      session.skillPrefetchCursor += 1
+      const lane = session.skillPrefetchLanes[laneIndex]!
+      const task = lane.then(() => this.prefetchSkill(session, candidate))
+      const settled = task.catch((error) => {
+        this.logger.warn(
+          {
+            errorCode: executionErrorCode(error),
+            threadId: session.threadId,
+            sandboxId: session.sandboxId,
+            skillName: candidate.name,
+          },
+          'Candidate Skill sandbox prefetch failed',
+        )
+      })
+      session.skillPrefetches.set(candidate.name, settled)
+      void settled.then(() => {
+        if (session.skillPrefetches.get(candidate.name) === settled) {
+          session.skillPrefetches.delete(candidate.name)
+        }
+      })
+      session.skillPrefetchLanes[laneIndex] = settled
+    }
+  }
+
+  private async prefetchSkill(
+    session: ThreadExecutionSession,
+    candidate: Awaited<ReturnType<ExecutableSkillService['listCandidates']>>[number],
+  ): Promise<void> {
+    const installed = await this.sandboxes.readInstalledSkillPackage({
+      sandboxId: session.sandboxId,
+      skillName: candidate.name,
+    })
+    if (
+      installed?.skillId === candidate.id &&
+      installed.packageSha256 === candidate.packageSha256
+    ) {
+      return
+    }
+
+    const [prepared] = await this.skills.prepareActivation(session.userId, [candidate.name])
+    if (!prepared) throw new Error(`Skill prefetch returned no package: ${candidate.name}`)
+    await this.sandboxes.installSkillPackage({
+      sandboxId: session.sandboxId,
+      skillId: prepared.manifest.skillId,
+      skillName: prepared.manifest.name,
+      downloadUrl: prepared.download.url,
+      expectedSha256: prepared.manifest.packageSha256,
+      expectedSizeBytes: prepared.download.metadata.sizeBytes,
+      background: true,
+    })
   }
 
   private scheduleCleanup(session: ThreadExecutionSession): void {
@@ -395,4 +498,46 @@ export class AgentExecutionSessionService {
     if (session && session.userId !== userId)
       throw new Error('Thread execution session owner mismatch')
   }
+}
+
+async function waitForPrefetch(
+  task: Promise<void> | undefined,
+  signal?: AbortSignal,
+): Promise<void> {
+  if (!task) return
+  if (!signal) {
+    await task
+    return
+  }
+  if (signal.aborted) throw abortReason(signal)
+  let onAbort: (() => void) | undefined
+  const aborted = new Promise<never>((_, reject) => {
+    onAbort = () => reject(abortReason(signal))
+    signal.addEventListener('abort', onAbort, { once: true })
+  })
+  try {
+    await Promise.race([task, aborted])
+  } finally {
+    if (onAbort) signal.removeEventListener('abort', onAbort)
+  }
+}
+
+function abortReason(signal: AbortSignal): Error {
+  return signal.reason instanceof Error ? signal.reason : new Error('Skill activation aborted')
+}
+
+function createSkillPrefetchLanes(): Promise<void>[] {
+  return Array.from({ length: SKILL_PREFETCH_CONCURRENCY }, () => Promise.resolve())
+}
+
+function executionErrorCode(error: unknown): string {
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    typeof error.code === 'string'
+  ) {
+    return error.code
+  }
+  return error instanceof Error ? error.name : 'UNKNOWN'
 }

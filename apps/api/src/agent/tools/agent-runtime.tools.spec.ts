@@ -26,6 +26,7 @@ const preparedSkill = {
 
 function setup() {
   const skills = {
+    listCandidates: jest.fn(async () => []),
     prepareActivation: jest.fn(async (_userId: string, names: readonly string[]) => {
       if (names[0] !== 'mock-data-cleaner' && names[0] !== 'second-skill') {
         throw Object.assign(new Error('Skill 未添加'), {

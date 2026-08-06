@@ -97,15 +97,26 @@ export interface SandboxFileResult {
 
 export interface InstallSandboxSkillPackageInput {
   sandboxId: string
+  skillId: string
   skillName: string
   downloadUrl: string
   expectedSha256: string
   expectedSizeBytes: number
+  /** 预取属于 Thread 生命周期，不应被单个 Run 的 reset/cancel 中断。 */
+  background?: boolean
+  signal?: AbortSignal
+}
+
+export interface ReadInstalledSandboxSkillPackageInput {
+  sandboxId: string
+  skillName: string
   signal?: AbortSignal
 }
 
 export interface InstalledSandboxSkillPackage {
   rootPath: string
+  skillId: string
+  skillName: string
   packageSha256: string
   skillMarkdown: string
   files: AgentSkillFileEntry[]
@@ -121,6 +132,9 @@ export interface SandboxRuntimePort {
   createSandbox(input: CreateSandboxInput): Promise<SandboxDescriptor>
   waitUntilReady(sandboxId: string, signal?: AbortSignal): Promise<SandboxDescriptor>
   runCommand(input: RunSandboxCommandInput): Promise<SandboxCommandResult>
+  readInstalledSkillPackage(
+    input: ReadInstalledSandboxSkillPackageInput,
+  ): Promise<InstalledSandboxSkillPackage | null>
   installSkillPackage(input: InstallSandboxSkillPackageInput): Promise<InstalledSandboxSkillPackage>
   writeFile(input: WriteSandboxFileInput): Promise<SandboxFileResult>
   readFile(sandboxId: string, path: string, signal?: AbortSignal): Promise<SandboxFileResult | null>
