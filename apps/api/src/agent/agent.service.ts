@@ -49,6 +49,7 @@ import {
   toThreadSummary,
 } from './agent.mappers'
 import { AgentExecutionSessionService } from './sandbox/agent-execution-session.service'
+import { DistPreviewArchiveService } from './website/dist-preview-archive.service'
 
 @Injectable()
 export class AgentService {
@@ -71,6 +72,8 @@ export class AgentService {
     private readonly userQuestions: AgentUserQuestionService,
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(ConfigService) private readonly config: ConfigService,
+    @Inject(DistPreviewArchiveService)
+    private readonly distPreview: DistPreviewArchiveService,
   ) {}
 
   async createThread(
@@ -276,7 +279,21 @@ export class AgentService {
   ) {
     const normalizedPath = normalizePreviewAssetPath(assetPath)
     const preview = await this.createPreviewEndpointForOwner(userId, runId, port)
-    const upstreamUrl = new URL(normalizedPath, ensureTrailingSlash(preview.url))
+    if (preview.mode === 'sandbox' && preview.url) {
+      try {
+        return await this.fetchSandboxPreviewAsset(preview.url, normalizedPath)
+      } catch (error) {
+        this.logger.warn(
+          { error, runId, port, path: normalizedPath },
+          'Sandbox website preview unavailable; falling back to DIST_ZIP',
+        )
+      }
+    }
+    return this.distPreview.readAsset(userId, runId, normalizedPath)
+  }
+
+  private async fetchSandboxPreviewAsset(previewUrl: string, normalizedPath: string) {
+    const upstreamUrl = new URL(normalizedPath, ensureTrailingSlash(previewUrl))
     let upstream: Response
     try {
       upstream = await fetch(upstreamUrl, {
@@ -312,7 +329,28 @@ export class AgentService {
       select: { id: true },
     })
     if (!current) throw new NotFoundException('网站预览已被覆盖或不存在')
-    return this.executionSessions.createThreadPreviewEndpoint(run.threadId, userId, port)
+
+    try {
+      const endpoint = await this.executionSessions.createThreadPreviewEndpoint(
+        run.threadId,
+        userId,
+        port,
+      )
+      return { mode: 'sandbox' as const, ...endpoint }
+    } catch (error) {
+      if (await this.distPreview.hasCurrentDist(userId, runId)) {
+        this.logger.warn(
+          { error, runId, threadId: run.threadId, port },
+          'Thread Sandbox unavailable for preview; using persisted DIST_ZIP',
+        )
+        return {
+          mode: 'archive' as const,
+          url: null,
+          expiresAt: new Date(Date.now() + 15 * 60 * 1_000).toISOString(),
+        }
+      }
+      throw new BadGatewayException('网站预览暂时不可用：Sandbox 已销毁且无持久化构建产物')
+    }
   }
 
   private async createWebsiteProjection(

@@ -78,6 +78,7 @@ import { createWebsiteTool } from './tools/create-website.tool'
 import { WebsiteDeliveryService } from './website/website-delivery.service'
 import { AgentPreviewProxyController } from './website/agent-preview-proxy.controller'
 import { AgentPreviewTokenService } from './website/agent-preview-token.service'
+import { DistPreviewArchiveService } from './website/dist-preview-archive.service'
 import { WebProjectArchiveValidator } from '../creations/web-project-archive.validator'
 
 export function resolveAgentTools(
@@ -211,6 +212,7 @@ export function createSandboxRuntime(config: ConfigService): SandboxRuntimePort 
     AgentOutputFileService,
     WebProjectArchiveValidator,
     WebsiteDeliveryService,
+    DistPreviewArchiveService,
     AgentPreviewTokenService,
     AgentMcpSdkClient,
     AgentMcpPreferenceRepository,

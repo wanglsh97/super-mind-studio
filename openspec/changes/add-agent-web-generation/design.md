@@ -50,19 +50,19 @@ Tool 不接受任意构建命令或路径，它在受控目录中固定执行：
 
 一个 Thread 对应一个 WebProject 和一个 Creation。`create_website` 每次成功时更新 `agentRunId`、产物指针、成功时间和 `expiresAt = now + 30 days`。旧 Agent tool event只保留审计信息，UI 对比当前 WebProject `agentRunId` 后标记为“已被覆盖”，不提供旧产物或回滚。
 
-### Decision 5: 删除 Thread 是预览终止点
+### Decision 5: 删除 Thread 是会话终止点；空闲销毁后仍可静态预览
 
-切换 Thread 或刷新页面不销毁 Sandbox，用户返回同一 Thread 仍可修改。删除 Thread 时先销毁 Sandbox，后删除对话数据；WebProject 与 CreationAsset 不与 Thread 建立级联外键，ZIP 保留至最后成功交付后 30 天。
+切换 Thread 或刷新页面不销毁 Sandbox，用户返回同一 Thread 仍可修改。删除 Thread 时先销毁 Sandbox，后删除对话数据；WebProject 与 CreationAsset 不与 Thread 建立级联外键，ZIP 保留至最后成功交付后 30 天。Sandbox 因空闲超时自动销毁后，当前未过期的 `DIST_ZIP` 仍可通过同一同源预览 capability 回放；已被覆盖的旧交付不得预览。
 
-### Decision 6: 预览凭证不入库
+### Decision 6: 预览凭证不入库，后端可在 Sandbox 与 DIST_ZIP 间回退
 
-Tool event 只记录同源 `previewPath`、run/project/artifact ID、有界构建摘要和过期时间。浏览器访问同源 Agent 预览路径时，API 验证 Session、Run owner、当前 WebProject 和 Thread Sandbox，然后签发十五分钟有效的平台预览 capability，并通过不要求用户 Session 的静态代理读取 Sandbox 资源。代理响应强制 CSP sandbox，预览 capability 不写入 Agent event、Pino 或数据库，避免 Docker runtime 的远端 IP endpoint 暴露给浏览器或被客户端安全策略拦截。
+Tool event 只记录同源 `previewPath`、run/project/artifact ID、有界构建摘要和过期时间。浏览器访问同源 Agent 预览路径时，API 验证 Session、Run owner 和当前 WebProject，优先使用存活 Thread Sandbox 的短时 endpoint；若 Sandbox 不可用则回退读取当前 `DIST_ZIP`。两种模式都签发十五分钟有效的平台预览 capability，并通过不要求用户 Session 的静态代理返回资源。代理响应强制 CSP sandbox，预览 capability 不写入 Agent event、Pino 或数据库，避免 Docker runtime 的远端 IP endpoint 暴露给浏览器或被客户端安全策略拦截。
 
 ### Decision 7: 交付结果使用对话内 Artifact 工作区
 
 成功的 `create_website` Tool UI 在消息流中只渲染一张紧凑交付卡，卡片负责显示“网页开发”、构建时间和当前/覆盖状态；当前产物卡可打开对话右侧的 Website Artifact 工作区。工作区不新增网站 API，而是复用 Tool result 已有的 `previewPath`、`sourceDownloadUrl` 和 `distDownloadUrl`：
 
-- “预览”页签通过隔离 iframe 加载仅在当前 Thread Sandbox 存活期有效的同源预览。
+- “预览”页签通过隔离 iframe 加载同源预览：Sandbox 存活时走沙箱静态服务，Sandbox 已自动销毁时回退到当前 `DIST_ZIP`。
 - “代码”页签由浏览器按需下载当前源码 ZIP，在有界文件数与解压体积内解析文件树；源码只作为文本交给开源 Prism 高亮组件，按扩展名选择语法，不执行归档中的代码。
 - 顶部只保留一个文案为“下载”的动作，通过 owner-scoped 通用 Creation Asset 路由获取 `<package-name>.zip`；同一源码包同时供代码页按需读取，不再显示构建 ZIP 下载按钮。旧产物若仍记录为 `source.zip`，下载路由从归档根 `package.json.name` 恢复真实文件名。
 - “部署”按钮首版保持禁用展示，不绑定点击处理、不调用 API，也不暗示已经发布。

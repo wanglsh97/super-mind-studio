@@ -39,18 +39,23 @@ A Thread SHALL have at most one current WebProject delivery. Each successful `cr
 - **WHEN** the modified project fails delivery validation
 - **THEN** the failed attempt does not replace the current artifacts and the Agent continues fixing the Sandbox project
 
-### Requirement: Preview exists only with the originating Thread Sandbox
-The current delivery SHALL have an owner-scoped same-origin preview only while the originating Thread Sandbox exists. Switching threads or refreshing SHALL NOT destroy the Sandbox. Deleting the Thread SHALL destroy it and invalidate preview while the final ZIP assets remain downloadable until expiry.
+### Requirement: Preview prefers live Sandbox and falls back to current DIST_ZIP
+The current delivery SHALL have an owner-scoped same-origin preview. While the originating Thread Sandbox is alive, the API SHALL prefer the short-lived Sandbox static endpoint. When the Sandbox has been destroyed or is otherwise unavailable, the API SHALL continue serving the same preview capability by reading the current unexpired `DIST_ZIP` Creation Asset through the existing platform preview proxy. Switching threads or refreshing SHALL NOT destroy the Sandbox. Deleting the Thread SHALL destroy the Sandbox; superseded deliveries MUST remain unpreviewable, while the final ZIP assets remain downloadable until expiry.
 
-#### Scenario: Owner opens current preview
+#### Scenario: Owner opens current preview with live Sandbox
 - **GIVEN** the owner requests the current project preview and the Thread Sandbox is alive
 - **WHEN** the API validates owner, run, current project and port
 - **THEN** it obtains a short-lived Sandbox endpoint without persisting its credential and serves it through the isolated platform preview capability
 
+#### Scenario: Owner opens current preview after Sandbox auto-destroy
+- **GIVEN** the owner requests the current project preview and the Thread Sandbox is gone, but the current unexpired `DIST_ZIP` still exists
+- **WHEN** the API validates owner, run and current project
+- **THEN** it issues the same short-lived preview capability and serves `index.html` plus nested static assets from the persisted dist archive through the platform preview proxy
+
 #### Scenario: Thread is deleted
 - **GIVEN** a website has been delivered
 - **WHEN** its owner deletes the originating Thread
-- **THEN** the Sandbox and preview become unavailable while source and dist downloads remain owner-accessible until their expiry
+- **THEN** the Sandbox becomes unavailable and superseded or detached deliveries cannot open preview, while source and dist downloads remain owner-accessible until their expiry
 
 ### Requirement: Current website delivery opens in an in-thread Artifact workspace
 The Web SHALL render a successful current `create_website` result as a compact delivery card in the conversation and SHALL open an adjacent Website Artifact workspace from that card. On wide screens, the Artifact workspace and the Agent chat panel SHALL be peer columns under the page shell, forming a sidebar/chat/artifact three-column composition rather than nesting the Artifact inside the chat panel. The page shell SHALL NOT inset the Artifact divider; responsive page padding SHALL belong only to the chat panel, while the Artifact column keeps a dedicated right-side gap. The Artifact SHALL reserve at least 32rem in the split desktop layout and have an accessible draggable divider that constrains resizing so the chat remains usable; keyboard adjustment SHALL also be available. The source tree SHALL remain compact enough that the code body retains a usable reading width at the Artifact minimum. The workspace SHALL provide isolated temporary webpage preview, bounded read-only source ZIP browsing, and one owner-scoped source ZIP download without introducing a separate website API. The only download control SHALL be labeled “下载”, target the source archive named `<package-name>.zip`, and MUST NOT render a redundant build ZIP download beside it.

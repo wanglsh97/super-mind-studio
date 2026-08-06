@@ -99,6 +99,10 @@ function setup() {
     $transaction: jest.fn(),
     webProject: { findFirst: jest.fn() },
   } as unknown as PrismaService
+  const distPreview = {
+    hasCurrentDist: jest.fn().mockResolvedValue(false),
+    readAsset: jest.fn(),
+  }
   const service = new AgentService(
     threads,
     runs,
@@ -111,6 +115,7 @@ function setup() {
     userQuestions,
     prisma,
     config,
+    distPreview as never,
   )
   return {
     threads,
@@ -122,6 +127,7 @@ function setup() {
     executionSessions,
     userQuestions,
     prisma,
+    distPreview,
     service,
   }
 }
@@ -537,7 +543,7 @@ describe('AgentService', () => {
     ).webProject.findFirst.mockResolvedValue({ id: 'project-1' })
 
     await expect(service.createPreviewEndpoint(user, 'run-current', 4173)).resolves.toEqual(
-      expect.objectContaining({ url: 'https://sandbox.invalid/preview' }),
+      expect.objectContaining({ mode: 'sandbox', url: 'https://sandbox.invalid/preview' }),
     )
     expect(executionSessions.createThreadPreviewEndpoint).toHaveBeenCalledWith(
       'thread-1',
@@ -551,6 +557,34 @@ describe('AgentService', () => {
     await expect(service.createPreviewEndpoint(user, 'run-current', 4173)).rejects.toBeInstanceOf(
       NotFoundException,
     )
+  })
+
+  it('falls back to persisted DIST_ZIP when the Thread Sandbox is gone', async () => {
+    const { service, runs, prisma, executionSessions, distPreview } = setup()
+    ;(runs.findForOwner as jest.Mock).mockResolvedValue({ id: 'run-current', threadId: 'thread-1' })
+    ;(
+      prisma as unknown as { webProject: { findFirst: jest.Mock } }
+    ).webProject.findFirst.mockResolvedValue({ id: 'project-1' })
+    ;(executionSessions.createThreadPreviewEndpoint as jest.Mock).mockRejectedValue(
+      new Error('当前 Thread 的 Sandbox 已不可用'),
+    )
+    ;(distPreview.hasCurrentDist as jest.Mock).mockResolvedValue(true)
+    ;(distPreview.readAsset as jest.Mock).mockResolvedValue({
+      status: 200,
+      contentType: 'text/html; charset=utf-8',
+      body: new TextEncoder().encode('<html></html>'),
+    })
+
+    await expect(service.createPreviewEndpoint(user, 'run-current', 4173)).resolves.toEqual(
+      expect.objectContaining({ mode: 'archive', url: null }),
+    )
+    await expect(
+      service.readPreviewAsset(user.id, 'run-current', 4173, ['index.html']),
+    ).resolves.toMatchObject({
+      status: 200,
+      contentType: 'text/html; charset=utf-8',
+    })
+    expect(distPreview.readAsset).toHaveBeenCalledWith(user.id, 'run-current', 'index.html')
   })
 
   it('proxies nested preview assets through the current owner-scoped Sandbox endpoint', async () => {

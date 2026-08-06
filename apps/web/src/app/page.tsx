@@ -77,7 +77,6 @@ import {
   NewThreadButton,
   UserMessage,
   AgentWebCreationOption,
-  AgentWebCreationSelection,
 } from '@/components/chat-thread-ui';
 import { AssistantMarkdown } from '@/components/chat/assistant-markdown';
 import { ProtectedUserPage } from '@/components/protected-user-page';
@@ -179,13 +178,21 @@ function AgentConsole() {
   const dismissedQuestionIdsRef = useRef(new Set<string>());
 
   useEffect(() => {
+    if (!activeThreadId) {
+      // 草稿未发送：不恢复选中，切换走 Thread 后回到新建也保持未选。
+      setWebCreationSelected(false);
+      writeWebsiteMode(window.localStorage, null, false);
+      return;
+    }
     setWebCreationSelected(readWebsiteMode(window.localStorage, activeThreadId));
   }, [activeThreadId]);
 
   const updateWebsiteMode = (selected: boolean) => {
     setWebCreationSelected(selected);
-    writeWebsiteMode(window.localStorage, activeThreadId, selected);
-    writeWebsiteMode(window.localStorage, null, selected);
+    // 仅已有 Thread 持久化；草稿阶段只留在内存，切换 Thread 即丢弃。
+    if (activeThreadId) {
+      writeWebsiteMode(window.localStorage, activeThreadId, selected);
+    }
   };
   const contextRef = useRef({
     threadId: activeThreadId as string | null,
@@ -568,7 +575,9 @@ function AgentConsole() {
                         placeholder={
                           submitBlocked && !modelDisabled
                             ? '上一个任务还在进行中，请等待结束后再提交…'
-                            : '有什么问题尽管问，输入/ 调用技能'
+                            : webCreationSelected
+                              ? '描述你的网站功能、风格'
+                              : '有什么问题尽管问，输入/ 调用技能'
                         }
                         disabled={submitBlocked}
                         maxLength={8000}
@@ -576,12 +585,6 @@ function AgentConsole() {
                       <AgentDictationTranscript />
                       <AgentComposerFooter>
                         <AgentComposerActions>
-                          {webCreationSelected ? (
-                            <AgentWebCreationSelection
-                              disabled={submitBlocked}
-                              onClear={() => updateWebsiteMode(false)}
-                            />
-                          ) : null}
                           <NewThreadButton onNewThread={startNewThread} />
                         </AgentComposerActions>
                         <AgentComposerSubmitGroup>
@@ -1542,10 +1545,6 @@ function WebsiteDeliveryCard({
   }, [isError, projectId, runId]);
 
   const current = deliveryState === 'current';
-
-  useEffect(() => {
-    if (current && artifact) openArtifact(artifact);
-  }, [artifact, current, openArtifact]);
 
   if (isError || !previewUrl || !sourceUrl || !distUrl) {
     return (

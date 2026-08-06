@@ -9,7 +9,7 @@ The system SHALL provide a “我的创作” list containing only the owner's s
 - **THEN** the list contains only that user's items and only one current card for each website Thread
 
 ### Requirement: Website cards expose only current expiring downloads
-A website creation card SHALL expose its current source/build ZIP through generic same-origin Creation Asset routes. The attachment names SHALL be derived from the validated Sandbox `package.json.name` as `<package-name>.zip` and `<package-name>-dist.zip`; a legacy `source.zip` record SHALL recover the same source filename from the archived root manifest when downloaded. It SHALL NOT expose an archived website preview, old delivery, persistent OSS URL or rollback action.
+A website creation card SHALL expose its current source/build ZIP through generic same-origin Creation Asset routes. The attachment names SHALL be derived from the validated Sandbox `package.json.name` as `<package-name>.zip` and `<package-name>-dist.zip`; a legacy `source.zip` record SHALL recover the same source filename from the archived root manifest when downloaded. It SHALL NOT expose an old superseded delivery preview, persistent OSS URL or rollback action. The current delivery MAY be replayed through the existing Agent preview proxy from the unexpired `DIST_ZIP` when the Thread Sandbox is unavailable.
 
 #### Scenario: Current asset is downloaded
 - **GIVEN** a current asset belongs to the authenticated user and has not expired

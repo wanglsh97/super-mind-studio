@@ -295,7 +295,9 @@ export function AgentDictationTranscript() {
 }
 
 export function AgentComposerFooter({ children }: Readonly<{ children: ReactNode }>) {
-  return <div className="flex items-center justify-between gap-1.5 dark:border-line">{children}</div>;
+  return (
+    <div className="flex items-center justify-between gap-1.5 dark:border-line">{children}</div>
+  );
 }
 
 export function AgentComposerActions({ children }: Readonly<{ children: ReactNode }>) {
@@ -319,46 +321,25 @@ export function AgentWebCreationOption({
         disabled={disabled}
         onClick={onClick}
         className={cn(
-          'inline-flex h-9 items-center justify-center gap-1.5 rounded-full border px-3 text-xs transition-colors',
+          'group inline-flex h-9 cursor-pointer items-center justify-center gap-1.5 rounded-full border px-3 text-xs transition-colors',
           selected
-            ? 'border-brand/45 bg-brand-subtle text-brand-hover dark:text-brand-light'
+            ? 'border-[#0B84FF]/50 bg-[#0B84FF]/10 text-[#0B84FF] hover:bg-[#0B84FF]/16 hover:text-[#0060D6] dark:border-[#64D2FF]/45 dark:bg-[#64D2FF]/14 dark:text-[#64D2FF] dark:hover:bg-[#64D2FF]/22 dark:hover:text-[#8ADEFF]'
             : 'border-line-soft bg-surface text-ink-muted hover:border-brand/35 hover:bg-brand-subtle/50 hover:text-brand-hover',
           'disabled:cursor-not-allowed disabled:opacity-45',
           focusRing,
         )}
       >
-        <svg aria-hidden="true" viewBox="0 0 20 20" className="size-4 shrink-0 fill-none stroke-current stroke-[1.7]">
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 20 20"
+          className="size-4 shrink-0 fill-none stroke-current stroke-[1.7]"
+        >
           <rect x="3.25" y="3.5" width="13.5" height="13" rx="2.25" />
           <path d="M3.5 7.5h13M7.5 7.5v8.75" strokeLinejoin="round" />
         </svg>
-        <span className="font-semibold">网页</span>
+        <span className="font-semibold">网页开发</span>
       </button>
     </div>
-  );
-}
-
-export function AgentWebCreationSelection({
-  onClear,
-  disabled,
-}: Readonly<{
-  onClear: () => void;
-  disabled?: boolean;
-}>) {
-  return (
-    <button
-      type="button"
-      onClick={onClear}
-      disabled={disabled}
-      className={cn(
-        'inline-flex min-h-8 items-center gap-1.5 rounded-lg bg-brand-subtle px-2 text-[0.66rem] font-semibold whitespace-nowrap text-brand-hover transition-colors hover:bg-brand/18 dark:text-brand-light disabled:cursor-not-allowed disabled:opacity-45',
-        focusRing,
-      )}
-      aria-label="取消网页创作"
-      title="取消网页创作"
-    >
-      <span>网页</span>
-      <span aria-hidden="true" className="text-[0.85rem] leading-none">×</span>
-    </button>
   );
 }
 

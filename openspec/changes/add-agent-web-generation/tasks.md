@@ -20,6 +20,7 @@
 - [x] 3.3 实现受控 `source.zip`/`dist.zip` 生成、二次校验和私有 OSS 临时对象写入
 - [x] 3.4 实现数据库事务原子切换产物指针、旧对象 best-effort 删除和 expiresAt 重置
 - [x] 3.5 实现受控静态服务、owner-scoped 同源预览重定向与 Thread 删除失效
+- [x] 3.6 Sandbox 自动销毁后，当前交付预览回退到未过期 DIST_ZIP 并通过同一 preview proxy 提供
 - [x] 3.6 测试成功交付、构建失败不覆盖、重复覆盖、owner 隔离和预览凭证不入库
 - [x] 3.7 将 `package.json.name` 设为项目命名真源，源码下载使用 `<package-name>.zip` 并兼容旧 `source.zip` 产物
 
