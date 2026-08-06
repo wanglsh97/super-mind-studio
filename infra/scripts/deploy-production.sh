@@ -149,13 +149,29 @@ leave_maintenance_mode() {
   MAINTENANCE_MODE=off compose up -d --no-deps --force-recreate nginx
 }
 
+wait_for_readiness() {
+  attempt=1
+  while [ "$attempt" -le 60 ]; do
+    if curl --fail --silent --show-error --max-time 5 \
+      "http://127.0.0.1:$http_port/health/ready" >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep 3
+    attempt=$((attempt + 1))
+  done
+  return 1
+}
+
 reset_tempo_trace_storage() {
   echo '发布前重置 Tempo 诊断 Trace 存储（仅 tempo-data，不影响 PostgreSQL）。'
   compose stop tempo otel-collector 2>/dev/null || true
+  compose rm -f tempo otel-collector 2>/dev/null || true
   compose_project_name="$(awk '/^name: / { print $2; exit }' "$COMPOSE_FILE")"
   tempo_volume="${compose_project_name}_tempo-data"
   if docker volume inspect "$tempo_volume" >/dev/null 2>&1; then
-    docker volume rm -f "$tempo_volume" || echo "警告：无法删除 Tempo 卷 ${tempo_volume}。" >&2
+    if ! docker volume rm -f "$tempo_volume"; then
+      echo "警告：无法删除 Tempo 卷 ${tempo_volume}，将跳过本次 Trace 存储重置。" >&2
+    fi
   fi
 }
 
@@ -190,19 +206,7 @@ if [ "$nginx_was_running" -eq 0 ]; then
   leave_maintenance_mode
 fi
 
-attempt=1
-ready=0
-while [ "$attempt" -le 60 ]; do
-  if curl --fail --silent --show-error --max-time 5 \
-    "http://127.0.0.1:$http_port/health/ready" >/dev/null 2>&1; then
-    ready=1
-    break
-  fi
-  sleep 3
-  attempt=$((attempt + 1))
-done
-
-if [ "$ready" -ne 1 ]; then
+if ! wait_for_readiness; then
   echo '生产 readiness 在 180 秒内未通过。' >&2
   compose ps >&2 || true
   compose logs --tail=200 migrate api nginx >&2 || true
@@ -211,6 +215,13 @@ fi
 
 if [ "$nginx_was_running" -eq 1 ]; then
   leave_maintenance_mode
+  if ! wait_for_readiness; then
+    echo '关闭维护页后 readiness 在 180 秒内未通过。' >&2
+    compose ps >&2 || true
+    compose logs --tail=200 nginx api web >&2 || true
+    enter_maintenance_mode
+    exit 1
+  fi
 fi
 
 if ! SMOKE_MODEL_ALIAS="$smoke_model_alias" \
