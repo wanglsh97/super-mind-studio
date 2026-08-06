@@ -419,8 +419,8 @@ function AgentConsole() {
         onUserQuestion={setPendingQuestion}
       />
       <AgentPageShell>
-        <AgentConsolePanel label="智能体">
-          <WebsiteArtifactWorkspace scopeKey={activeThreadId ?? 'new-thread'}>
+        <WebsiteArtifactWorkspace scopeKey={activeThreadId ?? 'new-thread'}>
+          <AgentConsolePanel label="智能体">
             <AgentEnvironmentPanel
               sandbox={sandboxTelemetry}
               mcpServers={mcpServers}
@@ -619,8 +619,8 @@ function AgentConsole() {
                 )}
               </AgentComposerDock>
             </AgentThreadRoot>
-          </WebsiteArtifactWorkspace>
-        </AgentConsolePanel>
+          </AgentConsolePanel>
+        </WebsiteArtifactWorkspace>
       </AgentPageShell>
       {githubLoginPromptOpen
         ? createPortal(

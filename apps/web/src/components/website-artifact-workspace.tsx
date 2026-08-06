@@ -72,15 +72,15 @@ export function WebsiteArtifactWorkspace({
 
   return (
     <WebsiteArtifactContext.Provider value={contextValue}>
-      <div className="flex h-full min-h-0 w-full">
-        <div
-          className={cn(
-            'relative flex min-w-0 flex-1 flex-col transition-[flex-basis,max-width] duration-300',
-            artifact && 'min-[1200px]:max-w-[44rem] min-[1200px]:basis-[42%]',
-          )}
-        >
-          {children}
-        </div>
+      <div
+        className={cn(
+          'flex h-full min-h-0 w-full min-w-0',
+          artifact
+            ? 'min-[1024px]:grid min-[1024px]:grid-cols-[minmax(0,1fr)_clamp(22rem,42%,40rem)] min-[1024px]:grid-rows-[minmax(0,1fr)]'
+            : 'min-[1024px]:grid min-[1024px]:grid-cols-1 min-[1024px]:grid-rows-[minmax(0,1fr)]',
+        )}
+      >
+        <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">{children}</div>
         {artifact ? <WebsiteArtifactPanel artifact={artifact} onClose={closeArtifact} /> : null}
       </div>
     </WebsiteArtifactContext.Provider>
@@ -130,7 +130,7 @@ function WebsiteArtifactPanel({
   return (
     <aside
       aria-label="网站产物"
-      className="fixed inset-0 z-[80] flex min-h-0 flex-col overflow-hidden bg-surface-card min-[1200px]:relative min-[1200px]:inset-auto min-[1200px]:z-auto min-[1200px]:min-w-0 min-[1200px]:flex-1 min-[1200px]:border-l min-[1200px]:border-line"
+      className="fixed inset-0 z-[80] flex min-h-0 flex-col overflow-hidden bg-surface-card min-[1024px]:relative min-[1024px]:inset-auto min-[1024px]:z-auto min-[1024px]:h-full min-[1024px]:w-full min-[1024px]:min-w-0 min-[1024px]:border-l min-[1024px]:border-line"
     >
       <header className="flex min-h-16 shrink-0 flex-wrap items-center gap-3 border-b border-line px-4 py-3 lg:px-5">
         <div className="mr-auto min-w-0">
