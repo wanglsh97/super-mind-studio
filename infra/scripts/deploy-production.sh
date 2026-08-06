@@ -149,6 +149,16 @@ leave_maintenance_mode() {
   MAINTENANCE_MODE=off compose up -d --no-deps --force-recreate nginx
 }
 
+reset_tempo_trace_storage() {
+  echo '发布前重置 Tempo 诊断 Trace 存储（仅 tempo-data，不影响 PostgreSQL）。'
+  compose stop tempo otel-collector 2>/dev/null || true
+  compose_project_name="$(awk '/^name: / { print $2; exit }' "$COMPOSE_FILE")"
+  tempo_volume="${compose_project_name}_tempo-data"
+  if docker volume inspect "$tempo_volume" >/dev/null 2>&1; then
+    docker volume rm -f "$tempo_volume" || echo "警告：无法删除 Tempo 卷 ${tempo_volume}。" >&2
+  fi
+}
+
 compose config >/dev/null
 compose build web api migrate
 
@@ -171,6 +181,7 @@ if ! compose up -d --remove-orphans postgres redis migrate api web; then
   exit 1
 fi
 
+reset_tempo_trace_storage
 if ! compose up -d --remove-orphans tempo otel-collector; then
   echo '警告：Tempo/otel-collector 启动失败，已继续发布（不影响业务主链路）。' >&2
 fi

@@ -289,7 +289,7 @@ services:
       retries: 10
       start_period: 300s
     cpus: '0.60'
-    mem_limit: 768m
+    mem_limit: 1024m
     pids_limit: 256
     logging: *bounded-logging
 
