@@ -45,6 +45,8 @@ export interface AgentToolDefinition<
   prepareArguments?(rawArgs: unknown): unknown
   /** 工具执行模式；有副作用的工具应声明 sequential。 */
   executionMode?: 'sequential' | 'parallel'
+  /** 服务端运行前策略；返回原因表示拒绝执行。 */
+  beforeExecute?(args: TArgs, context: AgentToolContext): Promise<string | undefined>
   execute(args: TArgs, context: AgentToolContext): Promise<AgentToolResult>
 }
 

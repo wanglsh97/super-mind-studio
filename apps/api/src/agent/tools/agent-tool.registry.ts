@@ -108,6 +108,27 @@ export class AgentToolRegistry {
       }
     }
 
+    if (tool.beforeExecute) {
+      try {
+        const reason = await tool.beforeExecute(validation.args as never, context)
+        if (reason !== undefined) {
+          return {
+            content: reason,
+            summary: '工具执行被策略阻止',
+            isError: true,
+            audit: { code: 'AGENT_TOOL_BLOCKED' },
+          }
+        }
+      } catch (error) {
+        return {
+          content: error instanceof Error ? error.message : '工具策略检查失败',
+          summary: '工具策略检查失败',
+          isError: true,
+          audit: { code: 'AGENT_TOOL_POLICY_FAILED' },
+        }
+      }
+    }
+
     const startedAt = performance.now()
     const span = this.telemetry.startSpan('agent.tool.invoke', { runId: context.runId, toolName: tool.name })
     try {

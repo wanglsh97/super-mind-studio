@@ -59,4 +59,31 @@ describe('toPiAgentTool error projection', () => {
     expect(received).toEqual({ items: [1, 2] })
     expect(tool.executionMode).toBe('sequential')
   })
+
+  it('blocks a call through the server-side policy before execution', async () => {
+    let executed = false
+    const definition: AgentToolDefinition = {
+      name: 'dangerous',
+      description: 'dangerous',
+      label: 'Dangerous',
+      riskLevel: 'destructive',
+      approvalPolicy: 'none',
+      parameters: { type: 'object', additionalProperties: true },
+      beforeExecute: async () => '服务端策略拒绝该操作',
+      execute: async () => {
+        executed = true
+        return { content: 'should not run', summary: 'bad', isError: false }
+      },
+    }
+    const registry = new AgentToolRegistry([definition])
+    const context = { toolCallId: 'call-1', signal: new AbortController().signal }
+    const result = await registry.execute('dangerous', {}, context)
+
+    expect(executed).toBe(false)
+    expect(result).toMatchObject({
+      isError: true,
+      summary: '工具执行被策略阻止',
+      audit: { code: 'AGENT_TOOL_BLOCKED' },
+    })
+  })
 })
