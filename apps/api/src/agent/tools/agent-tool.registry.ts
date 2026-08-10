@@ -102,7 +102,7 @@ export class AgentToolRegistry {
     }
 
     const startedAt = performance.now()
-    const span = this.telemetry.startSpan('agent.tool.invoke', {
+    const span = this.startToolSpan({
       runId: context.runId,
       toolName: tool.name,
     })
@@ -124,8 +124,7 @@ export class AgentToolRegistry {
         status: result.isError ? ('failed' as const) : ('succeeded' as const),
         errorCode: auditCode(result),
       }
-      this.telemetry.endSpan(span, result.isError ? 'error' : 'ok', attributes)
-      this.telemetry.recordToolInvocation(performance.now() - startedAt, attributes)
+      this.finishToolTelemetry(span, result.isError ? 'error' : 'ok', startedAt, attributes)
       return result
     } catch (error) {
       const attributes = {
@@ -134,8 +133,7 @@ export class AgentToolRegistry {
         status: context.signal.aborted ? ('cancelled' as const) : ('failed' as const),
         errorCode: error instanceof AgentToolExecutionError ? error.code : 'AGENT_TOOL_FAILED',
       }
-      this.telemetry.endSpan(span, 'error', attributes)
-      this.telemetry.recordToolInvocation(performance.now() - startedAt, attributes)
+      this.finishToolTelemetry(span, 'error', startedAt, attributes)
       if (error instanceof AgentToolExecutionError) throw error
       throw new AgentToolExecutionError({
         code: context.signal.aborted ? 'AGENT_TOOL_ABORTED' : 'AGENT_TOOL_FAILED',
@@ -148,6 +146,34 @@ export class AgentToolRegistry {
         audit: { code: context.signal.aborted ? 'AGENT_TOOL_ABORTED' : 'AGENT_TOOL_FAILED' },
         cause: error,
       })
+    }
+  }
+
+  private startToolSpan(attributes: Parameters<TelemetryService['startSpan']>[1]) {
+    try {
+      return this.telemetry.startSpan('agent.tool.invoke', attributes)
+    } catch {
+      return undefined
+    }
+  }
+
+  private finishToolTelemetry(
+    span: ReturnType<TelemetryService['startSpan']> | undefined,
+    status: 'ok' | 'error',
+    startedAt: number,
+    attributes: Parameters<TelemetryService['recordToolInvocation']>[1],
+  ): void {
+    if (span) {
+      try {
+        this.telemetry.endSpan(span, status, attributes)
+      } catch {
+        // Telemetry is best effort and must never replace a tool result or error.
+      }
+    }
+    try {
+      this.telemetry.recordToolInvocation(performance.now() - startedAt, attributes)
+    } catch {
+      // Telemetry is best effort and must never replace a tool result or error.
     }
   }
 }

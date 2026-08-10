@@ -208,6 +208,54 @@ describe('AgentToolRegistry', () => {
       known.execute('known', {}, { toolCallId: 't2', signal: new AbortController().signal }),
     ).rejects.toBe(knownError)
   })
+
+  it('does not let telemetry startup failures change a successful tool result', async () => {
+    const telemetry = {
+      startSpan: jest.fn(() => {
+        throw new Error('otel unavailable')
+      }),
+      recordToolInvocation: jest.fn(() => {
+        throw new Error('metrics unavailable')
+      }),
+    } as unknown as TelemetryService
+    const registry = new AgentToolRegistry(
+      [fakeTool('probe', async () => ({ content: 'ok', summary: 'ok', isError: false }))],
+      telemetry,
+    )
+
+    await expect(
+      registry.execute('probe', {}, { toolCallId: 't1', signal: new AbortController().signal }),
+    ).resolves.toEqual({ content: 'ok', summary: 'ok', isError: false })
+  })
+
+  it('does not let telemetry completion failures replace the original tool error', async () => {
+    const telemetry = {
+      startSpan: jest.fn(() => ({})),
+      endSpan: jest.fn(() => {
+        throw new Error('otel exporter failed')
+      }),
+      recordToolInvocation: jest.fn(() => {
+        throw new Error('metrics exporter failed')
+      }),
+    } as unknown as TelemetryService
+    const toolError = new AgentToolExecutionError({
+      code: 'SHELL_EXIT_NONZERO',
+      message: '命令退出码为 1。请检查命令输出后修正。',
+      retryable: true,
+    })
+    const registry = new AgentToolRegistry(
+      [
+        fakeTool('shell', async () => {
+          throw toolError
+        }),
+      ],
+      telemetry,
+    )
+
+    await expect(
+      registry.execute('shell', {}, { toolCallId: 't1', signal: new AbortController().signal }),
+    ).rejects.toBe(toolError)
+  })
 })
 
 describe('webFetchFixtureTool', () => {
