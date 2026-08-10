@@ -20,13 +20,11 @@ export function buildJudgeUserPrompt(input: {
   referenceAnswer: string
   content: string
 }): string {
-  return [
-    '【参考期望】',
-    input.referenceAnswer,
-    '',
-    '【助手最终回复】',
-    input.content,
-  ].join('\n')
+  return `【参考期望】
+${input.referenceAnswer}
+
+【助手最终回复】
+${input.content}`
 }
 
 export function parseJudgeResponse(raw: string): { pass: boolean; reason: string } {
