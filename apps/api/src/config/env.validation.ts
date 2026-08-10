@@ -59,6 +59,20 @@ const environmentSchema = z
       (value) => (value === '' ? undefined : value),
       z.string().url().optional(),
     ),
+    // LangSmith 仅用于离线 Agent Eval 脚本，不进入运行时 Nest 模块。
+    LANGSMITH_API_KEY: optionalSecret,
+    LANGSMITH_PROJECT: z.string().min(1).default('super-mind-studio-eval'),
+    LANGSMITH_TRACING: booleanFromEnv.default(false),
+    LANGSMITH_EVAL_LIVE: booleanFromEnv.default(false),
+    LANGSMITH_EVAL_MODEL: z.string().min(1).default('kimi'),
+    LANGSMITH_EVAL_JUDGE_MODEL: z.string().min(1).default('kimi'),
+    LANGSMITH_EVAL_GENERAL_DATASET: z.string().min(1).default('super-mind-studio-web-agent-eval-v1'),
+    LANGSMITH_EVAL_WEBSITE_DATASET: z
+      .string()
+      .min(1)
+      .default('super-mind-studio-website-agent-eval-v1'),
+    LANGSMITH_EVAL_GENERAL_TIMEOUT_MS: z.coerce.number().int().min(1_000).max(3_600_000).default(180_000),
+    LANGSMITH_EVAL_WEBSITE_TIMEOUT_MS: z.coerce.number().int().min(1_000).max(3_600_000).default(600_000),
     DATABASE_URL: z.string().min(1, 'DATABASE_URL 必填'),
     DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(50).default(10),
     REDIS_URL: z.string().min(1, 'REDIS_URL 必填'),

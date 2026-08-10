@@ -1,9 +1,21 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 
-import { loadAdminTableRows, loadAdminTables, loadAdminTableSchema } from './admin-tables'
+import {
+  displayAdminTableValue,
+  loadAdminTableRows,
+  loadAdminTables,
+  loadAdminTableSchema,
+} from './admin-tables'
 
 describe('admin table client', () => {
+  it('formats datetime cells as readable local timestamps', () => {
+    const formatted = displayAdminTableValue('2026-09-09T12:28:49.616Z', 'datetime')
+
+    assert.match(formatted, /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)
+    assert.doesNotMatch(formatted, /T|\.616Z/)
+  })
+
   it('loads capabilities and encoded paginated rows with same-origin credentials', async () => {
     const calls: Array<{ url: string; init?: RequestInit }> = []
     const fetchImplementation: typeof fetch = async (input, init) => {

@@ -7,7 +7,11 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { Suspense, useEffect, useMemo, useState } from 'react'
 
 import { AdminApiError, redirectToAdminLogin } from '@/utils/admin/admin-auth-client'
-import { loadAdminTableRows, loadAdminTableSchema } from '@/utils/admin/admin-tables'
+import {
+  displayAdminTableValue,
+  loadAdminTableRows,
+  loadAdminTableSchema,
+} from '@/utils/admin/admin-tables'
 import type {
   AdminTableCapability,
   AdminTablePage,
@@ -94,7 +98,8 @@ function AdminDatabasePageInner() {
         key: field.name,
         ellipsis: true,
         width: field.kind === 'json' ? 220 : 160,
-        render: (value: unknown) => renderCell(value, field.name, relationByField, tables),
+        render: (value: unknown) =>
+          renderCell(value, field.name, field.kind, relationByField, tables),
       }))
     : []
 
@@ -137,10 +142,11 @@ export default function AdminDatabasePage() {
 function renderCell(
   value: unknown,
   fieldName: string,
+  fieldKind: AdminTableCapability['fields'][number]['kind'],
   relationByField: Map<string, AdminTableRelation>,
   tables: AdminTableCapability[],
 ) {
-  const text = displayValue(value)
+  const text = displayAdminTableValue(value, fieldKind)
   const relation = relationByField.get(fieldName)
   if (relation && value !== null && value !== undefined && text !== '—') {
     const targetLabel =
@@ -159,11 +165,6 @@ function renderCell(
   )
 }
 
-function displayValue(value: unknown): string {
-  if (value === null || value === undefined) return '—'
-  if (typeof value === 'object') return JSON.stringify(value)
-  return String(value)
-}
 
 function handleError(error: unknown, setError: (message: string) => void) {
   if (error instanceof AdminApiError && error.status === 401) {

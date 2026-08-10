@@ -221,3 +221,7 @@ DATABASE_URL=postgresql://aigateway:password@localhost:5432/aigateway_test pnpm 
     # ECS容器内存不太够的时候执行，清除未被引用的镜像。
     docker image prune -af
 ```
+
+## 上下文压缩策略：
+
+Token 预算控制 + 分级压缩（历史 reasoning、 Tool Result） + 结构化摘要

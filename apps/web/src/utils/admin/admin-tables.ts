@@ -46,6 +46,28 @@ export interface AdminTablePage {
   pageCount: number
 }
 
+export function displayAdminTableValue(
+  value: unknown,
+  fieldKind?: AdminFieldKind,
+): string {
+  if (value === null || value === undefined) return '—'
+  if (fieldKind === 'datetime') return formatAdminDateTime(value)
+  if (typeof value === 'object') return JSON.stringify(value)
+  return String(value)
+}
+
+function formatAdminDateTime(value: unknown): string {
+  if (typeof value !== 'string' && !(value instanceof Date)) return String(value)
+
+  const date = value instanceof Date ? value : new Date(value)
+  if (Number.isNaN(date.getTime())) return String(value)
+
+  const pad = (part: number) => String(part).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(
+    date.getHours(),
+  )}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
+}
+
 export function loadAdminTables(fetchImplementation: typeof fetch = fetch) {
   return request<AdminTableCapability[]>(
     '/api/v1/admin/tables',

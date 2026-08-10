@@ -1,0 +1,4 @@
+schema: spec-driven
+created: 2026-08-07
+goal: 以轻量方式接入 LangSmith 离线 Eval：Mock 网关链路护栏 + 真实 kimi 的 web-agent L1/L3
+  评测；OTel/Tempo 继续负责请求链路，二者用 requestId/runId 配合。
