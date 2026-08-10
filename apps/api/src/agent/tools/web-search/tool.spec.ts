@@ -46,7 +46,8 @@ describe('web_search tool', () => {
           toolCallId: 'call-1',
           runId: 'run-1',
           signal: new AbortController().signal,
-          onProgress: (summary) => progress.push(summary),
+          onProgress: (summary) =>
+            progress.push(typeof summary === 'string' ? summary : summary.content),
         },
       ),
     ).resolves.toMatchObject({

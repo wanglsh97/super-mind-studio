@@ -453,6 +453,15 @@ export type AgentStreamEvent =
       status: AgentToolCallStatus
     }
   | {
+      type: 'tool-progress'
+      sequence: number
+      runId: string
+      toolCallId: string
+      toolName: string
+      content: string
+      details?: Record<string, unknown>
+    }
+  | {
       type: 'tool-result'
       sequence: number
       runId: string

@@ -111,6 +111,8 @@ export class AgentRunProjector {
         return this.onMessageEnd()
       case 'tool_execution_start':
         return this.onToolStart(event.toolCallId, event.toolName, event.args)
+      case 'tool_execution_update':
+        return this.onToolProgress(event.toolCallId, event.toolName, event.partialResult)
       case 'tool_execution_end':
         return this.onToolEnd(event.toolCallId, event.toolName, event.result, event.isError)
       default:
@@ -374,6 +376,22 @@ export class AgentRunProjector {
     const fileEvent = projectFileOperation(toolCallId, toolName, status, audit)
     if (fileEvent) events.push(this.emit(fileEvent))
     return events
+  }
+
+  private onToolProgress(toolCallId: string, toolName: string, partialResult: unknown): AgentStreamEvent[] {
+    const record = asRecord(partialResult)
+    const content = textFromContent(record.content)
+    if (!content) return []
+    const details = asRecord(record.details)
+    return [
+      this.emit({
+        type: 'tool-progress',
+        toolCallId,
+        toolName,
+        content,
+        ...(Object.keys(details).length === 0 ? {} : { details }),
+      }),
+    ]
   }
 
   private appendText(message: ProjectedMessage, kind: 'text' | 'reasoning', delta: string): void {

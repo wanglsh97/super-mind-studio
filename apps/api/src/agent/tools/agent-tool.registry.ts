@@ -68,7 +68,7 @@ export class AgentToolRegistry {
   }
 
   /**
-   * 解析工具、校验参数并执行。未知工具抛错；无效参数返回规范化失败结果且不调用 execute。
+   * 解析工具、校验参数并执行。所有工具失败均抛出 AgentToolExecutionError；无效参数不会调用 execute。
    */
   async execute(
     name: string,
@@ -86,18 +86,29 @@ export class AgentToolRegistry {
 
     const validation = validateToolArguments(tool.parameters, rawArgs)
     if (!validation.ok) {
-      return {
-        content: validation.message,
+      throw new AgentToolExecutionError({
+        code: validation.code,
+        message: `${validation.message}。请根据参数 schema 修正后重试。`,
         summary: '工具参数无效',
-        isError: true,
+        retryable: true,
         audit: { code: validation.code, issues: validation.issues },
-      }
+      })
     }
 
     const startedAt = performance.now()
     const span = this.telemetry.startSpan('agent.tool.invoke', { runId: context.runId, toolName: tool.name })
     try {
       const result = await tool.execute(validation.args, context)
+      if (result.isError) {
+        const code = auditCode(result) ?? 'AGENT_TOOL_FAILED'
+        throw new AgentToolExecutionError({
+          code,
+          message: result.content,
+          summary: result.summary,
+          retryable: result.audit?.retryable === true,
+          ...(result.audit === undefined ? {} : { audit: result.audit }),
+        })
+      }
       const attributes = { runId: context.runId, toolName: tool.name, status: result.isError ? 'failed' as const : 'succeeded' as const, errorCode: auditCode(result) }
       this.telemetry.endSpan(span, result.isError ? 'error' : 'ok', attributes)
       this.telemetry.recordToolInvocation(performance.now() - startedAt, attributes)
@@ -106,7 +117,14 @@ export class AgentToolRegistry {
       const attributes = { runId: context.runId, toolName: tool.name, status: context.signal.aborted ? 'cancelled' as const : 'failed' as const, errorCode: error instanceof AgentToolExecutionError ? error.code : 'AGENT_TOOL_FAILED' }
       this.telemetry.endSpan(span, 'error', attributes)
       this.telemetry.recordToolInvocation(performance.now() - startedAt, attributes)
-      throw error
+      if (error instanceof AgentToolExecutionError) throw error
+      throw new AgentToolExecutionError({
+        code: context.signal.aborted ? 'AGENT_TOOL_ABORTED' : 'AGENT_TOOL_FAILED',
+        message: error instanceof Error && error.message ? error.message : '工具执行失败，请检查工具输入和执行环境后重试。',
+        summary: context.signal.aborted ? '工具已取消' : '工具执行失败',
+        retryable: !context.signal.aborted,
+        audit: { code: context.signal.aborted ? 'AGENT_TOOL_ABORTED' : 'AGENT_TOOL_FAILED' },
+      })
     }
   }
 }

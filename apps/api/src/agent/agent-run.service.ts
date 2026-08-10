@@ -158,7 +158,8 @@ export class AgentRunService {
       const operation = persistQueue.then(async () => {
         // 必须先落库再广播：确保任何已投影到 SSE 的事件都已在 PostgreSQL 中可补读，
         // 避免订阅者在“已广播未入库”窗口做游标补读时丢失事件、产生 sequence 间隙。
-        if (events.length > 0) await this.runs.appendEvents(input.runId, events)
+        const persistedEvents = events.filter((event) => event.type !== 'tool-progress')
+        if (persistedEvents.length > 0) await this.runs.appendEvents(input.runId, persistedEvents)
         for (const event of events) this.bus.publish(input.runId, event)
       })
       persistQueue = operation

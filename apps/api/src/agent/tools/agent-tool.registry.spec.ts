@@ -122,17 +122,15 @@ describe('AgentToolRegistry', () => {
     )
     expect(called).toBe(0)
 
-    const invalid = await registry.execute('probe', { url: '' }, context)
-    expect(invalid.isError).toBe(true)
-    expect(invalid.audit).toMatchObject({ code: 'AGENT_TOOL_INVALID_ARGS' })
+    await expect(registry.execute('probe', { url: '' }, context)).rejects.toMatchObject({
+      code: 'AGENT_TOOL_INVALID_ARGS',
+      retryable: true,
+    })
     expect(called).toBe(0)
 
-    const extra = await registry.execute(
-      'probe',
-      { url: 'https://a.test', Authorization: 'nope' },
-      context,
-    )
-    expect(extra.isError).toBe(true)
+    await expect(
+      registry.execute('probe', { url: 'https://a.test', Authorization: 'nope' }, context),
+    ).rejects.toMatchObject({ code: 'AGENT_TOOL_INVALID_ARGS' })
     expect(called).toBe(0)
   })
 

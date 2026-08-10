@@ -143,6 +143,17 @@ export function decodeAgentEvent(value: unknown, expectedRunId?: string): AgentS
         toolName: id(record.toolName),
         status: toolStatus(record.status),
       }
+    case 'tool-progress': {
+      const details = asRecord(record.details)
+      return {
+        type,
+        ...base,
+        toolCallId: id(record.toolCallId),
+        toolName: id(record.toolName),
+        content: text(record.content),
+        ...(details === undefined ? {} : { details }),
+      }
+    }
     case 'tool-result': {
       const audit = asRecord(record.audit)
       return {

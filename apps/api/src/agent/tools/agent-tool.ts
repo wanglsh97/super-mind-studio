@@ -11,7 +11,7 @@ export interface AgentToolContext {
   runId?: string
   userId?: string
   /** 报告执行中的进度/状态（可选，用于 UI 与事件流）。 */
-  onProgress?: (summary: string) => void
+  onProgress?: (progress: string | { content: string; details?: Record<string, unknown> }) => void
 }
 
 export interface AgentToolResult {
@@ -45,17 +45,20 @@ export class AgentToolExecutionError extends Error {
   readonly summary: string
   readonly audit: Record<string, unknown> | undefined
   readonly code: string
+  readonly retryable: boolean
 
   constructor(options: {
     code: string
     message: string
     summary?: string
+    retryable?: boolean
     audit?: Record<string, unknown>
   }) {
     super(options.message)
     this.name = 'AgentToolExecutionError'
     this.code = options.code
     this.summary = options.summary ?? options.message
+    this.retryable = options.retryable ?? false
     this.audit = options.audit
   }
 }

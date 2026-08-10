@@ -1,20 +1,21 @@
 import type { AgentExecutionError } from '@supermind/sdk'
 
-import type { AgentToolContext, AgentToolResult } from './agent-tool'
+import { AgentToolExecutionError, type AgentToolContext } from './agent-tool'
 
 export function requireRunScope(context: AgentToolContext): { runId: string; userId: string } {
   if (!context.runId || !context.userId) throw new Error('Run-scoped tool context is missing')
   return { runId: context.runId, userId: context.userId }
 }
 
-export function createToolErrorResult(error: unknown, summary: string): AgentToolResult {
+export function createToolErrorResult(error: unknown, summary: string): never {
   const normalized = normalizeError(error)
-  return {
-    content: normalized.message,
+  throw new AgentToolExecutionError({
+    code: normalized.code,
+    message: normalized.message,
     summary,
-    isError: true,
+    retryable: normalized.retryable,
     audit: { code: normalized.code, retryable: normalized.retryable },
-  }
+  })
 }
 
 function normalizeError(error: unknown): AgentExecutionError {

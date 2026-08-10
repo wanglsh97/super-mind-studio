@@ -39,10 +39,21 @@ export function toPiAgentTool(
       toolCallId: string,
       params: unknown,
       signal?: AbortSignal,
+      onUpdate?: (partialResult: PiAgentToolResult<PiToolDetails>) => void,
     ): Promise<PiAgentToolResult<PiToolDetails>> => {
       const result = await registry.execute(definition.name, params, {
         toolCallId,
         signal: signal ?? new AbortController().signal,
+        onProgress: (progress) => {
+          const normalized = typeof progress === 'string' ? { content: progress } : progress
+          onUpdate?.({
+            content: [{ type: 'text', text: normalized.content }],
+            details: {
+              summary: normalized.content,
+              ...(normalized.details === undefined ? {} : { audit: normalized.details }),
+            },
+          })
+        },
         ...(scope === undefined ? {} : scope),
       })
       if (result.isError) {

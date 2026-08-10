@@ -46,6 +46,31 @@ function drive(
 }
 
 describe('AgentRunProjector', () => {
+  it('projects Pi partial tool results as progress events', () => {
+    const projector = new AgentRunProjector('run-1', () => 'message-1')
+    expect(
+      projector.ingest({
+        type: 'tool_execution_update',
+        toolCallId: 'call-1',
+        toolName: 'shell',
+        args: { command: 'pnpm test' },
+        partialResult: {
+          content: [{ type: 'text', text: '正在运行测试…' }],
+          details: { stage: 'running' },
+        },
+      }),
+    ).toEqual([
+      {
+        type: 'tool-progress',
+        sequence: 0,
+        runId: 'run-1',
+        toolCallId: 'call-1',
+        toolName: 'shell',
+        content: '正在运行测试…',
+        details: { stage: 'running' },
+      },
+    ])
+  })
   it('continues after a durable user-question event without reusing its sequence', () => {
     const projector = new AgentRunProjector('run-question', () => 'message-1')
 
