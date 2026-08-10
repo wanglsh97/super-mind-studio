@@ -1,40 +1,36 @@
-# Proposal: Agent 工具错误韧性与状态一致性
+# Proposal: Pi-compatible tool errors and progress
 
 ## Problem
 
-当前项目的内置工具多数会把业务异常返回为 `isError: true`，但 `toPiAgentTool()` 又把该结果
-重新抛成异常，依赖 Pi runtime 再次捕获。Registry、MCP 和漏掉本地 catch 的工具异常也可能
-穿透到 `agent.prompt()`，导致单个工具失败升级为 `AGENT_RUN_CRASHED`。如果 Pi 没有发出
-`tool_execution_end`，数据库中的工具调用还可能永久停留在 `RUNNING`。
-
-同时，工具契约缺少参数预处理、统一前置拦截、后置规范化、进度更新和显式并发模式，导致模型
-自我修复能力、错误可诊断性、长任务可观察性和文件写入安全性不足。
+当前工具错误的返回方式和错误文本不统一，很多失败只显示“执行失败”，模型无法判断为什么
+失败、下一步如何修复。Pi core 已经负责捕获工具异常、生成失败 tool result，并决定 Agent
+是否继续，因此项目不应重复实现 Agent loop。
 
 ## Goals
 
-本 change 将工具调用收敛为稳定管道：
+本 change 只解决两件事：
 
-```text
-raw arguments → prepare → validate → before hook → execute → progress flush → after hook
-→ normalized ToolResult → Pi tool message → projector → SSE/PostgreSQL
-```
+1. 所有工具失败都抛出统一的 `AgentToolExecutionError`；已知业务错误由工具包装，未知异常由
+   Registry 兜底。`Error.message` 保持 Pi 兼容的自然语言字符串，结构化 code、summary、
+   retryable 和 audit 供项目使用。
+2. 复用 Pi 的 `onUpdate(partial AgentToolResult)` 和 `tool_execution_update`，通过 SSE best-effort
+   广播工具进度；不持久化、不进入模型上下文。
 
-所有可归因于单个工具的失败都必须变成模型可见的失败 tool result；只有 Agent runtime、
-数据库或不可恢复的基础设施错误才可以让 run 失败。Run 终结时必须关闭所有未完成的工具调用。
+## Non-goals
+
+- 不重写 Pi core 的异常处理和 Agent 控制流。
+- 不自动重试或重放工具。
+- 不实现 before/after hook、run 状态补偿或并发策略。
+- 不改变工具的业务能力、Sandbox 资源限制或 MCP 配置。
 
 ## Acceptance
 
-- 工具未注册、参数错误、取消、MCP/Sandbox 异常和工具实现未捕获异常均有稳定错误码，且不会
-  因单个工具失败直接终止 Agent loop。
-- tool result 的 `content`、`summary`、`audit` 和 `isError` 语义统一，错误码不依赖文本正则
-  作为唯一来源。
-- 工具支持可选参数预处理、运行前拒绝、运行后脱敏/审计和有序进度更新。
-- 写入/破坏性工具不会因同一批次并行调用造成未定义覆盖；执行模式有测试覆盖。
-- run 终态前不存在 `RUNNING` 的遗留工具调用；SSE、数据库快照和最终状态一致。
-- 直接相关测试、typecheck、lint、build 和 OpenSpec strict validation 通过。
+- 已知和未知工具异常都有统一结构和具体可修复 message。
+- message、audit、OTel 和日志经过统一脱敏、限长和嵌套限制。
+- Pi 原生 tool error 行为保持不变，项目不接管是否继续下一轮。
+- progress 只通过 SSE best-effort 广播，最终 tool result 仍由 Pi 决定并作为权威结果。
+- 相关测试、typecheck、lint、build 和 OpenSpec strict validation 通过。
 
-## Risks
+## Rollback
 
-- adapter 统一 catch 可能掩盖真正的 Agent runtime bug，因此仅捕获工具执行边界内的错误，
-  并保留 telemetry 与原始错误日志。
-- 新增字段会影响 SDK/前端类型，必须保持向后兼容并补充事件解码测试。
+按小功能 commit 回滚，不删除既有 AgentRun、工具调用或事件数据。

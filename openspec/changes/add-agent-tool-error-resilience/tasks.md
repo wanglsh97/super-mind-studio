@@ -1,26 +1,26 @@
 # Tasks
 
-## 1. 统一错误出口
+## 1. 统一结构化错误
 
-- [ ] 1.1 扩展工具错误 envelope 和 registry/adapter 规范，覆盖未注册、取消、未捕获异常，并补单元测试
-- [ ] 1.2 修改 Pi adapter，使工具边界不向 Agent loop 泄漏工具异常，保留 telemetry 和结构化错误码
-- [ ] 1.3 统一内置工具错误内容、summary、audit 和 retryable，补充 Sandbox/MCP 错误映射测试
+- [ ] 1.1 统一 `AgentToolExecutionError` 字段和 Pi 兼容字符串 message，补构造/渲染测试
+- [ ] 1.2 让已知 Sandbox、MCP、文件和 shell 错误由工具包装后抛出统一异常
+- [ ] 1.3 让 Registry 仅兜底包装未知异常，原始 cause 只进入服务端日志
+- [ ] 1.4 补充错误 message 的脱敏、限长、嵌套限制和 retryable 语义测试
 
-## 2. 工具执行管道能力
+## 2. 工具进度
 
-- [ ] 2.1 增加 prepareArguments 兼容层并映射 Pi executionMode，验证预处理发生在 schema 校验前
-- [ ] 2.2 增加服务端 before-execution policy，验证拒绝时不出站
-- [ ] 2.3 增加 after-execution 结果规范化/脱敏钩子，保证旧工具行为兼容
-- [ ] 2.4 增加受控进度 update 事件，验证失败时 update 先于最终结果、settle 后 update 丢弃
-- [ ] 2.5 增加 executionMode/资源冲突约束，明确写入、导出和 skill 操作的串行策略
+- [ ] 2.1 复用 Pi `onUpdate(partial AgentToolResult)`，补充工具到 Pi 的 update 测试
+- [ ] 2.2 将 Pi `tool_execution_update` 映射为现有 SSE tool progress 事件
+- [ ] 2.3 验证 progress 不进入模型上下文、不写 PostgreSQL，最终 tool result 为权威状态
+- [ ] 2.4 验证 progress 广播失败或丢失不影响工具最终结果
 
-## 3. Run 状态一致性
+## 3. 可观察性与验证
 
-- [ ] 3.1 finalize 时补偿所有未结束 tool call，避免 PostgreSQL 中遗留 RUNNING
-- [ ] 3.2 补充 Agent run 继续执行、取消、runtime crash 和 SSE/数据库顺序集成测试
+- [ ] 3.1 在 Registry 工具调用边界补充 OTel/埋点，埋点失败不得改变 Pi 错误传播
+- [ ] 3.2 补充 Agent run 使用 Pi 原生错误处理、不自动重试/重放的集成测试
 
 ## 4. 文档与验证
 
-- [ ] 4.1 更新 SDK/事件类型、README、Swagger 或配置说明（如公共行为发生变化）
+- [ ] 4.1 更新 SDK、事件类型或 README（如公共行为发生变化）
 - [ ] 4.2 运行相关单测、集成/E2E、typecheck、lint、build 和 OpenSpec strict validation
-- [ ] 4.3 每完成一个可验收小功能点创建独立 commit，模块验收后再按仓库规则 push
+- [ ] 4.3 每完成一个可验收小功能点创建独立 commit

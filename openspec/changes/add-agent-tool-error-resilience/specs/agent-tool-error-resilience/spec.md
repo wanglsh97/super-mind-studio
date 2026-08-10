@@ -2,96 +2,71 @@
 
 ## ADDED Requirements
 
-### Requirement: Tool failures are normalized into model-visible results
+### Requirement: Tool failures use a Pi-compatible structured exception
 
-The Agent tool execution boundary MUST convert unknown tools, invalid arguments, cancellation,
-MCP/Sandbox failures, and uncaught tool implementation exceptions into a structured failed tool
-result. A single tool failure MUST NOT reject the Agent loop.
+Every tool failure MUST be represented by `AgentToolExecutionError` with a stable code, concrete
+natural-language string message, summary, retryable flag and optional audit metadata. Pi core remains
+responsible for converting the thrown error into a failed tool result and deciding Agent control flow.
 
-#### Scenario: An implementation throws an unknown exception
+#### Scenario: A known tool failure is wrapped
 
-- **GIVEN** a registered tool throws a non-domain `Error`
-- **WHEN** Pi executes the tool
-- **THEN** the model receives one `isError: true` tool result
-- **AND** the result has a stable fallback error code and useful message
-- **AND** the Agent may continue to the next model turn
+- **GIVEN** a tool detects a missing file, timeout, non-zero exit or MCP failure
+- **WHEN** it reports the failure
+- **THEN** it throws `AgentToolExecutionError`
+- **AND** the message explains why it failed and what recovery action is appropriate
+- **AND** Pi receives the error through its native exception contract
 
-#### Scenario: A tool name is not registered
+#### Scenario: An unknown exception occurs
 
-- **GIVEN** the model requests a tool outside the run-scoped registry
-- **WHEN** the tool call is executed
-- **THEN** no tool implementation or outbound request is invoked
-- **AND** the model receives a normalized failed tool result
+- **GIVEN** a tool throws an exception that is not a known domain error
+- **WHEN** the Registry handles the exception
+- **THEN** it wraps it as `AgentToolExecutionError` with fallback code `AGENT_TOOL_FAILED`
+- **AND** the original cause is retained only for server-side logging
 
-### Requirement: Tool errors preserve structured diagnostics
+### Requirement: Error metadata remains separate from Pi message text
 
-The tool result MUST keep separate model-facing content, UI summary, retryability and audit data.
-The primary error code MUST come from structured data; text parsing MAY only be a compatibility
-fallback. Credentials and sensitive headers MUST NOT enter any result or audit projection.
+The exception MUST keep `code`, `summary`, `retryable` and `audit` separately from its string `message`.
+The message MUST remain directly consumable by Pi. Business context MAY be extended, but a shared
+boundary MUST redact secrets and enforce size and nesting limits.
 
-#### Scenario: A known Sandbox error is returned
+#### Scenario: The model receives a corrective error
 
-- **GIVEN** a tool detects a timeout or missing file
-- **WHEN** it returns a failed result
-- **THEN** the model receives a specific corrective message
-- **AND** the UI receives a short summary
-- **AND** audit contains the stable code and retryability without secrets
+- **GIVEN** a file path is missing
+- **WHEN** the error is thrown to Pi
+- **THEN** the message is a concrete natural-language string
+- **AND** it tells the model to inspect the directory and retry with an existing path
+- **AND** the structured code and audit metadata remain available to project telemetry
 
-### Requirement: Tool execution supports preparation and policy boundaries
+### Requirement: Tool progress reuses the Pi partial result protocol
 
-The registry MUST support optional argument preparation before schema validation and a server-side
-before-execution policy after validation. A rejected call MUST become a failed tool result and MUST
-NOT execute the tool.
+Long-running tools MUST be able to call Pi's `onUpdate(partial AgentToolResult)`. The project MUST
+broadcast the resulting `tool_execution_update` best-effort over SSE only. Progress MUST NOT be
+persisted or added to model history.
 
-#### Scenario: A model serializes a compatible argument incorrectly
+#### Scenario: A tool emits progress and then fails
 
-- **GIVEN** a tool provides a safe argument preparation function
-- **WHEN** the model supplies the known serialized form
-- **THEN** preparation runs before schema validation
-- **AND** the normalized arguments are passed to the tool
+- **GIVEN** a tool emits one or more partial results and then throws
+- **WHEN** Pi handles the tool call
+- **THEN** accepted progress MAY be delivered or dropped
+- **AND** the final Pi tool result remains authoritative
+- **AND** progress loss does not change the tool error or Agent control flow
 
-#### Scenario: A policy rejects a dangerous call
+#### Scenario: Progress broadcasting fails
 
-- **GIVEN** server-side policy rejects the validated tool arguments
-- **WHEN** the call reaches the policy boundary
-- **THEN** the tool is not executed
-- **AND** the model receives the rejection reason as `isError: true`
+- **GIVEN** the SSE event bus rejects a progress update
+- **WHEN** the project handles the update
+- **THEN** it records the observability failure
+- **AND** it does not change the tool's final result or trigger a retry
 
-### Requirement: Tool progress is ordered and bounded by execution lifetime
+### Requirement: Observability does not change Pi error semantics
 
-Long-running tools MUST be able to emit progress updates. Updates emitted after the tool settles
-MUST be ignored, and queued updates MUST be delivered before the final tool result.
+The project MUST record tool invocation duration, status and normalized error code at the Registry
+tool boundary. OTel or metric failures MUST NOT replace, swallow or reinterpret the original tool
+exception.
 
-#### Scenario: A tool fails after emitting progress
+#### Scenario: Telemetry fails during a tool error
 
-- **GIVEN** a tool emits progress and then throws
-- **WHEN** the execution boundary handles the exception
-- **THEN** queued progress is published before the failed tool result
-- **AND** later orphan updates are ignored
-
-### Requirement: Side-effecting tools declare safe execution mode
-
-Tools with filesystem, export, skill activation or other conflicting side effects MUST declare or
-enforce sequential execution. Read-only independent tools MAY execute in parallel. Tool result
-messages MUST remain correlated to their original tool call IDs.
-
-#### Scenario: Two conflicting writes are requested in one model turn
-
-- **GIVEN** two calls target a conflicting side-effecting resource
-- **WHEN** Pi schedules the batch
-- **THEN** the calls execute without overlapping mutation
-- **AND** each result is persisted against its own tool call ID
-
-### Requirement: Run finalization closes incomplete tool calls
-
-Before publishing a terminal run event, the service MUST compensate every tool call that is still
-running. The compensation MUST include a stable interruption or cancellation code and MUST be
-persisted and published exactly once.
-
-#### Scenario: Agent runtime fails before tool end
-
-- **GIVEN** a tool start event was persisted but no tool end event was received
-- **WHEN** the Agent run is finalized as failed or cancelled
-- **THEN** the incomplete tool call receives a terminal failed/cancelled result
-- **AND** no `RUNNING` tool call remains in the final snapshot
-- **AND** terminal run events are published after the compensation is persisted
+- **GIVEN** a tool throws `AgentToolExecutionError`
+- **WHEN** telemetry recording also fails
+- **THEN** the original tool exception remains the one thrown to Pi
+- **AND** no automatic tool replay occurs
