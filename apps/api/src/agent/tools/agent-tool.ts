@@ -53,12 +53,77 @@ export class AgentToolExecutionError extends Error {
     summary?: string
     retryable?: boolean
     audit?: Record<string, unknown>
+    cause?: unknown
   }) {
-    super(options.message)
+    super(sanitizeToolErrorMessage(options.message))
     this.name = 'AgentToolExecutionError'
     this.code = options.code
-    this.summary = options.summary ?? options.message
+    this.summary = sanitizeToolErrorMessage(options.summary ?? options.message, 500)
     this.retryable = options.retryable ?? false
-    this.audit = options.audit
+    this.audit = options.audit === undefined ? undefined : sanitizeToolAudit(options.audit)
+    if (options.cause !== undefined) {
+      Object.defineProperty(this, 'cause', {
+        value: options.cause,
+        configurable: true,
+        writable: true,
+        enumerable: false,
+      })
+    }
   }
+}
+
+const SECRET_FIELD_PATTERN =
+  /^(?:authorization|cookie|set-cookie|proxy-authorization|x-api-key|api-key|apikey|token|access_token|refresh_token|secret|password|privatekey|private_key)$/i
+const MAX_ERROR_MESSAGE_CHARS = 4_000
+const MAX_AUDIT_DEPTH = 4
+const MAX_AUDIT_KEYS = 50
+const MAX_AUDIT_ARRAY_ITEMS = 20
+const MAX_AUDIT_STRING_CHARS = 1_000
+
+/** 模型可见错误文本的统一脱敏与限长边界。 */
+export function sanitizeToolErrorMessage(
+  value: string,
+  maxChars: number = MAX_ERROR_MESSAGE_CHARS,
+): string {
+  const redacted = value
+    .replace(/\b(Bearer|Basic)\s+[A-Za-z0-9._~+/=-]+/gi, '$1 [REDACTED]')
+    .replace(
+      /([?&](?:access_token|refresh_token|token|api_key|apikey|password|secret)=)[^&#\s]*/gi,
+      '$1[REDACTED]',
+    )
+    .replace(
+      /((?:authorization|cookie|x-api-key|api-key|token|password|secret)\s*[:=]\s*)[^\s,;]+/gi,
+      '$1[REDACTED]',
+    )
+  return redacted.length <= maxChars ? redacted : `${redacted.slice(0, maxChars)}…[truncated]`
+}
+
+/** 审计字段允许业务扩展，但递归过滤敏感键并限制体积。 */
+export function sanitizeToolAudit(input: Record<string, unknown>): Record<string, unknown> {
+  return sanitizeAuditRecord(input, 0)
+}
+
+function sanitizeAuditRecord(
+  input: Record<string, unknown>,
+  depth: number,
+): Record<string, unknown> {
+  if (depth >= MAX_AUDIT_DEPTH) return { truncated: true }
+  const output: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(input).slice(0, MAX_AUDIT_KEYS)) {
+    if (SECRET_FIELD_PATTERN.test(key)) continue
+    output[key] = sanitizeAuditValue(value, depth + 1)
+  }
+  if (Object.keys(input).length > MAX_AUDIT_KEYS) output.truncated = true
+  return output
+}
+
+function sanitizeAuditValue(value: unknown, depth: number): unknown {
+  if (typeof value === 'string') return sanitizeToolErrorMessage(value, MAX_AUDIT_STRING_CHARS)
+  if (Array.isArray(value)) {
+    return value.slice(0, MAX_AUDIT_ARRAY_ITEMS).map((item) => sanitizeAuditValue(item, depth))
+  }
+  if (typeof value === 'object' && value !== null) {
+    return sanitizeAuditRecord(value as Record<string, unknown>, depth)
+  }
+  return value
 }

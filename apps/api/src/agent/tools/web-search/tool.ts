@@ -1,4 +1,9 @@
-import type { AgentToolContext, AgentToolDefinition, AgentToolResult } from '../agent-tool'
+import {
+  AgentToolExecutionError,
+  type AgentToolContext,
+  type AgentToolDefinition,
+  type AgentToolResult,
+} from '../agent-tool'
 import { callWebSearchProvider, type WebSearchProviderMode } from './providers'
 import { WebSearchMcpError } from './mcp.client'
 
@@ -128,6 +133,7 @@ export function createWebSearchTool(
           },
         }
       } catch (error) {
+        if (error instanceof AgentToolExecutionError) throw error
         const normalized =
           error instanceof WebSearchMcpError
             ? error
@@ -138,11 +144,12 @@ export function createWebSearchTool(
   }
 }
 
-function errorResult(code: string, message: string, durationMs: number): AgentToolResult {
-  return {
-    content: message,
+function errorResult(code: string, message: string, durationMs: number): never {
+  throw new AgentToolExecutionError({
+    code,
+    message: `${message}。请调整搜索词、检查服务状态后再决定是否重试。`,
     summary: code === 'WEB_SEARCH_ABORTED' ? '网页搜索已取消' : '网页搜索失败',
-    isError: true,
+    retryable: code !== 'WEB_SEARCH_ABORTED',
     audit: { errorCode: code, durationMs },
-  }
+  })
 }

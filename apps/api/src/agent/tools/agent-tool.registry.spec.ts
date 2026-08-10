@@ -1,5 +1,5 @@
 import type { AgentToolDefinition } from './agent-tool'
-import { AgentToolExecutionError } from './agent-tool'
+import { AgentToolExecutionError, sanitizeToolAudit, sanitizeToolErrorMessage } from './agent-tool'
 import {
   AgentToolNotRegisteredError,
   AgentToolRegistry,
@@ -49,6 +49,36 @@ describe('validateToolArguments', () => {
   })
 })
 
+describe('AgentToolExecutionError', () => {
+  it('keeps Pi-compatible text while redacting and bounding model-visible diagnostics', () => {
+    const longTail = 'x'.repeat(5_000)
+    const error = new AgentToolExecutionError({
+      code: 'AGENT_TOOL_FAILED',
+      message: `Authorization: Bearer secret-token password=hunter2 ${longTail}`,
+      summary: '失败',
+      retryable: true,
+      audit: {
+        path: '/workspace/work/a.txt',
+        token: 'secret-token',
+        nested: { password: 'hunter2', status: 500 },
+      },
+    })
+
+    expect(error.message).not.toContain('secret-token')
+    expect(error.message).not.toContain('hunter2')
+    expect(error.message.length).toBeLessThanOrEqual(4_012)
+    expect(error.audit).toEqual({
+      path: '/workspace/work/a.txt',
+      nested: { status: 500 },
+    })
+  })
+
+  it('exports reusable sanitizers for tool-specific messages and audit context', () => {
+    expect(sanitizeToolErrorMessage('token=abc')).toBe('token=[REDACTED]')
+    expect(sanitizeToolAudit({ cookie: 'a=1', status: 429 })).toEqual({ status: 429 })
+  })
+})
+
 describe('web_fetch contract helpers', () => {
   it('builds success/error results and strips sensitive audit keys', () => {
     const ok = createWebFetchSuccessResult({
@@ -59,12 +89,12 @@ describe('web_fetch contract helpers', () => {
     expect(ok.isError).toBe(false)
     expect(ok.audit?.status).toBe(200)
 
-    const failed = createWebFetchErrorResult({
-      code: 'WEB_FETCH_INVALID_ARGS',
-      message: 'bad',
-    })
-    expect(failed.isError).toBe(true)
-    expect(failed.audit?.errorCode).toBe('WEB_FETCH_INVALID_ARGS')
+    expect(() =>
+      createWebFetchErrorResult({
+        code: 'WEB_FETCH_INVALID_ARGS',
+        message: 'bad',
+      }),
+    ).toThrow(expect.objectContaining({ code: 'WEB_FETCH_INVALID_ARGS' }))
 
     expect(
       sanitizeWebFetchAudit({
@@ -147,6 +177,36 @@ describe('AgentToolRegistry', () => {
       registry.execute('probe', {}, { toolCallId: 't1', signal: controller.signal }),
     ).rejects.toMatchObject({ name: 'AgentToolExecutionError', code: 'AGENT_TOOL_ABORTED' })
     expect(called).toBe(0)
+  })
+
+  it('wraps an unknown implementation exception without changing known tool errors', async () => {
+    const cause = new Error('provider exploded')
+    const unknown = new AgentToolRegistry([
+      fakeTool('unknown', async () => {
+        throw cause
+      }),
+    ])
+    const wrapped = await unknown
+      .execute('unknown', {}, { toolCallId: 't1', signal: new AbortController().signal })
+      .catch((error: unknown) => error)
+    expect(wrapped).toBeInstanceOf(AgentToolExecutionError)
+    expect(wrapped).toMatchObject({ code: 'AGENT_TOOL_FAILED' })
+    expect((wrapped as AgentToolExecutionError).message).toBe('provider exploded')
+    expect((wrapped as Error & { cause?: unknown }).cause).toBe(cause)
+
+    const knownError = new AgentToolExecutionError({
+      code: 'KNOWN_FAILURE',
+      message: '具体失败原因。请修改参数后重试。',
+      retryable: true,
+    })
+    const known = new AgentToolRegistry([
+      fakeTool('known', async () => {
+        throw knownError
+      }),
+    ])
+    await expect(
+      known.execute('known', {}, { toolCallId: 't2', signal: new AbortController().signal }),
+    ).rejects.toBe(knownError)
   })
 })
 

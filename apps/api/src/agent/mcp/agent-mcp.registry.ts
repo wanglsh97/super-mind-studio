@@ -1,7 +1,11 @@
 import { Inject, Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 
-import type { AgentToolDefinition, AgentToolResult } from '../tools/agent-tool'
+import {
+  AgentToolExecutionError,
+  type AgentToolDefinition,
+  type AgentToolResult,
+} from '../tools/agent-tool'
 import { PLATFORM_MCP_SERVERS, type AgentMcpServerConfig } from './agent-mcp.config'
 import { AgentMcpClientError, AgentMcpSdkClient, type AgentMcpRemoteTool } from './agent-mcp.client'
 import { AgentMcpPreferenceRepository } from './agent-mcp-preference.repository'
@@ -321,12 +325,13 @@ export class PlatformAgentMcpRegistry implements AgentMcpRegistry {
             ...(result.isError ? { errorCode: 'MCP_REMOTE_ERROR' } : {}),
           }
           if (result.isError) {
-            return {
-              content: result.content,
+            throw new AgentToolExecutionError({
+              code: 'MCP_REMOTE_ERROR',
+              message: `${server.name} 的 ${remote.name} 返回工具错误：${result.content}。请根据错误内容调整参数或改用其他工具。`,
               summary: `${server.name} 返回工具错误`,
-              isError: true,
+              retryable: true,
               audit,
-            }
+            })
           }
           return {
             content: [
@@ -342,21 +347,24 @@ export class PlatformAgentMcpRegistry implements AgentMcpRegistry {
             audit,
           }
         } catch (error) {
+          if (error instanceof AgentToolExecutionError) throw error
           const normalized =
             error instanceof AgentMcpClientError
               ? error
               : new AgentMcpClientError('MCP_CONNECTION_FAILED', 'MCP 工具调用失败')
-          return {
-            content: normalized.message,
+          throw new AgentToolExecutionError({
+            code: normalized.code,
+            message: `${normalized.message}。${normalized.code === 'MCP_ABORTED' ? '调用已取消，请勿自动重试。' : '请检查 MCP 服务状态、参数或网络后再决定是否重试。'}`,
             summary: normalized.code === 'MCP_ABORTED' ? 'MCP 工具已取消' : 'MCP 工具调用失败',
-            isError: true,
+            retryable: normalized.code !== 'MCP_ABORTED' && normalized.code !== 'MCP_TIMEOUT',
             audit: {
               serverId: server.id,
               remoteToolName: remote.name,
               durationMs: Date.now() - started,
               errorCode: normalized.code,
             },
-          }
+            cause: error,
+          })
         }
       },
     }

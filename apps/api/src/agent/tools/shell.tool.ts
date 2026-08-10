@@ -32,13 +32,21 @@ export function createShellTool(
           signal: context.signal,
         })
         const content = [result.stdout.content, result.stderr.content].filter(Boolean).join('\n')
+        if (result.exitCode !== 0 || result.error !== undefined) {
+          const reason = result.error?.message ?? `命令退出码为 ${result.exitCode ?? 'unknown'}`
+          return createToolErrorResult(
+            {
+              code: result.error?.code ?? 'SHELL_EXIT_NONZERO',
+              message: `${reason}。${content ? `命令输出：\n${content}\n` : ''}请根据输出修正命令、依赖或工作目录后重试。`,
+              retryable: !context.signal.aborted,
+            },
+            'Shell 执行失败',
+          )
+        }
         return {
           content: content || `(exit ${result.exitCode ?? 'terminated'})`,
-          summary:
-            result.exitCode === 0 && !result.error
-              ? `命令执行完成（exit 0）`
-              : `命令执行失败（${result.error?.message ?? `exit ${result.exitCode}`})`,
-          isError: result.exitCode !== 0 || result.error !== undefined,
+          summary: '命令执行完成（exit 0）',
+          isError: false,
           audit: {
             command: args.command,
             workingDirectory: args.workingDirectory ?? '/workspace/work',
@@ -49,7 +57,6 @@ export function createShellTool(
             stdoutTruncated: result.stdout.truncated,
             stderrTruncated: result.stderr.truncated,
             limitReason: result.limitReason,
-            ...(result.error === undefined ? {} : { code: result.error.code }),
           },
         }
       } catch (error) {

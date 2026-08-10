@@ -92,11 +92,12 @@ describe('web_search tool', () => {
   ])('rejects invalid args before making a request: %j', async (args, message) => {
     const fetchImpl = jest.fn(async () => mcpResult('not reached')) as typeof fetch
     const registry = new AgentToolRegistry([createTool(fetchImpl)])
-    const result = await registry.execute('web_search', args, {
-      toolCallId: 'call-invalid',
-      signal: new AbortController().signal,
-    })
-    expect(result).toMatchObject({ isError: true, content: expect.stringContaining(message) })
+    await expect(
+      registry.execute('web_search', args, {
+        toolCallId: 'call-invalid',
+        signal: new AbortController().signal,
+      }),
+    ).rejects.toMatchObject({ message: expect.stringContaining(message) })
     expect(fetchImpl).not.toHaveBeenCalled()
   })
 
@@ -108,10 +109,10 @@ describe('web_search tool', () => {
         { query: 'test' },
         { toolCallId: 'call-error', signal: new AbortController().signal },
       ),
-    ).resolves.toMatchObject({
-      isError: true,
+    ).rejects.toMatchObject({
+      code: 'WEB_SEARCH_HTTP_ERROR',
       summary: '网页搜索失败',
-      content: '搜索服务返回 HTTP 429',
+      message: expect.stringContaining('搜索服务返回 HTTP 429'),
       audit: { errorCode: 'WEB_SEARCH_HTTP_ERROR' },
     })
 
@@ -119,8 +120,8 @@ describe('web_search tool', () => {
     cancelled.abort()
     await expect(
       tool.execute({ query: 'test' }, { toolCallId: 'call-cancel', signal: cancelled.signal }),
-    ).resolves.toMatchObject({
-      isError: true,
+    ).rejects.toMatchObject({
+      code: 'WEB_SEARCH_ABORTED',
       summary: '网页搜索已取消',
       audit: { errorCode: 'WEB_SEARCH_ABORTED' },
     })

@@ -130,20 +130,28 @@ describe('Agent runtime tools', () => {
       'export_file',
     ])
 
-    const duplicate = await registry.execute('skill', { name: 'mock-data-cleaner' }, {
-      ...context,
-      toolCallId: 'tool-2',
-    })
+    const duplicate = await registry.execute(
+      'skill',
+      { name: 'mock-data-cleaner' },
+      {
+        ...context,
+        toolCallId: 'tool-2',
+      },
+    )
     expect(duplicate.audit).toMatchObject({
       sandboxId: activation.audit?.sandboxId,
       alreadyActive: true,
     })
     expect(skills.prepareActivation).toHaveBeenCalledTimes(1)
 
-    const second = await registry.execute('skill', { name: 'second-skill' }, {
-      ...context,
-      toolCallId: 'tool-second-skill',
-    })
+    const second = await registry.execute(
+      'skill',
+      { name: 'second-skill' },
+      {
+        ...context,
+        toolCallId: 'tool-second-skill',
+      },
+    )
     expect(second).toMatchObject({
       isError: false,
       audit: {
@@ -202,25 +210,20 @@ describe('Agent runtime tools', () => {
     await sessions.finishRun('run-1')
     await expect(
       registry.execute('shell', { command: 'echo no' }, { ...context, toolCallId: 'tool-6' }),
-    ).resolves.toMatchObject({ isError: true, audit: { code: 'SANDBOX_UNAVAILABLE' } })
+    ).rejects.toMatchObject({ code: 'SANDBOX_UNAVAILABLE' })
   })
 
   it('normalizes authorization failures and validates schemas before execution', async () => {
     const { context, registry, skills, sessions } = setup()
     await sessions.startRun(context.runId, 'thread-1', context.userId)
 
-    await expect(
-      registry.execute('skill', { name: 'not-added' }, context),
-    ).resolves.toMatchObject({
-      isError: true,
-      audit: { code: 'SKILL_NOT_ADDED', retryable: false },
+    await expect(registry.execute('skill', { name: 'not-added' }, context)).rejects.toMatchObject({
+      code: 'SKILL_NOT_ADDED',
+      retryable: false,
     })
     await expect(
       registry.execute('skill', { name: '', extra: true }, context),
-    ).resolves.toMatchObject({
-      isError: true,
-      audit: { code: 'AGENT_TOOL_INVALID_ARGS' },
-    })
+    ).rejects.toMatchObject({ code: 'AGENT_TOOL_INVALID_ARGS', retryable: true })
     expect(skills.prepareActivation).toHaveBeenCalledTimes(1)
   })
 
@@ -235,7 +238,7 @@ describe('Agent runtime tools', () => {
         { command: 'echo no' },
         { ...context, userId: 'user-2', toolCallId: 'tool-cross-user' },
       ),
-    ).resolves.toMatchObject({ isError: true, audit: { code: 'SANDBOX_UNAVAILABLE' } })
+    ).rejects.toMatchObject({ code: 'SANDBOX_UNAVAILABLE' })
     await expect(
       registry.execute(
         'shell',
@@ -245,6 +248,6 @@ describe('Agent runtime tools', () => {
           signal: context.signal,
         },
       ),
-    ).rejects.toThrow('Run-scoped tool context is missing')
+    ).rejects.toMatchObject({ code: 'AGENT_TOOL_SCOPE_REQUIRED' })
   })
 })

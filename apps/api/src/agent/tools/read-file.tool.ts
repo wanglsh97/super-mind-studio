@@ -34,7 +34,11 @@ export function createReadFileTool(
         const file = await sessions.readFile(scope.runId, scope.userId, args.path, context.signal)
         if (!file)
           return createToolErrorResult(
-            { code: 'FILE_NOT_FOUND', message: '文件不存在' },
+            {
+              code: 'FILE_NOT_FOUND',
+              message: `文件 ${args.path} 不存在。请先使用 shell 检查目录内容，再使用实际存在的路径重试。`,
+              retryable: true,
+            },
             '读取文件失败',
           )
         return {

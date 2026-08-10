@@ -1,4 +1,4 @@
-import type { AgentToolResult } from '../agent-tool'
+import { AgentToolExecutionError, type AgentToolResult } from '../agent-tool'
 
 /**
  * `web_fetch` 公共契约（JSON Schema、审计字段、错误码、结果形状）。
@@ -66,17 +66,19 @@ export function createWebFetchErrorResult(input: {
   message: string
   summary?: string
   audit?: WebFetchAudit
-}): AgentToolResult {
+}): never {
   const summary = input.summary ?? input.message
-  return {
-    content: input.message,
+  const audit = sanitizeWebFetchAudit({
+    ...input.audit,
+    errorCode: input.audit?.errorCode ?? input.code,
+  }) as Record<string, unknown>
+  throw new AgentToolExecutionError({
+    code: input.code,
+    message: `${input.message}。请检查 URL、网络状态或目标页面后再决定是否重试。`,
     summary,
-    isError: true,
-    audit: sanitizeWebFetchAudit({
-      ...input.audit,
-      errorCode: input.audit?.errorCode ?? input.code,
-    }) as Record<string, unknown>,
-  }
+    retryable: input.code !== 'WEB_FETCH_ABORTED' && input.code !== 'WEB_FETCH_BLOCKED_TARGET',
+    audit,
+  })
 }
 
 /** 去掉审计中的敏感键，防止误记 Cookie/Authorization 等。 */

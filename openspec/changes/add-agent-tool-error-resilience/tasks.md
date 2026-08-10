@@ -3,9 +3,9 @@
 ## 1. 统一结构化错误
 
 - [x] 1.1 统一 `AgentToolExecutionError` 字段和 Pi 兼容字符串 message，补构造/渲染测试
-- [ ] 1.2 让已知 Sandbox、MCP、文件和 shell 错误由工具包装后抛出统一异常
+- [x] 1.2 让已知 Sandbox、MCP、文件和 shell 错误由工具包装后抛出统一异常
 - [x] 1.3 让 Registry 仅兜底包装未知异常，原始 cause 只进入服务端日志
-- [ ] 1.4 补充错误 message 的脱敏、限长、嵌套限制和 retryable 语义测试
+- [x] 1.4 补充错误 message 的脱敏、限长、嵌套限制和 retryable 语义测试
 
 ## 2. 工具进度
 
