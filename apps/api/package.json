@@ -12,6 +12,7 @@
     "test": "jest --runInBand",
     "test:agent-harness": "AGENT_WEB_FETCH_FIXTURE=true tsx scripts/agent-harness.check.ts",
     "test:agent-run": "AGENT_WEB_FETCH_FIXTURE=true tsx --env-file-if-exists=../../.env scripts/agent-run.check.ts",
+    "test:agent-tool-error": "tsx --test scripts/agent-tool-error.integration.spec.ts",
     "test:agent-e2e": "AGENT_WEB_FETCH_FIXTURE=true SKILL_OBJECT_STORE_DRIVER=memory MOCK_PROVIDER_ENABLED=true QWEN_ENABLED=false GLM_ENABLED=false DEEPSEEK_ENABLED=false KIMI_ENABLED=false tsx --env-file-if-exists=../../.env scripts/agent-e2e.check.ts",
     "test:opensandbox-poc": "tsx scripts/opensandbox-poc.check.ts",
     "test:opensandbox-adapter": "tsx --env-file-if-exists=../../.env scripts/opensandbox-adapter.smoke.ts",
