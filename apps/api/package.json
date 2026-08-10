@@ -20,6 +20,8 @@
     "test:smoke:kimi": "tsx --env-file-if-exists=../../.env scripts/kimi-chat.smoke.ts",
     "test:smoke:qwen": "tsx --env-file-if-exists=../../.env scripts/qwen-chat.smoke.ts",
     "test:smoke:web-search": "tsx scripts/web-search.smoke.ts",
+    "eval": "tsx --env-file-if-exists=../../.env scripts/eval-agent.ts",
+    "test:eval": "tsx --env-file-if-exists=../../.env scripts/eval-agent.ts",
     "pretest:e2e": "DATABASE_URL=\"$TEST_DATABASE_URL\" corepack pnpm --workspace-root db:generate",
     "test:e2e": "jest --config jest.e2e.config.cjs --runInBand"
   },
@@ -54,6 +56,7 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
     "cookie-parser": "^1.4.7",
+    "langsmith": "0.8.9",
     "nestjs-pino": "^4.6.1",
     "pino": "^10.3.1",
     "pino-http": "^11.0.0",

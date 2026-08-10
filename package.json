@@ -24,6 +24,8 @@
     "test:agent-harness": "corepack pnpm --filter @supermind/api test:agent-harness",
     "test:agent-run": "corepack pnpm --filter @supermind/api test:agent-run",
     "test:agent-e2e": "corepack pnpm --filter @supermind/api test:agent-e2e",
+    "eval": "corepack pnpm --filter @supermind/api eval",
+    "test:eval": "corepack pnpm --filter @supermind/api test:eval",
     "test:mock-chat": "sh infra/scripts/run-mock-chat-regression.sh",
     "test:user-regression": "sh infra/scripts/run-user-regression.sh",
     "test:web-same-origin": "sh infra/scripts/verify-web-same-origin.sh",
