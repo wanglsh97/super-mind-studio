@@ -21,6 +21,6 @@
 
 ## 4. 文档与验证
 
-- [ ] 4.1 更新 SDK、事件类型或 README（如公共行为发生变化）
-- [ ] 4.2 运行相关单测、集成/E2E、typecheck、lint、build 和 OpenSpec strict validation
-- [ ] 4.3 每完成一个可验收小功能点创建独立 commit
+- [x] 4.1 更新 SDK、事件类型或 README（如公共行为发生变化）
+- [x] 4.2 运行相关单测、集成/E2E、typecheck、lint、build 和 OpenSpec strict validation（改动文件 lint 0 error；全仓 28 个既有 lint error 已记录）
+- [x] 4.3 每完成一个可验收小功能点创建独立 commit
