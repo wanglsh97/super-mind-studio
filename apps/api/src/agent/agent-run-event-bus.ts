@@ -1,5 +1,5 @@
 import type { AgentStreamEvent } from '@supermind/sdk'
-import { Injectable } from '@nestjs/common'
+import { Injectable, Logger } from '@nestjs/common'
 
 type Listener = (event: AgentStreamEvent) => void
 
@@ -17,12 +17,22 @@ interface RunChannel {
  */
 @Injectable()
 export class AgentRunEventBus {
+  private readonly logger = new Logger(AgentRunEventBus.name)
   private readonly channels = new Map<string, RunChannel>()
 
   publish(runId: string, event: AgentStreamEvent): void {
     const channel = this.channels.get(runId)
     if (!channel) return
-    for (const listener of channel.listeners) listener(event)
+    for (const listener of channel.listeners) {
+      try {
+        listener(event)
+      } catch (error) {
+        this.logger.warn(
+          { error, runId, eventType: event.type, sequence: event.sequence },
+          'Agent run event listener failed; delivery remains best effort',
+        )
+      }
+    }
   }
 
   close(runId: string): void {

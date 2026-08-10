@@ -12,7 +12,7 @@
 - [x] 2.1 复用 Pi `onUpdate(partial AgentToolResult)`，补充工具到 Pi 的 update 测试
 - [x] 2.2 将 Pi `tool_execution_update` 映射为现有 SSE tool progress 事件
 - [x] 2.3 验证 progress 不进入模型上下文、不写 PostgreSQL，最终 tool result 为权威状态
-- [ ] 2.4 验证 progress 广播失败或丢失不影响工具最终结果
+- [x] 2.4 验证 progress 广播失败或丢失不影响工具最终结果
 
 ## 3. 可观察性与验证
 
