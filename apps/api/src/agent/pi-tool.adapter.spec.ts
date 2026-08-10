@@ -26,4 +26,37 @@ describe('toPiAgentTool error projection', () => {
       message: '[SANDBOX_UNAVAILABLE] Run Sandbox 尚未创建',
     })
   })
+
+  it('prepares model arguments before registry validation', async () => {
+    let received: unknown
+    const definition: AgentToolDefinition = {
+      name: 'probe',
+      description: 'probe',
+      label: 'Probe',
+      riskLevel: 'read',
+      approvalPolicy: 'none',
+      parameters: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['items'],
+        properties: { items: { type: 'array' } },
+      },
+      prepareArguments: (raw) => ({
+        ...(raw as Record<string, unknown>),
+        items: JSON.parse(String((raw as Record<string, unknown>).items)),
+      }),
+      executionMode: 'sequential',
+      execute: async (args) => {
+        received = args
+        return { content: 'ok', summary: 'ok', isError: false }
+      },
+    }
+    const registry = new AgentToolRegistry([definition])
+    const tool = toPiAgentTool(definition, registry, { runId: 'run-1', userId: 'user-1' })
+
+    await tool.execute('call-1', { items: '[1,2]' }, new AbortController().signal)
+
+    expect(received).toEqual({ items: [1, 2] })
+    expect(tool.executionMode).toBe('sequential')
+  })
 })

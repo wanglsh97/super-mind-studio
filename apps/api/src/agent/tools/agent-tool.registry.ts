@@ -84,7 +84,21 @@ export class AgentToolRegistry {
       })
     }
 
-    const validation = validateToolArguments(tool.parameters, rawArgs)
+    let preparedArgs = rawArgs
+    if (tool.prepareArguments) {
+      try {
+        preparedArgs = tool.prepareArguments(rawArgs)
+      } catch (error) {
+        return {
+          content: error instanceof Error ? error.message : '工具参数预处理失败',
+          summary: '工具参数预处理失败',
+          isError: true,
+          audit: { code: 'AGENT_TOOL_ARGUMENT_PREPARE_FAILED' },
+        }
+      }
+    }
+
+    const validation = validateToolArguments(tool.parameters, preparedArgs)
     if (!validation.ok) {
       return {
         content: validation.message,
