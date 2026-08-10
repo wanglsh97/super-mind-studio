@@ -8,8 +8,8 @@
 
 ## 2. 工具执行管道能力
 
-- [x] 2.1 增加 prepareArguments 兼容层并映射 Pi executionMode，验证预处理发生在 schema 校验前
-- [x] 2.2 增加服务端 before-execution policy，验证拒绝时不出站
+- [ ] 2.1 增加 prepareArguments 兼容层并映射 Pi executionMode，验证预处理发生在 schema 校验前
+- [ ] 2.2 增加服务端 before-execution policy，验证拒绝时不出站
 - [ ] 2.3 增加 after-execution 结果规范化/脱敏钩子，保证旧工具行为兼容
 - [ ] 2.4 增加受控进度 update 事件，验证失败时 update 先于最终结果、settle 后 update 丢弃
 - [ ] 2.5 增加 executionMode/资源冲突约束，明确写入、导出和 skill 操作的串行策略

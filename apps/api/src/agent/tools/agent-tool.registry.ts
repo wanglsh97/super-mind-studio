@@ -84,48 +84,13 @@ export class AgentToolRegistry {
       })
     }
 
-    let preparedArgs = rawArgs
-    if (tool.prepareArguments) {
-      try {
-        preparedArgs = tool.prepareArguments(rawArgs)
-      } catch (error) {
-        return {
-          content: error instanceof Error ? error.message : '工具参数预处理失败',
-          summary: '工具参数预处理失败',
-          isError: true,
-          audit: { code: 'AGENT_TOOL_ARGUMENT_PREPARE_FAILED' },
-        }
-      }
-    }
-
-    const validation = validateToolArguments(tool.parameters, preparedArgs)
+    const validation = validateToolArguments(tool.parameters, rawArgs)
     if (!validation.ok) {
       return {
         content: validation.message,
         summary: '工具参数无效',
         isError: true,
         audit: { code: validation.code, issues: validation.issues },
-      }
-    }
-
-    if (tool.beforeExecute) {
-      try {
-        const reason = await tool.beforeExecute(validation.args as never, context)
-        if (reason !== undefined) {
-          return {
-            content: reason,
-            summary: '工具执行被策略阻止',
-            isError: true,
-            audit: { code: 'AGENT_TOOL_BLOCKED' },
-          }
-        }
-      } catch (error) {
-        return {
-          content: error instanceof Error ? error.message : '工具策略检查失败',
-          summary: '工具策略检查失败',
-          isError: true,
-          audit: { code: 'AGENT_TOOL_POLICY_FAILED' },
-        }
       }
     }
 

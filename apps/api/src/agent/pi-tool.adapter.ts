@@ -35,10 +35,6 @@ export function toPiAgentTool(
     description: definition.description,
     label: definition.label,
     parameters: definition.parameters as unknown as TSchema,
-    ...(definition.prepareArguments === undefined
-      ? {}
-      : { prepareArguments: definition.prepareArguments }),
-    ...(definition.executionMode === undefined ? {} : { executionMode: definition.executionMode }),
     execute: async (
       toolCallId: string,
       params: unknown,
