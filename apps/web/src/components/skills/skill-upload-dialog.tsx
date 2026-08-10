@@ -1,6 +1,6 @@
 'use client'
 
-import { createAIGatewayClient } from '@supermind/sdk'
+import { createSuperMindClient } from '@supermind/sdk'
 import type { SkillUploadProgress } from '@supermind/sdk'
 import { useEffect, useRef, useState } from 'react'
 
@@ -19,7 +19,7 @@ import {
   type SkillCategory,
 } from '@/utils/skills/skill-upload-form'
 
-const client = createAIGatewayClient()
+const client = createSuperMindClient()
 
 type UploadState = 'idle' | 'preparing' | 'ready' | 'uploading' | 'submitting' | 'submitted'
 

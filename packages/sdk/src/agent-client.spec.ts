@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 
-import { createAIGatewayClient } from './client.js'
+import { createSuperMindClient } from './client.js'
 import { AIGatewayError, AIGatewayProtocolError } from './errors.js'
 import { SkillUploadTransportError } from './skill-upload.js'
 import type { AgentStreamEvent } from './agent-types.js'
@@ -12,7 +12,7 @@ const threadId = '00000000-0000-4000-8000-0000000000f1'
 describe('AgentClient Token analytics', () => {
   it('requests the browser timezone projection and decodes usage dimensions', async () => {
     const urls: string[] = []
-    const client = createAIGatewayClient({
+    const client = createSuperMindClient({
       fetch: async (input) => {
         urls.push(String(input))
         return Response.json({
@@ -58,7 +58,7 @@ describe('AgentClient Token analytics', () => {
 describe('AgentClient MCP status', () => {
   it('lists a credential-free MCP Server status projection', async () => {
     const urls: string[] = []
-    const client = createAIGatewayClient({
+    const client = createSuperMindClient({
       baseUrl: 'http://localhost:3001',
       fetch: async (input) => {
         urls.push(String(input))
@@ -105,7 +105,7 @@ describe('AgentClient MCP status', () => {
       method: string | undefined
       body: BodyInit | null | undefined
     }> = []
-    const client = createAIGatewayClient({
+    const client = createSuperMindClient({
       fetch: async (input, init) => {
         calls.push({ url: String(input), method: init?.method, body: init?.body })
         return Response.json({
@@ -133,7 +133,7 @@ describe('AgentClient MCP status', () => {
   })
 
   it('rejects malformed MCP Server status projections', async () => {
-    const client = createAIGatewayClient({
+    const client = createSuperMindClient({
       fetch: async () =>
         Response.json([{ id: 'docs', status: 'ready', url: 'https://secret.example' }]),
     })
@@ -150,7 +150,7 @@ describe('AgentClient skills', () => {
       body: unknown
       credentials: RequestCredentials | undefined
     }> = []
-    const client = createAIGatewayClient({
+    const client = createSuperMindClient({
       fetch: async (input, init) => {
         calls.push({
           url: String(input),
@@ -201,7 +201,7 @@ describe('AgentClient skills', () => {
   })
 
   it('rejects malformed Skill catalog responses', async () => {
-    const client = createAIGatewayClient({ fetch: async () => Response.json([{ id: 'broken' }]) })
+    const client = createSuperMindClient({ fetch: async () => Response.json([{ id: 'broken' }]) })
     await assert.rejects(() => client.agent.skills.list(), AIGatewayProtocolError)
   })
 
@@ -210,7 +210,7 @@ describe('AgentClient skills', () => {
     const apiUrls: string[] = []
     let uploads = 0
     let uploadedBody: Blob | undefined
-    const client = createAIGatewayClient({
+    const client = createSuperMindClient({
       fetch: async (input, init) => {
         apiUrls.push(String(input))
         apiBodies.push(init?.body)
@@ -278,7 +278,7 @@ describe('AgentClient user questions', () => {
       method: string | undefined
       body: BodyInit | null | undefined
     }> = []
-    const client = createAIGatewayClient({
+    const client = createSuperMindClient({
       fetch: async (input, init) => {
         calls.push({ url: String(input), method: init?.method, body: init?.body })
         return Response.json({
@@ -316,7 +316,7 @@ describe('AgentClient user questions', () => {
   })
 
   it('rejects malformed question responses instead of trusting the API payload', async () => {
-    const client = createAIGatewayClient({
+    const client = createSuperMindClient({
       fetch: async () => Response.json({ id: questionId, status: 'answered', questions: [] }),
     })
 
@@ -344,7 +344,7 @@ async function collect(events: AsyncIterable<AgentStreamEvent>): Promise<AgentSt
 describe('AgentClient threads and runs', () => {
   it('creates, lists, renames and deletes threads with correct HTTP shapes', async () => {
     const calls: Array<{ url: string; method: string | undefined; body: unknown }> = []
-    const client = createAIGatewayClient({
+    const client = createSuperMindClient({
       baseUrl: 'http://localhost:3001',
       fetch: async (input, init) => {
         calls.push({ url: String(input), method: init?.method, body: init?.body })
@@ -391,7 +391,7 @@ describe('AgentClient threads and runs', () => {
   })
 
   it('returns a paginated thread list page', async () => {
-    const client = createAIGatewayClient({
+    const client = createSuperMindClient({
       fetch: async () =>
         Response.json({
           items: [
@@ -435,7 +435,7 @@ describe('AgentClient threads and runs', () => {
   it('creates and cancels runs', async () => {
     const calls: string[] = []
     const bodies: unknown[] = []
-    const client = createAIGatewayClient({
+    const client = createSuperMindClient({
       fetch: async (input, init) => {
         calls.push(`${init?.method} ${String(input)}`)
         bodies.push(init?.body)
@@ -482,7 +482,7 @@ describe('AgentClient threads and runs', () => {
   })
 
   it('throws a typed error envelope for conflict responses', async () => {
-    const client = createAIGatewayClient({
+    const client = createSuperMindClient({
       fetch: async () =>
         new Response(
           JSON.stringify({
@@ -513,7 +513,7 @@ describe('AgentClient runs.subscribe', () => {
       frame({ type: 'text-delta', sequence: 2, runId, messageId: 'm1', delta: '答' }) +
       frame({ type: 'run-terminal', sequence: 3, runId, status: 'succeeded', limitReason: null }) +
       'data: [DONE]\n\n'
-    const client = createAIGatewayClient({ fetch: async () => sseResponse(frames) })
+    const client = createSuperMindClient({ fetch: async () => sseResponse(frames) })
 
     const events = await collect(client.agent.runs.subscribe(runId))
     assert.deepEqual(
@@ -525,7 +525,7 @@ describe('AgentClient runs.subscribe', () => {
 
   it('sends the after cursor for reconnect', async () => {
     let requestedUrl = ''
-    const client = createAIGatewayClient({
+    const client = createSuperMindClient({
       fetch: async (input) => {
         requestedUrl = String(input)
         return sseResponse(
@@ -547,7 +547,7 @@ describe('AgentClient runs.subscribe', () => {
   it('reconnects from the last sequence when the stream ends before [DONE]', async () => {
     const requestedUrls: string[] = []
     let calls = 0
-    const client = createAIGatewayClient({
+    const client = createSuperMindClient({
       fetch: async (input) => {
         requestedUrls.push(String(input))
         calls += 1
@@ -583,7 +583,7 @@ describe('AgentClient runs.subscribe', () => {
 
   it('bounds reconnect attempts when every response ends prematurely', async () => {
     let calls = 0
-    const client = createAIGatewayClient({
+    const client = createSuperMindClient({
       fetch: async () => {
         calls += 1
         return sseResponse('')
@@ -601,14 +601,14 @@ describe('AgentClient runs.subscribe', () => {
     const frames =
       frame({ type: 'run-status', sequence: 2, runId, status: 'running' }) +
       frame({ type: 'text-delta', sequence: 1, runId, messageId: 'm1', delta: 'x' })
-    const client = createAIGatewayClient({ fetch: async () => sseResponse(frames) })
+    const client = createSuperMindClient({ fetch: async () => sseResponse(frames) })
     await assert.rejects(() => collect(client.agent.runs.subscribe(runId)), AIGatewayProtocolError)
   })
 
   it('propagates AbortSignal to the underlying fetch', async () => {
     const controller = new AbortController()
     let seenSignal: AbortSignal | undefined
-    const client = createAIGatewayClient({
+    const client = createSuperMindClient({
       fetch: async (_input, init) => {
         seenSignal = init?.signal ?? undefined
         return sseResponse(

@@ -213,7 +213,7 @@ Agent 模型调用包装器在 `RequestLog/BillingRecord` 生命周期之外同�
 `@supermind/sdk` 的公开面按业务能力组织在一个包内。独立 `chat.stream/compare` 已由持久 Agent 取代：
 
 ```ts
-interface AIGatewayClient {
+interface SuperMindClient {
   agent: AgentClient
   images: {
     create(input: ImageRequest): Promise<ImageTask>

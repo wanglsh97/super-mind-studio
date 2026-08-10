@@ -2,13 +2,13 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
-import { createAIGatewayClient, type CreativeItem } from '@supermind/sdk';
+import { createSuperMindClient, type CreativeItem } from '@supermind/sdk';
 
 import { ProtectedUserPage } from '@/components/protected-user-page';
 import { useUserSession } from '@/components/user-session-provider';
 import { creationExpiryLabel, filterCreations, type CreationFilter } from './creations-view';
 
-const client = createAIGatewayClient();
+const client = createSuperMindClient();
 
 export default function CreationsPage() {
   return (

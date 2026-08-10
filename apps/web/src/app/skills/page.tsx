@@ -2,7 +2,7 @@
 
 import {
   AGENT_SKILL_CATEGORIES,
-  createAIGatewayClient,
+  createSuperMindClient,
   type AgentSkillCategory,
   type AgentSkillFileEntry,
   type AgentSkillFilePreview,
@@ -19,7 +19,7 @@ import { useAuthenticationFailure } from '@/hooks/use-authentication-failure'
 import { cn } from '@/utils/cn'
 import type { SkillFolderFile } from '@/utils/skills/skill-folder-package'
 
-const client = createAIGatewayClient()
+const client = createSuperMindClient()
 const categoryLabels: Record<AgentSkillCategory, string> = {
   development: '开发工具',
   data: '数据处理',

@@ -1,7 +1,7 @@
-export { createAIGatewayClient } from './client.js'
+export { createSuperMindClient } from './client.js'
 export type {
-  AIGatewayClient,
-  CreateAIGatewayClientOptions,
+  SuperMindClient,
+  CreateSuperMindClientOptions,
   ImageWaitOptions,
   RequestOptions,
 } from './client.js'

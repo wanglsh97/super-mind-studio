@@ -1,6 +1,6 @@
 import type { AddressInfo } from 'node:net'
 
-import type { AIGatewayClient, PromptOptimizationMode } from '@supermind/sdk'
+import type { SuperMindClient, PromptOptimizationMode } from '@supermind/sdk'
 import type { INestApplication } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
 
@@ -20,7 +20,7 @@ const databaseUrl = process.env.TEST_DATABASE_URL
 describe('Prompt optimizer API/SDK E2E', () => {
   let app: INestApplication
   let baseUrl: string
-  let client: AIGatewayClient
+  let client: SuperMindClient
   let prisma: PrismaService
   let authenticatedFetch: typeof fetch
 

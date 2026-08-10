@@ -14,7 +14,7 @@ import {
   FIXTURE_USER_IDENTITY,
   provisionFixtureUserSession,
 } from '../user-auth/user-auth.e2e-helpers'
-import type { AIGatewayClient } from '@supermind/sdk'
+import type { SuperMindClient } from '@supermind/sdk'
 
 const databaseUrl = process.env.TEST_DATABASE_URL
 
@@ -22,7 +22,7 @@ describe('Public/admin Prompt privacy E2E', () => {
   let app: INestApplication
   let baseUrl: string
   let prisma: PrismaService
-  let client: AIGatewayClient
+  let client: SuperMindClient
 
   beforeAll(async () => {
     if (!databaseUrl || (!databaseUrl.includes('_test') && !databaseUrl.includes('test_'))) {

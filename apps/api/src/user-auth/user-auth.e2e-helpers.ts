@@ -1,4 +1,4 @@
-import { createAIGatewayClient, type AIGatewayClient } from '@supermind/sdk'
+import { createSuperMindClient, type SuperMindClient } from '@supermind/sdk'
 import type { INestApplication } from '@nestjs/common'
 
 import type { PrismaService } from '../database/prisma.service'
@@ -27,8 +27,8 @@ export function createAuthenticatedFetch(sessionToken: string): typeof globalThi
   }
 }
 
-export function createAuthenticatedClient(baseUrl: string, sessionToken: string): AIGatewayClient {
-  return createAIGatewayClient({ baseUrl, fetch: createAuthenticatedFetch(sessionToken) })
+export function createAuthenticatedClient(baseUrl: string, sessionToken: string): SuperMindClient {
+  return createSuperMindClient({ baseUrl, fetch: createAuthenticatedFetch(sessionToken) })
 }
 
 export async function cleanupUserTestData(prisma: PrismaService): Promise<void> {

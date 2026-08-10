@@ -1,6 +1,6 @@
 import type { AddressInfo } from 'node:net'
 
-import type { AgentStreamEvent, AIGatewayClient } from '@supermind/sdk'
+import type { AgentStreamEvent, SuperMindClient } from '@supermind/sdk'
 import type { INestApplication } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
 
@@ -23,7 +23,7 @@ describe('Agent cross-Thread concurrency E2E', () => {
   let app: INestApplication
   let baseUrl: string
   let prisma: PrismaService
-  let client: AIGatewayClient
+  let client: SuperMindClient
   let sandboxArrivals = 0
   let signalAllSandboxesStarted: (() => void) | undefined
   let releaseSandboxCreation: (() => void) | undefined

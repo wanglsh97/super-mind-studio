@@ -36,7 +36,7 @@ async function main(): Promise<void> {
   }
   assert.equal(process.env.AGENT_WEB_FETCH_FIXTURE, 'true')
 
-  const { createAIGatewayClient } = await nativeImport('@supermind/sdk')
+  const { createSuperMindClient } = await nativeImport('@supermind/sdk')
   const app = await NestFactory.create(AppModule, { bufferLogs: true })
   configureApplication(app)
   await app.listen(0, '127.0.0.1')
@@ -56,7 +56,7 @@ async function main(): Promise<void> {
     email: null,
   })
 
-  const client = createAIGatewayClient({
+  const client = createSuperMindClient({
     baseUrl,
     fetch: (input, init) => {
       const url = new URL(String(input))

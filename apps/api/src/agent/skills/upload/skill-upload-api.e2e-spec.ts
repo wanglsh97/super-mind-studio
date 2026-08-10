@@ -1,6 +1,6 @@
 import type { AddressInfo } from 'node:net'
 
-import { AIGatewayError, createAIGatewayClient } from '@supermind/sdk'
+import { AIGatewayError, createSuperMindClient } from '@supermind/sdk'
 import type { INestApplication } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
 import { ZipFile } from 'yazl'
@@ -46,7 +46,7 @@ describe('Skill upload API and SDK E2E', () => {
     const token = await provisionFixtureUserSession(app)
     const apiBodies: unknown[] = []
     const authenticatedFetch = createAuthenticatedFetch(token)
-    const client = createAIGatewayClient({
+    const client = createSuperMindClient({
       baseUrl,
       fetch: (input, init) => {
         apiBodies.push(init?.body)
@@ -100,7 +100,7 @@ describe('Skill upload API and SDK E2E', () => {
 
   it('returns the stable upload error when finalized OSS metadata does not match', async () => {
     const token = await provisionFixtureUserSession(app)
-    const client = createAIGatewayClient({
+    const client = createSuperMindClient({
       baseUrl,
       fetch: createAuthenticatedFetch(token),
       skillUploadTransport: async (request) => {

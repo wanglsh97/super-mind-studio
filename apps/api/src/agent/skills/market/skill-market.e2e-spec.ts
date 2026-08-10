@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import type { AddressInfo } from 'node:net'
 
-import type { AIGatewayClient } from '@supermind/sdk'
+import type { SuperMindClient } from '@supermind/sdk'
 import type { INestApplication } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
 
@@ -20,7 +20,7 @@ describe('Public Skill market API E2E', () => {
   let app: INestApplication
   let baseUrl: string
   let prisma: PrismaService
-  let client: AIGatewayClient
+  let client: SuperMindClient
 
   beforeAll(async () => {
     const module = await Test.createTestingModule({ imports: [AppModule] })

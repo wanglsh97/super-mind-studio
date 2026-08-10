@@ -1,6 +1,6 @@
 'use client'
 
-import { createAIGatewayClient } from '@supermind/sdk'
+import { createSuperMindClient } from '@supermind/sdk'
 import type {
   AgentRunSummary,
   AgentThinkingEffort,
@@ -23,7 +23,7 @@ import {
   upsertActiveRun as upsertActiveRunState,
 } from '@/utils/agent/agent-active-runs'
 
-const client = createAIGatewayClient()
+const client = createSuperMindClient()
 
 /** 与 API `AGENT_THREAD_TITLE_MAX_LENGTH` 对齐。 */
 export const AGENT_THREAD_TITLE_MAX_LENGTH = 200

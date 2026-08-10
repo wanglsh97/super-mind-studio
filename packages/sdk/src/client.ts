@@ -34,14 +34,14 @@ export interface ImageWaitOptions extends RequestOptions {
   onUpdate?(task: ImageTask): void
 }
 
-export interface CreateAIGatewayClientOptions {
+export interface CreateSuperMindClientOptions {
   baseUrl?: string
   fetch?: typeof globalThis.fetch
   credentials?: 'omit' | 'same-origin' | 'include'
   skillUploadTransport?: SkillDirectUploadTransport
 }
 
-export interface AIGatewayClient {
+export interface SuperMindClient {
   images: {
     create(input: ImageRequest, options?: RequestOptions): Promise<ImageTask>
     get(taskId: string, options?: RequestOptions): Promise<ImageTask>
@@ -64,7 +64,7 @@ export interface AIGatewayClient {
   }
 }
 
-export function createAIGatewayClient(options: CreateAIGatewayClientOptions = {}): AIGatewayClient {
+export function createSuperMindClient(options: CreateSuperMindClientOptions = {}): SuperMindClient {
   const fetchImplementation = options.fetch ?? globalThis.fetch
   if (!fetchImplementation) throw new TypeError('A Fetch API implementation is required')
   const baseUrl = (options.baseUrl ?? '').replace(/\/$/, '')
@@ -109,6 +109,7 @@ export function createAIGatewayClient(options: CreateAIGatewayClientOptions = {}
     },
   }
 }
+
 
 async function optimizePrompt(
   fetchImplementation: typeof globalThis.fetch,

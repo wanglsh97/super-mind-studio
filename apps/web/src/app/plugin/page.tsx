@@ -1,6 +1,6 @@
 'use client';
 
-import { createAIGatewayClient } from '@supermind/sdk';
+import { createSuperMindClient } from '@supermind/sdk';
 import type { AgentMcpServerStatus } from '@supermind/sdk';
 import Image, { type StaticImageData } from 'next/image';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -16,7 +16,7 @@ import amapMapsLogo from '@/const/branding/amap-logo.png';
 
 import { mcpConnectionLabel, replaceMcpServerStatus } from '@/utils/plugin/mcp-settings-state';
 
-const client = createAIGatewayClient();
+const client = createSuperMindClient();
 
 const MCP_LOGOS: Readonly<Record<string, { alt: string; src: StaticImageData }>> = {
   context7: { alt: 'Context7', src: context7Logo },

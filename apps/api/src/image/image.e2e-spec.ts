@@ -1,7 +1,7 @@
 import type { AddressInfo } from 'node:net'
 
 import { AIGatewayTimeoutError } from '@supermind/sdk'
-import type { AIGatewayClient } from '@supermind/sdk'
+import type { SuperMindClient } from '@supermind/sdk'
 import type { INestApplication } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
 
@@ -65,7 +65,7 @@ class NeverCompletesImageAdapter extends RestartSafeImageAdapter {
 
 describe('Mock Image API/SDK/PostgreSQL E2E', () => {
   let app: INestApplication | undefined
-  let client: AIGatewayClient
+  let client: SuperMindClient
   let prisma: PrismaService
   let sessionToken = ''
   let authenticatedFetch: typeof fetch

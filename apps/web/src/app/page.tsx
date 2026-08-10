@@ -1,6 +1,6 @@
 'use client';
 
-import { createAIGatewayClient, parseAgentOutputFileReference } from '@supermind/sdk';
+import { createSuperMindClient, parseAgentOutputFileReference } from '@supermind/sdk';
 import type {
   AgentContextSummary,
   AgentMcpServerStatus,
@@ -119,7 +119,7 @@ import {
   summarizeAgentMcpStatuses,
 } from '@/utils/agent/agent-mcp-status';
 
-const client = createAIGatewayClient();
+const client = createSuperMindClient();
 
 interface ModelOption {
   value: TextModelId;

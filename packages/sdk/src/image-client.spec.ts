@@ -1,15 +1,15 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 
-import { createAIGatewayClient } from './client.js'
+import { createSuperMindClient } from './client.js'
 import { AIGatewayTimeoutError } from './errors.js'
 
 const pending = { taskId: 'task/1', model: 'mock-image', status: 'pending', results: [] }
 
-describe('AIGatewayClient images', () => {
+describe('SuperMindClient images', () => {
   it('creates and retrieves typed image tasks', async () => {
     const calls: Array<{ url: string; init?: RequestInit }> = []
-    const client = createAIGatewayClient({
+    const client = createSuperMindClient({
       baseUrl: 'http://gateway/',
       fetch: async (input, init) => {
         calls.push({ url: String(input), ...(init === undefined ? {} : { init }) })
@@ -29,7 +29,7 @@ describe('AIGatewayClient images', () => {
     const states = [pending, { ...pending, status: 'running' }, { ...pending, status: 'succeeded' }]
     let calls = 0
     const updates: string[] = []
-    const client = createAIGatewayClient({
+    const client = createSuperMindClient({
       fetch: async () => Response.json(states[calls++] ?? states.at(-1)),
     })
 
@@ -44,7 +44,7 @@ describe('AIGatewayClient images', () => {
   })
 
   it('returns typed timeout without changing the server task', async () => {
-    const client = createAIGatewayClient({ fetch: async () => Response.json(pending) })
+    const client = createSuperMindClient({ fetch: async () => Response.json(pending) })
     await assert.rejects(
       () => client.images.wait('task-1', { intervalMs: 1, timeoutMs: 2 }),
       AIGatewayTimeoutError,
@@ -53,7 +53,7 @@ describe('AIGatewayClient images', () => {
 
   it('supports cancellation while waiting and builds safe proxy download URLs', async () => {
     const controller = new AbortController()
-    const client = createAIGatewayClient({ fetch: async () => Response.json(pending) })
+    const client = createSuperMindClient({ fetch: async () => Response.json(pending) })
     const waiting = client.images.wait('task-1', {
       intervalMs: 1_000,
       timeoutMs: 2_000,

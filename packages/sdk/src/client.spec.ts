@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 
-import { createAIGatewayClient } from './client.js'
+import { createSuperMindClient } from './client.js'
 import { AIGatewayProtocolError } from './errors.js'
 
-describe('createAIGatewayClient models.list', () => {
+describe('createSuperMindClient models.list', () => {
   it('fetches and returns typed enabled model summaries', async () => {
     const calls: Array<{ input: string; init?: RequestInit }> = []
     const models = [
@@ -19,7 +19,7 @@ describe('createAIGatewayClient models.list', () => {
         health: 'unknown',
       },
     ]
-    const client = createAIGatewayClient({
+    const client = createSuperMindClient({
       baseUrl: 'http://localhost:3001/',
       fetch: async (fetchInput, init) => {
         calls.push({ input: String(fetchInput), ...(init === undefined ? {} : { init }) })
@@ -33,7 +33,7 @@ describe('createAIGatewayClient models.list', () => {
   })
 
   it('rejects malformed model summaries', async () => {
-    const client = createAIGatewayClient({
+    const client = createSuperMindClient({
       fetch: async () => Response.json([{ alias: 'secret-provider-model-id' }]),
     })
 

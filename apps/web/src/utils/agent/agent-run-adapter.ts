@@ -7,7 +7,7 @@ import type {
   AgentStreamEvent,
   AgentThinkingEffort,
   AgentThreadSummary,
-  AIGatewayClient,
+  SuperMindClient,
 } from '@supermind/sdk'
 import type {
   ChatModelAdapter,
@@ -69,7 +69,7 @@ type MutablePart =
  * 一次用户发送对应一次完整 run：reasoning / tool-call(+result) / text 都折叠进同一条 assistant 消息。
  */
 export function createAgentRunAdapter(
-  client: AIGatewayClient,
+  client: SuperMindClient,
   getContext: () => AgentRunAdapterContext,
   onError?: (error: unknown) => void,
 ): ChatModelAdapter {

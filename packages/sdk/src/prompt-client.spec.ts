@@ -1,15 +1,15 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 
-import { createAIGatewayClient } from './client.js'
+import { createSuperMindClient } from './client.js'
 import { AIGatewayError, AIGatewayProtocolError } from './errors.js'
 
 const requestId = '00000000-0000-4000-8000-000000000046'
 
-describe('AIGatewayClient prompts.optimize', () => {
+describe('SuperMindClient prompts.optimize', () => {
   it('posts a typed request and parses usage and estimated cost', async () => {
     const calls: Array<{ url: string; init?: RequestInit }> = []
-    const client = createAIGatewayClient({
+    const client = createSuperMindClient({
       baseUrl: 'http://gateway/',
       fetch: async (input, init) => {
         calls.push({ url: String(input), ...(init === undefined ? {} : { init }) })
@@ -52,7 +52,7 @@ describe('AIGatewayClient prompts.optimize', () => {
   })
 
   it('uses the shared typed gateway error parser', async () => {
-    const client = createAIGatewayClient({
+    const client = createSuperMindClient({
       fetch: async () =>
         Response.json(
           {
@@ -77,7 +77,7 @@ describe('AIGatewayClient prompts.optimize', () => {
   })
 
   it('rejects malformed success responses', async () => {
-    const client = createAIGatewayClient({
+    const client = createSuperMindClient({
       fetch: async () => Response.json({ requestId, model: 'qwen', usage: {} }),
     })
 

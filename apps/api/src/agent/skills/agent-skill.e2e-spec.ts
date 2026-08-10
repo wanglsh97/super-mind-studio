@@ -1,6 +1,6 @@
 import type { AddressInfo } from 'node:net'
 
-import type { AIGatewayClient } from '@supermind/sdk'
+import type { SuperMindClient } from '@supermind/sdk'
 import type { INestApplication } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
 
@@ -18,8 +18,8 @@ describe('Agent Skill market E2E', () => {
   let app: INestApplication
   let baseUrl: string
   let prisma: PrismaService
-  let clientA: AIGatewayClient
-  let clientB: AIGatewayClient
+  let clientA: SuperMindClient
+  let clientB: SuperMindClient
 
   beforeAll(async () => {
     const testingModule = await Test.createTestingModule({ imports: [AppModule] }).compile()

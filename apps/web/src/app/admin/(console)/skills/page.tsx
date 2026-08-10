@@ -1,13 +1,13 @@
 'use client'
 
-import { createAIGatewayClient, type AdminSkillReviewRecord } from '@supermind/sdk'
+import { createSuperMindClient, type AdminSkillReviewRecord } from '@supermind/sdk'
 import { Alert, Button, Input, Modal, Space, Table, Tag, Typography } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { useCallback, useEffect, useState } from 'react'
 
 import { redirectToAdminLogin } from '@/utils/admin/admin-auth-client'
 
-const client = createAIGatewayClient()
+const client = createSuperMindClient()
 
 export default function AdminSkillsPage() {
   const [items, setItems] = useState<AdminSkillReviewRecord[]>([])

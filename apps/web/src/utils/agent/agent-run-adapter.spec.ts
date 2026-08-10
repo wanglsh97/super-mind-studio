@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
-import type { AgentMessage, AgentStreamEvent, AIGatewayClient } from '@supermind/sdk'
+import type { AgentMessage, AgentStreamEvent, SuperMindClient } from '@supermind/sdk'
 
 import { agentMessagesToThreadMessages, createAgentRunAdapter } from './agent-run-adapter'
 
@@ -164,7 +164,7 @@ test('aborting local SSE does not call runs.cancel (browser disconnect must not 
         },
       },
     },
-  } as unknown as AIGatewayClient
+  } as unknown as SuperMindClient
 
   const adapter = createAgentRunAdapter(client, () => ({
     threadId: 'thread-1',
@@ -229,7 +229,7 @@ test('forwards live Sandbox status events to the workspace status module', async
         },
       },
     },
-  } as unknown as AIGatewayClient
+  } as unknown as SuperMindClient
   const adapter = createAgentRunAdapter(client, () => ({
     threadId: 'thread-1',
     model: 'mock',
@@ -272,7 +272,7 @@ test('forwards website mode through the existing Agent run request', async () =>
         },
       },
     },
-  } as unknown as AIGatewayClient
+  } as unknown as SuperMindClient
   const adapter = createAgentRunAdapter(client, () => ({
     threadId: 'thread-1',
     model: 'mock',
@@ -324,7 +324,7 @@ test('reports progress until the first renderable Agent event arrives', async ()
         },
       },
     },
-  } as unknown as AIGatewayClient
+  } as unknown as SuperMindClient
   const adapter = createAgentRunAdapter(client, () => ({
     threadId: 'thread-1',
     model: 'mock',
@@ -376,7 +376,7 @@ test('waits for limit terminal after a context error and releases the active run
         },
       },
     },
-  } as unknown as AIGatewayClient
+  } as unknown as SuperMindClient
   const adapter = createAgentRunAdapter(client, () => ({
     threadId: 'thread-1',
     model: 'qwen',

@@ -1,6 +1,6 @@
 'use client'
 
-import { createAIGatewayClient } from '@supermind/sdk'
+import { createSuperMindClient } from '@supermind/sdk'
 import type { AgentTokenAnalytics, AgentTokenDailyUsage } from '@supermind/sdk'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
@@ -12,7 +12,7 @@ import { paginateTokenDailyUsage } from '@/utils/usage/token-daily-table'
 import { formatTokenValue } from '@/utils/usage/token-display'
 import { modelTokenPieOption } from '@/utils/usage/token-model-chart'
 
-const client = createAIGatewayClient()
+const client = createSuperMindClient()
 
 export default function UsagePage() {
   return (

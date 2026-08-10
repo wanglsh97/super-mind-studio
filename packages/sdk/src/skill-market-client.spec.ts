@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 
-import { createAIGatewayClient } from './client.js'
+import { createSuperMindClient } from './client.js'
 import { AIGatewayError } from './errors.js'
 
 const summary = {
@@ -62,7 +62,7 @@ describe('Skill market clients', () => {
         files: [{ path: 'SKILL.md', type: 'file', size: 10 }],
       })
     }
-    const client = createAIGatewayClient({
+    const client = createSuperMindClient({
       baseUrl: 'https://gateway.example/',
       credentials: 'include',
       fetch: fetchImplementation,
@@ -120,7 +120,7 @@ describe('Skill market clients', () => {
   })
 
   it('preserves the normalized gateway error envelope', async () => {
-    const client = createAIGatewayClient({
+    const client = createSuperMindClient({
       fetch: async () =>
         json(
           {
