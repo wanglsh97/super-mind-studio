@@ -56,6 +56,10 @@ type MutablePart =
       toolName: string
       args: Record<string, string | number | boolean | null>
       argsText: string
+      progress?: {
+        content: string
+        details?: Record<string, string | number | boolean | null>
+      }
       result?: {
         summary: string
         status: string
@@ -183,7 +187,10 @@ export function createAgentRunAdapter(
 
 function isRenderableAgentEvent(event: AgentStreamEvent): boolean {
   return (
-    event.type === 'reasoning-delta' || event.type === 'text-delta' || event.type === 'tool-call'
+    event.type === 'reasoning-delta' ||
+    event.type === 'text-delta' ||
+    event.type === 'tool-call' ||
+    event.type === 'tool-progress'
   )
 }
 
@@ -303,6 +310,30 @@ function applyAgentEvent(
         argsText: JSON.stringify(event.args),
       })
       return
+    case 'tool-progress': {
+      const progress = {
+        content: event.content,
+        ...(event.details === undefined ? {} : { details: toJsonObject(event.details) }),
+      }
+      const index = parts.findIndex(
+        (part) => part.type === 'tool-call' && part.toolCallId === event.toolCallId,
+      )
+      if (index < 0) {
+        parts.push({
+          type: 'tool-call',
+          toolCallId: event.toolCallId,
+          toolName: event.toolName,
+          args: {},
+          argsText: '{}',
+          progress,
+        })
+        return
+      }
+      const toolCall = parts[index]
+      if (!toolCall || toolCall.type !== 'tool-call') return
+      parts[index] = { ...toolCall, progress }
+      return
+    }
     case 'tool-result': {
       const index = parts.findIndex(
         (part) => part.type === 'tool-call' && part.toolCallId === event.toolCallId,
@@ -325,8 +356,10 @@ function applyAgentEvent(
       }
       const toolCall = parts[index]
       if (!toolCall || toolCall.type !== 'tool-call') return
+      const completedToolCall = { ...toolCall }
+      delete completedToolCall.progress
       parts[index] = {
-        ...toolCall,
+        ...completedToolCall,
         result: {
           summary: event.summary,
           status: event.status,
@@ -364,6 +397,7 @@ function toAssistantParts(parts: readonly MutablePart[]): ThreadAssistantMessage
         toolName: part.toolName,
         args: part.args,
         argsText: part.argsText,
+        ...(part.progress === undefined ? {} : { artifact: part.progress }),
         ...(part.result === undefined ? {} : { result: part.result }),
         ...(part.isError === undefined ? {} : { isError: part.isError }),
       } as ThreadAssistantMessagePart

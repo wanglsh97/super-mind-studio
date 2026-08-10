@@ -461,6 +461,7 @@ function AgentConsole() {
                               const toolPart = part as typeof part & {
                                 toolName?: unknown;
                                 args?: unknown;
+                                artifact?: unknown;
                                 result?: unknown;
                                 isError?: unknown;
                               };
@@ -475,6 +476,7 @@ function AgentConsole() {
                                     serverId={parsed.serverId}
                                     remoteToolName={parsed.remoteToolName}
                                     args={isRecord(toolPart.args) ? toolPart.args : {}}
+                                    progress={agentToolProgress(toolPart.artifact)}
                                     result={result}
                                     running={part.status?.type === 'running'}
                                     isError={toolPart.isError === true}
@@ -1396,10 +1398,15 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+function agentToolProgress(value: unknown): string | undefined {
+  if (!isRecord(value) || typeof value.content !== 'string') return undefined;
+  return value.content;
+}
+
 const agentToolUiToolkit = defineToolkit({
   web_fetch: {
     type: 'backend',
-    render: ({ args, result, status, isError }) => {
+    render: ({ args, artifact, result, status, isError }) => {
       const url = typeof args.url === 'string' ? args.url : '';
       const finalUrl =
         typeof result?.audit?.finalUrl === 'string' ? result.audit.finalUrl : undefined;
@@ -1412,6 +1419,7 @@ const agentToolUiToolkit = defineToolkit({
           subject={finalUrl ?? url}
           detail={httpStatus === undefined ? undefined : `HTTP ${httpStatus}`}
           args={url ? { url } : undefined}
+          progress={agentToolProgress(artifact)}
           result={result}
           running={status.type === 'running'}
           isError={Boolean(isError)}
@@ -1421,11 +1429,12 @@ const agentToolUiToolkit = defineToolkit({
   },
   shell: {
     type: 'backend',
-    render: ({ args, result, status, isError }) => (
+    render: ({ args, artifact, result, status, isError }) => (
       <SandboxToolActivityCard
         toolName="shell"
         subject={args.command}
         detail={args.workingDirectory}
+        progress={agentToolProgress(artifact)}
         result={result}
         running={status.type === 'running'}
         isError={Boolean(isError)}
@@ -1434,10 +1443,11 @@ const agentToolUiToolkit = defineToolkit({
   },
   read_file: {
     type: 'backend',
-    render: ({ args, result, status, isError }) => (
+    render: ({ args, artifact, result, status, isError }) => (
       <SandboxToolActivityCard
         toolName="read_file"
         subject={args.path}
+        progress={agentToolProgress(artifact)}
         result={result}
         running={status.type === 'running'}
         isError={Boolean(isError)}
@@ -1446,10 +1456,11 @@ const agentToolUiToolkit = defineToolkit({
   },
   write_file: {
     type: 'backend',
-    render: ({ args, result, status, isError }) => (
+    render: ({ args, artifact, result, status, isError }) => (
       <SandboxToolActivityCard
         toolName="write_file"
         subject={args.path}
+        progress={agentToolProgress(artifact)}
         result={result}
         running={status.type === 'running'}
         isError={Boolean(isError)}
@@ -1458,12 +1469,13 @@ const agentToolUiToolkit = defineToolkit({
   },
   export_file: {
     type: 'backend',
-    render: ({ args, result, status, isError }) => {
+    render: ({ args, artifact, result, status, isError }) => {
       if (status.type === 'running') {
         return (
           <SandboxToolActivityCard
             toolName="export_file"
             subject={args.path}
+            progress={agentToolProgress(artifact)}
             running
             isError={false}
           />
@@ -1474,12 +1486,13 @@ const agentToolUiToolkit = defineToolkit({
   },
   create_website: {
     type: 'backend',
-    render: ({ result, status, isError }) => {
+    render: ({ artifact, result, status, isError }) => {
       if (status.type === 'running') {
         return (
           <SandboxToolActivityCard
             toolName="create_website"
             subject="构建、校验并覆盖最终网站产物"
+            progress={agentToolProgress(artifact)}
             running
             isError={false}
           />
@@ -1690,6 +1703,7 @@ function SandboxToolActivityCard({
   toolName,
   subject,
   detail,
+  progress,
   result,
   running,
   isError,
@@ -1697,6 +1711,7 @@ function SandboxToolActivityCard({
   toolName: 'shell' | 'read_file' | 'write_file' | 'export_file' | 'create_website';
   subject?: string | undefined;
   detail?: string | undefined;
+  progress?: string | undefined;
   result?: SandboxToolResult | undefined;
   running: boolean;
   isError: boolean;
@@ -1706,6 +1721,7 @@ function SandboxToolActivityCard({
       toolName={toolName}
       subject={subject}
       detail={detail}
+      progress={progress}
       result={result}
       running={running}
       isError={isError}
@@ -1717,6 +1733,7 @@ function McpToolActivityCard({
   serverId,
   remoteToolName,
   args,
+  progress,
   result,
   running,
   isError,
@@ -1724,6 +1741,7 @@ function McpToolActivityCard({
   serverId: string;
   remoteToolName: string;
   args: Record<string, unknown>;
+  progress?: string | undefined;
   result?: SandboxToolResult | undefined;
   running: boolean;
   isError: boolean;
@@ -1734,6 +1752,7 @@ function McpToolActivityCard({
         toolName={remoteToolName}
         subject={serverId}
         args={args}
+        progress={progress}
         result={result}
         running={running}
         isError={isError}
@@ -1747,6 +1766,7 @@ function ToolActivityCard({
   subject,
   detail,
   args,
+  progress,
   result,
   running,
   isError,
@@ -1755,6 +1775,7 @@ function ToolActivityCard({
   subject?: string | undefined;
   detail?: string | undefined;
   args?: Record<string, unknown> | undefined;
+  progress?: string | undefined;
   result?: SandboxToolResult | undefined;
   running: boolean;
   isError: boolean;
@@ -1766,7 +1787,7 @@ function ToolActivityCard({
     audit: result?.audit,
   });
   const statusLabel = AGENT_TOOL_ACTIVITY_LABELS[activityState];
-  const hasDetails = Boolean(subject || detail || args || result);
+  const hasDetails = Boolean(subject || detail || args || progress || result);
   const detailLabels = agentToolDetailLabels(toolName);
 
   return (
@@ -1808,6 +1829,7 @@ function ToolActivityCard({
           {subject ? <ToolDetail label={detailLabels.subject} value={subject} code /> : null}
           {detail ? <ToolDetail label={detailLabels.detail} value={detail} /> : null}
           {args ? <ToolDetail label="参数" value={JSON.stringify(args, null, 2)} code /> : null}
+          {progress ? <ToolDetail label="进度" value={progress} /> : null}
           <ToolExecutionResult result={result} labels={detailLabels} />
         </div>
       ) : null}

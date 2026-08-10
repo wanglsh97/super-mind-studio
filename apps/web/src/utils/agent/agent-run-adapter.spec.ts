@@ -76,6 +76,86 @@ test('merges tool results into the preceding assistant tool-call part', () => {
   ])
 })
 
+test('keeps tool progress as a UI-only running artifact until the final result arrives', async () => {
+  const client = {
+    agent: {
+      runs: {
+        create: async () => ({ id: 'run-progress', threadId: 'thread-1' }),
+        subscribe: async function* () {
+          yield {
+            type: 'tool-call',
+            sequence: 0,
+            runId: 'run-progress',
+            messageId: 'message-1',
+            toolCallId: 'call-1',
+            toolName: 'shell',
+            args: { command: 'pnpm build' },
+          } as const
+          yield {
+            type: 'tool-progress',
+            sequence: 1,
+            runId: 'run-progress',
+            toolCallId: 'call-1',
+            toolName: 'shell',
+            content: '正在编译',
+            details: { percent: 50 },
+          } as const
+          yield {
+            type: 'tool-result',
+            sequence: 2,
+            runId: 'run-progress',
+            toolCallId: 'call-1',
+            toolName: 'shell',
+            status: 'succeeded',
+            isError: false,
+            summary: '编译完成',
+          } as const
+          yield {
+            type: 'run-terminal',
+            sequence: 3,
+            runId: 'run-progress',
+            status: 'succeeded',
+            limitReason: null,
+          } as const
+        },
+      },
+    },
+  } as unknown as SuperMindClient
+  const adapter = createAgentRunAdapter(client, () => ({
+    threadId: 'thread-1',
+    model: 'mock',
+    thinkingEffort: 'balanced',
+    selectedSkillNames: [],
+    onThreadCreated: () => undefined,
+  }))
+  const chunks: Array<{ content: Array<Record<string, unknown>> }> = []
+
+  for await (const chunk of adapter.run({
+    messages: [{ role: 'user', content: [{ type: 'text', text: '编译' }] }],
+    abortSignal: new AbortController().signal,
+  } as never) as AsyncGenerator<{ content: Array<Record<string, unknown>> }>) {
+    chunks.push(chunk)
+  }
+
+  assert.deepEqual(chunks[1]?.content[0], {
+    type: 'tool-call',
+    toolCallId: 'call-1',
+    toolName: 'shell',
+    args: { command: 'pnpm build' },
+    argsText: '{"command":"pnpm build"}',
+    artifact: { content: '正在编译', details: { percent: 50 } },
+  })
+  assert.deepEqual(chunks[2]?.content[0], {
+    type: 'tool-call',
+    toolCallId: 'call-1',
+    toolName: 'shell',
+    args: { command: 'pnpm build' },
+    argsText: '{"command":"pnpm build"}',
+    result: { summary: '编译完成', status: 'succeeded' },
+    isError: false,
+  })
+})
+
 test('marks the last assistant message incomplete when last run was interrupted', () => {
   const messages: AgentMessage[] = [
     {
