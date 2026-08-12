@@ -10,3 +10,20 @@ docker run --rm super-mind-sandbox-image:0.1.0 \
 ```
 
 生产环境需将镜像推送到 OpenSandbox Server 可访问的仓库，并将 `OPEN_SANDBOX_IMAGE` 设置为完整镜像地址。文件仍只存在于 Sandbox，不会由镜像自动上传 OSS。
+
+当前生产镜像地址：
+
+```text
+registry.cn-hangzhou.aliyuncs.com/super-mind/super-mind-sandbox-image:0.1.0
+```
+
+构建并推送：
+
+```bash
+docker build --platform linux/amd64 \
+  -f infra/sandbox/Dockerfile \
+  -t registry.cn-hangzhou.aliyuncs.com/super-mind/super-mind-sandbox-image:0.1.0 \
+  infra/sandbox
+
+docker push registry.cn-hangzhou.aliyuncs.com/super-mind/super-mind-sandbox-image:0.1.0
+```
