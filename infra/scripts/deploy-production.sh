@@ -38,6 +38,10 @@ smoke_model_alias="$(env_value SMOKE_MODEL_ALIAS)" || {
   echo 'SMOKE_MODEL_ALIAS 必须在生产环境文件中出现且只能出现一次。' >&2
   exit 1
 }
+sandbox_image="$(env_value OPEN_SANDBOX_IMAGE)" || {
+  echo 'OPEN_SANDBOX_IMAGE 必须在生产环境文件中出现且只能出现一次。' >&2
+  exit 1
+}
 skill_object_store_driver="$(env_value SKILL_OBJECT_STORE_DRIVER)" || {
   echo 'SKILL_OBJECT_STORE_DRIVER 必须在生产环境文件中出现且只能出现一次。' >&2
   exit 1
@@ -111,6 +115,13 @@ if [ "$oss_internal" != 'false' ]; then
   echo '浏览器直传 Skill 包要求 OSS_INTERNAL=false。' >&2
   exit 1
 fi
+case "$sandbox_image" in
+  registry.cn-*.aliyuncs.com/*:* ) ;;
+  *)
+    echo 'OPEN_SANDBOX_IMAGE 必须是带版本 tag 的阿里云 ACR 镜像地址。' >&2
+    exit 1
+    ;;
+esac
 
 cd "$ROOT_DIR"
 
@@ -175,7 +186,20 @@ reset_tempo_trace_storage() {
   fi
 }
 
+publish_sandbox_image_if_changed() {
+  previous_commit="$(git rev-parse HEAD^ 2>/dev/null || true)"
+  if [ -z "$previous_commit" ] || ! git diff --quiet "$previous_commit" HEAD -- infra/sandbox; then
+    echo "检测到 infra/sandbox 镜像定义变更，构建并推送 ${sandbox_image}。"
+    docker build --platform linux/amd64 -f "$ROOT_DIR/infra/sandbox/Dockerfile" \
+      -t "$sandbox_image" "$ROOT_DIR/infra/sandbox"
+    docker push "$sandbox_image"
+  else
+    echo "infra/sandbox 无变更，跳过 Sandbox 镜像构建和推送：${sandbox_image}。"
+  fi
+}
+
 compose config >/dev/null
+publish_sandbox_image_if_changed
 compose build web api migrate
 
 if compose ps --status running --services 2>/dev/null | grep -qx postgres; then

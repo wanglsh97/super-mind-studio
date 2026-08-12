@@ -222,6 +222,8 @@ DATABASE_URL=postgresql://aigateway:password@localhost:5432/aigateway_test pnpm 
     docker image prune -af
 ```
 
+生产发布脚本会检查当前 commit 相对父 commit 是否修改了 `infra/sandbox/`。只有 Sandbox 镜像定义发生变化时，才会使用 `OPEN_SANDBOX_IMAGE` 构建并推送 ACR 镜像；普通 Web/API 代码发布会跳过镜像推送。执行发布前，项目 ECS 必须已登录 ACR，且 `.env.production` 中配置带版本 tag 的完整镜像地址。
+
 ## 上下文压缩策略：
 
 Token 预算控制 + 分级压缩（历史 reasoning、 Tool Result） + 结构化摘要
