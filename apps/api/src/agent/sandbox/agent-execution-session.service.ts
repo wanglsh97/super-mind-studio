@@ -1,5 +1,6 @@
-import { Inject, Injectable, Logger } from '@nestjs/common'
-import { ConfigService } from '@nestjs/config'
+import { Inject, Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { randomUUID } from 'node:crypto';
 
 import {
   SANDBOX_RUNTIME_PORT,
@@ -7,45 +8,45 @@ import {
   type SandboxCommandResult,
   type SandboxFileResult,
   type SandboxRuntimePort,
-} from './sandbox-runtime.port'
-import { AgentThreadRepository } from '../agent-thread.repository'
-import type { ActivatedSkill } from '../skills/executable-skill.service'
-import { ExecutableSkillService } from '../skills/executable-skill.service'
+} from './sandbox-runtime.port';
+import { AgentThreadRepository } from '../agent-thread.repository';
+import type { ActivatedSkill } from '../skills/executable-skill.service';
+import { ExecutableSkillService } from '../skills/executable-skill.service';
 import {
   loadWebsiteBuildingSkill,
   WEBSITE_BUILDING_SKILL,
   type WebsiteBuildingSkill,
-} from '../skills/builtin/website-building.skill'
+} from '../skills/builtin/website-building.skill';
 
 interface ThreadExecutionSession {
-  threadId: string
-  userId: string
-  sandboxId: string
-  createdAt: Date
-  expiresAt: Date
-  skillPrefetches: Map<string, Promise<void>>
-  skillPrefetchLanes: Promise<void>[]
-  skillPrefetchCursor: number
-  skillPrefetchInitialization?: Promise<void>
-  cleanupTimer?: ReturnType<typeof setTimeout>
+  threadId: string;
+  userId: string;
+  sandboxId: string;
+  createdAt: Date;
+  expiresAt: Date;
+  skillPrefetches: Map<string, Promise<void>>;
+  skillPrefetchLanes: Promise<void>[];
+  skillPrefetchCursor: number;
+  skillPrefetchInitialization?: Promise<void>;
+  cleanupTimer?: ReturnType<typeof setTimeout>;
 }
 
 interface RunExecutionSession {
-  runId: string
-  userId: string
-  thread: ThreadExecutionSession
-  activeSkills: Map<string, ActivatedSkill>
+  runId: string;
+  userId: string;
+  thread: ThreadExecutionSession;
+  activeSkills: Map<string, ActivatedSkill>;
 }
 
-const SKILL_PREFETCH_CONCURRENCY = 4
+const SKILL_PREFETCH_CONCURRENCY = 4;
 
 @Injectable()
 export class AgentExecutionSessionService {
-  private readonly logger = new Logger(AgentExecutionSessionService.name)
-  private readonly threadSessions = new Map<string, ThreadExecutionSession>()
-  private readonly runSessions = new Map<string, RunExecutionSession>()
-  private readonly pendingThreads = new Map<string, Promise<ThreadExecutionSession>>()
-  private readonly timeoutMs: number
+  private readonly logger = new Logger(AgentExecutionSessionService.name);
+  private readonly threadSessions = new Map<string, ThreadExecutionSession>();
+  private readonly runSessions = new Map<string, RunExecutionSession>();
+  private readonly pendingThreads = new Map<string, Promise<ThreadExecutionSession>>();
+  private readonly timeoutMs: number;
 
   constructor(
     @Inject(ExecutableSkillService) private readonly skills: ExecutableSkillService,
@@ -55,7 +56,7 @@ export class AgentExecutionSessionService {
     @Inject(WEBSITE_BUILDING_SKILL)
     private readonly websiteSkill: WebsiteBuildingSkill = loadWebsiteBuildingSkill(),
   ) {
-    this.timeoutMs = config.get<number>('SANDBOX_TIMEOUT_SECONDS', 3_600) * 1_000
+    this.timeoutMs = config.get<number>('SANDBOX_TIMEOUT_SECONDS', 3_600) * 1_000;
   }
 
   async startRun(
@@ -64,28 +65,49 @@ export class AgentExecutionSessionService {
     userId: string,
     signal?: AbortSignal,
   ): Promise<string> {
-    const existing = this.runSessions.get(runId)
-    this.assertOwner(existing, userId)
-    if (existing) return existing.thread.sandboxId
+    const existing = this.runSessions.get(runId);
+    this.assertOwner(existing, userId);
+    if (existing) return existing.thread.sandboxId;
 
-    let thread = await this.getOrCreateThreadSession(runId, threadId, userId, signal)
-    this.clearCleanupTimer(thread)
+    let thread = await this.getOrCreateThreadSession(runId, threadId, userId, signal);
+    this.clearCleanupTimer(thread);
     try {
-      await this.sandboxes.resetRunState(thread.sandboxId, signal)
+      await this.sandboxes.resetRunState(thread.sandboxId, signal);
     } catch (error) {
-      if (signal?.aborted) throw error
-      await this.discardUnusableThread(thread)
-      thread = await this.getOrCreateThreadSession(runId, threadId, userId, signal)
-      await this.sandboxes.resetRunState(thread.sandboxId, signal)
+      if (signal?.aborted) throw error;
+      await this.discardUnusableThread(thread);
+      thread = await this.getOrCreateThreadSession(runId, threadId, userId, signal);
+      await this.sandboxes.resetRunState(thread.sandboxId, signal);
     }
     this.runSessions.set(runId, {
       runId,
       userId,
       thread,
       activeSkills: new Map(),
-    })
-    this.beginSkillPrefetch(thread)
-    return thread.sandboxId
+    });
+    this.beginSkillPrefetch(thread);
+    return thread.sandboxId;
+  }
+
+  async uploadThreadFile(
+    threadId: string,
+    userId: string,
+    fileName: string,
+    bytes: Uint8Array,
+    signal?: AbortSignal,
+  ): Promise<SandboxFileResult> {
+    const session = await this.getOrCreateThreadSession(
+      `upload-${randomUUID()}`,
+      threadId,
+      userId,
+      signal,
+    );
+    return this.sandboxes.writeFile({
+      sandboxId: session.sandboxId,
+      path: `/workspace/input/${fileName}`,
+      bytes,
+      ...(signal === undefined ? {} : { signal }),
+    });
   }
 
   async activateSkill(
@@ -94,23 +116,23 @@ export class AgentExecutionSessionService {
     name: string,
     signal?: AbortSignal,
   ): Promise<{ sandboxId: string; skill: ActivatedSkill; alreadyActive: boolean }> {
-    const session = this.requireRunSession(runId, userId)
-    const active = session.activeSkills.get(name)
+    const session = this.requireRunSession(runId, userId);
+    const active = session.activeSkills.get(name);
     if (active) {
-      return { sandboxId: session.thread.sandboxId, skill: active, alreadyActive: true }
+      return { sandboxId: session.thread.sandboxId, skill: active, alreadyActive: true };
     }
 
-    await waitForPrefetch(session.thread.skillPrefetchInitialization, signal)
-    await waitForPrefetch(session.thread.skillPrefetches.get(name), signal)
+    await waitForPrefetch(session.thread.skillPrefetchInitialization, signal);
+    await waitForPrefetch(session.thread.skillPrefetches.get(name), signal);
 
     let installed = await this.sandboxes.readInstalledSkillPackage({
       sandboxId: session.thread.sandboxId,
       skillName: name,
       ...(signal === undefined ? {} : { signal }),
-    })
+    });
     if (!installed) {
-      const [prepared] = await this.skills.prepareActivation(userId, [name], signal)
-      if (!prepared) throw new Error(`Skill activation returned no package: ${name}`)
+      const [prepared] = await this.skills.prepareActivation(userId, [name], signal);
+      if (!prepared) throw new Error(`Skill activation returned no package: ${name}`);
       installed = await this.sandboxes.installSkillPackage({
         sandboxId: session.thread.sandboxId,
         skillId: prepared.manifest.skillId,
@@ -119,7 +141,7 @@ export class AgentExecutionSessionService {
         expectedSha256: prepared.manifest.packageSha256,
         expectedSizeBytes: prepared.download.metadata.sizeBytes,
         ...(signal === undefined ? {} : { signal }),
-      })
+      });
     }
     const skill: ActivatedSkill = {
       manifest: {
@@ -129,9 +151,9 @@ export class AgentExecutionSessionService {
       },
       skillMarkdown: installed.skillMarkdown,
       files: installed.files.map((file) => ({ ...file })),
-    }
-    session.activeSkills.set(name, skill)
-    return { sandboxId: session.thread.sandboxId, skill, alreadyActive: false }
+    };
+    session.activeSkills.set(name, skill);
+    return { sandboxId: session.thread.sandboxId, skill, alreadyActive: false };
   }
 
   async installWebsiteBuildingSkill(
@@ -139,8 +161,8 @@ export class AgentExecutionSessionService {
     userId: string,
     signal?: AbortSignal,
   ): Promise<void> {
-    const session = this.requireRunSession(runId, userId)
-    const root = `${SANDBOX_SKILLS_ROOT}/${this.websiteSkill.name}`
+    const session = this.requireRunSession(runId, userId);
+    const root = `${SANDBOX_SKILLS_ROOT}/${this.websiteSkill.name}`;
     await Promise.all(
       this.websiteSkill.files.map((file) =>
         this.sandboxes.writeFile({
@@ -150,14 +172,14 @@ export class AgentExecutionSessionService {
           ...(signal === undefined ? {} : { signal }),
         }),
       ),
-    )
+    );
   }
 
   activeSkillNames(runId: string, userId: string): string[] {
-    const session = this.requireRunSession(runId, userId)
+    const session = this.requireRunSession(runId, userId);
     return [...session.activeSkills.values()]
       .map((skill) => skill.manifest.name)
-      .sort((left, right) => left.localeCompare(right))
+      .sort((left, right) => left.localeCompare(right));
   }
 
   async runShell(
@@ -165,13 +187,13 @@ export class AgentExecutionSessionService {
     userId: string,
     input: { command: string; workingDirectory: string; signal?: AbortSignal },
   ): Promise<SandboxCommandResult> {
-    const session = this.requireRunSession(runId, userId)
+    const session = this.requireRunSession(runId, userId);
     return this.sandboxes.runCommand({
       sandboxId: session.thread.sandboxId,
       command: input.command,
       workingDirectory: input.workingDirectory,
       ...(input.signal === undefined ? {} : { signal: input.signal }),
-    })
+    });
   }
 
   async readFile(
@@ -180,8 +202,8 @@ export class AgentExecutionSessionService {
     path: string,
     signal?: AbortSignal,
   ): Promise<SandboxFileResult | null> {
-    const session = this.requireRunSession(runId, userId)
-    return this.sandboxes.readFile(session.thread.sandboxId, path, signal)
+    const session = this.requireRunSession(runId, userId);
+    return this.sandboxes.readFile(session.thread.sandboxId, path, signal);
   }
 
   async readOutputFile(
@@ -190,8 +212,8 @@ export class AgentExecutionSessionService {
     path: string,
     signal?: AbortSignal,
   ): Promise<SandboxFileResult | null> {
-    const session = this.requireRunSession(runId, userId)
-    return this.sandboxes.readOutputFile(session.thread.sandboxId, path, signal)
+    const session = this.requireRunSession(runId, userId);
+    return this.sandboxes.readOutputFile(session.thread.sandboxId, path, signal);
   }
 
   async writeFile(
@@ -201,13 +223,13 @@ export class AgentExecutionSessionService {
     bytes: Uint8Array,
     signal?: AbortSignal,
   ): Promise<SandboxFileResult> {
-    const session = this.requireRunSession(runId, userId)
+    const session = this.requireRunSession(runId, userId);
     return this.sandboxes.writeFile({
       sandboxId: session.thread.sandboxId,
       path,
       bytes,
       ...(signal === undefined ? {} : { signal }),
-    })
+    });
   }
 
   async createThreadPreviewEndpoint(
@@ -217,59 +239,59 @@ export class AgentExecutionSessionService {
     signal?: AbortSignal,
   ) {
     const session =
-      this.threadSessions.get(threadId) ?? (await this.restoreOneThreadSession(threadId))
-    this.assertThreadOwner(session ?? undefined, userId)
+      this.threadSessions.get(threadId) ?? (await this.restoreOneThreadSession(threadId));
+    this.assertThreadOwner(session ?? undefined, userId);
     if (!session || session.expiresAt.getTime() <= Date.now()) {
-      throw new Error('当前 Thread 的 Sandbox 已不可用')
+      throw new Error('当前 Thread 的 Sandbox 已不可用');
     }
-    return this.sandboxes.createPreviewEndpoint(session.sandboxId, port, 15 * 60, signal)
+    return this.sandboxes.createPreviewEndpoint(session.sandboxId, port, 15 * 60, signal);
   }
 
   async finishRun(runId: string): Promise<void> {
-    const session = this.runSessions.get(runId)
-    if (!session) return
-    this.runSessions.delete(runId)
+    const session = this.runSessions.get(runId);
+    if (!session) return;
+    this.runSessions.delete(runId);
     try {
-      await this.sandboxes.resetRunState(session.thread.sandboxId)
+      await this.sandboxes.resetRunState(session.thread.sandboxId);
       await this.threads.markSandboxIdle(
         session.thread.threadId,
         session.userId,
         session.thread.sandboxId,
-      )
-      this.scheduleCleanup(session.thread)
+      );
+      this.scheduleCleanup(session.thread);
     } catch (error) {
       this.logger.warn(
         { error, runId, sandboxId: session.thread.sandboxId },
         'Thread sandbox became unusable while releasing Run',
-      )
-      await this.destroyThread(session.thread.threadId)
+      );
+      await this.destroyThread(session.thread.threadId);
     }
   }
 
   async destroyThread(threadId: string): Promise<void> {
     const session =
-      this.threadSessions.get(threadId) ?? (await this.restoreOneThreadSession(threadId))
-    if (!session) return
-    this.clearCleanupTimer(session)
-    this.threadSessions.delete(threadId)
+      this.threadSessions.get(threadId) ?? (await this.restoreOneThreadSession(threadId));
+    if (!session) return;
+    this.clearCleanupTimer(session);
+    this.threadSessions.delete(threadId);
     for (const [runId, run] of this.runSessions) {
-      if (run.thread.threadId === threadId) this.runSessions.delete(runId)
+      if (run.thread.threadId === threadId) this.runSessions.delete(runId);
     }
-    await this.sandboxes.destroySandbox(session.sandboxId)
-    await this.threads.clearSandbox(threadId, session.sandboxId)
+    await this.sandboxes.destroySandbox(session.sandboxId);
+    await this.threads.clearSandbox(threadId, session.sandboxId);
   }
 
   async restoreThreadSessions(): Promise<void> {
-    const rows = await this.threads.listOwnedSandboxes()
+    const rows = await this.threads.listOwnedSandboxes();
     for (const row of rows) {
-      const session = this.fromRow(row)
+      const session = this.fromRow(row);
       if (session.expiresAt.getTime() <= Date.now()) {
-        await this.sandboxes.destroySandbox(session.sandboxId).catch(() => undefined)
-        await this.threads.clearSandbox(session.threadId, session.sandboxId)
-        continue
+        await this.sandboxes.destroySandbox(session.sandboxId).catch(() => undefined);
+        await this.threads.clearSandbox(session.threadId, session.sandboxId);
+        continue;
       }
-      this.threadSessions.set(session.threadId, session)
-      this.scheduleCleanup(session)
+      this.threadSessions.set(session.threadId, session);
+      this.scheduleCleanup(session);
     }
   }
 
@@ -279,23 +301,23 @@ export class AgentExecutionSessionService {
     userId: string,
     signal?: AbortSignal,
   ): Promise<ThreadExecutionSession> {
-    const current = this.threadSessions.get(threadId)
-    this.assertThreadOwner(current, userId)
-    if (current && current.expiresAt.getTime() > Date.now()) return current
+    const current = this.threadSessions.get(threadId);
+    this.assertThreadOwner(current, userId);
+    if (current && current.expiresAt.getTime() > Date.now()) return current;
 
-    const pending = this.pendingThreads.get(threadId)
+    const pending = this.pendingThreads.get(threadId);
     if (pending) {
-      const resolved = await pending
-      this.assertThreadOwner(resolved, userId)
-      return resolved
+      const resolved = await pending;
+      this.assertThreadOwner(resolved, userId);
+      return resolved;
     }
 
-    const creating = this.loadOrCreateThreadSession(runId, threadId, userId, signal)
-    this.pendingThreads.set(threadId, creating)
+    const creating = this.loadOrCreateThreadSession(runId, threadId, userId, signal);
+    this.pendingThreads.set(threadId, creating);
     try {
-      return await creating
+      return await creating;
     } finally {
-      this.pendingThreads.delete(threadId)
+      this.pendingThreads.delete(threadId);
     }
   }
 
@@ -305,21 +327,21 @@ export class AgentExecutionSessionService {
     userId: string,
     signal?: AbortSignal,
   ): Promise<ThreadExecutionSession> {
-    const persisted = await this.threads.findSandboxForOwner(threadId, userId)
+    const persisted = await this.threads.findSandboxForOwner(threadId, userId);
     if (persisted) {
-      const session = this.fromRow(persisted)
+      const session = this.fromRow(persisted);
       if (session.expiresAt.getTime() > Date.now()) {
         try {
-          await this.sandboxes.waitUntilReady(session.sandboxId, signal)
-          this.threadSessions.set(threadId, session)
-          return session
+          await this.sandboxes.waitUntilReady(session.sandboxId, signal);
+          this.threadSessions.set(threadId, session);
+          return session;
         } catch {
-          await this.sandboxes.destroySandbox(session.sandboxId).catch(() => undefined)
-          await this.threads.clearSandbox(threadId, session.sandboxId)
+          await this.sandboxes.destroySandbox(session.sandboxId).catch(() => undefined);
+          await this.threads.clearSandbox(threadId, session.sandboxId);
         }
       } else {
-        await this.sandboxes.destroySandbox(session.sandboxId).catch(() => undefined)
-        await this.threads.clearSandbox(threadId, session.sandboxId)
+        await this.sandboxes.destroySandbox(session.sandboxId).catch(() => undefined);
+        await this.threads.clearSandbox(threadId, session.sandboxId);
       }
     }
 
@@ -328,9 +350,9 @@ export class AgentExecutionSessionService {
       threadId,
       limits: { sandboxTimeoutMs: this.timeoutMs },
       ...(signal === undefined ? {} : { signal }),
-    })
+    });
     try {
-      const ready = await this.sandboxes.waitUntilReady(created.sandboxId, signal)
+      const ready = await this.sandboxes.waitUntilReady(created.sandboxId, signal);
       const session: ThreadExecutionSession = {
         threadId,
         userId,
@@ -340,41 +362,41 @@ export class AgentExecutionSessionService {
         skillPrefetches: new Map(),
         skillPrefetchLanes: createSkillPrefetchLanes(),
         skillPrefetchCursor: 0,
-      }
+      };
       await this.threads.markSandboxReady(threadId, userId, {
         sandboxId: session.sandboxId,
         createdAt: session.createdAt,
         expiresAt: session.expiresAt,
-      })
-      this.threadSessions.set(threadId, session)
-      return session
+      });
+      this.threadSessions.set(threadId, session);
+      return session;
     } catch (error) {
-      await this.sandboxes.destroySandbox(created.sandboxId).catch(() => undefined)
-      throw error
+      await this.sandboxes.destroySandbox(created.sandboxId).catch(() => undefined);
+      throw error;
     }
   }
 
   private async restoreOneThreadSession(threadId: string): Promise<ThreadExecutionSession | null> {
-    const row = (await this.threads.listOwnedSandboxes()).find((item) => item.id === threadId)
-    if (!row) return null
-    const session = this.fromRow(row)
-    this.threadSessions.set(threadId, session)
-    return session
+    const row = (await this.threads.listOwnedSandboxes()).find((item) => item.id === threadId);
+    if (!row) return null;
+    const session = this.fromRow(row);
+    this.threadSessions.set(threadId, session);
+    return session;
   }
 
   private async discardUnusableThread(session: ThreadExecutionSession): Promise<void> {
-    this.clearCleanupTimer(session)
-    this.threadSessions.delete(session.threadId)
-    await this.sandboxes.destroySandbox(session.sandboxId).catch(() => undefined)
-    await this.threads.clearSandbox(session.threadId, session.sandboxId)
+    this.clearCleanupTimer(session);
+    this.threadSessions.delete(session.threadId);
+    await this.sandboxes.destroySandbox(session.sandboxId).catch(() => undefined);
+    await this.threads.clearSandbox(session.threadId, session.sandboxId);
   }
 
   private fromRow(row: {
-    id: string
-    userId: string
-    sandboxId: string
-    sandboxCreatedAt: Date
-    sandboxExpiresAt: Date
+    id: string;
+    userId: string;
+    sandboxId: string;
+    sandboxCreatedAt: Date;
+    sandboxExpiresAt: Date;
   }): ThreadExecutionSession {
     return {
       threadId: row.id,
@@ -385,35 +407,35 @@ export class AgentExecutionSessionService {
       skillPrefetches: new Map(),
       skillPrefetchLanes: createSkillPrefetchLanes(),
       skillPrefetchCursor: 0,
-    }
+    };
   }
 
   private beginSkillPrefetch(session: ThreadExecutionSession): void {
-    const previous = session.skillPrefetchInitialization ?? Promise.resolve()
-    const initialization = previous.then(() => this.initializeSkillPrefetch(session))
-    session.skillPrefetchInitialization = initialization
-    void initialization
+    const previous = session.skillPrefetchInitialization ?? Promise.resolve();
+    const initialization = previous.then(() => this.initializeSkillPrefetch(session));
+    session.skillPrefetchInitialization = initialization;
+    void initialization;
   }
 
   private async initializeSkillPrefetch(session: ThreadExecutionSession): Promise<void> {
-    let candidates: Awaited<ReturnType<ExecutableSkillService['listCandidates']>>
+    let candidates: Awaited<ReturnType<ExecutableSkillService['listCandidates']>>;
     try {
-      candidates = await this.skills.listCandidates(session.userId)
+      candidates = await this.skills.listCandidates(session.userId);
     } catch (error) {
       this.logger.warn(
         { error, threadId: session.threadId, sandboxId: session.sandboxId },
         'Failed to list candidate Skills for sandbox prefetch',
-      )
-      return
+      );
+      return;
     }
 
     for (const candidate of candidates) {
-      const existing = session.skillPrefetches.get(candidate.name)
-      if (existing) continue
-      const laneIndex = session.skillPrefetchCursor % SKILL_PREFETCH_CONCURRENCY
-      session.skillPrefetchCursor += 1
-      const lane = session.skillPrefetchLanes[laneIndex]!
-      const task = lane.then(() => this.prefetchSkill(session, candidate))
+      const existing = session.skillPrefetches.get(candidate.name);
+      if (existing) continue;
+      const laneIndex = session.skillPrefetchCursor % SKILL_PREFETCH_CONCURRENCY;
+      session.skillPrefetchCursor += 1;
+      const lane = session.skillPrefetchLanes[laneIndex]!;
+      const task = lane.then(() => this.prefetchSkill(session, candidate));
       const settled = task.catch((error) => {
         this.logger.warn(
           {
@@ -423,15 +445,15 @@ export class AgentExecutionSessionService {
             skillName: candidate.name,
           },
           'Candidate Skill sandbox prefetch failed',
-        )
-      })
-      session.skillPrefetches.set(candidate.name, settled)
+        );
+      });
+      session.skillPrefetches.set(candidate.name, settled);
       void settled.then(() => {
         if (session.skillPrefetches.get(candidate.name) === settled) {
-          session.skillPrefetches.delete(candidate.name)
+          session.skillPrefetches.delete(candidate.name);
         }
-      })
-      session.skillPrefetchLanes[laneIndex] = settled
+      });
+      session.skillPrefetchLanes[laneIndex] = settled;
     }
   }
 
@@ -442,16 +464,16 @@ export class AgentExecutionSessionService {
     const installed = await this.sandboxes.readInstalledSkillPackage({
       sandboxId: session.sandboxId,
       skillName: candidate.name,
-    })
+    });
     if (
       installed?.skillId === candidate.id &&
       installed.packageSha256 === candidate.packageSha256
     ) {
-      return
+      return;
     }
 
-    const [prepared] = await this.skills.prepareActivation(session.userId, [candidate.name])
-    if (!prepared) throw new Error(`Skill prefetch returned no package: ${candidate.name}`)
+    const [prepared] = await this.skills.prepareActivation(session.userId, [candidate.name]);
+    if (!prepared) throw new Error(`Skill prefetch returned no package: ${candidate.name}`);
     await this.sandboxes.installSkillPackage({
       sandboxId: session.sandboxId,
       skillId: prepared.manifest.skillId,
@@ -460,43 +482,43 @@ export class AgentExecutionSessionService {
       expectedSha256: prepared.manifest.packageSha256,
       expectedSizeBytes: prepared.download.metadata.sizeBytes,
       background: true,
-    })
+    });
   }
 
   private scheduleCleanup(session: ThreadExecutionSession): void {
-    this.clearCleanupTimer(session)
-    const delay = Math.max(0, Math.min(this.timeoutMs, session.expiresAt.getTime() - Date.now()))
+    this.clearCleanupTimer(session);
+    const delay = Math.max(0, Math.min(this.timeoutMs, session.expiresAt.getTime() - Date.now()));
     session.cleanupTimer = setTimeout(() => {
       void this.destroyThread(session.threadId).catch((error) => {
         this.logger.error(
           { error, threadId: session.threadId, sandboxId: session.sandboxId },
           'Thread sandbox idle cleanup failed',
-        )
-      })
-    }, delay)
-    session.cleanupTimer.unref?.()
+        );
+      });
+    }, delay);
+    session.cleanupTimer.unref?.();
   }
 
   private clearCleanupTimer(session: ThreadExecutionSession): void {
-    if (session.cleanupTimer) clearTimeout(session.cleanupTimer)
-    delete session.cleanupTimer
+    if (session.cleanupTimer) clearTimeout(session.cleanupTimer);
+    delete session.cleanupTimer;
   }
 
   private requireRunSession(runId: string, userId: string): RunExecutionSession {
-    const session = this.runSessions.get(runId)
-    this.assertOwner(session, userId)
-    if (!session) throw new Error('Run Sandbox 尚未创建')
-    return session
+    const session = this.runSessions.get(runId);
+    this.assertOwner(session, userId);
+    if (!session) throw new Error('Run Sandbox 尚未创建');
+    return session;
   }
 
   private assertOwner(session: RunExecutionSession | undefined, userId: string): void {
     if (session && session.userId !== userId)
-      throw new Error('Run execution session owner mismatch')
+      throw new Error('Run execution session owner mismatch');
   }
 
   private assertThreadOwner(session: ThreadExecutionSession | undefined, userId: string): void {
     if (session && session.userId !== userId)
-      throw new Error('Thread execution session owner mismatch')
+      throw new Error('Thread execution session owner mismatch');
   }
 }
 
@@ -504,30 +526,30 @@ async function waitForPrefetch(
   task: Promise<void> | undefined,
   signal?: AbortSignal,
 ): Promise<void> {
-  if (!task) return
+  if (!task) return;
   if (!signal) {
-    await task
-    return
+    await task;
+    return;
   }
-  if (signal.aborted) throw abortReason(signal)
-  let onAbort: (() => void) | undefined
+  if (signal.aborted) throw abortReason(signal);
+  let onAbort: (() => void) | undefined;
   const aborted = new Promise<never>((_, reject) => {
-    onAbort = () => reject(abortReason(signal))
-    signal.addEventListener('abort', onAbort, { once: true })
-  })
+    onAbort = () => reject(abortReason(signal));
+    signal.addEventListener('abort', onAbort, { once: true });
+  });
   try {
-    await Promise.race([task, aborted])
+    await Promise.race([task, aborted]);
   } finally {
-    if (onAbort) signal.removeEventListener('abort', onAbort)
+    if (onAbort) signal.removeEventListener('abort', onAbort);
   }
 }
 
 function abortReason(signal: AbortSignal): Error {
-  return signal.reason instanceof Error ? signal.reason : new Error('Skill activation aborted')
+  return signal.reason instanceof Error ? signal.reason : new Error('Skill activation aborted');
 }
 
 function createSkillPrefetchLanes(): Promise<void>[] {
-  return Array.from({ length: SKILL_PREFETCH_CONCURRENCY }, () => Promise.resolve())
+  return Array.from({ length: SKILL_PREFETCH_CONCURRENCY }, () => Promise.resolve());
 }
 
 function executionErrorCode(error: unknown): string {
@@ -537,7 +559,7 @@ function executionErrorCode(error: unknown): string {
     'code' in error &&
     typeof error.code === 'string'
   ) {
-    return error.code
+    return error.code;
   }
-  return error instanceof Error ? error.name : 'UNKNOWN'
+  return error instanceof Error ? error.name : 'UNKNOWN';
 }
