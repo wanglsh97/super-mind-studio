@@ -14,7 +14,7 @@ docker run --rm super-mind-sandbox-image:0.1.0 \
 当前生产镜像地址：
 
 ```text
-registry.cn-hangzhou.aliyuncs.com/super-mind/super-mind-sandbox-image:0.1.0
+crpi-fjpg53u2fb01hiyt.cn-hangzhou.personal.cr.aliyuncs.com/super-mind/super-mind-sandbox-image:0.1.0
 ```
 
 构建并推送：
@@ -22,8 +22,8 @@ registry.cn-hangzhou.aliyuncs.com/super-mind/super-mind-sandbox-image:0.1.0
 ```bash
 docker build --platform linux/amd64 \
   -f infra/sandbox/Dockerfile \
-  -t registry.cn-hangzhou.aliyuncs.com/super-mind/super-mind-sandbox-image:0.1.0 \
+  -t crpi-fjpg53u2fb01hiyt.cn-hangzhou.personal.cr.aliyuncs.com/super-mind/super-mind-sandbox-image:0.1.0 \
   infra/sandbox
 
-docker push registry.cn-hangzhou.aliyuncs.com/super-mind/super-mind-sandbox-image:0.1.0
+docker push crpi-fjpg53u2fb01hiyt.cn-hangzhou.personal.cr.aliyuncs.com/super-mind/super-mind-sandbox-image:0.1.0
 ```
