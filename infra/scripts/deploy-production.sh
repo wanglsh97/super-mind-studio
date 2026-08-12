@@ -116,7 +116,7 @@ if [ "$oss_internal" != 'false' ]; then
   exit 1
 fi
 case "$sandbox_image" in
-  registry.cn-*.aliyuncs.com/*:* ) ;;
+  *.aliyuncs.com/*:* ) ;;
   *)
     echo 'OPEN_SANDBOX_IMAGE 必须是带版本 tag 的阿里云 ACR 镜像地址。' >&2
     exit 1
