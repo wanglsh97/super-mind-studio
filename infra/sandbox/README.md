@@ -1,6 +1,6 @@
-# Super Mind Studio 文档分析 Sandbox 镜像
+# Super Mind Studio 项目自定义 Sandbox 镜像
 
-该镜像基于 OpenSandbox `code-interpreter:v1.1.0`，预装 `pypdf`、`python-docx`、`openpyxl` 和 `reportlab`。
+该镜像是 Super Mind Studio 项目统一使用的自定义 Sandbox 基础镜像，基于 OpenSandbox `code-interpreter:v1.1.0` 构建。文档分析只是它的一个使用场景；镜像预装 `pypdf`、`python-docx`、`openpyxl` 和 `reportlab`，后续项目内其他 Sandbox 能力也复用同一镜像。
 
 ```bash
 docker build -f infra/sandbox/Dockerfile \
