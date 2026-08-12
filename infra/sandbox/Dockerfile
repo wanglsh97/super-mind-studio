@@ -18,4 +18,4 @@ print('document dependencies ready')
 PY
 
 ENV PATH="/opt/document-venv/bin:${PATH}"
-USER ubuntu
+USER root

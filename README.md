@@ -236,17 +236,17 @@ SANDBOX_IMAGE=crpi-fjpg53u2fb01hiyt.cn-hangzhou.personal.cr.aliyuncs.com/super-m
 docker login crpi-fjpg53u2fb01hiyt.cn-hangzhou.personal.cr.aliyuncs.com
 docker build --platform linux/amd64 \
   -f infra/sandbox/Dockerfile \
-  -t "$SANDBOX_IMAGE" \
+  -t crpi-fjpg53u2fb01hiyt.cn-hangzhou.personal.cr.aliyuncs.com/super-mind/super-mind-sandbox-image:0.1.0 \
   infra/sandbox
-docker push "$SANDBOX_IMAGE"
-docker manifest inspect "$SANDBOX_IMAGE"
+docker push crpi-fjpg53u2fb01hiyt.cn-hangzhou.personal.cr.aliyuncs.com/super-mind/super-mind-sandbox-image:0.1.0
+docker manifest inspect crpi-fjpg53u2fb01hiyt.cn-hangzhou.personal.cr.aliyuncs.com/super-mind/super-mind-sandbox-image:0.1.0
 ```
 
 在 Sandbox Server 上使用同一个 Registry 登录并验证拉取：
 
 ```bash
 docker login crpi-fjpg53u2fb01hiyt.cn-hangzhou.personal.cr.aliyuncs.com
-docker pull "$SANDBOX_IMAGE"
+docker pull crpi-fjpg53u2fb01hiyt.cn-hangzhou.personal.cr.aliyuncs.com/super-mind/super-mind-sandbox-image:0.1.0
 ```
 
 ## 上下文压缩策略：
