@@ -25,6 +25,7 @@
 - `admin-console`: 固定管理员认证、仪表盘、日志查询、业务表白名单维护和管理操作审计。
 - `observability-billing`: 完整 Prompt 请求日志、结构化运行日志、Token/费用记录和运行指标聚合。
 - `agent-token-analytics`: 仅面向 Agent Run 的可追溯 Token 明细、用户个人用量分析及管理员按模型、Skill、Tool 的聚合统计。
+- `document-analysis`: 基于临时沙箱文件的 PDF、DOCX、XLSX 文档分析、创建、原地修改、预览和导出。
 - `deployment-delivery`: ECS 单机容器编排、Nginx 域名/IP 入口、配置注入、数据备份和发布验收。
 
 ### Modified Capabilities

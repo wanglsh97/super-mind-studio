@@ -95,6 +95,7 @@
 - [x] 1.74 将 Tempo 与 OpenTelemetry Collector 纳入默认生产栈，避免 Nginx `/otel` 上游缺失阻塞发布
 - [x] 1.73 新增 AgentModelInvocation 调用级账本与 Skill/Tool 归因迁移，在 Agent 每次模型调用终结时幂等持久化实际 resolved model 和 usage
 - [x] 1.74 实现仅当前用户可访问的一年 Token 日历、每日明细和模型总量聚合 API，并覆盖权限、缺失维度按 0 展示和无历史回填测试
+- [ ] 1.75 扩展现有 `read-file`、`write-file`、`export-file` 为通用文档工具，支持最多 5 个、单文件 20 MB 以内的 PDF/DOCX/XLSX 在临时沙箱中的上传、一次性读取分析、创建、原地修改、格式预览与下载，并验证沙箱释放后的文件失效及现有代码文件兼容性
 
 ## 2. 管理员中后台
 

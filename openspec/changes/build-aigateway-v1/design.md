@@ -108,6 +108,7 @@ flowchart TB
 | `ProviderModule` | Adapter 注册、别名解析、厂商鉴权/协议/错误映射 | 页面状态和业务日志展示 |
 | `ImageModule` | 创建任务、按查询驱动异步状态同步、持久化同步 provider 终态、下载代理 | 后台队列和长期对象存储 |
 | `PromptModule` | mode 校验、版本化模板、调用 Gateway | 接收客户端任意 system Prompt |
+| `DocumentAnalysisModule` | 临时沙箱文档上传、Agent 文件工具扩展、格式预览和导出 | OSS 持久化、在线手动编辑器、文档版本管理 |
 | `RequestLifecycleModule` | 请求记录创建/终结、usage 和费用事务 | 模型传输 |
 | `RateLimitModule` | 可信客户端 IP 解析、Redis 原子计数、429 | 全站成本硬顶和设备识别 |
 | `AdminModule` | 聚合、日志详情、白名单表维护、审计 | 任意 SQL 和通用数据库控制台 |
@@ -120,6 +121,14 @@ Controller 只能依赖应用 Service；应用 Service 通过接口依赖 Adapte
 ### MCP capability discovery
 
 Enabled MCP Server descriptions, calling priority and untrusted-data rules are the only MCP-specific system-prompt content. Remote tool names, descriptions and schemas are excluded from the system prompt. The Agent receives two native meta-tools: `discover_mcp_tools` returns a bounded, sanitized catalogue of relevant tools and their JSON Schema; `call_mcp_tool` accepts only an opaque handle returned to the same user and Run. The Dispatcher resolves that handle to the reviewed Server/tool, validates arguments against the discovered schema and records the real `serverId`/tool name in audit data. This avoids repeated prompt bloat while retaining per-tool validation and future confirmation policy.
+
+### Temporary document analysis
+
+文档分析复用现有 Agent sandbox 和 `read-file`、`write-file`、`export-file` 工具，不新增独立文件服务或 OSS 存储。前端上传最多 5 个现代格式文件（PDF、DOCX、XLSX），单文件限制 20 MB；服务端写入当前 sandbox 后，仅把 sandbox-relative path 注入 Agent 上下文。工具必须将路径解析限制在当前 sandbox 内，并继续兼容既有代码文件操作。
+
+`read-file` 一次性提取一个文件的内容：PDF 提取文本，DOCX 提取正文和表格，XLSX 返回全部工作表、单元格和公式。`write-file` 使用 sandbox 镜像中预装的 Python 文档库创建或直接覆盖原文件，不接受模型提供的任意 Python 或 shell 代码；未指定创建格式时默认 DOCX。分析结果只留在当前 Agent 上下文，不单独写入 PostgreSQL。
+
+预览在 Web 侧按格式处理：PDF 使用浏览器原生能力，DOCX 使用 `docx-preview`，XLSX 使用 SheetJS 解析后的工作表数据。下载复用 `export-file`。预览和导出每次都检查 sandbox 文件是否存在；sandbox 释放后不从其他存储恢复文件，因此请求返回过期/不存在。V1 不提供用户在线手动编辑、版本历史、撤销、差异比较或复杂排版保真保证。
 
 ### First milestone: Mock streamed Agent vertical slice
 
