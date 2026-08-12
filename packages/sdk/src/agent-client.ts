@@ -1,9 +1,9 @@
-import { decodeAgentEvent, decodeAgentUserQuestion } from './agent-events.js'
+import { decodeAgentEvent, decodeAgentUserQuestion } from './agent-events.js';
 import type {
   AgentSkillCandidate,
   AgentSkillMarketItem,
   UpdateAgentSkillRequest,
-} from './agent-skill-types.js'
+} from './agent-skill-types.js';
 import type {
   AgentMcpServerStatus,
   AgentTokenAnalytics,
@@ -18,9 +18,9 @@ import type {
   CreateAgentThreadRequest,
   UpdateAgentThreadRequest,
   UpdateAgentMcpServerRequest,
-} from './agent-types.js'
-import { AIGatewayAuthenticationError, AIGatewayError, AIGatewayProtocolError } from './errors.js'
-import { readSseData } from './sse.js'
+} from './agent-types.js';
+import { AIGatewayAuthenticationError, AIGatewayError, AIGatewayProtocolError } from './errors.js';
+import { readSseData } from './sse.js';
 import {
   createBrowserSkillUploadTransport,
   uploadSkillPackage,
@@ -28,82 +28,90 @@ import {
   type SkillDirectUploadTransport,
   type SkillPackageUploadOptions,
   type SkillUploadSession,
-} from './skill-upload.js'
-import type { GatewayError } from './types.js'
+} from './skill-upload.js';
+import type { GatewayError } from './types.js';
 
 export interface RequestOptions {
-  signal?: AbortSignal
+  signal?: AbortSignal;
 }
 
 export interface AgentEventSubscribeOptions extends RequestOptions {
   /** 从该 sequence 之后开始接收事件（用于断线补读）。默认从头开始。 */
-  after?: number
+  after?: number;
 }
 
 export interface AgentThreadListOptions extends RequestOptions {
-  page?: number
-  pageSize?: number
+  page?: number;
+  pageSize?: number;
 }
 
 export interface AgentTokenAnalyticsOptions extends RequestOptions {
-  timezoneOffsetMinutes?: number
+  timezoneOffsetMinutes?: number;
 }
 
 export interface AgentClient {
+  files: {
+    upload(
+      threadId: string,
+      files: readonly Blob[],
+      fileNames: readonly string[],
+      options?: RequestOptions,
+    ): Promise<{ files: Array<{ name: string; path: string; sizeBytes: number }> }>;
+  };
   analytics: {
-    get(options?: AgentTokenAnalyticsOptions): Promise<AgentTokenAnalytics>
-  }
+    get(options?: AgentTokenAnalyticsOptions): Promise<AgentTokenAnalytics>;
+  };
   mcp: {
-    servers(options?: RequestOptions): Promise<AgentMcpServerStatus[]>
+    servers(options?: RequestOptions): Promise<AgentMcpServerStatus[]>;
     update(
       serverId: string,
       input: UpdateAgentMcpServerRequest,
       options?: RequestOptions,
-    ): Promise<AgentMcpServerStatus>
-  }
+    ): Promise<AgentMcpServerStatus>;
+  };
   skills: {
-    list(options?: RequestOptions): Promise<AgentSkillMarketItem[]>
-    candidates(options?: RequestOptions): Promise<AgentSkillCandidate[]>
-    install(skillId: string, options?: RequestOptions): Promise<AgentSkillMarketItem>
+    list(options?: RequestOptions): Promise<AgentSkillMarketItem[]>;
+    candidates(options?: RequestOptions): Promise<AgentSkillCandidate[]>;
+    install(skillId: string, options?: RequestOptions): Promise<AgentSkillMarketItem>;
     update(
       skillId: string,
       input: UpdateAgentSkillRequest,
       options?: RequestOptions,
-    ): Promise<AgentSkillMarketItem>
-    uninstall(skillId: string, options?: RequestOptions): Promise<void>
-    uploadPackage(body: Blob, options?: SkillPackageUploadOptions): Promise<FinalizedSkillUpload>
-  }
+    ): Promise<AgentSkillMarketItem>;
+    uninstall(skillId: string, options?: RequestOptions): Promise<void>;
+    uploadPackage(body: Blob, options?: SkillPackageUploadOptions): Promise<FinalizedSkillUpload>;
+  };
   threads: {
-    create(input: CreateAgentThreadRequest, options?: RequestOptions): Promise<AgentThreadSummary>
-    list(options?: AgentThreadListOptions): Promise<AgentThreadListPage>
-    get(threadId: string, options?: RequestOptions): Promise<AgentThread>
+    create(input: CreateAgentThreadRequest, options?: RequestOptions): Promise<AgentThreadSummary>;
+    list(options?: AgentThreadListOptions): Promise<AgentThreadListPage>;
+    get(threadId: string, options?: RequestOptions): Promise<AgentThread>;
     rename(
       threadId: string,
       input: UpdateAgentThreadRequest,
       options?: RequestOptions,
-    ): Promise<AgentThreadSummary>
-    delete(threadId: string, options?: RequestOptions): Promise<void>
-  }
+    ): Promise<AgentThreadSummary>;
+    delete(threadId: string, options?: RequestOptions): Promise<void>;
+  };
   runs: {
     create(
       threadId: string,
       input: CreateAgentRunRequest,
       options?: RequestOptions,
-    ): Promise<AgentRunSummary>
-    cancel(runId: string, options?: RequestOptions): Promise<AgentRunSummary>
+    ): Promise<AgentRunSummary>;
+    cancel(runId: string, options?: RequestOptions): Promise<AgentRunSummary>;
     /**
      * 订阅 run 事件流。按 sequence 递增产出事件；断线后可用最后 sequence 作为 `after` 重连补读。
      */
-    subscribe(runId: string, options?: AgentEventSubscribeOptions): AsyncIterable<AgentStreamEvent>
-  }
+    subscribe(runId: string, options?: AgentEventSubscribeOptions): AsyncIterable<AgentStreamEvent>;
+  };
   questions: {
     answer(
       questionId: string,
       input: AnswerAgentUserQuestionRequest,
       options?: RequestOptions,
-    ): Promise<AgentUserQuestion>
-    skip(questionId: string, options?: RequestOptions): Promise<AgentUserQuestion>
-  }
+    ): Promise<AgentUserQuestion>;
+    skip(questionId: string, options?: RequestOptions): Promise<AgentUserQuestion>;
+  };
 }
 
 export function createAgentClient(
@@ -111,13 +119,35 @@ export function createAgentClient(
   baseUrl: string,
   options: { skillUploadTransport?: SkillDirectUploadTransport } = {},
 ): AgentClient {
-  const directUpload = options.skillUploadTransport ?? createBrowserSkillUploadTransport()
+  const directUpload = options.skillUploadTransport ?? createBrowserSkillUploadTransport();
   return {
+    files: {
+      upload: async (threadId, files, fileNames, options) => {
+        if (files.length !== fileNames.length) {
+          throw new TypeError('files and fileNames must have the same length');
+        }
+        const body = new FormData();
+        files.forEach((file, index) => body.append('files', file, fileNames[index]));
+        const response = await fetchImplementation(
+          `${baseUrl}/api/v1/agent/threads/${encodeURIComponent(threadId)}/files`,
+          {
+            method: 'POST',
+            headers: { accept: 'application/json' },
+            body,
+            ...(options?.signal === undefined ? {} : { signal: options.signal }),
+          },
+        );
+        if (!response.ok) throw await responseError(response, response.headers.get('x-request-id'));
+        return (await response.json()) as {
+          files: Array<{ name: string; path: string; sizeBytes: number }>;
+        };
+      },
+    },
     analytics: {
       get: async (options) => {
-        const offset = options?.timezoneOffsetMinutes
+        const offset = options?.timezoneOffsetMinutes;
         const query =
-          offset === undefined ? '' : `?timezoneOffsetMinutes=${encodeURIComponent(offset)}`
+          offset === undefined ? '' : `?timezoneOffsetMinutes=${encodeURIComponent(offset)}`;
         return decodeTokenAnalytics(
           await requestJson(
             fetchImplementation,
@@ -126,7 +156,7 @@ export function createAgentClient(
             undefined,
             options,
           ),
-        )
+        );
       },
     },
     mcp: {
@@ -137,11 +167,11 @@ export function createAgentClient(
           `${baseUrl}/api/v1/agent/mcp/servers`,
           undefined,
           options,
-        )
+        );
         if (!Array.isArray(value)) {
-          throw new AIGatewayProtocolError('unknown', 'Agent MCP server status is not an array')
+          throw new AIGatewayProtocolError('unknown', 'Agent MCP server status is not an array');
         }
-        return value.map(decodeMcpServerStatus)
+        return value.map(decodeMcpServerStatus);
       },
       update: async (serverId, input, options) =>
         decodeMcpServerStatus(
@@ -162,10 +192,10 @@ export function createAgentClient(
           `${baseUrl}/api/v1/agent/skills`,
           undefined,
           options,
-        )
+        );
         if (!Array.isArray(value))
-          throw new AIGatewayProtocolError('unknown', 'Agent Skill catalog is not an array')
-        return value.map(decodeSkillMarketItem)
+          throw new AIGatewayProtocolError('unknown', 'Agent Skill catalog is not an array');
+        return value.map(decodeSkillMarketItem);
       },
       candidates: async (options) => {
         const value = await requestJson<unknown>(
@@ -174,10 +204,10 @@ export function createAgentClient(
           `${baseUrl}/api/v1/agent/skills/executable/candidates`,
           undefined,
           options,
-        )
+        );
         if (!Array.isArray(value))
-          throw new AIGatewayProtocolError('unknown', 'Agent Skill candidates is not an array')
-        return value.map(decodeSkillCandidate)
+          throw new AIGatewayProtocolError('unknown', 'Agent Skill candidates is not an array');
+        return value.map(decodeSkillCandidate);
       },
       install: async (skillId, options) =>
         decodeSkillMarketItem(
@@ -235,17 +265,17 @@ export function createAgentClient(
       create: (input, options) =>
         requestJson(fetchImplementation, 'POST', `${baseUrl}/api/v1/agent/threads`, input, options),
       list: (options) => {
-        const params = new URLSearchParams()
-        if (options?.page !== undefined) params.set('page', String(options.page))
-        if (options?.pageSize !== undefined) params.set('pageSize', String(options.pageSize))
-        const query = params.toString()
+        const params = new URLSearchParams();
+        if (options?.page !== undefined) params.set('page', String(options.page));
+        if (options?.pageSize !== undefined) params.set('pageSize', String(options.pageSize));
+        const query = params.toString();
         return requestJson(
           fetchImplementation,
           'GET',
           `${baseUrl}/api/v1/agent/threads${query ? `?${query}` : ''}`,
           undefined,
           options,
-        )
+        );
       },
       get: (threadId, options) =>
         requestJson(
@@ -313,11 +343,11 @@ export function createAgentClient(
           ),
         ),
     },
-  }
+  };
 }
 
 function decodeTokenAnalytics(value: unknown): AgentTokenAnalytics {
-  const record = asRecord(value)
+  const record = asRecord(value);
   if (
     !record ||
     !stringValue(record.from) ||
@@ -326,68 +356,69 @@ function decodeTokenAnalytics(value: unknown): AgentTokenAnalytics {
     !Array.isArray(record.daily) ||
     !Array.isArray(record.models)
   ) {
-    throw new AIGatewayProtocolError('unknown', 'Agent Token analytics response is malformed')
+    throw new AIGatewayProtocolError('unknown', 'Agent Token analytics response is malformed');
   }
   return {
     from: record.from as string,
     to: record.to as string,
     timezoneOffsetMinutes: record.timezoneOffsetMinutes,
     daily: record.daily.map((item) => {
-      const row = decodeTokenMetrics(item)
-      const source = asRecord(item)
+      const row = decodeTokenMetrics(item);
+      const source = asRecord(item);
       if (!source || !stringValue(source.date)) {
-        throw new AIGatewayProtocolError('unknown', 'Agent daily Token analytics is malformed')
+        throw new AIGatewayProtocolError('unknown', 'Agent daily Token analytics is malformed');
       }
       return {
         date: source.date as string,
         modelCalls: metricNumber(source.modelCalls),
         cacheRate: rateNumber(source.cacheRate),
         ...row,
-      }
+      };
     }),
     models: record.models.map((item) => {
-      const row = decodeTokenMetrics(item)
-      const source = asRecord(item)
+      const row = decodeTokenMetrics(item);
+      const source = asRecord(item);
       if (!source || !stringValue(source.model)) {
-        throw new AIGatewayProtocolError('unknown', 'Agent model Token analytics is malformed')
+        throw new AIGatewayProtocolError('unknown', 'Agent model Token analytics is malformed');
       }
       return {
         model: source.model as string,
         modelCalls: metricNumber(source.modelCalls),
         cacheRate: rateNumber(source.cacheRate),
         ...row,
-      }
+      };
     }),
-  }
+  };
 }
 
 function decodeTokenMetrics(value: unknown) {
-  const row = asRecord(value)
-  if (!row) throw new AIGatewayProtocolError('unknown', 'Token metrics are malformed')
+  const row = asRecord(value);
+  if (!row) throw new AIGatewayProtocolError('unknown', 'Token metrics are malformed');
   return {
     inputTokens: metricNumber(row.inputTokens),
     outputTokens: metricNumber(row.outputTokens),
     totalTokens: metricNumber(row.totalTokens),
     cachedInputTokens: metricNumber(row.cachedInputTokens),
     reasoningTokens: metricNumber(row.reasoningTokens),
-  }
+  };
 }
 
 function metricNumber(value: unknown): number {
-  const parsed = numberValue(value)
-  if (parsed === undefined) throw new AIGatewayProtocolError('unknown', 'Token metric is malformed')
-  return parsed
+  const parsed = numberValue(value);
+  if (parsed === undefined)
+    throw new AIGatewayProtocolError('unknown', 'Token metric is malformed');
+  return parsed;
 }
 
 function rateNumber(value: unknown): number {
   if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
-    throw new AIGatewayProtocolError('unknown', 'Token rate is malformed')
+    throw new AIGatewayProtocolError('unknown', 'Token rate is malformed');
   }
-  return value
+  return value;
 }
 
 function decodeMcpServerStatus(value: unknown): AgentMcpServerStatus {
-  const record = asRecord(value)
+  const record = asRecord(value);
   if (
     !record ||
     !stringValue(record.id) ||
@@ -401,7 +432,7 @@ function decodeMcpServerStatus(value: unknown): AgentMcpServerStatus {
     numberValue(record.registeredToolCount) === undefined ||
     !(record.errorCode === null || typeof record.errorCode === 'string')
   ) {
-    throw new AIGatewayProtocolError('unknown', 'Agent MCP server status is malformed')
+    throw new AIGatewayProtocolError('unknown', 'Agent MCP server status is malformed');
   }
   return {
     id: record.id as string,
@@ -414,13 +445,13 @@ function decodeMcpServerStatus(value: unknown): AgentMcpServerStatus {
     discoveredToolCount: record.discoveredToolCount as number,
     registeredToolCount: record.registeredToolCount as number,
     errorCode: record.errorCode as string | null,
-  }
+  };
 }
 
 function decodeSkillUploadSession(value: unknown): SkillUploadSession {
-  const session = asRecord(value)
-  const upload = asRecord(session?.upload)
-  const headers = asRecord(upload?.headers)
+  const session = asRecord(value);
+  const upload = asRecord(session?.upload);
+  const headers = asRecord(upload?.headers);
   if (
     !session ||
     !stringValue(session.id) ||
@@ -434,7 +465,7 @@ function decodeSkillUploadSession(value: unknown): SkillUploadSession {
     !headers ||
     !Object.values(headers).every((header) => typeof header === 'string')
   ) {
-    throw new AIGatewayProtocolError('unknown', 'Skill upload session response is malformed')
+    throw new AIGatewayProtocolError('unknown', 'Skill upload session response is malformed');
   }
   return {
     id: session.id as string,
@@ -447,11 +478,11 @@ function decodeSkillUploadSession(value: unknown): SkillUploadSession {
       expiresAt: upload.expiresAt as string,
       headers: headers as Record<string, string>,
     },
-  }
+  };
 }
 
 function decodeFinalizedSkillUpload(value: unknown): FinalizedSkillUpload {
-  const result = asRecord(value)
+  const result = asRecord(value);
   if (
     !result ||
     !stringValue(result.sessionId) ||
@@ -460,7 +491,7 @@ function decodeFinalizedSkillUpload(value: unknown): FinalizedSkillUpload {
     !stringValue(result.sha256) ||
     !stringValue(result.finalizedAt)
   ) {
-    throw new AIGatewayProtocolError('unknown', 'Finalized Skill upload response is malformed')
+    throw new AIGatewayProtocolError('unknown', 'Finalized Skill upload response is malformed');
   }
   return {
     sessionId: result.sessionId as string,
@@ -468,12 +499,12 @@ function decodeFinalizedSkillUpload(value: unknown): FinalizedSkillUpload {
     sizeBytes: result.sizeBytes as number,
     sha256: result.sha256 as string,
     finalizedAt: result.finalizedAt as string,
-  }
+  };
 }
 
 function decodeSkillMarketItem(value: unknown): AgentSkillMarketItem {
-  const item = asRecord(value)
-  const allowedTools = item?.allowedTools
+  const item = asRecord(value);
+  const allowedTools = item?.allowedTools;
   if (
     !item ||
     !stringValue(item.id) ||
@@ -486,7 +517,7 @@ function decodeSkillMarketItem(value: unknown): AgentSkillMarketItem {
     typeof item.installed !== 'boolean' ||
     typeof item.enabled !== 'boolean'
   ) {
-    throw new AIGatewayProtocolError('unknown', 'Agent Skill response is malformed')
+    throw new AIGatewayProtocolError('unknown', 'Agent Skill response is malformed');
   }
   return {
     id: item.id as string,
@@ -497,11 +528,11 @@ function decodeSkillMarketItem(value: unknown): AgentSkillMarketItem {
     allowedTools,
     installed: item.installed,
     enabled: item.enabled,
-  }
+  };
 }
 
 function decodeSkillCandidate(value: unknown): AgentSkillCandidate {
-  const item = asRecord(value)
+  const item = asRecord(value);
   if (
     !item ||
     !stringValue(item.id) ||
@@ -509,14 +540,14 @@ function decodeSkillCandidate(value: unknown): AgentSkillCandidate {
     !stringValue(item.title) ||
     typeof item.description !== 'string'
   ) {
-    throw new AIGatewayProtocolError('unknown', 'Agent Skill candidate response is malformed')
+    throw new AIGatewayProtocolError('unknown', 'Agent Skill candidate response is malformed');
   }
   return {
     id: item.id as string,
     name: item.name as string,
     title: item.title as string,
     description: item.description,
-  }
+  };
 }
 
 export async function requestJson<T>(
@@ -534,17 +565,17 @@ export async function requestJson<T>(
     },
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     ...(options?.signal === undefined ? {} : { signal: options.signal }),
-  })
-  const requestId = response.headers.get('x-request-id')
-  if (!response.ok) throw await responseError(response, requestId)
+  });
+  const requestId = response.headers.get('x-request-id');
+  if (!response.ok) throw await responseError(response, requestId);
   try {
-    return (await response.json()) as T
+    return (await response.json()) as T;
   } catch (error) {
     throw new AIGatewayProtocolError(
       requestId ?? 'unknown',
       'Agent response is not valid JSON',
       error,
-    )
+    );
   }
 }
 
@@ -558,8 +589,8 @@ export async function requestVoid(
     method,
     headers: { accept: 'application/json' },
     ...(options?.signal === undefined ? {} : { signal: options.signal }),
-  })
-  if (!response.ok) throw await responseError(response, response.headers.get('x-request-id'))
+  });
+  if (!response.ok) throw await responseError(response, response.headers.get('x-request-id'));
 }
 
 async function* subscribeRunEvents(
@@ -568,59 +599,62 @@ async function* subscribeRunEvents(
   runId: string,
   options: AgentEventSubscribeOptions | undefined,
 ): AsyncGenerator<AgentStreamEvent, void, void> {
-  let previousSequence = options?.after ?? -1
-  const maximumReconnects = 4
+  let previousSequence = options?.after ?? -1;
+  const maximumReconnects = 4;
 
   for (let reconnects = 0; ; reconnects += 1) {
-    if (options?.signal?.aborted) throw abortError()
+    if (options?.signal?.aborted) throw abortError();
 
     try {
-      const url = `${baseUrl}/api/v1/agent/runs/${encodeURIComponent(runId)}/events?after=${previousSequence}`
+      const url = `${baseUrl}/api/v1/agent/runs/${encodeURIComponent(runId)}/events?after=${previousSequence}`;
       const response = await fetchImplementation(url, {
         method: 'GET',
         headers: { accept: 'text/event-stream' },
         ...(options?.signal === undefined ? {} : { signal: options.signal }),
-      })
-      const requestId = response.headers.get('x-request-id')
-      if (!response.ok) throw await responseError(response, requestId)
+      });
+      const requestId = response.headers.get('x-request-id');
+      if (!response.ok) throw await responseError(response, requestId);
       if (!response.headers.get('content-type')?.toLowerCase().includes('text/event-stream')) {
         throw new AIGatewayProtocolError(
           requestId ?? 'unknown',
           'Agent events response is not text/event-stream',
-        )
+        );
       }
       if (!response.body) {
-        throw new AIGatewayProtocolError(requestId ?? 'unknown', 'Agent events response has no body')
+        throw new AIGatewayProtocolError(
+          requestId ?? 'unknown',
+          'Agent events response has no body',
+        );
       }
 
-      let done = false
+      let done = false;
       for await (const data of readSseData(response.body)) {
-        if (done) throw new AIGatewayProtocolError(runId, 'Agent SSE emitted data after [DONE]')
+        if (done) throw new AIGatewayProtocolError(runId, 'Agent SSE emitted data after [DONE]');
         if (data === '[DONE]') {
-          done = true
-          continue
+          done = true;
+          continue;
         }
-        const event = decodeAgentEvent(parseJson(data, runId), runId)
+        const event = decodeAgentEvent(parseJson(data, runId), runId);
         if (event.sequence <= previousSequence) {
-          throw new AIGatewayProtocolError(runId, 'Agent SSE emitted a non-increasing sequence')
+          throw new AIGatewayProtocolError(runId, 'Agent SSE emitted a non-increasing sequence');
         }
-        previousSequence = event.sequence
-        yield event
+        previousSequence = event.sequence;
+        yield event;
       }
-      if (done) return
-      throw new AgentEventStreamInterruptedError()
+      if (done) return;
+      throw new AgentEventStreamInterruptedError();
     } catch (error) {
-      if (options?.signal?.aborted || isAbortError(error)) throw error
-      if (!isRetryableAgentStreamError(error) || reconnects >= maximumReconnects) throw error
-      await waitForAgentStreamRetry(reconnects, options?.signal)
+      if (options?.signal?.aborted || isAbortError(error)) throw error;
+      if (!isRetryableAgentStreamError(error) || reconnects >= maximumReconnects) throw error;
+      await waitForAgentStreamRetry(reconnects, options?.signal);
     }
   }
 }
 
 class AgentEventStreamInterruptedError extends Error {
   constructor() {
-    super('Agent event stream ended before [DONE]')
-    this.name = 'AgentEventStreamInterruptedError'
+    super('Agent event stream ended before [DONE]');
+    this.name = 'AgentEventStreamInterruptedError';
   }
 }
 
@@ -629,45 +663,45 @@ function isRetryableAgentStreamError(error: unknown): boolean {
     error instanceof AgentEventStreamInterruptedError ||
     (!(error instanceof AIGatewayProtocolError) &&
       ((error instanceof AIGatewayError && error.retryable) || error instanceof TypeError))
-  )
+  );
 }
 
 function isAbortError(error: unknown): boolean {
-  return error instanceof DOMException && error.name === 'AbortError'
+  return error instanceof DOMException && error.name === 'AbortError';
 }
 
 function abortError(): DOMException {
-  return new DOMException('The operation was aborted', 'AbortError')
+  return new DOMException('The operation was aborted', 'AbortError');
 }
 
 async function waitForAgentStreamRetry(
   reconnects: number,
   signal: AbortSignal | undefined,
 ): Promise<void> {
-  const delayMs = Math.min(100 * 2 ** reconnects, 800)
+  const delayMs = Math.min(100 * 2 ** reconnects, 800);
   await new Promise<void>((resolve, reject) => {
     const onAbort = () => {
-      clearTimeout(timeout)
-      reject(abortError())
-    }
+      clearTimeout(timeout);
+      reject(abortError());
+    };
     const timeout = setTimeout(() => {
-      signal?.removeEventListener('abort', onAbort)
-      resolve()
-    }, delayMs)
-    if (!signal) return
-    signal.addEventListener('abort', onAbort, { once: true })
-    timeout.unref?.()
+      signal?.removeEventListener('abort', onAbort);
+      resolve();
+    }, delayMs);
+    if (!signal) return;
+    signal.addEventListener('abort', onAbort, { once: true });
+    timeout.unref?.();
     void Promise.resolve().then(() => {
-      if (signal.aborted) onAbort()
-    })
-  })
+      if (signal.aborted) onAbort();
+    });
+  });
 }
 
 function parseJson(data: string, runId: string): unknown {
   try {
-    return JSON.parse(data)
+    return JSON.parse(data);
   } catch (error) {
-    throw new AIGatewayProtocolError(runId, 'Agent SSE data is not valid JSON', error)
+    throw new AIGatewayProtocolError(runId, 'Agent SSE data is not valid JSON', error);
   }
 }
 
@@ -675,15 +709,15 @@ async function responseError(
   response: Response,
   headerRequestId: string | null,
 ): Promise<AIGatewayError> {
-  let body: unknown
+  let body: unknown;
   try {
-    body = await response.json()
+    body = await response.json();
   } catch {
-    body = undefined
+    body = undefined;
   }
-  const record = asRecord(body)
-  const requestId = stringValue(record?.requestId) ?? headerRequestId ?? 'unknown'
-  const details = asRecord(record?.details)
+  const record = asRecord(body);
+  const requestId = stringValue(record?.requestId) ?? headerRequestId ?? 'unknown';
+  const details = asRecord(record?.details);
   const error: GatewayError = {
     requestId,
     code: stringValue(record?.code) ?? `HTTP_${response.status}`,
@@ -691,26 +725,26 @@ async function responseError(
     retryable:
       booleanValue(record?.retryable) ?? (response.status === 429 || response.status >= 500),
     ...(details === undefined ? {} : { details }),
-  }
+  };
   return response.status === 401
     ? new AIGatewayAuthenticationError(error)
-    : new AIGatewayError(error, { status: response.status })
+    : new AIGatewayError(error, { status: response.status });
 }
 
 function asRecord(value: unknown): Record<string, unknown> | undefined {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
     ? (value as Record<string, unknown>)
-    : undefined
+    : undefined;
 }
 
 function stringValue(value: unknown): string | undefined {
-  return typeof value === 'string' && value.length > 0 ? value : undefined
+  return typeof value === 'string' && value.length > 0 ? value : undefined;
 }
 
 function booleanValue(value: unknown): boolean | undefined {
-  return typeof value === 'boolean' ? value : undefined
+  return typeof value === 'boolean' ? value : undefined;
 }
 
 function numberValue(value: unknown): number | undefined {
-  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0 ? value : undefined
+  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0 ? value : undefined;
 }

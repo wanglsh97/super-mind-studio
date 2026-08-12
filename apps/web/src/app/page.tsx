@@ -51,6 +51,7 @@ import ShimmerText from '@/components/shimmer-text';
 import {
   AgentActiveRunHint,
   AgentComposerActions,
+  DocumentUploadButton,
   AgentComposerDock,
   AgentComposerFooter,
   AgentComposerInput,
@@ -588,6 +589,19 @@ function AgentConsole() {
                       <AgentComposerFooter>
                         <AgentComposerActions>
                           <NewThreadButton onNewThread={startNewThread} />
+                          {activeThreadId ? (
+                            <DocumentUploadButton
+                              disabled={submitBlocked}
+                              onUpload={async (files) => {
+                                await client.agent.files.upload(
+                                  activeThreadId,
+                                  files,
+                                  files.map((file) => file.name),
+                                );
+                                await refreshThreads();
+                              }}
+                            />
+                          ) : null}
                         </AgentComposerActions>
                         <AgentComposerSubmitGroup>
                           <ThinkingEffortSelect

@@ -13,7 +13,14 @@ import {
   useMessageTiming,
   useThreadViewport,
 } from '@assistant-ui/react';
-import { CheckIcon, ChevronRightIcon, CopyIcon, ThumbsDownIcon, ThumbsUpIcon } from 'lucide-react';
+import {
+  CheckIcon,
+  ChevronRightIcon,
+  CopyIcon,
+  PaperclipIcon,
+  ThumbsDownIcon,
+  ThumbsUpIcon,
+} from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
@@ -302,6 +309,48 @@ export function AgentComposerFooter({ children }: Readonly<{ children: ReactNode
 
 export function AgentComposerActions({ children }: Readonly<{ children: ReactNode }>) {
   return <div className="flex min-w-0 items-center gap-0.5 md:gap-1">{children}</div>;
+}
+
+export function DocumentUploadButton({
+  disabled,
+  onUpload,
+}: Readonly<{
+  disabled?: boolean;
+  onUpload: (files: File[]) => Promise<void>;
+}>) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  return (
+    <>
+      <input
+        ref={inputRef}
+        type="file"
+        hidden
+        multiple
+        accept=".pdf,.docx,.xlsx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        onChange={(event) => {
+          const files = Array.from(event.target.files ?? []);
+          event.currentTarget.value = '';
+          if (!files.length) return;
+          setUploading(true);
+          void onUpload(files).finally(() => setUploading(false));
+        }}
+      />
+      <button
+        type="button"
+        aria-label="上传文档"
+        title="上传 PDF、Word 或 Excel"
+        disabled={disabled || uploading}
+        onClick={() => inputRef.current?.click()}
+        className={cn(
+          'grid size-8 place-items-center rounded-full text-ink-muted hover:bg-fill-secondary disabled:opacity-40',
+          focusRing,
+        )}
+      >
+        <PaperclipIcon className="size-4" aria-hidden="true" />
+      </button>
+    </>
+  );
 }
 
 export function AgentWebCreationOption({
