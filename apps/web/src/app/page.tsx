@@ -1,6 +1,8 @@
 'use client';
 
 import { createSuperMindClient, parseAgentOutputFileReference } from '@supermind/sdk';
+import { renderAsync as renderDocx } from 'docx-preview';
+import * as XLSX from 'xlsx';
 import type {
   AgentContextSummary,
   AgentMcpServerStatus,
@@ -1668,6 +1670,10 @@ function ArtifactCard({
     );
   }
   const previewable = file.mimeType.startsWith('image/');
+  const documentPreview =
+    file.mimeType === 'application/pdf' ||
+    file.name.endsWith('.docx') ||
+    file.name.endsWith('.xlsx');
 
   return (
     <figure className="my-3 overflow-hidden rounded-2xl border border-line bg-surface-card shadow-[0_14px_38px_rgb(37_57_103/0.09)]">
@@ -1678,6 +1684,8 @@ function ArtifactCard({
           alt={file.name}
           className="max-h-[28rem] w-full bg-white object-contain"
         />
+      ) : documentPreview ? (
+        <DocumentPreview file={file} />
       ) : null}
       <figcaption className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
         <div className="min-w-0">
@@ -1704,6 +1712,66 @@ function ArtifactCard({
         </div>
       </figcaption>
     </figure>
+  );
+}
+
+function DocumentPreview({
+  file,
+}: {
+  file: NonNullable<ReturnType<typeof parseAgentOutputFileReference>>;
+}) {
+  const [state, setState] = useState<{ kind: 'loading' | 'error' | 'ready'; content?: string }>({
+    kind: 'loading',
+  });
+  const docxRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    let cancelled = false;
+    void fetch(file.contentUrl)
+      .then((response) => {
+        if (!response.ok) throw new Error('文件已过期或不可用');
+        return response.arrayBuffer();
+      })
+      .then(async (bytes) => {
+        if (cancelled) return;
+        if (file.mimeType === 'application/pdf') {
+          setState({ kind: 'ready' });
+        } else if (file.name.endsWith('.docx') && docxRef.current) {
+          await renderDocx(bytes, docxRef.current);
+          setState({ kind: 'ready' });
+        } else {
+          const workbook = XLSX.read(bytes, { type: 'array', cellFormula: true });
+          const sheet = workbook.Sheets[workbook.SheetNames[0] ?? ''];
+          setState({
+            kind: 'ready',
+            content: sheet
+              ? JSON.stringify(XLSX.utils.sheet_to_json(sheet, { header: 1 }))
+              : '空工作簿',
+          });
+        }
+      })
+      .catch(
+        (error: unknown) =>
+          !cancelled &&
+          setState({ kind: 'error', content: error instanceof Error ? error.message : '预览失败' }),
+      );
+    return () => {
+      cancelled = true;
+    };
+  }, [file.contentUrl, file.mimeType, file.name]);
+  if (state.kind === 'error')
+    return (
+      <div className="m-3 rounded-xl bg-fill-secondary p-3 text-xs text-ink-muted">
+        {state.content}
+      </div>
+    );
+  if (file.mimeType === 'application/pdf')
+    return <iframe title={file.name} src={file.contentUrl} className="h-[28rem] w-full border-0" />;
+  if (file.name.endsWith('.docx'))
+    return <div ref={docxRef} className="max-h-[28rem] overflow-auto bg-white p-3 text-black" />;
+  return (
+    <pre className="max-h-[28rem] overflow-auto bg-white p-3 text-xs text-black">
+      {state.kind === 'loading' ? '正在生成预览…' : state.content}
+    </pre>
   );
 }
 

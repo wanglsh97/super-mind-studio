@@ -90,7 +90,7 @@ else:
   const result = await sessions.runShell(runId, userId, {
     command: `python -c ${shellQuote(script)}`,
     workingDirectory: '/workspace',
-    signal,
+    ...(signal ? { signal } : {}),
   });
   if (result.exitCode !== 0) throw new Error(result.stderr.content || '文档解析失败');
   return result.stdout.content.trim();

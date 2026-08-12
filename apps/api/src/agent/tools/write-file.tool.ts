@@ -88,7 +88,7 @@ else:
   const result = await sessions.runShell(runId, userId, {
     command: `python -c ${shellQuote(script)}`,
     workingDirectory: '/workspace',
-    signal,
+    ...(signal ? { signal } : {}),
   });
   if (result.exitCode !== 0) throw new Error(result.stderr.content || '文档写入失败');
   const file = await sessions.readFile(runId, userId, path, signal);
