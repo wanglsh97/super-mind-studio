@@ -222,7 +222,32 @@ DATABASE_URL=postgresql://aigateway:password@localhost:5432/aigateway_test pnpm 
     docker image prune -af
 ```
 
-生产发布脚本会检查当前 commit 相对父 commit 是否修改了 `infra/sandbox/`。只有 Sandbox 镜像定义发生变化时，才会使用 `OPEN_SANDBOX_IMAGE` 构建并推送 ACR 镜像；普通 Web/API 代码发布会跳过镜像推送。执行发布前，项目 ECS 必须已登录 ACR，且 `.env.production` 中配置带版本 tag 的完整镜像地址。
+生产发布脚本不会自动构建或推送 Sandbox 镜像。首次部署、镜像内容变更或 ACR 镜像不存在时，请由用户手动执行以下命令；完成推送并确认 Sandbox Server 可以拉取后，再执行应用发布脚本。`.env.production` 中必须配置同一个带版本 tag 的完整镜像地址。
+
+### 手动构建并推送 Sandbox 镜像
+
+以下命令在具备 Docker、网络和 ACR 推送权限的机器上执行。镜像地址必须与 `.env.production` 的 `OPEN_SANDBOX_IMAGE` 以及 Sandbox Server 拉取时使用的地址完全一致：
+
+```bash
+cd super-mind-studio
+
+SANDBOX_IMAGE=crpi-fjpg53u2fb01hiyt.cn-hangzhou.personal.cr.aliyuncs.com/super-mind/super-mind-sandbox-image:0.1.0
+
+docker login crpi-fjpg53u2fb01hiyt.cn-hangzhou.personal.cr.aliyuncs.com
+docker build --platform linux/amd64 \
+  -f infra/sandbox/Dockerfile \
+  -t "$SANDBOX_IMAGE" \
+  infra/sandbox
+docker push "$SANDBOX_IMAGE"
+docker manifest inspect "$SANDBOX_IMAGE"
+```
+
+在 Sandbox Server 上使用同一个 Registry 登录并验证拉取：
+
+```bash
+docker login crpi-fjpg53u2fb01hiyt.cn-hangzhou.personal.cr.aliyuncs.com
+docker pull "$SANDBOX_IMAGE"
+```
 
 ## 上下文压缩策略：
 
