@@ -4,8 +4,8 @@
 
 ```bash
 docker build -f infra/sandbox/Dockerfile \
-  -t super-mind/document-sandbox:0.1.0 infra/sandbox
-docker run --rm super-mind/document-sandbox:0.1.0 \
+  -t super-mind-sandbox:0.1.0 infra/sandbox
+docker run --rm super-mind-sandbox:0.1.0 \
   python -c "import openpyxl, pypdf, docx, reportlab; print('document dependencies ready')"
 ```
 
