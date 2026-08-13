@@ -22,7 +22,11 @@ export class HttpExceptionFilter implements ExceptionFilter {
       typeof bodyRecord?.details === 'object' && bodyRecord.details !== null
         ? (bodyRecord.details as Record<string, unknown>)
         : undefined
-    const message = Array.isArray(rawMessage)
+    const multerFileTooLarge =
+      bodyRecord?.code === 'LIMIT_FILE_SIZE' || rawMessage === 'File too large'
+    const message = multerFileTooLarge
+      ? '单个文件不能超过 20 MB，请压缩文件后重试。'
+      : Array.isArray(rawMessage)
       ? rawMessage.filter((item): item is string => typeof item === 'string').join('; ')
       : typeof rawMessage === 'string'
         ? rawMessage
@@ -37,8 +41,9 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
     response.status(status).json({
       requestId,
-      code:
-        typeof bodyRecord?.code === 'string' && bodyRecord.code
+      code: multerFileTooLarge
+        ? 'DOCUMENT_FILE_TOO_LARGE'
+        : typeof bodyRecord?.code === 'string' && bodyRecord.code
           ? bodyRecord.code
           : this.toCode(status),
       message,

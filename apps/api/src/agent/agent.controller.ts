@@ -1,6 +1,7 @@
 import type { AgentStreamEvent } from '@supermind/sdk';
 import {
   Body,
+  BadRequestException,
   Controller,
   HttpException,
   Delete,
@@ -56,6 +57,7 @@ import { ExecutableSkillService } from './skills/executable-skill.service';
 import { AgentPreviewTokenService } from './website/agent-preview-token.service';
 import { AgentExecutionSessionService } from './sandbox/agent-execution-session.service';
 import {
+  DocumentFilePolicyError,
   MAX_DOCUMENT_FILE_BYTES,
   MAX_DOCUMENT_FILE_COUNT,
   validateDocumentFiles,
@@ -283,11 +285,26 @@ export class AgentController {
     @UploadedFiles() files: UploadedDocumentFile[],
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    validateDocumentFiles(
-      files.map((file) => ({ originalName: file.originalname, sizeBytes: file.size })),
-    );
+    const normalizedFiles = files.map((file) => ({
+      ...file,
+      originalname: normalizeUploadedFileName(file.originalname),
+    }));
+    try {
+      validateDocumentFiles(
+        normalizedFiles.map((file) => ({ originalName: file.originalname, sizeBytes: file.size })),
+      );
+    } catch (error) {
+      if (error instanceof DocumentFilePolicyError) {
+        throw new BadRequestException({
+          code: error.code,
+          message: error.message,
+          retryable: false,
+        });
+      }
+      throw error;
+    }
     const uploaded = await Promise.all(
-      files.map(async (file) => {
+      normalizedFiles.map(async (file) => {
         const stored = await this.sessions.uploadThreadFile(
           threadId,
           user.id,
@@ -487,6 +504,11 @@ export class AgentController {
     response.write('data: [DONE]\n\n');
     response.end();
   }
+}
+
+function normalizeUploadedFileName(name: string): string {
+  const normalized = Buffer.from(name, 'latin1').toString('utf8');
+  return normalized.includes('\ufffd') ? name : normalized;
 }
 
 function parseTimezoneOffset(value: string | undefined): number {

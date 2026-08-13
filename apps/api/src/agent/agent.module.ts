@@ -47,6 +47,10 @@ import {
   loadWebsiteBuildingSkill,
   WEBSITE_BUILDING_SKILL,
 } from './skills/builtin/website-building.skill'
+import {
+  DOCUMENT_ANALYSIS_SKILL,
+  loadDocumentAnalysisSkill,
+} from './skills/builtin/document-analysis.skill'
 import { SkillPublishingRepository } from './skills/publishing/skill-publishing.repository'
 import { SkillPublishingService } from './skills/publishing/skill-publishing.service'
 import { InMemorySkillObjectStore } from './skills/storage/in-memory-skill-object-store'
@@ -167,6 +171,7 @@ export function createSandboxRuntime(config: ConfigService): SandboxRuntimePort 
     AgentStartupCleanupService,
     AgentPromptComposer,
     { provide: WEBSITE_BUILDING_SKILL, useFactory: loadWebsiteBuildingSkill },
+    { provide: DOCUMENT_ANALYSIS_SKILL, useFactory: loadDocumentAnalysisSkill },
     PlatformAgentSkillCatalog,
     AgentSkillRepository,
     AgentSkillService,

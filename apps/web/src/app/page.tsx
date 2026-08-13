@@ -53,6 +53,8 @@ import ShimmerText from '@/components/shimmer-text';
 import {
   AgentActiveRunHint,
   AgentComposerActions,
+  ComposerDocumentFiles,
+  encodeComposerMessage,
   DocumentUploadButton,
   AgentComposerDock,
   AgentComposerFooter,
@@ -80,6 +82,7 @@ import {
   NewThreadButton,
   UserMessage,
   AgentWebCreationOption,
+  type ComposerDocumentFile,
 } from '@/components/chat-thread-ui';
 import { AssistantMarkdown } from '@/components/chat/assistant-markdown';
 import { ProtectedUserPage } from '@/components/protected-user-page';
@@ -173,6 +176,8 @@ function AgentConsole() {
   const [pendingQuestion, setPendingQuestion] = useState<AgentUserQuestion | null>(null);
   const [questionActionError, setQuestionActionError] = useState<string | null>(null);
   const [webCreationSelected, setWebCreationSelected] = useState(false);
+  const [documentAnalysisSelected, setDocumentAnalysisSelected] = useState(false);
+  const [composerFiles, setComposerFiles] = useState<ComposerDocumentFile[]>([]);
   const [githubLoginPromptOpen, setGithubLoginPromptOpen] = useState(false);
   const [githubLoginSwitching, setGithubLoginSwitching] = useState(false);
   const [githubLoginPromptError, setGithubLoginPromptError] = useState<string | null>(null);
@@ -184,6 +189,7 @@ function AgentConsole() {
     if (!activeThreadId) {
       // 草稿未发送：不恢复选中，切换走 Thread 后回到新建也保持未选。
       setWebCreationSelected(false);
+      setDocumentAnalysisSelected(false);
       writeWebsiteMode(window.localStorage, null, false);
       return;
     }
@@ -203,6 +209,7 @@ function AgentConsole() {
     thinkingEffort,
     selectedSkillNames: [] as readonly string[],
     websiteMode: false,
+    documentMode: false,
     onThreadCreated: (() => undefined) as (thread: Parameters<typeof prependThread>[0]) => void,
     onRunCreated: (() => undefined) as (run: { id: string; threadId: string }) => void,
     onRunFinished: () => undefined,
@@ -219,6 +226,7 @@ function AgentConsole() {
   contextRef.current.thinkingEffort = thinkingEffort;
   contextRef.current.selectedSkillNames = selectedSkillNames;
   contextRef.current.websiteMode = webCreationSelected;
+  contextRef.current.documentMode = documentAnalysisSelected;
   contextRef.current.onThreadCreated = (thread) => {
     skipHydrationRef.current = true;
     setThreadTokenUsage(null);
@@ -502,8 +510,8 @@ function AgentConsole() {
                   <AgentContextTimeline events={compressionEvents} summary={contextSummary} />
                 </AgentThreadViewport>
               </div>
-              {pendingQuestion ? null : <AgentScrollToBottom />}
               <AgentComposerDock>
+                {pendingQuestion ? null : <AgentScrollToBottom />}
                 {pendingQuestion ? (
                   <AgentUserQuestionCard
                     key={pendingQuestion.id}
@@ -550,18 +558,43 @@ function AgentConsole() {
                     {activeRuns.some((run) => run.threadId !== activeThreadId) ? (
                       <AgentActiveRunHint message="其他会话正在后台运行；当前会话仍可独立提交" />
                     ) : null}
-                    <AgentWebCreationOption
-                      selected={webCreationSelected}
-                      disabled={submitBlocked}
-                      onClick={() => {
-                        if (!canCreateWebsite) {
-                          setGithubLoginPromptOpen(true);
-                          return;
-                        }
-                        updateWebsiteMode(!webCreationSelected);
+                    <div className="mx-auto mb-2 flex w-full max-w-[44rem] gap-2 overflow-x-auto sm:w-[calc(100%-2rem)]">
+                      <AgentWebCreationOption
+                        selected={webCreationSelected}
+                        disabled={submitBlocked}
+                        onClick={() => {
+                          if (!canCreateWebsite) {
+                            setGithubLoginPromptOpen(true);
+                            return;
+                          }
+                          updateWebsiteMode(!webCreationSelected);
+                          if (!webCreationSelected) setDocumentAnalysisSelected(false);
+                        }}
+                      />
+                      <AgentWebCreationOption
+                        label="文档操作"
+                        selected={documentAnalysisSelected}
+                        disabled={submitBlocked}
+                        onClick={() => {
+                          setDocumentAnalysisSelected((current) => !current);
+                          if (webCreationSelected) updateWebsiteMode(false);
+                        }}
+                      />
+                    </div>
+                    <AgentComposerRoot
+                      onSubmitText={(prompt) => {
+                        if (composerFiles.length === 0) return prompt;
+                        const message = encodeComposerMessage(composerFiles, prompt);
+                        setComposerFiles([]);
+                        return message;
                       }}
-                    />
-                    <AgentComposerRoot>
+                    >
+                      <ComposerDocumentFiles
+                        files={composerFiles}
+                        onRemove={(index) =>
+                          setComposerFiles((current) => current.filter((_, item) => item !== index))
+                        }
+                      />
                       <AgentSkillSlashPicker
                         candidates={skillCandidates}
                         selectedNames={selectedSkillNames}
@@ -582,7 +615,9 @@ function AgentConsole() {
                             ? '上一个任务还在进行中，请等待结束后再提交…'
                             : webCreationSelected
                               ? '描述你的网站功能、风格'
-                              : '有什么问题尽管问，输入/ 调用技能'
+                              : documentAnalysisSelected
+                                ? '上传文档，对文档进行分析、编辑'
+                                : '有什么问题尽管问，输入/ 调用技能'
                         }
                         disabled={submitBlocked}
                         maxLength={8000}
@@ -591,19 +626,37 @@ function AgentConsole() {
                       <AgentComposerFooter>
                         <AgentComposerActions>
                           <NewThreadButton onNewThread={startNewThread} />
-                          {activeThreadId ? (
-                            <DocumentUploadButton
-                              disabled={submitBlocked}
-                              onUpload={async (files) => {
-                                await client.agent.files.upload(
-                                  activeThreadId,
-                                  files,
-                                  files.map((file) => file.name),
-                                );
-                                await refreshThreads();
-                              }}
-                            />
-                          ) : null}
+                          <DocumentUploadButton
+                            disabled={submitBlocked}
+                            onUpload={async (files) => {
+                              let threadId = activeThreadId;
+                              if (!threadId) {
+                                const created = await client.agent.threads.create({
+                                  model:
+                                    (selectedModel as TextModelId) ||
+                                    modelOptions[0]?.value ||
+                                    'qwen3.7-plus',
+                                });
+                                threadId = created.id;
+                                prependThread(created);
+                                openThread(threadId);
+                              }
+                              const uploaded = await client.agent.files.upload(
+                                threadId,
+                                files,
+                                files.map((file) => file.name),
+                              );
+                              setComposerFiles((current) => [
+                                ...current,
+                                ...uploaded.files.map((file, index) => ({
+                                  name: file.name,
+                                  path: file.path,
+                                  sizeBytes: files[index]?.size ?? file.sizeBytes,
+                                })),
+                              ]);
+                              await refreshThreads();
+                            }}
+                          />
                         </AgentComposerActions>
                         <AgentComposerSubmitGroup>
                           <ThinkingEffortSelect

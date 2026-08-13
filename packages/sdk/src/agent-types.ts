@@ -366,7 +366,7 @@ export type AgentThinkingEffort = 'fast' | 'balanced' | 'deep'
 
 export interface CreateAgentRunRequest {
   input: string
-  mode?: 'website'
+  mode?: 'website' | 'document'
   /**
    * 三档用户表达在所有模型上保持一致，服务端映射为厂商支持的开关、budget 或 effort。
    * 省略时服务端默认 `balanced`。

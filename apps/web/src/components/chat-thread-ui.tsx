@@ -17,7 +17,9 @@ import {
   CheckIcon,
   ChevronRightIcon,
   CopyIcon,
-  PaperclipIcon,
+  FileSpreadsheetIcon,
+  FileTextIcon,
+  PlusIcon,
   ThumbsDownIcon,
   ThumbsUpIcon,
 } from 'lucide-react';
@@ -201,7 +203,7 @@ export function AgentScrollToBottom() {
     <ThreadPrimitive.ScrollToBottom
       aria-label="滚动到底部"
       className={cn(
-        'absolute bottom-36 left-1/2 z-5 grid size-9 -translate-x-1/2 cursor-pointer place-items-center rounded-full border border-line bg-surface-card text-brand dark:bg-surface-muted dark:text-brand-light',
+        'absolute bottom-full left-1/2 z-5 grid size-9 -translate-x-1/2 cursor-pointer place-items-center rounded-full border border-line bg-surface-card text-brand shadow-[0_4px_14px_rgb(37_57_103/0.12)] dark:bg-surface-muted dark:text-brand-light',
         focusRing,
       )}
     >
@@ -212,7 +214,7 @@ export function AgentScrollToBottom() {
 
 export function AgentComposerDock({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <div className="sticky bottom-0 z-3 bg-linear-to-b from-transparent via-surface/85 via-28% to-surface px-1 pt-5 pb-2 md:px-4.5 md:pt-7 md:pb-2.5">
+    <div className="sticky bottom-0 z-3 relative bg-linear-to-b from-transparent via-surface/85 via-28% to-surface px-1 py-2 md:px-4.5 md:py-2.5">
       {children}
     </div>
   );
@@ -223,7 +225,7 @@ export function AgentComposerRoot({
   onSubmitText,
 }: Readonly<{
   children: ReactNode;
-  onSubmitText?: (text: string) => void;
+  onSubmitText?: (text: string) => string;
 }>) {
   const aui = useAui();
   const composerText = useAuiState(({ composer }) => composer.text);
@@ -236,7 +238,6 @@ export function AgentComposerRoot({
         style={
           hasFocus
             ? {
-                borderColor: 'rgb(60 60 67 / 0.58)',
                 boxShadow: '0 0 0 1px rgb(60 60 67 / 0.16)',
               }
             : undefined
@@ -252,12 +253,8 @@ export function AgentComposerRoot({
             return;
           }
 
-          if (trimmedText !== composerText) aui.composer().setText(trimmedText);
-          if (onSubmitText) {
-            event.preventDefault();
-            aui.composer().setText('');
-            onSubmitText(trimmedText);
-          }
+          const submittedText = onSubmitText?.(trimmedText) ?? trimmedText;
+          if (submittedText !== composerText) aui.composer().setText(submittedText);
         }}
         className={cn(
           'liquid-glass relative mx-auto w-full max-w-[44rem] rounded-[1.125rem] p-2 pb-2.5 transition-[border-color,box-shadow] sm:w-[calc(100%-2rem)]',
@@ -320,6 +317,7 @@ export function DocumentUploadButton({
 }>) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   return (
     <>
       <input
@@ -332,8 +330,15 @@ export function DocumentUploadButton({
           const files = Array.from(event.target.files ?? []);
           event.currentTarget.value = '';
           if (!files.length) return;
+          setError(null);
           setUploading(true);
-          void onUpload(files).finally(() => setUploading(false));
+          void onUpload(files)
+            .catch((cause: unknown) => {
+              const detail = cause instanceof Error ? cause.message : '文件上传失败，请稍后重试';
+              setError(`${detail} 支持 PDF、DOCX、XLSX，单个文件最大 20 MB。`);
+              window.setTimeout(() => setError(null), 5000);
+            })
+            .finally(() => setUploading(false));
         }}
       />
       <button
@@ -343,27 +348,155 @@ export function DocumentUploadButton({
         disabled={disabled || uploading}
         onClick={() => inputRef.current?.click()}
         className={cn(
-          'grid size-8 place-items-center rounded-full text-ink-muted hover:bg-fill-secondary disabled:opacity-40',
+          'grid size-8 cursor-pointer place-items-center rounded-full border border-line bg-surface-card text-ink transition-[background-color,border-color,box-shadow,color,transform] disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none',
           focusRing,
         )}
       >
-        <PaperclipIcon className="size-4" aria-hidden="true" />
+        <PlusIcon className="size-4" aria-hidden="true" />
       </button>
+      {error ? (
+        <div
+          className="fixed bottom-5 left-1/2 z-50 max-w-[min(90vw,28rem)] -translate-x-1/2 rounded-xl border border-red-200 bg-surface-card px-4 py-3 text-xs text-red-700 shadow-[0_10px_30px_rgb(15_15_20/0.16)]"
+          role="alert"
+        >
+          {error}
+        </div>
+      ) : null}
     </>
   );
+}
+
+export interface ComposerDocumentFile {
+  name: string;
+  sizeBytes: number;
+  path: string;
+}
+
+const FILES_START = '[[supermind-files]]';
+const FILES_END = '[[/supermind-files]]';
+
+export function encodeComposerMessage(files: readonly ComposerDocumentFile[], prompt: string) {
+  if (!files.length) return prompt;
+  return `${FILES_START}${JSON.stringify(files)}${FILES_END}\n${prompt}`;
+}
+
+function decodeComposerMessage(content: string): {
+  files: ComposerDocumentFile[];
+  prompt: string;
+} {
+  const start = content.indexOf(FILES_START);
+  const end = content.indexOf(FILES_END);
+  if (start < 0 || end < start) return { files: [], prompt: content };
+  try {
+    const files = JSON.parse(
+      content.slice(start + FILES_START.length, end),
+    ) as ComposerDocumentFile[];
+    return {
+      files: Array.isArray(files) ? files : [],
+      prompt: content.slice(end + FILES_END.length).trim(),
+    };
+  } catch {
+    return { files: [], prompt: content };
+  }
+}
+
+function messageContentText(content: unknown): string {
+  if (typeof content === 'string') return content;
+  if (!Array.isArray(content)) return '';
+  return content
+    .filter(
+      (part): part is { type: 'text'; text: string } =>
+        typeof part === 'object' &&
+        part !== null &&
+        (part as { type?: unknown }).type === 'text' &&
+        typeof (part as { text?: unknown }).text === 'string',
+    )
+    .map((part) => part.text)
+    .join('');
+}
+
+export function ComposerDocumentFiles({
+  files,
+  onRemove,
+  compact = true,
+}: Readonly<{
+  files: readonly ComposerDocumentFile[];
+  onRemove?: (index: number) => void;
+  compact?: boolean;
+}>) {
+  if (!files.length) return null;
+  return (
+    <div className="flex gap-2 overflow-x-auto px-2 pb-2 pt-1" aria-label="已上传文件">
+      {files.map((file, index) => {
+        const extension = file.name.split('.').pop()?.toLowerCase();
+        const Icon = extension === 'xlsx' ? FileSpreadsheetIcon : FileTextIcon;
+        return (
+          <div
+            key={`${file.name}-${file.sizeBytes}-${index}`}
+            className={cn(
+              'group relative shrink-0 cursor-default items-center rounded-lg border border-line bg-surface-card shadow-[0_3px_10px_rgb(37_57_103/0.05)] transition-[border-color,box-shadow,transform]',
+              compact ? 'flex w-36 gap-1.5 px-1.5 py-1.5' : 'flex w-60 gap-3 px-3 py-3',
+            )}
+          >
+            <div
+              className={cn(
+                'grid shrink-0 place-items-center rounded-md border border-line bg-fill-secondary text-ink-muted',
+                compact ? 'size-7' : 'size-12 rounded-lg',
+              )}
+            >
+              <Icon className={compact ? 'size-4' : 'size-7'} aria-hidden="true" />
+            </div>
+            <div className={cn('min-w-0', compact ? 'pr-3' : 'pr-2')}>
+              <p
+                className={cn('truncate font-medium text-ink', compact ? 'text-[11px]' : 'text-sm')}
+              >
+                附件：{file.name}
+              </p>
+              <p
+                className={cn(
+                  'mt-0.5 uppercase text-ink-muted',
+                  compact ? 'text-[10px]' : 'text-xs',
+                )}
+              >
+                {extension ?? 'FILE'} {formatComposerFileSize(file.sizeBytes)}
+              </p>
+            </div>
+            {onRemove ? (
+              <button
+                type="button"
+                aria-label={`移除 ${file.name}`}
+                onClick={() => onRemove(index)}
+                className="absolute right-1.5 top-1.5 hidden size-5 cursor-pointer place-items-center rounded-full bg-fill-secondary text-sm leading-none text-ink-muted shadow-sm transition-colors hover:bg-red-500/10 hover:text-red-600 group-hover:grid"
+              >
+                ×
+              </button>
+            ) : null}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function formatComposerFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 export function AgentWebCreationOption({
   selected,
   disabled,
   onClick,
+  label = '网页开发',
 }: Readonly<{
   selected: boolean;
   disabled?: boolean;
   onClick: () => void;
+  label?: string;
 }>) {
   return (
-    <div className="mx-auto mb-2 w-full max-w-[44rem] sm:w-[calc(100%-2rem)]">
+    <div className="shrink-0">
       <button
         type="button"
         aria-pressed={selected}
@@ -386,7 +519,7 @@ export function AgentWebCreationOption({
           <rect x="3.25" y="3.5" width="13.5" height="13" rx="2.25" />
           <path d="M3.5 7.5h13M7.5 7.5v8.75" strokeLinejoin="round" />
         </svg>
-        <span className="font-semibold">网页开发</span>
+        <span className="font-semibold">{label}</span>
       </button>
     </div>
   );
@@ -923,13 +1056,24 @@ export function AgentEmptyState({
 }
 
 export function UserMessage({ messageId }: Readonly<{ messageId: string }>) {
+  const content = useAuiState(({ message }) => message.content);
+  const decoded = decodeComposerMessage(messageContentText(content));
   return (
     <MessagePrimitive.Root
       id={`agent-message-${messageId}`}
       className="group flex flex-col items-end gap-1 py-4"
     >
-      <div className="max-w-[min(82%,38rem)] rounded-2xl bg-surface-muted px-4 py-3 text-[0.95rem] leading-7 text-ink max-md:max-w-[92%] dark:text-ink">
-        <MessagePrimitive.Parts />
+      <div className="flex max-w-[min(82%,38rem)] flex-col items-end gap-2 text-[0.95rem] leading-7 text-ink max-md:max-w-[92%] dark:text-ink">
+        {decoded.files.length ? (
+          <div className="rounded-2xl bg-surface-muted px-3 py-3">
+            <ComposerDocumentFiles files={decoded.files} compact={false} />
+          </div>
+        ) : null}
+        {decoded.prompt ? (
+          <div className="rounded-2xl bg-surface-muted px-4 py-3 whitespace-pre-wrap">
+            {decoded.prompt}
+          </div>
+        ) : null}
       </div>
       <ActionBarPrimitive.Root className="flex h-7 items-center opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100">
         <ActionBarPrimitive.Copy

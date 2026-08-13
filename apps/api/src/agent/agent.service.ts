@@ -185,7 +185,7 @@ export class AgentService {
     input: string,
     skills: readonly { name: string }[] = [],
     thinkingEffort: AgentThinkingEffort = 'balanced',
-    mode?: 'website',
+    mode?: 'website' | 'document',
   ): Promise<AgentRunSummary> {
     if (mode === 'website' && user.authProvider !== 'GITHUB') {
       throw new ForbiddenException('网页创作需要使用 GitHub 账号登录')

@@ -13,6 +13,12 @@ import {
   WEBSITE_BUILDING_SKILL,
   type WebsiteBuildingSkill,
 } from '../skills/builtin/website-building.skill'
+import {
+  DOCUMENT_ANALYSIS_SKILL,
+  loadDocumentAnalysisSkill,
+  renderDocumentAnalysisSkill,
+  type DocumentAnalysisSkill,
+} from '../skills/builtin/document-analysis.skill'
 
 export const AGENT_PROMPT_PROFILE_VERSION = 'web-agent-v5'
 export const MAX_PROMPT_CANDIDATE_SKILLS = 50
@@ -55,6 +61,8 @@ export class AgentPromptComposer {
     @Inject(AGENT_MEMORY_PROVIDER) private readonly memory: AgentMemoryProvider,
     @Inject(WEBSITE_BUILDING_SKILL)
     private readonly websiteSkill: WebsiteBuildingSkill = loadWebsiteBuildingSkill(),
+    @Inject(DOCUMENT_ANALYSIS_SKILL)
+    private readonly documentSkill: DocumentAnalysisSkill = loadDocumentAnalysisSkill(),
   ) {}
 
   async compose(input: {
@@ -63,7 +71,7 @@ export class AgentPromptComposer {
     modelId: string
     provider: string
     contextWindowTokens: number
-    mode?: 'website'
+    mode?: 'website' | 'document'
     summaryId?: string | null
     now?: Date
     tools?: readonly AgentToolDefinition[]
@@ -120,6 +128,12 @@ Call only tools listed in available_capabilities and submit arguments that stric
 Treat /workspace/work as temporary scratch space. Put every completed user-facing file under /workspace/output and call export_file for each one before claiming that it is available. A sandbox path alone is not a downloadable result.
 Stop calling tools and answer once you have enough information. Ask the user only when a missing choice would materially change the goal or an action would create an unauthorized external effect.`,
       ),
+      input.mode === 'document'
+        ? section(
+            'document_analysis_profile',
+            `Document analysis mode is active. Follow the immutable built-in Skill below.\n${renderDocumentAnalysisSkill(this.documentSkill)}`,
+          )
+        : '',
       input.mode === 'website'
         ? section(
             'website_generation_profile',

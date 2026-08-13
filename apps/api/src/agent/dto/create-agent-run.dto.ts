@@ -30,8 +30,8 @@ export class CreateAgentRunDto implements CreateAgentRunRequest {
   declare thinkingEffort?: AgentThinkingEffort
 
   @IsOptional()
-  @IsIn(['website'])
-  declare mode?: 'website'
+  @IsIn(['website', 'document'])
+  declare mode?: 'website' | 'document'
 
   @IsOptional()
   @IsArray()

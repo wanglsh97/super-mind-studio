@@ -203,6 +203,25 @@ describe('AgentPromptComposer', () => {
     expect(result.manifest.summaryId).toBe('summary-1')
   })
 
+  it('injects the document-analysis built-in Skill only for document mode', async () => {
+    const composer = new AgentPromptComposer(
+      new AgentToolRegistry([]),
+      { listCandidates: async () => [] },
+      mcpRegistry(),
+      { recall: async () => [] },
+    )
+    const result = await composer.compose({
+      userId: 'u1',
+      threadId: 't1',
+      modelId: 'mock',
+      provider: 'mock',
+      contextWindowTokens: 100_000,
+      mode: 'document',
+    })
+    expect(result.systemPrompt).toContain('document-analysis')
+    expect(result.systemPrompt).toContain('Never run `pip install`')
+  })
+
   it('bounds candidate metadata and escapes instruction-like descriptions as untrusted text', async () => {
     const candidates = Array.from({ length: MAX_PROMPT_CANDIDATE_SKILLS + 5 }, (_, index) => ({
       id: `skill-${index}`,

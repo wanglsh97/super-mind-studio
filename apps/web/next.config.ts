@@ -11,6 +11,8 @@ const nextConfig: NextConfig = {
   experimental: {
     // Agent SSE 需要穿过同源 rewrite；必须覆盖最长 1 小时的 Agent Run。
     proxyTimeout: 3_660_000,
+    // 文档单文件上限为 20MB，额外预留 multipart/form-data 边界和字段开销。
+    proxyClientMaxBodySize: '25mb',
   },
   transpilePackages: ['@supermind/sdk'],
   turbopack: {

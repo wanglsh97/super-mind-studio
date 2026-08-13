@@ -23,6 +23,7 @@ export interface AgentRunAdapterContext {
   thinkingEffort: AgentThinkingEffort
   selectedSkillNames: readonly string[]
   websiteMode?: boolean
+  documentMode?: boolean
   onThreadCreated: (thread: AgentThreadSummary) => void
   onRunCreated?: (run: { id: string; threadId: string }) => void
   onRunFinished?: (status: AgentRunTerminalStatus) => void
@@ -100,7 +101,11 @@ export function createAgentRunAdapter(
         ...(context.selectedSkillNames.length === 0
           ? {}
           : { skills: context.selectedSkillNames.map((name) => ({ name })) }),
-        ...(context.websiteMode ? { mode: 'website' as const } : {}),
+        ...(context.websiteMode
+          ? { mode: 'website' as const }
+          : context.documentMode
+            ? { mode: 'document' as const }
+            : {}),
       })
       context.onRunCreated?.({ id: run.id, threadId })
       context.onRunProgressChange?.('preparing-sandbox')
