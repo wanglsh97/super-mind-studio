@@ -65,7 +65,7 @@ describe('ChatModelCatalog', () => {
     const catalog = new ChatModelCatalog(new ChatAdapterRegistry([adapter('mock', 'mock-chat')]))
 
     expect(catalog.list()).toEqual(CHAT_MODELS)
-    expect(catalog.resolve('qwen3.7-plus')?.contextWindowTokens).toBe(1_000_000)
+    expect(catalog.resolve('qwen3.7-plus')?.contextWindowTokens).toBe(50_000)
   })
 
   it('resolveForAgent allows Mock-backed and configured real providers', () => {

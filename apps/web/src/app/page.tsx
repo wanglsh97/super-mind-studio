@@ -4,6 +4,7 @@ import { createSuperMindClient, parseAgentOutputFileReference } from '@supermind
 import { renderAsync as renderDocx } from 'docx-preview';
 import * as XLSX from 'xlsx';
 import type {
+  AgentContextBudgetState,
   AgentContextSummary,
   AgentMcpServerStatus,
   AgentSandboxStatus,
@@ -166,6 +167,9 @@ function AgentConsole() {
   const [compressionEvents, setCompressionEvents] = useState<
     Extract<AgentStreamEvent, { type: 'context-compressed' }>[]
   >([]);
+  const [contextCompressionStatus, setContextCompressionStatus] = useState<
+    'idle' | 'compressing' | 'completed'
+  >('idle');
   const [skillCandidates, setSkillCandidates] = useState<AgentSkillCandidate[]>([]);
   const [selectedSkillNames, setSelectedSkillNames] = useState<string[]>([]);
   const [skillLoadState, setSkillLoadState] = useState<'loading' | 'ready' | 'failed'>('loading');
@@ -213,6 +217,7 @@ function AgentConsole() {
     onThreadCreated: (() => undefined) as (thread: Parameters<typeof prependThread>[0]) => void,
     onRunCreated: (() => undefined) as (run: { id: string; threadId: string }) => void,
     onRunFinished: () => undefined,
+    onContextBudget: (() => undefined) as (budget: AgentContextBudgetState) => void,
     onContextCompressed: (() => undefined) as (
       event: Extract<AgentStreamEvent, { type: 'context-compressed' }>,
     ) => void,
@@ -232,6 +237,7 @@ function AgentConsole() {
     setThreadTokenUsage(null);
     setContextSummary(null);
     setCompressionEvents([]);
+    setContextCompressionStatus('idle');
     writeWebsiteMode(window.localStorage, thread.id, webCreationSelected);
     prependThread(thread);
     openThread(thread.id);
@@ -264,6 +270,7 @@ function AgentConsole() {
     // 避免持久化快照（尚不包含前端 timing）覆盖该元数据。
     skipHydrationRef.current = true;
     setRunProgress(null);
+    setContextCompressionStatus('idle');
     setSandboxTelemetry((current) =>
       current.status === 'failed'
         ? current
@@ -286,6 +293,7 @@ function AgentConsole() {
     void refreshThreads().catch(() => undefined);
   };
   contextRef.current.onContextCompressed = (event) => {
+    setContextCompressionStatus('completed');
     setCompressionEvents((current) => [...current, event]);
     if (event.summaryId && contextRef.current.threadId) {
       void client.agent.threads
@@ -295,6 +303,9 @@ function AgentConsole() {
         })
         .catch(() => undefined);
     }
+  };
+  contextRef.current.onContextBudget = (budget) => {
+    if (budget.level === 'forced') setContextCompressionStatus('compressing');
   };
   contextRef.current.onSandboxStatus = (status, sandboxId) => {
     setSandboxTelemetry({
@@ -507,7 +518,7 @@ function AgentConsole() {
                       )
                     }
                   </ThreadPrimitive.Messages>
-                  <AgentContextTimeline events={compressionEvents} summary={contextSummary} />
+                  <AgentContextTimeline status={contextCompressionStatus} />
                 </AgentThreadViewport>
               </div>
               <AgentComposerDock>
@@ -1314,35 +1325,19 @@ function ThreadHydrator({
 }
 
 function AgentContextTimeline({
-  events,
-  summary,
+  status,
 }: {
-  events: Extract<AgentStreamEvent, { type: 'context-compressed' }>[];
-  summary: AgentContextSummary | null;
+  status: 'idle' | 'compressing' | 'completed';
 }) {
-  if (events.length === 0) return null;
+  if (status === 'idle') return null;
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-2 px-4 pb-3" aria-label="上下文压缩时间线">
-      {events.map((event) => (
-        <details
-          key={`${event.runId}-${event.sequence}`}
-          className="rounded-xl border border-dashed border-line bg-surface px-3 py-2 text-xs text-ink-muted"
-        >
-          <summary className="cursor-pointer font-semibold text-ink">
-            上下文已
-            {event.level === 'forced'
-              ? '强制摘要'
-              : event.level === 'moderate'
-                ? '中度压缩'
-                : '轻量压缩'}
-            {event.revision ? ` · 摘要 r${event.revision}` : ''}
-          </summary>
-          <p className="mt-1">{event.notes.join(' · ')}</p>
-          {event.summaryId && summary?.id === event.summaryId ? (
-            <AgentSummaryDetail summary={summary} />
-          ) : null}
-        </details>
-      ))}
+    <div
+      className="mx-auto flex w-full max-w-3xl items-center gap-2 px-4 py-3 text-xs text-ink-muted"
+      aria-live="polite"
+      aria-label="上下文压缩状态"
+    >
+      <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-ink-faint" />
+      <span>{status === 'compressing' ? '正在压缩上下文…' : '上下文压缩完成'}</span>
     </div>
   );
 }

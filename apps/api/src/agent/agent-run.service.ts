@@ -20,6 +20,7 @@ import { createAgentModelInvocationPort } from './agent-model-invocation'
 import { AgentModelInvocationRepository } from './agent-model-invocation.repository'
 import { AgentActiveRunLock } from './agent-active-run.lock'
 import { AgentContextPreparer } from './context/agent-context-preparer'
+import { compressAgentContext } from './context/agent-context-compressor'
 import { AgentContextSummaryRepository } from './context/agent-context-summary.repository'
 import {
   AgentContextCompressionFailedError,
@@ -39,6 +40,7 @@ import { AgentRunProjector } from './agent-run.projector'
 import { AgentRunQuestionEventBridge } from './agent-run-question-event-bridge'
 import { AgentRunRepository } from './agent-run.repository'
 import { AgentPromptComposer } from './prompt/agent-prompt.composer'
+import { prepareAgentInput } from './uploaded-files-input'
 import { AgentExecutionSessionService } from './sandbox/agent-execution-session.service'
 import type { ActivatedSkill } from './skills/executable-skill.service'
 import { renderSkillContentPrompt } from './skills/skill-content-prompt'
@@ -351,6 +353,34 @@ export class AgentRunService {
                 activeSummary?.coveredThroughSequence ?? -1,
               )
               if (candidates.length === 0) {
+                const fallback = compressAgentContext(currentMessages, 'moderate')
+                const fallbackBudget = this.contextPreparer.prepare({
+                  contextWindowTokens: input.contextWindowTokens,
+                  messages: fallback.messages,
+                  tools,
+                }).budget
+                if (fallbackBudget.level !== 'forced') {
+                  if (fallback.changed) {
+                    await persistAndPublish(
+                      projector.contextCompressed({
+                        level: 'moderate',
+                        notes: fallback.notes,
+                        ...(activeSummary === null ? {} : { summaryId: activeSummary.id }),
+                      }),
+                    )
+                  }
+                  await persistAndPublish(
+                    projector.contextBudget({
+                      usedTokens: fallbackBudget.usedTokens,
+                      usableTokens: fallbackBudget.usableTokens,
+                      contextWindowTokens: fallbackBudget.contextWindowTokens,
+                      estimated: fallbackBudget.estimated,
+                      level: fallbackBudget.level,
+                      ...(activeSummary === null ? {} : { summaryId: activeSummary.id }),
+                    }),
+                  )
+                  return fallback.messages
+                }
                 throw new AgentContextWindowExceededError()
               }
               let generated
@@ -453,7 +483,7 @@ export class AgentRunService {
       controller.signal.addEventListener('abort', () => agent.abort(), { once: true })
 
       try {
-        await agent.prompt(input.input)
+        await agent.prompt(prepareAgentInput(input.input))
       } catch (error) {
         this.logger.warn({ error, runId: input.runId }, 'Agent prompt rejected')
       }

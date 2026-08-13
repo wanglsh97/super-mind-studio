@@ -1171,32 +1171,32 @@ export function AssistantMessage({
               <ActionBarPrimitive.Copy
                 aria-label="复制回复"
                 title="复制"
-                className="group/copy grid size-7 cursor-pointer place-items-center rounded-md transition-[background,color,opacity] hover:bg-brand-subtle hover:text-brand-hover disabled:cursor-not-allowed dark:hover:bg-brand-subtle dark:hover:text-brand-light"
+                className="group/copy grid size-7 cursor-pointer place-items-center rounded-full text-ink-muted transition-[color,box-shadow,transform,opacity] hover:text-brand-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/35 disabled:cursor-not-allowed disabled:opacity-25 data-[copied=true]:scale-110 data-[copied=true]:text-brand data-[copied=true]:shadow-[inset_0_0_0_1.5px_currentColor,0_0_0_3px_rgb(37_100_235/0.16)] data-[copied=true]:ring-1 data-[copied=true]:ring-brand/45 data-[copied=true]:ring-offset-2 data-[copied=true]:ring-offset-surface dark:hover:text-brand-light"
               >
                 <CopyIcon
                   aria-hidden="true"
-                  className="size-3.5 group-data-[copied=true]/copy:hidden"
-                  strokeWidth={1.8}
+                  className="size-[1.05rem] transition-transform group-hover/copy:scale-110 group-data-[copied=true]/copy:hidden"
+                  strokeWidth={2.1}
                 />
                 <CheckIcon
                   aria-hidden="true"
-                  className="hidden size-3.5 group-data-[copied=true]/copy:block"
-                  strokeWidth={1.8}
+                  className="hidden size-[1.05rem] group-data-[copied=true]/copy:block"
+                  strokeWidth={2.3}
                 />
               </ActionBarPrimitive.Copy>
               <ActionBarPrimitive.FeedbackPositive
                 aria-label="有帮助"
                 title="有帮助"
-                className="grid size-7 cursor-pointer place-items-center rounded-md transition-[background,color,opacity] hover:bg-brand-subtle hover:text-brand-hover disabled:cursor-not-allowed disabled:opacity-25 data-[submitted=true]:bg-brand-subtle data-[submitted=true]:text-brand dark:hover:bg-brand-subtle dark:hover:text-brand-light"
+                className="group/positive grid size-7 cursor-pointer place-items-center rounded-full text-ink-muted transition-[color,box-shadow,transform,opacity] hover:text-brand-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/35 disabled:cursor-not-allowed disabled:opacity-25 data-[submitted=true]:scale-110 data-[submitted=true]:text-brand data-[submitted=true]:shadow-[inset_0_0_0_1.5px_currentColor,0_0_0_3px_rgb(37_100_235/0.16)] data-[submitted=true]:ring-1 data-[submitted=true]:ring-brand/45 data-[submitted=true]:ring-offset-2 data-[submitted=true]:ring-offset-surface dark:hover:text-brand-light"
               >
-                <ThumbsUpIcon aria-hidden="true" className="size-3.5" strokeWidth={1.8} />
+                <ThumbsUpIcon aria-hidden="true" className="size-[1.05rem] transition-transform group-hover/positive:scale-110 group-data-[submitted=true]/positive:fill-brand/15" strokeWidth={2.1} />
               </ActionBarPrimitive.FeedbackPositive>
               <ActionBarPrimitive.FeedbackNegative
                 aria-label="没帮助"
                 title="没帮助"
-                className="grid size-7 cursor-pointer place-items-center rounded-md transition-[background,color,opacity] hover:bg-brand-subtle hover:text-brand-hover disabled:cursor-not-allowed disabled:opacity-25 data-[submitted=true]:bg-brand-subtle data-[submitted=true]:text-brand dark:hover:bg-brand-subtle dark:hover:text-brand-light"
+                className="group/negative grid size-7 cursor-pointer place-items-center rounded-full text-ink-muted transition-[color,box-shadow,transform,opacity] hover:text-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger/35 disabled:cursor-not-allowed disabled:opacity-25 data-[submitted=true]:scale-110 data-[submitted=true]:text-danger data-[submitted=true]:shadow-[inset_0_0_0_1.5px_currentColor,0_0_0_3px_rgb(220_38_38/0.14)] data-[submitted=true]:ring-1 data-[submitted=true]:ring-danger/45 data-[submitted=true]:ring-offset-2 data-[submitted=true]:ring-offset-surface"
               >
-                <ThumbsDownIcon aria-hidden="true" className="size-3.5" strokeWidth={1.8} />
+                <ThumbsDownIcon aria-hidden="true" className="size-[1.05rem] transition-transform group-hover/negative:scale-110 group-data-[submitted=true]/negative:fill-danger/15" strokeWidth={2.1} />
               </ActionBarPrimitive.FeedbackNegative>
               <AgentMessageDuration />
             </ActionBarPrimitive.Root>
