@@ -1,6 +1,7 @@
 import type { AgentMediaReferencePart, AgentMessagePart } from '@supermind/sdk'
 
 import type { AgentMessage, AgentMessageRole } from '../../generated/prisma/client'
+import type { AgentMessageWithRunProvider } from '../agent-message.repository'
 import type { ChatAdapterMessage } from '../../adapters/chat-adapter'
 import type { AgentContextSummaryV1 } from './agent-context-summary.schema'
 import { mediaReferencePlaceholder } from './agent-media-placeholder'
@@ -8,8 +9,9 @@ import { mediaReferencePlaceholder } from './agent-media-placeholder'
 export type HistoricalReasoningMode = 'native' | 'tagged'
 
 export interface AgentHistoryAssemblyInput {
-  persistedMessages: readonly AgentMessage[]
+  persistedMessages: readonly AgentMessageWithRunProvider[]
   currentRunId: string
+  currentProvider: string
   currentMessages: readonly ChatAdapterMessage[]
   reasoningMode?: HistoricalReasoningMode
   summary?: { content: AgentContextSummaryV1; coveredThroughSequence: number }
@@ -36,17 +38,21 @@ export function assembleAgentHistory(input: AgentHistoryAssemblyInput): ChatAdap
         message.runId !== input.currentRunId &&
         message.sequence > (input.summary?.coveredThroughSequence ?? -1),
     )
-    .flatMap((message) => persistedMessageToAdapter(message, input.reasoningMode ?? 'native'))
+    .flatMap((message) =>
+      persistedMessageToAdapter(message, input.reasoningMode ?? 'native', {
+        includeReasoning: message.run?.provider === input.currentProvider,
+      }),
+    )
   return [...system, ...summary, ...history, ...current]
 }
 
 /** 选择强制摘要覆盖范围，同时硬保留最后 `minimumTurns` 个完整 turns。 */
-export function selectMessagesForForcedSummary(
-  messages: readonly AgentMessage[],
+export function selectMessagesForForcedSummary<T extends AgentMessage>(
+  messages: readonly T[],
   currentRunId: string,
   coveredThroughSequence: number,
   minimumTurns = 2,
-): AgentMessage[] {
+): T[] {
   const uncovered = messages.filter(
     (message) => message.runId !== currentRunId && message.sequence > coveredThroughSequence,
   )
@@ -60,15 +66,19 @@ export function selectMessagesForForcedSummary(
 export function persistedMessageToAdapter(
   message: Pick<AgentMessage, 'role' | 'parts'>,
   reasoningMode: HistoricalReasoningMode = 'native',
+  options: { includeReasoning?: boolean } = {},
 ): ChatAdapterMessage[] {
   const parts = (message.parts as unknown as AgentMessagePart[]) ?? []
   if (message.role === 'USER') return [{ role: 'user', content: visibleContent(parts) }]
 
   if (message.role === 'ASSISTANT') {
-    const reasoning = parts
-      .filter((part) => part.type === 'reasoning')
-      .map((part) => part.text)
-      .join('')
+    const reasoning =
+      options.includeReasoning === false
+        ? ''
+        : parts
+            .filter((part) => part.type === 'reasoning')
+            .map((part) => part.text)
+            .join('')
     const text = visibleContent(parts)
     const toolCalls = parts
       .filter((part) => part.type === 'tool-call')

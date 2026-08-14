@@ -60,4 +60,27 @@ describe('Agent context budget', () => {
     ).toThrow('contextWindowTokens')
     expect(() => compressionLevel(Number.NaN)).toThrow('usageRatio')
   })
+
+  it('re-evaluates the same Thread history against a newly selected smaller context window', () => {
+    const repeatedHistory: ChatAdapterMessage[] = [
+      { role: 'user', content: '历史上下文'.repeat(5_000) },
+    ]
+    const estimator = new AgentTokenEstimator()
+    const large = calculateAgentContextBudget({
+      contextWindowTokens: 128_000,
+      messages: repeatedHistory,
+      tools: [],
+      estimator,
+    })
+    const small = calculateAgentContextBudget({
+      contextWindowTokens: 8_192,
+      messages: repeatedHistory,
+      tools: [],
+      estimator,
+    })
+
+    expect(large.level).toBe('none')
+    expect(small.level).toBe('forced')
+    expect(small.usedTokens).toBe(large.usedTokens)
+  })
 })

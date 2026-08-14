@@ -12,6 +12,10 @@ export interface PersistAgentMessageInput {
   parts: AgentMessagePart[]
 }
 
+export type AgentMessageWithRunProvider = AgentMessage & {
+  run: { provider: string } | null
+}
+
 const ROLE_MAP: Record<'user' | 'assistant' | 'tool', AgentMessageRole> = {
   user: 'USER',
   assistant: 'ASSISTANT',
@@ -25,10 +29,11 @@ const ROLE_MAP: Record<'user' | 'assistant' | 'tool', AgentMessageRole> = {
 export class AgentMessageRepository {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
-  async listForThread(threadId: string): Promise<AgentMessage[]> {
+  async listForThread(threadId: string): Promise<AgentMessageWithRunProvider[]> {
     return this.prisma.agentMessage.findMany({
       where: { threadId },
       orderBy: { sequence: 'asc' },
+      include: { run: { select: { provider: true } } },
     })
   }
 

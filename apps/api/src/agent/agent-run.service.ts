@@ -301,6 +301,7 @@ export class AgentRunService {
               const assembled = assembleAgentHistory({
                 persistedMessages: persistedHistory,
                 currentRunId: input.runId,
+                currentProvider: input.provider,
                 currentMessages,
                 ...(activeSummary === null
                   ? {}
@@ -389,7 +390,11 @@ export class AgentRunService {
                   port: boundPort,
                   modelId: input.modelId,
                   thinkingEffort: input.thinkingEffort,
-                  messages: candidates.flatMap((message) => persistedMessageToAdapter(message)),
+                  messages: candidates.flatMap((message) =>
+                    persistedMessageToAdapter(message, 'native', {
+                      includeReasoning: message.run?.provider === input.provider,
+                    }),
+                  ),
                   ...(activeSummary === null
                     ? {}
                     : {
@@ -429,6 +434,7 @@ export class AgentRunService {
               const afterSummary = assembleAgentHistory({
                 persistedMessages: persistedHistory,
                 currentRunId: input.runId,
+                currentProvider: input.provider,
                 currentMessages,
                 summary: {
                   content: generated.content,

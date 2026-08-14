@@ -132,7 +132,11 @@ export class AgentService {
       this.userQuestions.pendingForThread(threadId, user.id),
     ])
     const tokenEstimate = this.tokenEstimator.messages(
-      messages.flatMap((message) => persistedMessageToAdapter(message)),
+      messages.flatMap((message) =>
+        persistedMessageToAdapter(message, 'native', {
+          includeReasoning: message.run?.provider === summary.provider,
+        }),
+      ),
     )
     const model = this.models.resolve(summary.modelId)
 

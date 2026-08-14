@@ -13,9 +13,9 @@
 
 ## 3. 跨模型上下文
 
-- [ ] 3.1 在历史组装中关联消息所属 Run Provider，跨 Provider 时过滤旧 reasoning 和厂商私有字段，同时保留最终文本、Tool Call 与 Tool Result
-- [ ] 3.2 保留既有 Context Summary，并按新模型 context window 重算预算；后续摘要记录新模型，覆盖较小窗口压缩与 context-limit
-- [ ] 3.3 增加 Qwen → GLM、GLM → DeepSeek 和同 Provider 模型切换 contract tests，验证工具调用关联与 reasoning 边界
+- [x] 3.1 在历史组装中关联消息所属 Run Provider，跨 Provider 时过滤旧 reasoning 和厂商私有字段，同时保留最终文本、Tool Call 与 Tool Result
+- [x] 3.2 保留既有 Context Summary，并按新模型 context window 重算预算；后续摘要记录新模型，覆盖较小窗口压缩与 context-limit
+- [x] 3.3 增加 Qwen → GLM、GLM → DeepSeek 和同 Provider 模型切换 contract tests，验证工具调用关联与 reasoning 边界
 
 ## 4. Web 当前 Thread 切换体验
 
