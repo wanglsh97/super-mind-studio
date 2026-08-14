@@ -473,7 +473,7 @@ describe('AgentService', () => {
         threadId: 'thread-1',
         userId: 'user-a',
         input: '总结 https://a.test',
-        maxConcurrentRuns: 3,
+        maxConcurrentRuns: 5,
       }),
     )
     expect(runService.execute).toHaveBeenCalledWith(

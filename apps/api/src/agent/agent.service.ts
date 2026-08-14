@@ -217,7 +217,7 @@ export class AgentService {
         input,
         modelId: model.id,
         provider: model.provider,
-        maxConcurrentRuns: this.config.get<number>('AGENT_MAX_CONCURRENT_RUNS_PER_USER', 3),
+        maxConcurrentRuns: this.config.get<number>('AGENT_MAX_CONCURRENT_RUNS_PER_USER', 5),
         ...(thread.title === AGENT_DEFAULT_THREAD_TITLE
           ? { derivedTitle: deriveAgentThreadTitle(input) }
           : {}),

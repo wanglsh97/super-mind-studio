@@ -157,7 +157,7 @@ const environmentSchema = z
       .max(4_194_304)
       .default(1_048_576),
     AGENT_MCP_MAX_OUTPUT_CHARS: z.coerce.number().int().min(1_000).max(50_000).default(20_000),
-    AGENT_MAX_CONCURRENT_RUNS_PER_USER: z.coerce.number().int().min(1).max(5).default(3),
+    AGENT_MAX_CONCURRENT_RUNS_PER_USER: z.coerce.number().int().min(1).max(5).default(5),
     EXA_API_KEY: optionalSecret,
     PARALLEL_API_KEY: optionalSecret,
     AMAP_MCP_API_KEY: optionalSecret,
