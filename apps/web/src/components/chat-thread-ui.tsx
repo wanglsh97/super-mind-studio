@@ -565,7 +565,7 @@ export function AgentDictationButton({
 }>) {
   const dictationActive = useAuiState(({ composer }) => composer.dictation !== undefined);
   const className = cn(
-    'grid size-8 shrink-0 place-items-center rounded-full text-ink-muted transition-[background,color,transform] hover:-translate-y-px hover:bg-brand-subtle hover:text-brand disabled:cursor-not-allowed disabled:opacity-40 disabled:transform-none',
+    'grid size-8 shrink-0 place-items-center rounded-full text-ink-muted transition-[background,color,transform] hover:bg-brand-subtle hover:text-brand disabled:cursor-not-allowed disabled:opacity-40 disabled:transform-none',
     focusRing,
   );
 
@@ -612,7 +612,7 @@ export function AgentSendButton({
   onClick?: () => void;
 }>) {
   const base = cn(
-    'liquid-button grid place-items-center rounded-full text-white transition-[background,transform,box-shadow] hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-40 disabled:transform-none',
+    'liquid-button grid place-items-center rounded-full text-white transition-[background,transform,box-shadow] disabled:cursor-not-allowed disabled:opacity-40 disabled:transform-none',
     focusRing,
   );
   if (cancel) {
@@ -678,14 +678,6 @@ export function AgentPrivacyNote() {
 export function AgentComposerError({ message }: Readonly<{ message: string }>) {
   return (
     <p role="alert" className="mx-2 mt-1.5 text-[0.68rem] text-danger">
-      {message}
-    </p>
-  );
-}
-
-export function AgentActiveRunHint({ message }: Readonly<{ message: string }>) {
-  return (
-    <p className="mx-auto mb-1.5 w-full max-w-[44rem] text-center text-[0.72rem] leading-snug text-warning dark:text-warning-light sm:w-[calc(100%-2rem)]">
       {message}
     </p>
   );
@@ -1189,14 +1181,22 @@ export function AssistantMessage({
                 title="有帮助"
                 className="group/positive grid size-7 cursor-pointer place-items-center rounded-full text-ink-muted transition-[color,box-shadow,transform,opacity] hover:text-brand-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/35 disabled:cursor-not-allowed disabled:opacity-25 data-[submitted=true]:scale-110 data-[submitted=true]:text-brand data-[submitted=true]:shadow-[inset_0_0_0_1.5px_currentColor,0_0_0_3px_rgb(37_100_235/0.16)] data-[submitted=true]:ring-1 data-[submitted=true]:ring-brand/45 data-[submitted=true]:ring-offset-2 data-[submitted=true]:ring-offset-surface dark:hover:text-brand-light"
               >
-                <ThumbsUpIcon aria-hidden="true" className="size-[1.05rem] transition-transform group-hover/positive:scale-110 group-data-[submitted=true]/positive:fill-brand/15" strokeWidth={2.1} />
+                <ThumbsUpIcon
+                  aria-hidden="true"
+                  className="size-[1.05rem] transition-transform group-hover/positive:scale-110 group-data-[submitted=true]/positive:fill-brand/15"
+                  strokeWidth={2.1}
+                />
               </ActionBarPrimitive.FeedbackPositive>
               <ActionBarPrimitive.FeedbackNegative
                 aria-label="没帮助"
                 title="没帮助"
                 className="group/negative grid size-7 cursor-pointer place-items-center rounded-full text-ink-muted transition-[color,box-shadow,transform,opacity] hover:text-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger/35 disabled:cursor-not-allowed disabled:opacity-25 data-[submitted=true]:scale-110 data-[submitted=true]:text-danger data-[submitted=true]:shadow-[inset_0_0_0_1.5px_currentColor,0_0_0_3px_rgb(220_38_38/0.14)] data-[submitted=true]:ring-1 data-[submitted=true]:ring-danger/45 data-[submitted=true]:ring-offset-2 data-[submitted=true]:ring-offset-surface"
               >
-                <ThumbsDownIcon aria-hidden="true" className="size-[1.05rem] transition-transform group-hover/negative:scale-110 group-data-[submitted=true]/negative:fill-danger/15" strokeWidth={2.1} />
+                <ThumbsDownIcon
+                  aria-hidden="true"
+                  className="size-[1.05rem] transition-transform group-hover/negative:scale-110 group-data-[submitted=true]/negative:fill-danger/15"
+                  strokeWidth={2.1}
+                />
               </ActionBarPrimitive.FeedbackNegative>
               <AgentMessageDuration />
             </ActionBarPrimitive.Root>
@@ -1323,12 +1323,6 @@ export function AgentDisclosureChevron() {
 function usageLabel(usage?: Usage): string {
   if (!usage) return '等待用量';
   return usage.usageUnknown ? 'Token 未知' : `${usage.totalTokens} tokens`;
-}
-
-export function NewThreadButton({ onNewThread }: Readonly<{ onNewThread: () => void }>) {
-  const hasMessages = useAuiState(({ thread }) => thread.messages.length > 0);
-  if (!hasMessages) return null;
-  return <AgentComposerAction onClick={onNewThread}>新会话</AgentComposerAction>;
 }
 
 export function ResetThreadButton() {

@@ -23,10 +23,9 @@ export const viewport: Viewport = {
 const themeScript = `
   try {
     const storedTheme = localStorage.getItem('aigateway-theme');
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     const theme = storedTheme === 'light' || storedTheme === 'dark'
       ? storedTheme
-      : prefersDark ? 'dark' : 'light';
+      : 'light';
     document.documentElement.classList.toggle('dark', theme === 'dark');
     document.documentElement.style.colorScheme = theme;
   } catch {}

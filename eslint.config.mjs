@@ -11,6 +11,8 @@ const typescriptFiles = ['**/*.{ts,tsx}']
 const javascriptFiles = ['**/*.{js,mjs,cjs,jsx}']
 const webSourceFiles = ['apps/web/src/**/*.{ts,tsx}']
 const webComponentFiles = ['apps/web/src/**/*.{tsx,jsx}']
+const blogSourceFiles = ['apps/blog/src/**/*.{ts,tsx}']
+const blogComponentFiles = ['apps/blog/src/**/*.{tsx,jsx}']
 const apiJestFiles = ['apps/api/**/*.spec.ts', 'apps/api/**/*.e2e-spec.ts']
 const warningRules = (rules) =>
   Object.fromEntries(
@@ -79,7 +81,7 @@ export default tseslint.config(
     },
   },
   {
-    files: webSourceFiles,
+    files: [...webSourceFiles, ...blogSourceFiles],
     plugins: {
       '@next/next': nextPlugin,
     },
@@ -88,7 +90,7 @@ export default tseslint.config(
     },
   },
   {
-    files: webComponentFiles,
+    files: [...webComponentFiles, ...blogComponentFiles],
     ...jsxA11y.flatConfigs.recommended,
     plugins: {
       ...jsxA11y.flatConfigs.recommended.plugins,

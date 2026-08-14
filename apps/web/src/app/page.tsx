@@ -53,7 +53,6 @@ import { AgentSkillSlashPicker } from '@/components/agent-skill-slash-picker';
 import { AgentUserQuestionCard } from '@/components/agent-user-question-card';
 import ShimmerText from '@/components/shimmer-text';
 import {
-  AgentActiveRunHint,
   AgentComposerActions,
   ComposerDocumentFiles,
   encodeComposerMessage,
@@ -81,7 +80,6 @@ import {
   AssistantMessage,
   ModelSelect,
   ThinkingEffortSelect,
-  NewThreadButton,
   UserMessage,
   AgentWebCreationOption,
   type ComposerDocumentFile,
@@ -115,10 +113,7 @@ import {
   agentToolDetailLabels,
   resolveAgentToolActivityState,
 } from '@/utils/agent/agent-tool-activity';
-import {
-  resetThreadIfIdle,
-  shouldDetachLocalRun,
-} from '@/utils/agent/agent-thread-hydration';
+import { resetThreadIfIdle, shouldDetachLocalRun } from '@/utils/agent/agent-thread-hydration';
 import {
   foldEventsFromCursor,
   isResumableActiveRun,
@@ -164,7 +159,6 @@ function AgentConsole() {
     setThinkingEffort,
     openThread,
     prependThread,
-    startNewThread,
     refreshThreads,
     updateThreadModel,
     activeRuns,
@@ -630,9 +624,6 @@ function AgentConsole() {
                   />
                 ) : (
                   <>
-                    {activeRuns.some((run) => run.threadId !== activeThreadId) ? (
-                      <AgentActiveRunHint message="其他会话正在后台运行；当前会话仍可独立提交" />
-                    ) : null}
                     {modelChangeError?.threadId === activeThreadId ? (
                       <p
                         role="alert"
@@ -708,7 +699,6 @@ function AgentConsole() {
                       <AgentDictationTranscript />
                       <AgentComposerFooter>
                         <AgentComposerActions>
-                          <NewThreadButton onNewThread={startNewThread} />
                           <DocumentUploadButton
                             disabled={submitBlocked}
                             onUpload={async (files) => {
@@ -1273,7 +1263,6 @@ function ThreadHydrator({
   const handleAuthenticationFailure = useAuthenticationFailure();
 
   const [interruptedNotice, setInterruptedNotice] = useState<string | null>(null);
-  const [resumeNotice, setResumeNotice] = useState<string | null>(null);
 
   useEffect(() => {
     if (!shouldDetachLocalRun(isLocalRunRunning, localRunThreadIdRef.current, activeThreadId)) {
@@ -1302,7 +1291,6 @@ function ThreadHydrator({
         if (!activeThreadId) {
           resetThreadIfIdle(api.thread(), []);
           setInterruptedNotice(null);
-          setResumeNotice(null);
           onTokenUsage(null);
           onContextSummary(null);
           onResetCompressionEvents();
@@ -1322,11 +1310,6 @@ function ThreadHydrator({
           onSandboxStatus('creating');
           upsertActiveRun(thread.activeRun);
           setInterruptedNotice(null);
-          setResumeNotice(
-            thread.activeRun.status === 'waiting_for_user'
-              ? 'Agent 正在等待你的回答。'
-              : '运行仍在进行，正在按事件游标恢复…',
-          );
           if (!resetThreadIfIdle(api.thread(), agentMessagesToThreadMessages(thread.messages))) {
             return;
           }
@@ -1372,7 +1355,6 @@ function ThreadHydrator({
                   expiresAt: new Date().toISOString(),
                 });
               }
-              setResumeNotice(null);
               onUserQuestion(null);
               removeActiveRun(activeThreadId);
               void refreshThreads().catch(() => undefined);
@@ -1383,7 +1365,6 @@ function ThreadHydrator({
         }
 
         const interrupted = thread.lastRun?.status === 'interrupted';
-        setResumeNotice(null);
         onUserQuestion(null);
         setInterruptedNotice(
           interrupted ? '上次运行因服务重启中断，未自动重放模型或工具。可继续发送新任务。' : null,
@@ -1409,15 +1390,10 @@ function ThreadHydrator({
   }, [activeThreadId, isLocalRunRunning]);
 
   if (interruptedNotice) return <AgentInterruptedBanner message={interruptedNotice} />;
-  if (resumeNotice) return <AgentInterruptedBanner message={resumeNotice} />;
   return null;
 }
 
-function AgentContextTimeline({
-  status,
-}: {
-  status: 'idle' | 'compressing' | 'completed';
-}) {
+function AgentContextTimeline({ status }: { status: 'idle' | 'compressing' | 'completed' }) {
   if (status === 'idle') return null;
   return (
     <div
@@ -1428,40 +1404,6 @@ function AgentContextTimeline({
       <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-ink-faint" />
       <span>{status === 'compressing' ? '正在压缩上下文…' : '上下文压缩完成'}</span>
     </div>
-  );
-}
-
-function AgentSummaryDetail({ summary }: { summary: AgentContextSummary }) {
-  const content = summary.content;
-  return (
-    <div className="mt-3 space-y-2 border-t border-line pt-2 text-left">
-      <p>
-        摘要 revision {summary.revision} · 覆盖至消息 #{summary.coveredThroughSequence}
-      </p>
-      <SummaryItems label="用户目标" values={content.userGoals} />
-      <SummaryItems label="用户约束" values={content.userConstraints} />
-      <SummaryItems label="开放问题" values={content.openQuestions} />
-      <SummaryItems label="压缩说明" values={content.compressionNotes} />
-      {content.recentOutcome ? (
-        <p>
-          <span className="font-semibold text-ink">最近结果：</span>
-          {content.recentOutcome}
-        </p>
-      ) : null}
-      <pre className="max-h-64 overflow-auto whitespace-pre-wrap rounded-lg bg-surface-inset p-2 text-[0.68rem]">
-        {JSON.stringify(content, null, 2)}
-      </pre>
-    </div>
-  );
-}
-
-function SummaryItems({ label, values }: { label: string; values: string[] }) {
-  if (values.length === 0) return null;
-  return (
-    <p>
-      <span className="font-semibold text-ink">{label}：</span>
-      {values.join('；')}
-    </p>
   );
 }
 
