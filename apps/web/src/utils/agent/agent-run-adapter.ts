@@ -1,5 +1,6 @@
 import type {
   AgentMessage,
+  AgentRunSummary,
   AgentContextBudgetState,
   AgentRunStatus,
   AgentRunTerminalStatus,
@@ -25,7 +26,7 @@ export interface AgentRunAdapterContext {
   websiteMode?: boolean
   documentMode?: boolean
   onThreadCreated: (thread: AgentThreadSummary) => void
-  onRunCreated?: (run: { id: string; threadId: string }) => void
+  onRunCreated?: (run: Pick<AgentRunSummary, 'id' | 'threadId' | 'model' | 'provider'>) => void
   onRunFinished?: (status: AgentRunTerminalStatus) => void
   onContextBudget?: (budget: AgentContextBudgetState) => void
   onContextCompressed?: (event: Extract<AgentStreamEvent, { type: 'context-compressed' }>) => void
@@ -107,7 +108,12 @@ export function createAgentRunAdapter(
             ? { mode: 'document' as const }
             : {}),
       })
-      context.onRunCreated?.({ id: run.id, threadId })
+      context.onRunCreated?.({
+        id: run.id,
+        threadId,
+        model: run.model,
+        provider: run.provider,
+      })
       context.onRunProgressChange?.('preparing-sandbox')
       const metadata: AgentRunMetadata = { model: context.model, runId: run.id }
       const parts: MutablePart[] = []

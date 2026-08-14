@@ -156,6 +156,8 @@ function runRow(id: string) {
   return {
     id,
     threadId: 'thread-1',
+    modelId: 'qwen3.7-plus',
+    provider: 'qwen',
     status: 'RUNNING',
     limitReason: null,
     usageUnknown: false,
@@ -244,6 +246,8 @@ describe('AgentService', () => {
       {
         id: 'run-live-a',
         threadId: 'thread-1',
+        modelId: 'qwen3.7-plus',
+        provider: 'qwen',
         status: 'RUNNING',
         limitReason: null,
         usageUnknown: false,
@@ -262,6 +266,8 @@ describe('AgentService', () => {
       {
         id: 'run-live-b',
         threadId: 'thread-2',
+        modelId: 'glm-5.2',
+        provider: 'glm',
         status: 'CANCELLING',
         limitReason: null,
         usageUnknown: true,
@@ -280,8 +286,18 @@ describe('AgentService', () => {
     ])
     const page = await service.listThreads(user)
     expect(page.activeRuns).toEqual([
-      expect.objectContaining({ id: 'run-live-a', status: 'running' }),
-      expect.objectContaining({ id: 'run-live-b', status: 'cancelling' }),
+      expect.objectContaining({
+        id: 'run-live-a',
+        model: 'qwen3.7-plus',
+        provider: 'qwen',
+        status: 'running',
+      }),
+      expect.objectContaining({
+        id: 'run-live-b',
+        model: 'glm-5.2',
+        provider: 'glm',
+        status: 'cancelling',
+      }),
     ])
   })
 

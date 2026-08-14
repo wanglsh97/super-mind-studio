@@ -405,6 +405,8 @@ describe('AgentClient threads and runs', () => {
             {
               id: runId,
               threadId,
+              model: 'qwen3.7-plus',
+              provider: 'qwen',
               status: 'running',
               limitReason: null,
               usage: {
@@ -430,6 +432,8 @@ describe('AgentClient threads and runs', () => {
     assert.equal(page.total, 1)
     assert.equal(page.pageSize, 50)
     assert.equal(page.activeRuns.length, 1)
+    assert.equal(page.activeRuns[0]?.model, 'qwen3.7-plus')
+    assert.equal(page.activeRuns[0]?.provider, 'qwen')
   })
 
   it('creates and cancels runs', async () => {
@@ -442,6 +446,8 @@ describe('AgentClient threads and runs', () => {
         return Response.json({
           id: runId,
           threadId,
+          model: 'glm-5.2',
+          provider: 'glm',
           status: 'running',
           limitReason: null,
           usage: {
@@ -468,6 +474,8 @@ describe('AgentClient threads and runs', () => {
       skills: [{ name: 'mock-data-cleaner' }],
     })
     assert.equal(run.status, 'running')
+    assert.equal(run.model, 'glm-5.2')
+    assert.equal(run.provider, 'glm')
     assert.equal(
       bodies[0],
       JSON.stringify({

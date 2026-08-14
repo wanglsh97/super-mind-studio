@@ -64,6 +64,8 @@ export function toRunSummary(run: AgentRun): AgentRunSummary {
   return {
     id: run.id,
     threadId: run.threadId,
+    model: run.modelId,
+    provider: run.provider as AgentRunSummary['provider'],
     status: RUN_STATUS_MAP[run.status],
     limitReason: run.limitReason ? LIMIT_REASON_MAP[run.limitReason] : null,
     usage: {

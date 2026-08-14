@@ -284,6 +284,8 @@ const capabilities: readonly AdminTableCapability[] = Object.freeze([
       field('id', 'ID', 'string'),
       field('threadId', '线程 ID', 'string'),
       field('userId', '用户 ID', 'string'),
+      field('modelId', '运行模型 ID', 'string'),
+      field('provider', '运行模型厂商', 'string'),
       field('status', '状态', 'enum'),
       field('limitReason', '限流原因', 'enum', true),
       field('input', '输入', 'string'),

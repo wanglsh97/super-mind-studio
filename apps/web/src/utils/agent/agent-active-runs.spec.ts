@@ -13,6 +13,8 @@ function run(
   return {
     id,
     threadId,
+    model: 'qwen3.7-plus',
+    provider: 'qwen',
     status,
     limitReason: null,
     usage: {

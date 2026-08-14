@@ -7,6 +7,7 @@ import type {
   AgentContextBudgetState,
   AgentContextSummary,
   AgentMcpServerStatus,
+  AgentRunSummary,
   AgentSandboxStatus,
   AgentSkillCandidate,
   AgentStreamEvent,
@@ -215,7 +216,9 @@ function AgentConsole() {
     websiteMode: false,
     documentMode: false,
     onThreadCreated: (() => undefined) as (thread: Parameters<typeof prependThread>[0]) => void,
-    onRunCreated: (() => undefined) as (run: { id: string; threadId: string }) => void,
+    onRunCreated: (() => undefined) as (
+      run: Pick<AgentRunSummary, 'id' | 'threadId' | 'model' | 'provider'>,
+    ) => void,
     onRunFinished: () => undefined,
     onContextBudget: (() => undefined) as (budget: AgentContextBudgetState) => void,
     onContextCompressed: (() => undefined) as (
@@ -247,6 +250,8 @@ function AgentConsole() {
     upsertActiveRun({
       id: run.id,
       threadId: run.threadId,
+      model: run.model,
+      provider: run.provider,
       status: 'running',
       limitReason: null,
       usage: {

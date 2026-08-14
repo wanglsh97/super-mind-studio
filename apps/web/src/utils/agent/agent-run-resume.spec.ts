@@ -82,6 +82,8 @@ describe('agent run resume helpers', () => {
       isResumableActiveRun({
         id: 'r',
         threadId: 't',
+        model: 'qwen3.7-plus',
+        provider: 'qwen',
         status: 'running',
         limitReason: null,
         usage: {
@@ -107,6 +109,8 @@ describe('agent run resume helpers', () => {
       isResumableActiveRun({
         id: 'waiting-run',
         threadId: 't',
+        model: 'qwen3.7-plus',
+        provider: 'qwen',
         status: 'waiting_for_user',
         limitReason: null,
         usage: {

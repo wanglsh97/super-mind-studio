@@ -1,4 +1,4 @@
-import type { GatewayError, TextModelId, Usage } from './types.js'
+import type { GatewayError, TextModelAlias, TextModelId, Usage } from './types.js'
 import type { SelectAgentSkill } from './agent-skill-types.js'
 
 /**
@@ -243,6 +243,10 @@ export interface AgentTokenAnalytics {
 export interface AgentRunSummary {
   id: string
   threadId: string
+  /** 创建 Run 时从 Thread 复制的不可变公开模型 ID。 */
+  model: TextModelId
+  /** 创建 Run 时对应的厂商；实际 failover 仍以 invocation 记录为准。 */
+  provider: TextModelAlias
   status: AgentRunStatus
   limitReason: AgentRunLimitReason | null
   usage: AgentRunUsage
