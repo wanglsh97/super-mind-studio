@@ -1,35 +1,35 @@
-import { NotFoundException } from '@nestjs/common'
+import { NotFoundException } from '@nestjs/common';
 
-import { CreationsService } from './creations.service'
+import { CreationsService } from './creations.service';
 
-import type { PrismaService } from '../database/prisma.service'
-import type { AuthenticatedUser } from '../user/user.types'
+import type { PrismaService } from '../database/prisma.service';
+import type { AuthenticatedUser } from '../user/user.types';
 
 const githubUser: AuthenticatedUser = {
   id: '00000000-0000-4000-8000-000000000001',
   authProvider: 'GITHUB',
   userName: 'octocat',
   avatarUrl: null,
-}
+};
 
 describe('CreationsService', () => {
   it('keeps the unified creation library available to an authenticated anonymous owner', async () => {
-    const { service, projects } = setup()
+    const { service, projects } = setup();
 
-    await expect(service.list({ ...githubUser, authProvider: 'ANONYMOUS' })).resolves.toEqual([])
-    expect(projects.listWebsitesForOwner).toHaveBeenCalledWith(githubUser.id)
-  })
+    await expect(service.list({ ...githubUser, authProvider: 'ANONYMOUS' })).resolves.toEqual([]);
+    expect(projects.listWebsitesForOwner).toHaveBeenCalledWith(githubUser.id);
+  });
 
   it('returns only the current successful non-expired website delivery', async () => {
-    const { service, projects } = setup()
-    const successful = webProject('SUCCEEDED', new Date('2099-09-04T00:00:00.000Z'))
+    const { service, projects } = setup();
+    const successful = webProject('SUCCEEDED', new Date('2099-09-04T00:00:00.000Z'));
     projects.listWebsitesForOwner.mockResolvedValue([
       successful,
       webProject('GENERATING', new Date('2099-09-04T00:00:00.000Z')),
       webProject('SUCCEEDED', new Date('2000-01-01T00:00:00.000Z')),
-    ])
+    ]);
 
-    const result = await service.list(githubUser)
+    const result = await service.list(githubUser);
 
     expect(result).toEqual([
       expect.objectContaining({
@@ -40,27 +40,49 @@ describe('CreationsService', () => {
           expect.objectContaining({ downloadUrl: expect.stringContaining('/creations/assets/') }),
         ],
       }),
-    ])
-  })
+    ]);
+  });
+
+  it('lists only explicitly saved image Creations with controlled asset routes', async () => {
+    const { service, prisma } = setup();
+    const now = new Date('2026-08-14T00:00:00.000Z');
+    prisma.creation.findMany.mockResolvedValue([
+      {
+        id: crypto.randomUUID(),
+        title: '保存的图片',
+        createdAt: now,
+        updatedAt: now,
+        imageTask: { taskId: crypto.randomUUID() },
+        assets: [{ id: crypto.randomUUID(), name: 'image.png' }],
+      },
+    ]);
+    await expect(service.list(githubUser)).resolves.toEqual([
+      expect.objectContaining({
+        type: 'image',
+        status: 'succeeded',
+        assets: [expect.objectContaining({ previewUrl: expect.stringContaining('/preview') })],
+      }),
+    ]);
+  });
 
   it('does not reveal an expired creation asset', async () => {
-    const { service, prisma, objects } = setup()
+    const { service, prisma, objects } = setup();
     prisma.creationAsset.findFirst.mockResolvedValue({
       id: crypto.randomUUID(),
       objectKey: 'creations/private/source.zip',
       expiresAt: new Date('2000-01-01T00:00:00.000Z'),
       creation: { expiresAt: new Date('2000-01-01T00:00:00.000Z') },
-    })
+    });
 
     await expect(service.loadAsset(githubUser, crypto.randomUUID())).rejects.toBeInstanceOf(
       NotFoundException,
-    )
-    expect(objects.loadUserFile).not.toHaveBeenCalled()
-  })
+    );
+    expect(objects.loadUserFile).not.toHaveBeenCalled();
+  });
 
   it('uses the source manifest project name for a legacy source.zip download', async () => {
-    const { service, prisma, objects, archives } = setup()
-    const stored = { bytes: new TextEncoder().encode('archive') }
+    const { service, prisma, objects, archives } = setup();
+    const stored = { bytes: new TextEncoder().encode('archive') };
     prisma.creationAsset.findFirst.mockResolvedValue({
       id: crypto.randomUUID(),
       kind: 'SOURCE_ZIP',
@@ -68,28 +90,28 @@ describe('CreationsService', () => {
       objectKey: 'creations/private/source.zip',
       expiresAt: new Date('2099-01-01T00:00:00.000Z'),
       creation: { expiresAt: new Date('2099-01-01T00:00:00.000Z') },
-    })
-    objects.loadUserFile.mockResolvedValue(stored)
-    archives.readSourceProjectName.mockResolvedValue('@studio/brand-site')
+    });
+    objects.loadUserFile.mockResolvedValue(stored);
+    archives.readSourceProjectName.mockResolvedValue('@studio/brand-site');
 
     await expect(service.loadAsset(githubUser, crypto.randomUUID())).resolves.toMatchObject({
       asset: { name: 'studio-brand-site.zip' },
       stored,
-    })
-  })
-})
+    });
+  });
+});
 
 function setup() {
   const prisma = {
-    imageGenerationTask: { findMany: jest.fn().mockResolvedValue([]) },
+    creation: { findMany: jest.fn().mockResolvedValue([]) },
     creationAsset: { findFirst: jest.fn() },
   } as unknown as {
-    imageGenerationTask: { findMany: jest.Mock }
-    creationAsset: { findFirst: jest.Mock }
-  }
-  const projects = { listWebsitesForOwner: jest.fn().mockResolvedValue([]) }
-  const objects = { loadUserFile: jest.fn() }
-  const archives = { readSourceProjectName: jest.fn() }
+    creation: { findMany: jest.Mock };
+    creationAsset: { findFirst: jest.Mock };
+  };
+  const projects = { listWebsitesForOwner: jest.fn().mockResolvedValue([]) };
+  const objects = { loadUserFile: jest.fn() };
+  const archives = { readSourceProjectName: jest.fn() };
   return {
     prisma,
     projects,
@@ -101,12 +123,12 @@ function setup() {
       projects as never,
       archives as never,
     ),
-  }
+  };
 }
 
 function webProject(status: 'GENERATING' | 'SUCCEEDED', expiresAt: Date) {
-  const now = new Date('2026-08-05T00:00:00.000Z')
-  const assetId = crypto.randomUUID()
+  const now = new Date('2026-08-05T00:00:00.000Z');
+  const assetId = crypto.randomUUID();
   return {
     id: crypto.randomUUID(),
     userId: githubUser.id,
@@ -146,5 +168,5 @@ function webProject(status: 'GENERATING' | 'SUCCEEDED', expiresAt: Date) {
         },
       ],
     },
-  }
+  };
 }

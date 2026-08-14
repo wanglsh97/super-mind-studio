@@ -1,27 +1,22 @@
-export { createSuperMindClient } from './client.js'
-export type {
-  SuperMindClient,
-  CreateSuperMindClientOptions,
-  ImageWaitOptions,
-  RequestOptions,
-} from './client.js'
-export { decodeAgentEvent, encodeAgentEvent } from './agent-events.js'
-export type { AgentEventWire } from './agent-events.js'
-export { parseAgentOutputFileReference } from './agent-files.js'
-export type { AgentOutputFileReference } from './agent-files.js'
-export type { CreativeItem, CreativeItemType } from './creations.js'
+export { createSuperMindClient } from './client.js';
+export type { SuperMindClient, CreateSuperMindClientOptions, RequestOptions } from './client.js';
+export { decodeAgentEvent, encodeAgentEvent } from './agent-events.js';
+export type { AgentEventWire } from './agent-events.js';
+export { parseAgentOutputFileReference } from './agent-files.js';
+export type { AgentOutputFileReference } from './agent-files.js';
+export type { CreativeItem, CreativeItemType } from './creations.js';
 export type {
   AgentClient,
   AgentEventSubscribeOptions,
   AgentTokenAnalyticsOptions,
   AgentThreadListOptions,
-} from './agent-client.js'
+} from './agent-client.js';
 export {
   createBrowserSkillUploadTransport,
   MAX_SKILL_PACKAGE_UPLOAD_BYTES,
   sha256Hex,
   SkillUploadTransportError,
-} from './skill-upload.js'
+} from './skill-upload.js';
 export type {
   AdminSkillClient,
   AdminSkillReviewRecord,
@@ -32,7 +27,7 @@ export type {
   SkillMarketRequestOptions,
   SubmitSkillRequest,
   UpdatePublishedSkillRequest,
-} from './skill-market-client.js'
+} from './skill-market-client.js';
 export type {
   CreateSkillUploadSessionRequest,
   FinalizedSkillUpload,
@@ -43,12 +38,12 @@ export type {
   SkillUploadProgress,
   SkillUploadSession,
   SkillUploadXmlHttpRequest,
-} from './skill-upload.js'
+} from './skill-upload.js';
 export {
   AGENT_SKILL_ADD_STATES,
   AGENT_SKILL_CATEGORIES,
   AGENT_SKILL_PUBLICATION_STATUSES,
-} from './agent-skill-types.js'
+} from './agent-skill-types.js';
 export type {
   AgentSkillCandidate,
   AgentSkillAddState,
@@ -61,7 +56,7 @@ export type {
   AgentSkillPublicationStatus,
   SelectAgentSkill,
   UpdateAgentSkillRequest,
-} from './agent-skill-types.js'
+} from './agent-skill-types.js';
 export {
   AGENT_EXECUTION_ERROR_CODES,
   AGENT_EVENT_SSE_DONE,
@@ -74,7 +69,8 @@ export {
   AGENT_SANDBOX_STATUSES,
   AGENT_SKILL_ACTIVATION_STATUSES,
   AGENT_TOOL_CALL_STATUSES,
-} from './agent-types.js'
+  IMAGE_GENERATION_STATUSES,
+} from './agent-types.js';
 export type {
   AgentExecutionError,
   AgentExecutionErrorCode,
@@ -99,6 +95,7 @@ export type {
   AgentRunSummary,
   AgentRunTerminalStatus,
   AgentRunUsage,
+  AgentRunMode,
   AgentSandboxLimitReason,
   AgentSandboxStatus,
   AgentShellOutput,
@@ -113,6 +110,14 @@ export type {
   AgentToolCallPart,
   AgentToolCallStatus,
   AgentToolResultPart,
+  GenerateImageToolArguments,
+  ImageAspectRatio,
+  ImageGenerationStatus,
+  ImageGenerationSuggestion,
+  ImageGenerationToolResult,
+  ImageModelCapability,
+  ImageModelId,
+  ImageQuality,
   AgentUserQuestion,
   AgentUserQuestionAnswerItem,
   AgentUserQuestionItem,
@@ -123,24 +128,19 @@ export type {
   UpdateAgentThreadModelRequest,
   UpdateAgentThreadRequest,
   UpdateAgentMcpServerRequest,
-} from './agent-types.js'
+} from './agent-types.js';
 export {
   AIGatewayError,
   AIGatewayAuthenticationError,
   AIGatewayFeatureUnavailableError,
   AIGatewayProtocolError,
   AIGatewayTimeoutError,
-} from './errors.js'
-export { IMAGE_MODEL_ALIASES, PROMPT_OPTIMIZATION_MODES, TEXT_MODEL_ALIASES } from './types.js'
+} from './errors.js';
+export { PROMPT_OPTIMIZATION_MODES, TEXT_MODEL_ALIASES } from './types.js';
 export type {
   Capability,
   ChatFinishReason,
   GatewayError,
-  ImageModelAlias,
-  ImageRequest,
-  ImageResult,
-  ImageTask,
-  ImageTaskStatus,
   ModelAlias,
   ModelSummary,
   OptimizePromptRequest,
@@ -149,4 +149,4 @@ export type {
   TextModelAlias,
   TextModelId,
   Usage,
-} from './types.js'
+} from './types.js';

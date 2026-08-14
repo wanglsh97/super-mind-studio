@@ -1,9 +1,9 @@
-import assert from 'node:assert/strict'
-import test from 'node:test'
+import assert from 'node:assert/strict';
+import test from 'node:test';
 
-import type { AgentMessage, AgentStreamEvent, SuperMindClient } from '@supermind/sdk'
+import type { AgentMessage, AgentStreamEvent, SuperMindClient } from '@supermind/sdk';
 
-import { agentMessagesToThreadMessages, createAgentRunAdapter } from './agent-run-adapter'
+import { agentMessagesToThreadMessages, createAgentRunAdapter } from './agent-run-adapter';
 
 test('merges tool results into the preceding assistant tool-call part', () => {
   const messages: AgentMessage[] = [
@@ -38,7 +38,11 @@ test('merges tool results into the preceding assistant tool-call part', () => {
           status: 'succeeded',
           isError: false,
           summary: '已抓取 example.com',
-          audit: { status: 200, finalUrl: 'https://example.com/' },
+          audit: {
+            status: 200,
+            finalUrl: 'https://example.com/',
+            imageGeneration: { status: 'succeeded', imageId: 'image-1' },
+          },
         },
       ],
       createdAt: '2026-07-20T00:00:02.000Z',
@@ -49,14 +53,14 @@ test('merges tool results into the preceding assistant tool-call part', () => {
       parts: [{ type: 'text', text: '页面是 Example Domain' }],
       createdAt: '2026-07-20T00:00:03.000Z',
     },
-  ]
+  ];
 
-  const threadMessages = agentMessagesToThreadMessages(messages)
-  assert.equal(threadMessages.length, 2)
-  assert.equal(threadMessages[0]?.role, 'user')
+  const threadMessages = agentMessagesToThreadMessages(messages);
+  assert.equal(threadMessages.length, 2);
+  assert.equal(threadMessages[0]?.role, 'user');
 
-  const assistant = threadMessages[1]
-  assert.equal(assistant?.role, 'assistant')
+  const assistant = threadMessages[1];
+  assert.equal(assistant?.role, 'assistant');
   assert.deepEqual(assistant && 'content' in assistant ? assistant.content : null, [
     { type: 'reasoning', text: '需要检索' },
     {
@@ -68,13 +72,17 @@ test('merges tool results into the preceding assistant tool-call part', () => {
       result: {
         summary: '已抓取 example.com',
         status: 'succeeded',
-        audit: { status: 200, finalUrl: 'https://example.com/' },
+        audit: {
+          status: 200,
+          finalUrl: 'https://example.com/',
+          imageGeneration: { status: 'succeeded', imageId: 'image-1' },
+        },
       },
       isError: false,
     },
     { type: 'text', text: '页面是 Example Domain' },
-  ])
-})
+  ]);
+});
 
 test('keeps tool progress as a UI-only running artifact until the final result arrives', async () => {
   const client = {
@@ -90,7 +98,7 @@ test('keeps tool progress as a UI-only running artifact until the final result a
             toolCallId: 'call-1',
             toolName: 'shell',
             args: { command: 'pnpm build' },
-          } as const
+          } as const;
           yield {
             type: 'tool-progress',
             sequence: 1,
@@ -99,7 +107,7 @@ test('keeps tool progress as a UI-only running artifact until the final result a
             toolName: 'shell',
             content: '正在编译',
             details: { percent: 50 },
-          } as const
+          } as const;
           yield {
             type: 'tool-result',
             sequence: 2,
@@ -109,32 +117,32 @@ test('keeps tool progress as a UI-only running artifact until the final result a
             status: 'succeeded',
             isError: false,
             summary: '编译完成',
-          } as const
+          } as const;
           yield {
             type: 'run-terminal',
             sequence: 3,
             runId: 'run-progress',
             status: 'succeeded',
             limitReason: null,
-          } as const
+          } as const;
         },
       },
     },
-  } as unknown as SuperMindClient
+  } as unknown as SuperMindClient;
   const adapter = createAgentRunAdapter(client, () => ({
     threadId: 'thread-1',
     model: 'mock',
     thinkingEffort: 'balanced',
     selectedSkillNames: [],
     onThreadCreated: () => undefined,
-  }))
-  const chunks: Array<{ content: Array<Record<string, unknown>> }> = []
+  }));
+  const chunks: Array<{ content: Array<Record<string, unknown>> }> = [];
 
   for await (const chunk of adapter.run({
     messages: [{ role: 'user', content: [{ type: 'text', text: '编译' }] }],
     abortSignal: new AbortController().signal,
   } as never) as AsyncGenerator<{ content: Array<Record<string, unknown>> }>) {
-    chunks.push(chunk)
+    chunks.push(chunk);
   }
 
   assert.deepEqual(chunks[1]?.content[0], {
@@ -144,7 +152,7 @@ test('keeps tool progress as a UI-only running artifact until the final result a
     args: { command: 'pnpm build' },
     argsText: '{"command":"pnpm build"}',
     artifact: { content: '正在编译', details: { percent: 50 } },
-  })
+  });
   assert.deepEqual(chunks[2]?.content[0], {
     type: 'tool-call',
     toolCallId: 'call-1',
@@ -153,8 +161,8 @@ test('keeps tool progress as a UI-only running artifact until the final result a
     argsText: '{"command":"pnpm build"}',
     result: { summary: '编译完成', status: 'succeeded' },
     isError: false,
-  })
-})
+  });
+});
 
 test('marks the last assistant message incomplete when last run was interrupted', () => {
   const messages: AgentMessage[] = [
@@ -170,36 +178,36 @@ test('marks the last assistant message incomplete when last run was interrupted'
       parts: [{ type: 'text', text: '半成品' }],
       createdAt: '2026-07-20T00:00:01.000Z',
     },
-  ]
-  const threadMessages = agentMessagesToThreadMessages(messages, { lastRunStatus: 'interrupted' })
-  const assistant = threadMessages[1]
-  assert.equal(assistant?.role, 'assistant')
+  ];
+  const threadMessages = agentMessagesToThreadMessages(messages, { lastRunStatus: 'interrupted' });
+  const assistant = threadMessages[1];
+  assert.equal(assistant?.role, 'assistant');
   assert.deepEqual(assistant && 'status' in assistant ? assistant.status : null, {
     type: 'incomplete',
     reason: 'error',
     error: '服务重启导致运行中断，未自动重放',
-  })
-})
+  });
+});
 
 test('binds a newly created Thread before notifying the route change', async () => {
-  const calls: string[] = []
+  const calls: string[] = [];
   const client = {
     agent: {
       threads: {
         create: async () => {
-          calls.push('create-thread')
-          return { id: 'thread-new' }
+          calls.push('create-thread');
+          return { id: 'thread-new' };
         },
       },
       runs: {
         create: async () => {
-          calls.push('create-run')
+          calls.push('create-run');
           return {
             id: 'run-new',
             threadId: 'thread-new',
             model: 'qwen3.7-plus',
             provider: 'qwen',
-          }
+          };
         },
         subscribe: async function* () {
           yield {
@@ -208,11 +216,11 @@ test('binds a newly created Thread before notifying the route change', async () 
             runId: 'run-new',
             status: 'succeeded',
             limitReason: null,
-          } as const
+          } as const;
         },
       },
     },
-  } as unknown as SuperMindClient
+  } as unknown as SuperMindClient;
   const adapter = createAgentRunAdapter(client, () => ({
     threadId: null,
     model: 'qwen3.7-plus',
@@ -220,27 +228,22 @@ test('binds a newly created Thread before notifying the route change', async () 
     selectedSkillNames: [],
     onRunThreadBound: (threadId) => calls.push(`bind:${threadId}`),
     onThreadCreated: (thread) => calls.push(`route:${thread.id}`),
-  }))
+  }));
 
   const stream = adapter.run({
     messages: [{ role: 'user', content: [{ type: 'text', text: '开始' }] }],
     abortSignal: new AbortController().signal,
-  } as never) as AsyncGenerator<unknown>
+  } as never) as AsyncGenerator<unknown>;
   for await (const chunk of stream) {
-    void chunk
+    void chunk;
   }
 
-  assert.deepEqual(calls, [
-    'create-thread',
-    'bind:thread-new',
-    'route:thread-new',
-    'create-run',
-  ])
-})
+  assert.deepEqual(calls, ['create-thread', 'bind:thread-new', 'route:thread-new', 'create-run']);
+});
 
 test('aborting local SSE does not call runs.cancel (browser disconnect must not cancel)', async () => {
-  let cancelCalls = 0
-  const abort = new AbortController()
+  let cancelCalls = 0;
+  const abort = new AbortController();
   const events: AgentStreamEvent[] = [
     { type: 'run-status', sequence: 0, runId: 'run-1', status: 'running' },
     {
@@ -251,13 +254,13 @@ test('aborting local SSE does not call runs.cancel (browser disconnect must not 
       role: 'assistant',
     },
     { type: 'text-delta', sequence: 2, runId: 'run-1', messageId: 'm1', delta: '半' },
-  ]
+  ];
 
   const client = {
     agent: {
       threads: {
         create: async () => {
-          throw new Error('should not create')
+          throw new Error('should not create');
         },
       },
       runs: {
@@ -282,26 +285,26 @@ test('aborting local SSE does not call runs.cancel (browser disconnect must not 
           completedAt: null,
         }),
         cancel: async () => {
-          cancelCalls += 1
-          throw new Error('cancel must not be called on abort')
+          cancelCalls += 1;
+          throw new Error('cancel must not be called on abort');
         },
         subscribe: async function* (_runId: string, options?: { signal?: AbortSignal }) {
           for (const event of events) {
             if (options?.signal?.aborted) {
-              throw Object.assign(new Error('aborted'), { name: 'AbortError' })
+              throw Object.assign(new Error('aborted'), { name: 'AbortError' });
             }
-            yield event
+            yield event;
             if (event.type === 'text-delta') {
-              abort.abort()
+              abort.abort();
             }
           }
           if (options?.signal?.aborted) {
-            throw Object.assign(new Error('aborted'), { name: 'AbortError' })
+            throw Object.assign(new Error('aborted'), { name: 'AbortError' });
           }
         },
       },
     },
-  } as unknown as SuperMindClient
+  } as unknown as SuperMindClient;
 
   const adapter = createAgentRunAdapter(client, () => ({
     threadId: 'thread-1',
@@ -309,7 +312,7 @@ test('aborting local SSE does not call runs.cancel (browser disconnect must not 
     thinkingEffort: 'balanced',
     selectedSkillNames: [],
     onThreadCreated: () => undefined,
-  }))
+  }));
 
   const messages = [
     {
@@ -318,26 +321,26 @@ test('aborting local SSE does not call runs.cancel (browser disconnect must not 
       id: 'u1',
       createdAt: new Date(),
     },
-  ]
+  ];
 
-  const collected: unknown[] = []
+  const collected: unknown[] = [];
   const stream = adapter.run({
     messages: messages as never,
     abortSignal: abort.signal,
     context: {} as never,
     unstable_getMessage: () => messages[0] as never,
-  } as never) as AsyncGenerator<unknown>
+  } as never) as AsyncGenerator<unknown>;
 
   for await (const chunk of stream) {
-    collected.push(chunk)
+    collected.push(chunk);
   }
 
-  assert.equal(cancelCalls, 0)
-  assert.ok(collected.length >= 1)
-})
+  assert.equal(cancelCalls, 0);
+  assert.ok(collected.length >= 1);
+});
 
 test('forwards live Sandbox status events to the workspace status module', async () => {
-  const received: Array<{ status: string; sandboxId?: string }> = []
+  const received: Array<{ status: string; sandboxId?: string }> = [];
   const client = {
     agent: {
       runs: {
@@ -348,25 +351,25 @@ test('forwards live Sandbox status events to the workspace status module', async
             sequence: 0,
             runId: 'run-1',
             status: 'creating',
-          } as const
+          } as const;
           yield {
             type: 'sandbox-status',
             sequence: 1,
             runId: 'run-1',
             status: 'ready',
             sandboxId: 'sandbox-1',
-          } as const
+          } as const;
           yield {
             type: 'run-terminal',
             sequence: 2,
             runId: 'run-1',
             status: 'succeeded',
             limitReason: null,
-          } as const
+          } as const;
         },
       },
     },
-  } as unknown as SuperMindClient
+  } as unknown as SuperMindClient;
   const adapter = createAgentRunAdapter(client, () => ({
     threadId: 'thread-1',
     model: 'mock',
@@ -374,29 +377,29 @@ test('forwards live Sandbox status events to the workspace status module', async
     selectedSkillNames: [],
     onThreadCreated: () => undefined,
     onSandboxStatus: (status, sandboxId) => {
-      received.push({ status, ...(sandboxId === undefined ? {} : { sandboxId }) })
+      received.push({ status, ...(sandboxId === undefined ? {} : { sandboxId }) });
     },
-  }))
+  }));
 
   for await (const chunk of adapter.run({
     messages: [{ role: 'user', content: [{ type: 'text', text: '执行' }] }],
     abortSignal: new AbortController().signal,
   } as never) as AsyncGenerator<unknown>) {
     // Consume the whole run so both Sandbox events are observed.
-    void chunk
+    void chunk;
   }
 
-  assert.deepEqual(received, [{ status: 'creating' }, { status: 'ready', sandboxId: 'sandbox-1' }])
-})
+  assert.deepEqual(received, [{ status: 'creating' }, { status: 'ready', sandboxId: 'sandbox-1' }]);
+});
 
 test('forwards website mode through the existing Agent run request', async () => {
-  let request: Record<string, unknown> | undefined
+  let request: Record<string, unknown> | undefined;
   const client = {
     agent: {
       runs: {
         create: async (_threadId: string, input: Record<string, unknown>) => {
-          request = input
-          return { id: 'run-web', threadId: 'thread-1' }
+          request = input;
+          return { id: 'run-web', threadId: 'thread-1' };
         },
         subscribe: async function* () {
           yield {
@@ -405,11 +408,11 @@ test('forwards website mode through the existing Agent run request', async () =>
             runId: 'run-web',
             status: 'succeeded',
             limitReason: null,
-          } as const
+          } as const;
         },
       },
     },
-  } as unknown as SuperMindClient
+  } as unknown as SuperMindClient;
   const adapter = createAgentRunAdapter(client, () => ({
     threadId: 'thread-1',
     model: 'mock',
@@ -417,21 +420,59 @@ test('forwards website mode through the existing Agent run request', async () =>
     selectedSkillNames: [],
     websiteMode: true,
     onThreadCreated: () => undefined,
-  }))
+  }));
 
   for await (const chunk of adapter.run({
     messages: [{ role: 'user', content: [{ type: 'text', text: '创建官网' }] }],
     abortSignal: new AbortController().signal,
   } as never) as AsyncGenerator<unknown>) {
-    void chunk
+    void chunk;
   }
 
-  assert.equal(request?.mode, 'website')
-  assert.equal(request?.input, '创建官网')
-})
+  assert.equal(request?.mode, 'website');
+  assert.equal(request?.input, '创建官网');
+});
+
+test('forwards image mode while keeping the selected outer text model', async () => {
+  let request: Record<string, unknown> | undefined;
+  const client = {
+    agent: {
+      runs: {
+        create: async (_threadId: string, input: Record<string, unknown>) => {
+          request = input;
+          return { id: 'run-image', threadId: 'thread-1', model: 'qwen3.7-plus', provider: 'qwen' };
+        },
+        subscribe: async function* () {
+          yield {
+            type: 'run-terminal',
+            sequence: 0,
+            runId: 'run-image',
+            status: 'succeeded',
+            limitReason: null,
+          } as const;
+        },
+      },
+    },
+  } as unknown as SuperMindClient;
+  const adapter = createAgentRunAdapter(client, () => ({
+    threadId: 'thread-1',
+    model: 'qwen3.7-plus',
+    thinkingEffort: 'balanced',
+    selectedSkillNames: [],
+    imageMode: true,
+    onThreadCreated: () => undefined,
+  }));
+  for await (const chunk of adapter.run({
+    messages: [{ role: 'user', content: [{ type: 'text', text: '生成海报' }] }],
+    abortSignal: new AbortController().signal,
+  } as never) as AsyncGenerator<unknown>)
+    void chunk;
+  assert.equal(request?.mode, 'image');
+  assert.equal(request?.input, '生成海报');
+});
 
 test('reports progress until the first renderable Agent event arrives', async () => {
-  const progress: Array<string | null> = []
+  const progress: Array<string | null> = [];
   const client = {
     agent: {
       runs: {
@@ -443,25 +484,25 @@ test('reports progress until the first renderable Agent event arrives', async ()
             runId: 'run-1',
             status: 'ready',
             sandboxId: 'sandbox-1',
-          } as const
+          } as const;
           yield {
             type: 'text-delta',
             sequence: 1,
             runId: 'run-1',
             messageId: 'message-1',
             delta: '已开始处理。',
-          } as const
+          } as const;
           yield {
             type: 'run-terminal',
             sequence: 2,
             runId: 'run-1',
             status: 'succeeded',
             limitReason: null,
-          } as const
+          } as const;
         },
       },
     },
-  } as unknown as SuperMindClient
+  } as unknown as SuperMindClient;
   const adapter = createAgentRunAdapter(client, () => ({
     threadId: 'thread-1',
     model: 'mock',
@@ -469,27 +510,27 @@ test('reports progress until the first renderable Agent event arrives', async ()
     selectedSkillNames: [],
     onThreadCreated: () => undefined,
     onRunProgressChange: (stage) => progress.push(stage),
-  }))
+  }));
 
   for await (const chunk of adapter.run({
     messages: [{ role: 'user', content: [{ type: 'text', text: '执行' }] }],
     abortSignal: new AbortController().signal,
   } as never) as AsyncGenerator<unknown>) {
-    void chunk
+    void chunk;
   }
 
-  assert.deepEqual(progress, ['starting-run', 'preparing-sandbox', 'thinking', null, null])
-})
+  assert.deepEqual(progress, ['starting-run', 'preparing-sandbox', 'thinking', null, null]);
+});
 
 test('waits for limit terminal after a context error and releases the active run', async () => {
-  let finished = 0
-  let createInput: unknown
+  let finished = 0;
+  let createInput: unknown;
   const client = {
     agent: {
       runs: {
         create: async (_threadId: string, input: unknown) => {
-          createInput = input
-          return { id: 'run-1', threadId: 'thread-1' }
+          createInput = input;
+          return { id: 'run-1', threadId: 'thread-1' };
         },
         subscribe: async function* () {
           yield {
@@ -502,18 +543,18 @@ test('waits for limit terminal after a context error and releases the active run
               message: '摘要失败',
               retryable: false,
             },
-          } as const
+          } as const;
           yield {
             type: 'run-terminal',
             sequence: 1,
             runId: 'run-1',
             status: 'limit_reached',
             limitReason: 'context_window',
-          } as const
+          } as const;
         },
       },
     },
-  } as unknown as SuperMindClient
+  } as unknown as SuperMindClient;
   const adapter = createAgentRunAdapter(client, () => ({
     threadId: 'thread-1',
     model: 'qwen',
@@ -521,20 +562,20 @@ test('waits for limit terminal after a context error and releases the active run
     selectedSkillNames: ['mock-data-cleaner'],
     onThreadCreated: () => undefined,
     onRunFinished: () => {
-      finished += 1
+      finished += 1;
     },
-  }))
-  const chunks: unknown[] = []
+  }));
+  const chunks: unknown[] = [];
   for await (const chunk of adapter.run({
     messages: [{ role: 'user', content: [{ type: 'text', text: '继续' }] }],
     abortSignal: new AbortController().signal,
   } as never) as AsyncGenerator<unknown>)
-    chunks.push(chunk)
+    chunks.push(chunk);
   assert.deepEqual(createInput, {
     input: '继续',
     thinkingEffort: 'deep',
     skills: [{ name: 'mock-data-cleaner' }],
-  })
-  assert.equal(finished, 1)
-  assert.equal((chunks.at(-1) as { status: { type: string } }).status.type, 'incomplete')
-})
+  });
+  assert.equal(finished, 1);
+  assert.equal((chunks.at(-1) as { status: { type: string } }).status.type, 'incomplete');
+});

@@ -14,6 +14,8 @@ import type {
   AgentThread,
   AgentThreadSandbox,
   AgentUserQuestion,
+  ImageGenerationToolResult,
+  ImageGenerationSuggestion,
   TextModelAlias,
   TextModelId,
 } from '@supermind/sdk';
@@ -41,6 +43,7 @@ import {
   FilePenLineIcon,
   FileTextIcon,
   GlobeIcon,
+  ImageOffIcon,
   LoaderCircleIcon,
   TerminalSquareIcon,
   WrenchIcon,
@@ -54,6 +57,7 @@ import { AgentUserQuestionCard } from '@/components/agent-user-question-card';
 import ShimmerText from '@/components/shimmer-text';
 import {
   AgentComposerActions,
+  AgentComposerModeIndicator,
   ComposerDocumentFiles,
   encodeComposerMessage,
   DocumentUploadButton,
@@ -122,6 +126,7 @@ import {
 import { activeRunForThread } from '@/utils/agent/agent-active-runs';
 import { resolveWebsiteDeliveryCardState } from '@/utils/agent/website-delivery-state';
 import { readWebsiteMode, writeWebsiteMode } from '@/utils/agent/website-mode-state';
+import { readImageMode, writeImageMode } from '@/utils/agent/image-mode-state';
 import { initialAgentRunViewState } from '@/utils/agent/agent-run-reducer';
 import { threadTokenUsagePercentage } from '@/utils/agent/agent-thread-token-usage';
 import { logoutUser } from '@/utils/auth/user-auth-client';
@@ -190,6 +195,8 @@ function AgentConsole() {
   } | null>(null);
   const [webCreationSelected, setWebCreationSelected] = useState(false);
   const [documentAnalysisSelected, setDocumentAnalysisSelected] = useState(false);
+  const [imageGenerationSelected, setImageGenerationSelected] = useState(false);
+  const [imageGenerationEnabled, setImageGenerationEnabled] = useState(false);
   const [composerFiles, setComposerFiles] = useState<ComposerDocumentFile[]>([]);
   const [githubLoginPromptOpen, setGithubLoginPromptOpen] = useState(false);
   const [githubLoginSwitching, setGithubLoginSwitching] = useState(false);
@@ -200,14 +207,23 @@ function AgentConsole() {
   const dismissedQuestionIdsRef = useRef(new Set<string>());
 
   useEffect(() => {
+    void client.agent.images
+      .models()
+      .then((result) => setImageGenerationEnabled(result.enabled && result.models.length > 0))
+      .catch(() => setImageGenerationEnabled(false));
+  }, []);
+
+  useEffect(() => {
     if (!activeThreadId) {
       // 草稿未发送：不恢复选中，切换走 Thread 后回到新建也保持未选。
       setWebCreationSelected(false);
       setDocumentAnalysisSelected(false);
+      setImageGenerationSelected(false);
       writeWebsiteMode(window.localStorage, null, false);
       return;
     }
     setWebCreationSelected(readWebsiteMode(window.localStorage, activeThreadId));
+    setImageGenerationSelected(readImageMode(window.localStorage, activeThreadId));
   }, [activeThreadId]);
 
   const updateWebsiteMode = (selected: boolean) => {
@@ -217,6 +233,10 @@ function AgentConsole() {
       writeWebsiteMode(window.localStorage, activeThreadId, selected);
     }
   };
+  const updateImageMode = (selected: boolean) => {
+    setImageGenerationSelected(selected);
+    if (activeThreadId) writeImageMode(window.localStorage, activeThreadId, selected);
+  };
   const contextRef = useRef({
     threadId: activeThreadId as string | null,
     model: selectedModel,
@@ -224,6 +244,7 @@ function AgentConsole() {
     selectedSkillNames: [] as readonly string[],
     websiteMode: false,
     documentMode: false,
+    imageMode: false,
     onRunThreadBound: (() => undefined) as (threadId: string) => void,
     onThreadCreated: (() => undefined) as (thread: Parameters<typeof prependThread>[0]) => void,
     onRunCreated: (() => undefined) as (
@@ -245,6 +266,7 @@ function AgentConsole() {
   contextRef.current.selectedSkillNames = selectedSkillNames;
   contextRef.current.websiteMode = webCreationSelected;
   contextRef.current.documentMode = documentAnalysisSelected;
+  contextRef.current.imageMode = imageGenerationSelected;
   contextRef.current.onRunThreadBound = (threadId) => {
     localRunThreadIdRef.current = threadId;
   };
@@ -255,6 +277,7 @@ function AgentConsole() {
     setCompressionEvents([]);
     setContextCompressionStatus('idle');
     writeWebsiteMode(window.localStorage, thread.id, webCreationSelected);
+    writeImageMode(window.localStorage, thread.id, imageGenerationSelected);
     prependThread(thread);
     openThread(thread.id);
   };
@@ -632,29 +655,51 @@ function AgentConsole() {
                         {modelChangeError.message}
                       </p>
                     ) : null}
-                    <div className="mx-auto mb-2 flex w-full max-w-[44rem] gap-2 overflow-x-auto sm:w-[calc(100%-2rem)]">
-                      <AgentWebCreationOption
-                        selected={webCreationSelected}
-                        disabled={submitBlocked}
-                        onClick={() => {
-                          if (!canCreateWebsite) {
-                            setGithubLoginPromptOpen(true);
-                            return;
-                          }
-                          updateWebsiteMode(!webCreationSelected);
-                          if (!webCreationSelected) setDocumentAnalysisSelected(false);
-                        }}
-                      />
-                      <AgentWebCreationOption
-                        label="文档操作"
-                        selected={documentAnalysisSelected}
-                        disabled={submitBlocked}
-                        onClick={() => {
-                          setDocumentAnalysisSelected((current) => !current);
-                          if (webCreationSelected) updateWebsiteMode(false);
-                        }}
-                      />
-                    </div>
+                    {!webCreationSelected &&
+                    !documentAnalysisSelected &&
+                    !imageGenerationSelected ? (
+                      <div className="mx-auto mb-2 flex w-full max-w-[44rem] gap-2 overflow-x-auto sm:w-[calc(100%-2rem)]">
+                        <AgentWebCreationOption
+                          selected={webCreationSelected}
+                          disabled={submitBlocked}
+                          onClick={() => {
+                            if (!canCreateWebsite) {
+                              setGithubLoginPromptOpen(true);
+                              return;
+                            }
+                            updateWebsiteMode(!webCreationSelected);
+                            if (!webCreationSelected) {
+                              setDocumentAnalysisSelected(false);
+                              updateImageMode(false);
+                            }
+                          }}
+                        />
+                        <AgentWebCreationOption
+                          label="文档操作"
+                          selected={documentAnalysisSelected}
+                          disabled={submitBlocked}
+                          onClick={() => {
+                            setDocumentAnalysisSelected((current) => !current);
+                            if (webCreationSelected) updateWebsiteMode(false);
+                            if (!documentAnalysisSelected) updateImageMode(false);
+                          }}
+                        />
+                        {imageGenerationEnabled ? (
+                          <AgentWebCreationOption
+                            label="图像生成"
+                            selected={imageGenerationSelected}
+                            disabled={submitBlocked}
+                            onClick={() => {
+                              updateImageMode(!imageGenerationSelected);
+                              if (!imageGenerationSelected) {
+                                updateWebsiteMode(false);
+                                setDocumentAnalysisSelected(false);
+                              }
+                            }}
+                          />
+                        ) : null}
+                      </div>
+                    ) : null}
                     <AgentComposerRoot
                       onSubmitText={(prompt) => {
                         if (composerFiles.length === 0) return prompt;
@@ -691,7 +736,9 @@ function AgentConsole() {
                               ? '描述你的网站功能、风格'
                               : documentAnalysisSelected
                                 ? '上传文档，对文档进行分析、编辑'
-                                : '有什么问题尽管问，输入/ 调用技能'
+                                : imageGenerationSelected
+                                  ? '描述想生成的图片，或继续修改上一张图'
+                                  : '有什么问题尽管问，输入/ 调用技能'
                         }
                         disabled={submitBlocked}
                         maxLength={8000}
@@ -730,6 +777,25 @@ function AgentConsole() {
                               await refreshThreads();
                             }}
                           />
+                          {webCreationSelected ? (
+                            <AgentComposerModeIndicator
+                              label="网页开发"
+                              disabled={submitBlocked}
+                              onClear={() => updateWebsiteMode(false)}
+                            />
+                          ) : documentAnalysisSelected ? (
+                            <AgentComposerModeIndicator
+                              label="文档操作"
+                              disabled={submitBlocked}
+                              onClear={() => setDocumentAnalysisSelected(false)}
+                            />
+                          ) : imageGenerationSelected ? (
+                            <AgentComposerModeIndicator
+                              label="图像生成"
+                              disabled={submitBlocked}
+                              onClear={() => updateImageMode(false)}
+                            />
+                          ) : null}
                         </AgentComposerActions>
                         <AgentComposerSubmitGroup>
                           <ThinkingEffortSelect
@@ -1483,6 +1549,7 @@ type AgentToolUiToolkit = {
   write_file: ToolDefinition<{ path?: string }, SandboxToolResult>;
   export_file: ToolDefinition<{ path?: string }, SandboxToolResult>;
   create_website: ToolDefinition<Record<string, never>, SandboxToolResult>;
+  generate_image: ToolDefinition<Record<string, unknown>, SandboxToolResult>;
 };
 
 function isSandboxToolResult(value: unknown): value is SandboxToolResult {
@@ -1596,7 +1663,233 @@ const agentToolUiToolkit = defineToolkit({
       return <WebsiteDeliveryCard result={result} isError={Boolean(isError)} />;
     },
   },
+  generate_image: {
+    type: 'backend',
+    render: ({ artifact, result, status, isError }) => (
+      <ImageGenerationCard
+        {...(agentToolProgress(artifact) === undefined
+          ? {}
+          : { progress: agentToolProgress(artifact) })}
+        {...(result === undefined ? {} : { result })}
+        running={status.type === 'running'}
+        isError={Boolean(isError)}
+      />
+    ),
+  },
 } satisfies AgentToolUiToolkit);
+
+function ImageGenerationCard({
+  progress,
+  result,
+  running,
+  isError,
+}: Readonly<{
+  progress?: string | undefined;
+  result?: SandboxToolResult | undefined;
+  running: boolean;
+  isError: boolean;
+}>) {
+  const aui = useAui();
+  const threadRunning = useAuiState(({ thread }) => thread.isRunning);
+  const projected = isRecord(result?.audit?.imageGeneration)
+    ? (result.audit.imageGeneration as unknown as ImageGenerationToolResult)
+    : null;
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(projected?.saved ?? false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [imageFailed, setImageFailed] = useState(false);
+  const status = projected?.status ?? (running ? 'running' : isError ? 'failed' : 'pending');
+  const suggestions = projected ? imageGenerationSuggestions(projected) : [];
+
+  if (!projected || projected.status !== 'succeeded' || !projected.imageId) {
+    return (
+      <ToolActivityCard
+        toolName="generate_image"
+        detail={projected?.modelName}
+        progress={progress ?? imageStatusLabel(status)}
+        result={result}
+        running={running}
+        isError={
+          isError || ['failed', 'cancelled', 'expired', 'submission_unknown'].includes(status)
+        }
+      />
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <article className="group relative w-full max-w-[16rem] overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_24%_20%,rgb(255_255_255/0.9),transparent_36%),linear-gradient(135deg,rgb(232_237_246),rgb(218_226_239))] shadow-sm dark:bg-[radial-gradient(circle_at_24%_20%,rgb(255_255_255/0.08),transparent_36%),linear-gradient(135deg,rgb(36_42_54),rgb(24_29_39))]">
+        {imageFailed ? (
+          <div
+            className="flex aspect-square w-full flex-col items-center justify-center gap-3 text-ink-muted"
+            role="img"
+            aria-label="图片暂时无法加载"
+          >
+            <span className="grid size-14 place-items-center rounded-2xl bg-white/55 shadow-sm backdrop-blur-sm dark:bg-white/8">
+              <ImageOffIcon aria-hidden="true" className="size-6" />
+            </span>
+            <span className="text-xs font-medium">图片暂时无法加载</span>
+          </div>
+        ) : (
+          <img
+            src={projected.previewUrl ?? ''}
+            alt={projected.effectivePrompt}
+            className="aspect-square w-full object-contain"
+            onError={() => setImageFailed(true)}
+          />
+        )}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center bg-linear-to-t from-black/35 via-black/10 to-transparent px-3 pb-4 pt-14 opacity-100 transition-opacity duration-200 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100">
+          <div className="pointer-events-auto flex items-center gap-0.5 rounded-full bg-black/55 p-1 text-white shadow-lg backdrop-blur-md">
+            <a
+              className="inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 text-xs font-semibold transition-colors hover:bg-white/15 focus-visible:outline-2 focus-visible:outline-white focus-visible:outline-offset-1"
+              href={projected.downloadUrl ?? '#'}
+              download
+              aria-label="下载图片"
+              title="下载图片"
+            >
+              <DownloadIcon aria-hidden="true" className="size-4" />
+              下载
+            </a>
+            <span aria-hidden="true" className="h-4 w-px bg-white/25" />
+            <button
+              type="button"
+              disabled={saving || saved}
+              className="inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 text-xs font-semibold transition-colors hover:bg-white/15 focus-visible:outline-2 focus-visible:outline-white focus-visible:outline-offset-1 disabled:cursor-default disabled:opacity-65"
+              onClick={() => {
+                setSaving(true);
+                setSaveError(null);
+                void client.agent.images
+                  .save(projected.imageId!)
+                  .then(() => setSaved(true))
+                  .catch((error: unknown) =>
+                    setSaveError(error instanceof Error ? error.message : '保存失败'),
+                  )
+                  .finally(() => setSaving(false));
+              }}
+            >
+              <CheckIcon aria-hidden="true" className="size-4" />
+              {saved ? '已保存' : saving ? '保存中…' : '保存'}
+            </button>
+            <span aria-hidden="true" className="h-4 w-px bg-white/25" />
+            <button
+              type="button"
+              className="inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 text-xs font-semibold transition-colors hover:bg-white/15 focus-visible:outline-2 focus-visible:outline-white focus-visible:outline-offset-1"
+              aria-label="基于此图继续修改"
+              title="基于此图继续修改"
+              onClick={() => {
+                aui.thread().composer().setText(`请基于图片 ${projected.imageId} 继续修改：`);
+                requestAnimationFrame(() =>
+                  document.querySelector<HTMLTextAreaElement>('textarea')?.focus(),
+                );
+              }}
+            >
+              <FilePenLineIcon aria-hidden="true" className="size-4" />
+              修改
+            </button>
+          </div>
+        </div>
+        {saveError ? (
+          <p
+            role="alert"
+            className="absolute inset-x-3 top-3 rounded-lg bg-danger px-3 py-2 text-xs font-medium text-white shadow-lg"
+          >
+            {saveError}
+          </p>
+        ) : null}
+      </article>
+      <div className="space-y-2" aria-label="继续修改图片">
+        {(['aspectRatio', 'quality', 'model'] as const).map((kind) => {
+          const items = suggestions.filter((item) => item.kind === kind);
+          if (items.length === 0) return null;
+          const title =
+            kind === 'aspectRatio' ? '修改尺寸' : kind === 'quality' ? '修改质量' : '替换模型';
+          return (
+            <div key={kind} className="flex flex-wrap items-center gap-1.5">
+              <span className="mr-0.5 text-xs text-ink-muted">{title}</span>
+              {items.map((suggestion) => (
+                <button
+                  key={`${suggestion.kind}:${suggestion.value}`}
+                  type="button"
+                  disabled={threadRunning}
+                  className="rounded-full border border-line-soft bg-surface px-3 py-1.5 text-xs font-medium text-ink transition-colors hover:border-brand/35 hover:bg-brand-subtle hover:text-brand-hover focus-visible:outline-3 focus-visible:outline-brand-focus focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-45"
+                  onClick={() => {
+                    void aui.thread().append({
+                      role: 'user',
+                      content: [{ type: 'text', text: suggestion.prompt }],
+                    });
+                  }}
+                >
+                  {suggestion.label}
+                </button>
+              ))}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function imageGenerationSuggestions(
+  result: ImageGenerationToolResult,
+): ImageGenerationSuggestion[] {
+  if (result.suggestions?.length) return result.suggestions;
+  const legacyCapabilities = {
+    'qwen-image': { aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16'], qualities: ['1K', '2K'] },
+    'wan-image': {
+      aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16'],
+      qualities: ['1K', '2K', '4K'],
+    },
+    'kling-image': { aspectRatios: ['1:1', '16:9', '9:16'], qualities: ['1K', '2K'] },
+    'vidu-image': {
+      aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16'],
+      qualities: ['1K', '2K'],
+    },
+  } as const;
+  const capability = legacyCapabilities[result.model];
+  return [
+    ...capability.aspectRatios
+      .filter((value) => value !== result.settings.aspectRatio)
+      .map((value) => ({
+        kind: 'aspectRatio' as const,
+        value,
+        label: `改为 ${value}`,
+        prompt: `请基于上一张图片继续修改，保持画面内容和风格不变，将图片比例调整为 ${value}。`,
+      })),
+    ...capability.qualities
+      .filter((value) => value !== result.settings.quality)
+      .map((value) => ({
+        kind: 'quality' as const,
+        value,
+        label: `改为 ${value}`,
+        prompt: `请基于上一张图片继续修改，保持画面内容和风格不变，将图片质量调整为 ${value}。`,
+      })),
+    ...result.alternatives.map((alternative) => ({
+      kind: 'model' as const,
+      value: alternative.id,
+      label: alternative.name,
+      prompt: `请使用 ${alternative.id} 模型，基于上一张图片继续创作，保持画面内容和风格不变。`,
+    })),
+  ];
+}
+
+function imageStatusLabel(status: string): string {
+  return (
+    (
+      {
+        pending: '排队中',
+        submitting: '正在提交',
+        running: '正在生成',
+        persisting: '正在保存到临时空间',
+        failed: '生成失败',
+        cancel_requested: '正在停止',
+        cancelled: '已停止，可能仍产生费用',
+        expired: '临时空间已过期',
+        submission_unknown: '提交状态未知，请勿重试',
+      } as Record<string, string>
+    )[status] ?? status
+  );
+}
 
 function WebsiteDeliveryCard({
   result,

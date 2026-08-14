@@ -1,5 +1,5 @@
-import type { AgentThinkingEffort, CreateAgentRunRequest } from '@supermind/sdk'
-import { Type } from 'class-transformer'
+import type { AgentThinkingEffort, CreateAgentRunRequest } from '@supermind/sdk';
+import { Type } from 'class-transformer';
 import {
   ArrayMaxSize,
   IsArray,
@@ -10,33 +10,33 @@ import {
   MaxLength,
   MinLength,
   ValidateNested,
-} from 'class-validator'
+} from 'class-validator';
 
 class SelectAgentSkillDto {
   @IsString()
   @Matches(/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/)
   @MaxLength(64)
-  declare name: string
+  declare name: string;
 }
 
 export class CreateAgentRunDto implements CreateAgentRunRequest {
   @IsString()
   @MinLength(1)
   @MaxLength(8_000)
-  declare input: string
+  declare input: string;
 
   @IsOptional()
   @IsIn(['fast', 'balanced', 'deep'])
-  declare thinkingEffort?: AgentThinkingEffort
+  declare thinkingEffort?: AgentThinkingEffort;
 
   @IsOptional()
-  @IsIn(['website', 'document'])
-  declare mode?: 'website' | 'document'
+  @IsIn(['website', 'document', 'image'])
+  declare mode?: 'website' | 'document' | 'image';
 
   @IsOptional()
   @IsArray()
   @ArrayMaxSize(50)
   @ValidateNested({ each: true })
   @Type(() => SelectAgentSkillDto)
-  declare skills?: SelectAgentSkillDto[]
+  declare skills?: SelectAgentSkillDto[];
 }

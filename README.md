@@ -1,6 +1,8 @@
 # Super Mind Studio
 
-Super Mind Studio 是一个面向灵感探索与任务执行的 AI Agent 工作空间。用户可通过一次性匿名、GitHub OAuth 或 Google OAuth 登录，在持久 Agent 中进行普通对话或多步任务并使用 Skill；管理员中后台负责模型调用、费用、日志和业务数据治理。底层模型网关统一提供 Qwen、GLM、DeepSeek、Kimi 与 Mock Adapter，Image 与 Prompt 作为内部 API/SDK 能力保留。
+Super Mind Studio 是一个面向灵感探索与任务执行的 AI Agent 工作空间。用户可通过一次性匿名、GitHub OAuth 或 Google OAuth 登录，在持久 Agent 中进行普通对话、多步任务或图像生成并使用 Skill；管理员中后台负责模型调用、费用、日志和业务数据治理。图像生成由外层文本 Agent 自动加载 `gen-image` Skill 并调用 `generate_image` Tool，通过百炼北京地域接入 Qwen Image、万相、可灵与 Vidu。
+
+生成图片默认只保留在所属 Thread 的三小时 Sandbox 中；“下载”只下载到本地，“保存到我的创作”才会将图片写入私有 OSS 并展示于 `/creations`。图片能力仅配置 `BAILIAN_IMAGE_BASE_URL` 与 `BAILIAN_IMAGE_API_KEY`；两项同时存在时开放入口，四个模型及其稳定运行参数由代码内置。
 
 ## 环境要求
 
@@ -39,7 +41,6 @@ pnpm dev
 
 登录页、模型列表和 health 保持公开。根路径 `/` 直接承载 Agent，要求 `aigateway_user_session` HttpOnly Cookie；该 Cookie 可由匿名、GitHub 或 Google 登录创建。匿名登录每次创建新的不可恢复 User，但拥有与 OAuth 用户相同的功能和永久数据保留行为。以下用户能力同样要求该 Session：
 
-- `POST /api/v1/images/generations` 及任务状态/下载
 - `POST /api/v1/prompts/optimize`
 - `/api/v1/agent/*`（持久 Agent 会话、运行事件和 Skill 市场）
 
@@ -72,7 +73,7 @@ C 端 `/api` 展示页也已移除并直接返回 404。该页面删除不影响
 
 Agent Thread 在第一次 Run 时按需创建一个隔离沙箱，同一 Thread 的后续 Run 复用该工作区；每轮仍会重新校验并激活 Skill，同时重置 Shell、流量和输出预算。Run 成功、失败或取消后沙箱转为空闲，不立即销毁；删除 Thread、沙箱失效或达到空闲/硬生命周期上限时执行幂等销毁。
 
-`SANDBOX_TIMEOUT_SECONDS` 同时控制沙箱最大生命周期和空闲保留上限，默认值为 `3600`（1 小时）。OpenSandbox 的创建请求会接收同样的硬 TTL，API 重启后会从 PostgreSQL 恢复未过期 Thread 沙箱的清理期限。
+`SANDBOX_TIMEOUT_SECONDS` 同时控制沙箱最大生命周期和空闲保留上限，默认值为 `10800`（3 小时）。OpenSandbox 的创建请求会接收同样的硬 TTL，API 重启后会从 PostgreSQL 恢复未过期 Thread 沙箱的清理期限。
 
 ## 网页创作与产物保留
 

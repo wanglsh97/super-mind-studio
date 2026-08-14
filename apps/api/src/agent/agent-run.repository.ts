@@ -1,77 +1,79 @@
-import type { AgentStreamEvent } from '@supermind/sdk'
-import { Inject, Injectable } from '@nestjs/common'
+import type { AgentStreamEvent } from '@supermind/sdk';
+import { Inject, Injectable } from '@nestjs/common';
 
-import { Prisma } from '../generated/prisma/client'
+import { Prisma } from '../generated/prisma/client';
 import type {
   AgentRun,
   AgentRunLimitReason,
   AgentRunStatus,
   AgentToolCallStatus,
-} from '../generated/prisma/client'
-import { PrismaService } from '../database/prisma.service'
-import type { ProjectedToolCall } from './agent-run.projector'
-import { AGENT_DEFAULT_THREAD_TITLE } from './agent.constants'
-import type { AgentPromptManifest } from './prompt/agent-prompt.composer'
+} from '../generated/prisma/client';
+import { PrismaService } from '../database/prisma.service';
+import type { ProjectedToolCall } from './agent-run.projector';
+import { AGENT_DEFAULT_THREAD_TITLE } from './agent.constants';
+import type { AgentPromptManifest } from './prompt/agent-prompt.composer';
 
 const TOOL_CALL_STATUS_MAP: Record<ProjectedToolCall['status'], AgentToolCallStatus> = {
   running: 'RUNNING',
   succeeded: 'SUCCEEDED',
   failed: 'FAILED',
   cancelled: 'CANCELLED',
-}
+};
 
 export interface CreateAgentRunInput {
-  threadId: string
-  userId: string
-  input: string
-  modelId: string
-  provider: string
+  threadId: string;
+  userId: string;
+  input: string;
+  modelId: string;
+  provider: string;
+  mode?: string;
 }
 
 export interface AdmitAgentRunInput {
-  threadId: string
-  userId: string
-  input: string
-  maxConcurrentRuns: number
-  derivedTitle?: string
+  threadId: string;
+  userId: string;
+  input: string;
+  maxConcurrentRuns: number;
+  mode?: string;
+  derivedTitle?: string;
 }
 
 export class AgentThreadAdmissionNotFoundError extends Error {
   constructor() {
-    super('Owned Agent Thread disappeared during admission')
-    this.name = 'AgentThreadAdmissionNotFoundError'
+    super('Owned Agent Thread disappeared during admission');
+    this.name = 'AgentThreadAdmissionNotFoundError';
   }
 }
 
 export class AgentThreadActiveRunError extends Error {
   constructor(readonly activeRunId: string) {
-    super('Thread already has an active Agent run')
-    this.name = 'AgentThreadActiveRunError'
+    super('Thread already has an active Agent run');
+    this.name = 'AgentThreadActiveRunError';
   }
 }
 
 export class AgentUserConcurrencyLimitError extends Error {
   constructor(readonly limit: number) {
-    super(`User reached the active Agent run limit of ${limit}`)
-    this.name = 'AgentUserConcurrencyLimitError'
+    super(`User reached the active Agent run limit of ${limit}`);
+    this.name = 'AgentUserConcurrencyLimitError';
   }
 }
 
 export interface FinalizeAgentRunInput {
-  status: AgentRunStatus
-  limitReason?: AgentRunLimitReason | null
-  lastSequence: number
-  modelCallCount: number
-  toolCallCount: number
-  webFetchCount: number
-  inputTokens: number
-  outputTokens: number
-  totalTokens: number
-  usageUnknown: boolean
-  estimatedCostCny?: string | null
-  errorCode?: string | null
-  errorMessage?: string | null
-  completedAt?: Date
+  status: AgentRunStatus;
+  limitReason?: AgentRunLimitReason | null;
+  lastSequence: number;
+  modelCallCount: number;
+  toolCallCount: number;
+  webFetchCount: number;
+  inputTokens: number;
+  outputTokens: number;
+  totalTokens: number;
+  usageUnknown: boolean;
+  estimatedCostCny?: string | null;
+  errorCode?: string | null;
+  errorMessage?: string | null;
+  completedAt?: Date;
 }
 
 /** 未终结（进行中）的 run 状态。 */
@@ -79,7 +81,7 @@ export const ACTIVE_AGENT_RUN_STATUSES = [
   'RUNNING',
   'CANCELLING',
   'WAITING_FOR_USER',
-] as const satisfies readonly AgentRunStatus[]
+] as const satisfies readonly AgentRunStatus[];
 
 /**
  * AgentRun 持久化端口。
@@ -98,8 +100,9 @@ export class AgentRunRepository {
         input: input.input,
         modelId: input.modelId,
         provider: input.provider,
+        ...(input.mode === undefined ? {} : { mode: input.mode }),
       },
-    })
+    });
   }
 
   /**
@@ -110,13 +113,13 @@ export class AgentRunRepository {
    */
   async admit(input: AdmitAgentRunInput): Promise<AgentRun> {
     return this.prisma.$transaction(async (tx) => {
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${input.userId}, 0))`
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${input.userId}, 0))`;
 
       const thread = await tx.agentThread.findFirst({
         where: { id: input.threadId, userId: input.userId },
         select: { modelId: true, provider: true },
-      })
-      if (!thread) throw new AgentThreadAdmissionNotFoundError()
+      });
+      if (!thread) throw new AgentThreadAdmissionNotFoundError();
 
       const threadActive = await tx.agentRun.findFirst({
         where: {
@@ -125,17 +128,17 @@ export class AgentRunRepository {
         },
         orderBy: { createdAt: 'desc' },
         select: { id: true },
-      })
-      if (threadActive) throw new AgentThreadActiveRunError(threadActive.id)
+      });
+      if (threadActive) throw new AgentThreadActiveRunError(threadActive.id);
 
       const activeCount = await tx.agentRun.count({
         where: {
           userId: input.userId,
           status: { in: [...ACTIVE_AGENT_RUN_STATUSES] },
         },
-      })
+      });
       if (activeCount >= input.maxConcurrentRuns) {
-        throw new AgentUserConcurrencyLimitError(input.maxConcurrentRuns)
+        throw new AgentUserConcurrencyLimitError(input.maxConcurrentRuns);
       }
 
       const run = await tx.agentRun.create({
@@ -145,13 +148,14 @@ export class AgentRunRepository {
           input: input.input,
           modelId: thread.modelId,
           provider: thread.provider,
+          ...(input.mode === undefined ? {} : { mode: input.mode }),
         },
-      })
+      });
       const lastMessage = await tx.agentMessage.findFirst({
         where: { threadId: input.threadId },
         orderBy: { sequence: 'desc' },
         select: { sequence: true },
-      })
+      });
       await tx.agentMessage.create({
         data: {
           threadId: input.threadId,
@@ -160,7 +164,7 @@ export class AgentRunRepository {
           sequence: (lastMessage?.sequence ?? -1) + 1,
           parts: [{ type: 'text', text: input.input }] as unknown as Prisma.InputJsonValue,
         },
-      })
+      });
       if (input.derivedTitle) {
         await tx.agentThread.updateMany({
           where: {
@@ -169,14 +173,14 @@ export class AgentRunRepository {
             title: AGENT_DEFAULT_THREAD_TITLE,
           },
           data: { title: input.derivedTitle },
-        })
+        });
       }
-      return run
-    })
+      return run;
+    });
   }
 
   async findForOwner(runId: string, userId: string): Promise<AgentRun | null> {
-    return this.prisma.agentRun.findFirst({ where: { id: runId, userId } })
+    return this.prisma.agentRun.findFirst({ where: { id: runId, userId } });
   }
 
   async listEventsAfter(
@@ -187,42 +191,42 @@ export class AgentRunRepository {
       where: { runId, sequence: { gt: after } },
       orderBy: { sequence: 'asc' },
       select: { sequence: true, payload: true },
-    })
+    });
   }
 
   async findActiveForUser(userId: string): Promise<AgentRun | null> {
     return this.prisma.agentRun.findFirst({
       where: { userId, status: { in: [...ACTIVE_AGENT_RUN_STATUSES] } },
       orderBy: { createdAt: 'desc' },
-    })
+    });
   }
 
   async listActiveForUser(userId: string): Promise<AgentRun[]> {
     return this.prisma.agentRun.findMany({
       where: { userId, status: { in: [...ACTIVE_AGENT_RUN_STATUSES] } },
       orderBy: { createdAt: 'desc' },
-    })
+    });
   }
 
   async findActiveForThread(threadId: string): Promise<AgentRun | null> {
     return this.prisma.agentRun.findFirst({
       where: { threadId, status: { in: [...ACTIVE_AGENT_RUN_STATUSES] } },
       orderBy: { createdAt: 'desc' },
-    })
+    });
   }
 
   async countActiveForUser(userId: string): Promise<number> {
     return this.prisma.agentRun.count({
       where: { userId, status: { in: [...ACTIVE_AGENT_RUN_STATUSES] } },
-    })
+    });
   }
 
   async updateStatus(runId: string, data: Prisma.AgentRunUpdateInput): Promise<void> {
-    await this.prisma.agentRun.update({ where: { id: runId }, data })
+    await this.prisma.agentRun.update({ where: { id: runId }, data });
   }
 
   async markStarted(runId: string, startedAt = new Date()): Promise<void> {
-    await this.prisma.agentRun.update({ where: { id: runId }, data: { startedAt } })
+    await this.prisma.agentRun.update({ where: { id: runId }, data: { startedAt } });
   }
 
   async markSandboxReady(
@@ -233,7 +237,7 @@ export class AgentRunRepository {
     await this.prisma.agentRun.update({
       where: { id: runId },
       data: { sandboxId, sandboxStartedAt },
-    })
+    });
   }
 
   async savePromptAudit(runId: string, manifest: AgentPromptManifest): Promise<void> {
@@ -244,12 +248,12 @@ export class AgentRunRepository {
         promptHash: manifest.promptHash,
         promptManifest: manifest as unknown as Prisma.InputJsonValue,
       },
-    })
+    });
   }
 
   /** 追加事件（幂等按 (runId, sequence) 唯一约束跳过重复），并推进 lastSequence。 */
   async appendEvents(runId: string, events: readonly AgentStreamEvent[]): Promise<void> {
-    if (events.length === 0) return
+    if (events.length === 0) return;
     await this.prisma.agentEvent.createMany({
       data: events.map((event) => ({
         runId,
@@ -259,12 +263,12 @@ export class AgentRunRepository {
         payload: event as unknown as Prisma.InputJsonValue,
       })),
       skipDuplicates: true,
-    })
-    const lastSequence = events.reduce((max, event) => Math.max(max, event.sequence), -1)
+    });
+    const lastSequence = events.reduce((max, event) => Math.max(max, event.sequence), -1);
     await this.prisma.agentRun.updateMany({
       where: { id: runId, lastSequence: { lt: lastSequence } },
       data: { lastSequence },
-    })
+    });
   }
 
   async saveToolCalls(runId: string, records: readonly ProjectedToolCall[]): Promise<void> {
@@ -273,11 +277,12 @@ export class AgentRunRepository {
         status: TOOL_CALL_STATUS_MAP[record.status],
         summary: record.summary,
         audit: (record.audit ?? Prisma.JsonNull) as Prisma.InputJsonValue,
+        result: (record.audit?.imageGeneration ?? Prisma.JsonNull) as Prisma.InputJsonValue,
         errorCode:
           record.isError && typeof record.audit?.code === 'string' ? record.audit.code : null,
         errorMessage: record.isError ? record.summary : null,
         completedAt: new Date(),
-      }
+      };
       const saved = await this.prisma.agentToolCall.upsert({
         where: { runId_toolCallId: { runId, toolCallId: record.toolCallId } },
         create: {
@@ -288,16 +293,16 @@ export class AgentRunRepository {
           ...data,
         },
         update: data,
-      })
+      });
       const fileId =
         record.toolName === 'export_file' && typeof record.audit?.fileId === 'string'
           ? record.audit.fileId
-          : undefined
+          : undefined;
       if (fileId) {
         await this.prisma.userFile.updateMany({
           where: { id: fileId, runId },
           data: { sourceToolCallId: saved.id },
-        })
+        });
       }
     }
   }
@@ -321,28 +326,40 @@ export class AgentRunRepository {
         errorMessage: input.errorMessage ?? null,
         completedAt: input.completedAt ?? new Date(),
       },
-    })
+    });
   }
 
   /** API 启动清理：原子中断遗留 active run、待答问卷并写入终态事件。 */
   async interruptAbandonedRuns(): Promise<{ count: number; runIds: string[] }> {
     return this.prisma.$transaction(async (tx) => {
       const abandoned = await tx.agentRun.findMany({
-        where: { status: { in: [...ACTIVE_AGENT_RUN_STATUSES] } },
+        where: {
+          status: { in: [...ACTIVE_AGENT_RUN_STATUSES] },
+          NOT: {
+            mode: 'image',
+            imageTasks: {
+              some: {
+                status: {
+                  in: ['PENDING', 'SUBMITTING', 'RUNNING', 'PERSISTING', 'CANCEL_REQUESTED'],
+                },
+              },
+            },
+          },
+        },
         orderBy: { createdAt: 'asc' },
-      })
-      if (abandoned.length === 0) return { count: 0, runIds: [] }
+      });
+      if (abandoned.length === 0) return { count: 0, runIds: [] };
 
       for (const run of abandoned) {
-        const sequence = run.lastSequence + 1
+        const sequence = run.lastSequence + 1;
         const event: AgentStreamEvent = {
           type: 'run-terminal',
           sequence,
           runId: run.id,
           status: 'interrupted',
           limitReason: null,
-        }
-        const completedAt = new Date()
+        };
+        const completedAt = new Date();
         await tx.agentEvent.create({
           data: {
             runId: run.id,
@@ -350,11 +367,11 @@ export class AgentRunRepository {
             type: event.type,
             payload: event as unknown as Prisma.InputJsonValue,
           },
-        })
+        });
         await tx.agentUserQuestion.updateMany({
           where: { runId: run.id, status: 'PENDING' },
           data: { status: 'INTERRUPTED', settledAt: completedAt },
-        })
+        });
         await tx.agentRun.update({
           where: { id: run.id },
           data: {
@@ -364,17 +381,17 @@ export class AgentRunRepository {
             errorCode: 'AGENT_INTERRUPTED',
             errorMessage: '服务重启导致运行中断，未自动重放模型或工具',
           },
-        })
+        });
       }
 
-      return { count: abandoned.length, runIds: abandoned.map((run) => run.id) }
-    })
+      return { count: abandoned.length, runIds: abandoned.map((run) => run.id) };
+    });
   }
 
   async findLatestForThread(threadId: string): Promise<AgentRun | null> {
     return this.prisma.agentRun.findFirst({
       where: { threadId },
       orderBy: { createdAt: 'desc' },
-    })
+    });
   }
 }

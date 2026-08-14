@@ -1,15 +1,15 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common'
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 
-import { SKILL_OBJECT_STORE_PORT } from '../agent/skills/storage/skill-object-store.port'
-import { toWebsiteArchiveBasename } from '../agent/website/website-project-name'
-import { PrismaService } from '../database/prisma.service'
+import { SKILL_OBJECT_STORE_PORT } from '../agent/skills/storage/skill-object-store.port';
+import { toWebsiteArchiveBasename } from '../agent/website/website-project-name';
+import { PrismaService } from '../database/prisma.service';
 
-import { CreationRepository } from './creation.repository'
-import { WebProjectArchiveValidator } from './web-project-archive.validator'
+import { CreationRepository } from './creation.repository';
+import { WebProjectArchiveValidator } from './web-project-archive.validator';
 
-import type { SkillObjectStorePort } from '../agent/skills/storage/skill-object-store.port'
-import type { Creation, CreationAsset, WebProject } from '../generated/prisma/client'
-import type { AuthenticatedUser } from '../user/user.types'
+import type { SkillObjectStorePort } from '../agent/skills/storage/skill-object-store.port';
+import type { Creation, CreationAsset, WebProject } from '../generated/prisma/client';
+import type { AuthenticatedUser } from '../user/user.types';
 
 @Injectable()
 export class CreationsService {
@@ -21,22 +21,15 @@ export class CreationsService {
   ) {}
 
   async list(user: AuthenticatedUser) {
-    const now = new Date()
+    const now = new Date();
     const [websites, images] = await Promise.all([
       this.projects.listWebsitesForOwner(user.id),
-      this.prisma.imageGenerationTask.findMany({
-        where: { userId: user.id },
+      this.prisma.creation.findMany({
+        where: { userId: user.id, type: 'IMAGE', status: 'SUCCEEDED' },
         orderBy: { createdAt: 'desc' },
-        select: {
-          taskId: true,
-          prompt: true,
-          status: true,
-          createdAt: true,
-          updatedAt: true,
-          results: true,
-        },
+        include: { assets: { where: { kind: 'IMAGE' } }, imageTask: true },
       }),
-    ])
+    ]);
     return [
       ...websites
         .filter(
@@ -45,17 +38,25 @@ export class CreationsService {
         )
         .map((project) => toWebsiteCreation(project)),
       ...images.map((image) => ({
-        id: `image:${image.taskId}`,
+        id: image.id,
         type: 'image' as const,
-        status: image.status.toLowerCase(),
-        title: image.prompt.slice(0, 80) || '图片创作',
+        status: 'succeeded',
+        title: image.title,
         createdAt: image.createdAt.toISOString(),
         updatedAt: image.updatedAt.toISOString(),
-        imageTaskId: image.taskId,
-        imageCount: Array.isArray(image.results) ? image.results.length : 0,
+        imageTaskId: image.imageTask?.taskId,
+        imageCount: image.assets.length,
         expiresAt: null,
+        assets: image.assets.map((asset) => ({
+          id: asset.id,
+          kind: 'image',
+          name: asset.name,
+          expiresAt: null,
+          previewUrl: `/api/v1/creations/assets/${asset.id}/preview`,
+          downloadUrl: `/api/v1/creations/assets/${asset.id}/content`,
+        })),
       })),
-    ].sort((left, right) => right.createdAt.localeCompare(left.createdAt))
+    ].sort((left, right) => right.createdAt.localeCompare(left.createdAt));
   }
 
   async loadAsset(user: AuthenticatedUser, assetId: string) {
@@ -65,28 +66,28 @@ export class CreationsService {
         creation: { userId: user.id, status: 'SUCCEEDED' },
       },
       include: { creation: { select: { expiresAt: true } } },
-    })
-    const now = new Date()
+    });
+    const now = new Date();
     if (!asset || isExpired(asset.expiresAt, now) || isExpired(asset.creation.expiresAt, now)) {
-      throw new NotFoundException('创作产物不存在或已过期')
+      throw new NotFoundException('创作产物不存在或已过期');
     }
-    const stored = await this.objects.loadUserFile(asset.objectKey)
-    if (!stored) throw new NotFoundException('创作产物不存在或已过期')
+    const stored = await this.objects.loadUserFile(asset.objectKey);
+    if (!stored) throw new NotFoundException('创作产物不存在或已过期');
     if (asset.kind !== 'SOURCE_ZIP' || asset.name !== 'source.zip') {
-      return { asset, stored }
+      return { asset, stored };
     }
-    const legacyProjectName = await this.archives.readSourceProjectName(stored.bytes)
+    const legacyProjectName = await this.archives.readSourceProjectName(stored.bytes);
     return {
       asset: {
         ...asset,
         name: legacyProjectName ? `${toWebsiteArchiveBasename(legacyProjectName)}.zip` : asset.name,
       },
       stored,
-    }
+    };
   }
 }
 
-type WebsiteProject = WebProject & { creation: Creation & { assets: CreationAsset[] } }
+type WebsiteProject = WebProject & { creation: Creation & { assets: CreationAsset[] } };
 
 function toWebsiteCreation(project: WebsiteProject) {
   return {
@@ -109,9 +110,9 @@ function toWebsiteCreation(project: WebsiteProject) {
         expiresAt: asset.expiresAt?.toISOString() ?? null,
         downloadUrl: `/api/v1/creations/assets/${asset.id}/content`,
       })),
-  }
+  };
 }
 
 function isExpired(expiresAt: Date | null, now: Date): boolean {
-  return expiresAt !== null && expiresAt <= now
+  return expiresAt !== null && expiresAt <= now;
 }

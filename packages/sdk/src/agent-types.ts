@@ -1,5 +1,5 @@
-import type { GatewayError, TextModelAlias, TextModelId, Usage } from './types.js'
-import type { SelectAgentSkill } from './agent-skill-types.js'
+import type { GatewayError, TextModelAlias, TextModelId, Usage } from './types.js';
+import type { SelectAgentSkill } from './agent-skill-types.js';
 
 /**
  * Agent 公共契约。
@@ -17,8 +17,8 @@ export const AGENT_RUN_STATUSES = [
   'cancelled',
   'limit_reached',
   'interrupted',
-] as const
-export type AgentRunStatus = (typeof AGENT_RUN_STATUSES)[number]
+] as const;
+export type AgentRunStatus = (typeof AGENT_RUN_STATUSES)[number];
 
 export const AGENT_RUN_TERMINAL_STATUSES = [
   'succeeded',
@@ -26,8 +26,8 @@ export const AGENT_RUN_TERMINAL_STATUSES = [
   'cancelled',
   'limit_reached',
   'interrupted',
-] as const
-export type AgentRunTerminalStatus = (typeof AGENT_RUN_TERMINAL_STATUSES)[number]
+] as const;
+export type AgentRunTerminalStatus = (typeof AGENT_RUN_TERMINAL_STATUSES)[number];
 
 export const AGENT_RUN_LIMIT_REASONS = [
   'model_calls',
@@ -40,14 +40,14 @@ export const AGENT_RUN_LIMIT_REASONS = [
   'sandbox_output',
   'sandbox_egress',
   'sandbox_resource',
-] as const
-export type AgentRunLimitReason = (typeof AGENT_RUN_LIMIT_REASONS)[number]
+] as const;
+export type AgentRunLimitReason = (typeof AGENT_RUN_LIMIT_REASONS)[number];
 
-export const AGENT_MESSAGE_ROLES = ['user', 'assistant', 'tool'] as const
-export type AgentMessageRole = (typeof AGENT_MESSAGE_ROLES)[number]
+export const AGENT_MESSAGE_ROLES = ['user', 'assistant', 'tool'] as const;
+export type AgentMessageRole = (typeof AGENT_MESSAGE_ROLES)[number];
 
-export const AGENT_TOOL_CALL_STATUSES = ['running', 'succeeded', 'failed', 'cancelled'] as const
-export type AgentToolCallStatus = (typeof AGENT_TOOL_CALL_STATUSES)[number]
+export const AGENT_TOOL_CALL_STATUSES = ['running', 'succeeded', 'failed', 'cancelled'] as const;
+export type AgentToolCallStatus = (typeof AGENT_TOOL_CALL_STATUSES)[number];
 
 export const AGENT_EXECUTION_ERROR_CODES = [
   'SKILL_NOT_ADDED',
@@ -76,14 +76,14 @@ export const AGENT_EXECUTION_ERROR_CODES = [
   'WEBSITE_ARCHIVE_FAILED',
   'WEBSITE_PREVIEW_FAILED',
   'RUN_CANCELLED',
-] as const
-export type AgentExecutionErrorCode = (typeof AGENT_EXECUTION_ERROR_CODES)[number]
+] as const;
+export type AgentExecutionErrorCode = (typeof AGENT_EXECUTION_ERROR_CODES)[number];
 
 export interface AgentExecutionError {
-  code: AgentExecutionErrorCode
-  message: string
-  retryable: boolean
-  details?: Record<string, unknown>
+  code: AgentExecutionErrorCode;
+  message: string;
+  retryable: boolean;
+  details?: Record<string, unknown>;
 }
 
 export const AGENT_SKILL_ACTIVATION_STATUSES = [
@@ -91,8 +91,8 @@ export const AGENT_SKILL_ACTIVATION_STATUSES = [
   'succeeded',
   'failed',
   'cancelled',
-] as const
-export type AgentSkillActivationStatus = (typeof AGENT_SKILL_ACTIVATION_STATUSES)[number]
+] as const;
+export type AgentSkillActivationStatus = (typeof AGENT_SKILL_ACTIVATION_STATUSES)[number];
 
 export const AGENT_SANDBOX_LIMIT_REASONS = [
   'duration',
@@ -103,93 +103,165 @@ export const AGENT_SANDBOX_LIMIT_REASONS = [
   'egress',
   'shell_calls',
   'output',
-] as const
-export type AgentSandboxLimitReason = (typeof AGENT_SANDBOX_LIMIT_REASONS)[number]
+] as const;
+export type AgentSandboxLimitReason = (typeof AGENT_SANDBOX_LIMIT_REASONS)[number];
 
-export const AGENT_SANDBOX_STATUSES = ['creating', 'ready', 'failed'] as const
-export type AgentSandboxStatus = (typeof AGENT_SANDBOX_STATUSES)[number]
+export const AGENT_SANDBOX_STATUSES = ['creating', 'ready', 'failed'] as const;
+export type AgentSandboxStatus = (typeof AGENT_SANDBOX_STATUSES)[number];
 
-export const AGENT_FILE_OPERATIONS = ['stage-input', 'read', 'write', 'export-output'] as const
-export type AgentFileOperation = (typeof AGENT_FILE_OPERATIONS)[number]
+export const AGENT_FILE_OPERATIONS = ['stage-input', 'read', 'write', 'export-output'] as const;
+export type AgentFileOperation = (typeof AGENT_FILE_OPERATIONS)[number];
 
 export interface AgentShellOutput {
   /** 截断前已观察到的字节数。 */
-  bytes: number
-  truncated: boolean
+  bytes: number;
+  truncated: boolean;
   /** 受单次与 Run 总输出预算约束的可展示文本。 */
-  content: string
+  content: string;
 }
 
 export interface AgentTextPart {
-  type: 'text'
-  text: string
+  type: 'text';
+  text: string;
 }
 
 export interface AgentReasoningPart {
-  type: 'reasoning'
-  text: string
+  type: 'reasoning';
+  text: string;
 }
 
 export interface AgentToolCallPart {
-  type: 'tool-call'
-  toolCallId: string
-  toolName: string
-  args: Record<string, unknown>
+  type: 'tool-call';
+  toolCallId: string;
+  toolName: string;
+  args: Record<string, unknown>;
 }
 
 export interface AgentToolResultPart {
-  type: 'tool-result'
-  toolCallId: string
-  toolName: string
-  status: AgentToolCallStatus
-  isError: boolean
-  summary: string
+  type: 'tool-result';
+  toolCallId: string;
+  toolName: string;
+  status: AgentToolCallStatus;
+  isError: boolean;
+  summary: string;
   /** 工具无关的审计投影（如 web_fetch 的 URL/状态/字节数）。不含凭证或敏感响应头。 */
-  audit?: Record<string, unknown>
+  audit?: Record<string, unknown>;
+  /** 图像生成工具的稳定业务投影；不包含厂商 URL、OSS key 或 Sandbox 路径。 */
+  imageGeneration?: ImageGenerationToolResult;
+}
+
+export const IMAGE_GENERATION_STATUSES = [
+  'pending',
+  'submitting',
+  'running',
+  'persisting',
+  'succeeded',
+  'failed',
+  'cancel_requested',
+  'cancelled',
+  'expired',
+  'submission_unknown',
+] as const;
+export type ImageGenerationStatus = (typeof IMAGE_GENERATION_STATUSES)[number];
+export type ImageModelId = 'qwen-image' | 'wan-image' | 'kling-image' | 'vidu-image';
+export type ImageAspectRatio = '1:1' | '4:3' | '3:4' | '16:9' | '9:16';
+export type ImageQuality = '1K' | '2K' | '4K';
+
+export interface GenerateImageToolArguments {
+  prompt: string;
+  model?: ImageModelId;
+  referenceImageId?: string;
+  aspectRatio?: ImageAspectRatio;
+  quality?: ImageQuality;
+  watermark?: boolean;
+}
+
+export interface ImageModelCapability {
+  id: ImageModelId;
+  name: string;
+  description: string;
+  supportsTextToImage: boolean;
+  supportsReferenceImage: boolean;
+  aspectRatios: ImageAspectRatio[];
+  qualities: ImageQuality[];
+  supportsWatermark: boolean;
+}
+
+export interface ImageGenerationSuggestion {
+  kind: 'aspectRatio' | 'quality' | 'model';
+  value: ImageAspectRatio | ImageQuality | ImageModelId;
+  label: string;
+  prompt: string;
+}
+
+export interface ImageGenerationToolResult {
+  taskId: string;
+  imageId: string | null;
+  status: ImageGenerationStatus;
+  model: ImageModelId;
+  modelName: string;
+  upstreamModel: string;
+  originalPrompt: string;
+  effectivePrompt: string;
+  settings: {
+    aspectRatio: ImageAspectRatio;
+    quality: ImageQuality;
+    watermark: boolean;
+  };
+  previewUrl: string | null;
+  downloadUrl: string | null;
+  saveUrl: string | null;
+  sandboxExpiresAt: string | null;
+  saved: boolean;
+  creationId: string | null;
+  alternatives: ImageModelCapability[];
+  adjustable: Array<'aspectRatio' | 'quality' | 'watermark'>;
+  suggestions?: ImageGenerationSuggestion[];
+  error?: GatewayError;
 }
 
 export interface AgentUserQuestionOption {
-  id: string
-  label: string
-  description: string
+  id: string;
+  label: string;
+  description: string;
 }
 
 export interface AgentUserQuestionItem {
-  id: string
-  header: string
-  question: string
-  options: AgentUserQuestionOption[]
-  multiSelect: boolean
+  id: string;
+  header: string;
+  question: string;
+  options: AgentUserQuestionOption[];
+  multiSelect: boolean;
 }
 
 export interface AgentUserQuestion {
-  id: string
-  runId: string
-  status: 'pending' | 'answered' | 'skipped' | 'cancelled' | 'interrupted'
-  questions: AgentUserQuestionItem[]
-  createdAt: string
-  settledAt: string | null
+  id: string;
+  runId: string;
+  status: 'pending' | 'answered' | 'skipped' | 'cancelled' | 'interrupted';
+  questions: AgentUserQuestionItem[];
+  createdAt: string;
+  settledAt: string | null;
 }
 
 export interface AgentUserQuestionAnswerItem {
-  questionId: string
-  selectedOptionIds: string[]
-  customText?: string
+  questionId: string;
+  selectedOptionIds: string[];
+  customText?: string;
 }
 
 export interface AnswerAgentUserQuestionRequest {
-  answers: AgentUserQuestionAnswerItem[]
+  answers: AgentUserQuestionAnswerItem[];
 }
 
 export interface AgentMediaReferencePart {
-  type: 'media-reference'
-  mediaId: string
-  mediaType: 'image' | 'video' | 'audio' | 'file' | 'other'
-  mimeType: string
-  name: string
-  source: 'user' | 'tool' | 'assistant'
-  status: 'available' | 'expired' | 'missing' | 'blocked'
-  description: string
+  type: 'media-reference';
+  mediaId: string;
+  mediaType: 'image' | 'video' | 'audio' | 'file' | 'other';
+  mimeType: string;
+  name: string;
+  source: 'user' | 'tool' | 'assistant';
+  status: 'available' | 'expired' | 'missing' | 'blocked';
+  description: string;
 }
 
 export type AgentMessagePart =
@@ -197,194 +269,196 @@ export type AgentMessagePart =
   | AgentReasoningPart
   | AgentToolCallPart
   | AgentToolResultPart
-  | AgentMediaReferencePart
+  | AgentMediaReferencePart;
 
 export interface AgentMessage {
-  id: string
-  role: AgentMessageRole
-  parts: AgentMessagePart[]
-  createdAt: string
+  id: string;
+  role: AgentMessageRole;
+  parts: AgentMessagePart[];
+  createdAt: string;
 }
 
 export interface AgentRunUsage extends Usage {
-  modelCalls: number
-  toolCalls: number
-  webFetchCalls: number
+  modelCalls: number;
+  toolCalls: number;
+  webFetchCalls: number;
 }
 
 export interface AgentTokenMetrics {
-  inputTokens: number
-  outputTokens: number
-  totalTokens: number
-  cachedInputTokens: number
-  reasoningTokens: number
+  inputTokens: number;
+  outputTokens: number;
+  totalTokens: number;
+  cachedInputTokens: number;
+  reasoningTokens: number;
 }
 
 export interface AgentTokenDailyUsage extends AgentTokenMetrics {
-  date: string
-  modelCalls: number
-  cacheRate: number
+  date: string;
+  modelCalls: number;
+  cacheRate: number;
 }
 
 export interface AgentTokenModelUsage extends AgentTokenMetrics {
-  model: string
-  modelCalls: number
-  cacheRate: number
+  model: string;
+  modelCalls: number;
+  cacheRate: number;
 }
 
 export interface AgentTokenAnalytics {
-  from: string
-  to: string
-  timezoneOffsetMinutes: number
-  daily: AgentTokenDailyUsage[]
-  models: AgentTokenModelUsage[]
+  from: string;
+  to: string;
+  timezoneOffsetMinutes: number;
+  daily: AgentTokenDailyUsage[];
+  models: AgentTokenModelUsage[];
 }
 
 export interface AgentRunSummary {
-  id: string
-  threadId: string
+  id: string;
+  threadId: string;
   /** 创建 Run 时从 Thread 复制的不可变公开模型 ID。 */
-  model: TextModelId
+  model: TextModelId;
   /** 创建 Run 时对应的厂商；实际 failover 仍以 invocation 记录为准。 */
-  provider: TextModelAlias
-  status: AgentRunStatus
-  limitReason: AgentRunLimitReason | null
-  usage: AgentRunUsage
-  lastSequence: number
-  createdAt: string
-  startedAt: string | null
-  completedAt: string | null
+  provider: TextModelAlias;
+  mode?: AgentRunMode | null;
+  status: AgentRunStatus;
+  limitReason: AgentRunLimitReason | null;
+  usage: AgentRunUsage;
+  lastSequence: number;
+  createdAt: string;
+  startedAt: string | null;
+  completedAt: string | null;
 }
 
-export type AgentMcpServerConnectionStatus = 'configured' | 'ready' | 'error' | 'disabled'
+export type AgentMcpServerConnectionStatus = 'configured' | 'ready' | 'error' | 'disabled';
 
 export interface AgentMcpServerStatus {
-  id: string
-  name: string
-  version: string
-  description: string
-  enabled: boolean
-  status: AgentMcpServerConnectionStatus
-  allowedToolCount: number
-  discoveredToolCount: number
-  registeredToolCount: number
-  errorCode: string | null
+  id: string;
+  name: string;
+  version: string;
+  description: string;
+  enabled: boolean;
+  status: AgentMcpServerConnectionStatus;
+  allowedToolCount: number;
+  discoveredToolCount: number;
+  registeredToolCount: number;
+  errorCode: string | null;
 }
 
 export interface UpdateAgentMcpServerRequest {
-  enabled: boolean
+  enabled: boolean;
 }
 
 export interface AgentThreadSummary {
-  id: string
-  title: string
-  model: TextModelId
-  createdAt: string
-  updatedAt: string
+  id: string;
+  title: string;
+  model: TextModelId;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface AgentThreadListPage {
-  items: AgentThreadSummary[]
-  page: number
-  pageSize: number
-  total: number
-  pageCount: number
+  items: AgentThreadSummary[];
+  page: number;
+  pageSize: number;
+  total: number;
+  pageCount: number;
   /** 当前用户在不同 Thread 中进行中的 runs。 */
-  activeRuns: AgentRunSummary[]
+  activeRuns: AgentRunSummary[];
 }
 
 export interface AgentThreadSandbox {
-  id: string
-  status: 'creating' | 'ready' | 'idle' | 'failed'
-  createdAt: string
-  lastUsedAt: string
-  expiresAt: string
+  id: string;
+  status: 'creating' | 'ready' | 'idle' | 'failed';
+  createdAt: string;
+  lastUsedAt: string;
+  expiresAt: string;
 }
 
 export interface AgentThread extends AgentThreadSummary {
-  messages: AgentMessage[]
-  activeRun: AgentRunSummary | null
+  messages: AgentMessage[];
+  activeRun: AgentRunSummary | null;
   /** 当前活跃 run 的待答问卷；非 pending、失效或已中断问卷不会返回。 */
-  pendingQuestion: AgentUserQuestion | null
+  pendingQuestion: AgentUserQuestion | null;
   /** 该会话最近一次 run（含已终结）；用于展示 interrupted 等终态。 */
-  lastRun: AgentRunSummary | null
-  contextSummary: AgentContextSummary | null
+  lastRun: AgentRunSummary | null;
+  contextSummary: AgentContextSummary | null;
   /** 当前 Thread 全部持久化消息的 token 估算与绑定模型最大上下文。 */
   tokenUsage: {
-    totalTokens: number
-    contextWindowTokens: number | null
-    estimated: boolean
-  }
+    totalTokens: number;
+    contextWindowTokens: number | null;
+    estimated: boolean;
+  };
   /** 当前 Thread 可复用的临时 Sandbox；已销毁或尚未创建时为 null。 */
-  sandbox: AgentThreadSandbox | null
+  sandbox: AgentThreadSandbox | null;
 }
 
-export type AgentContextCompressionLevel = 'none' | 'light' | 'moderate' | 'forced'
+export type AgentContextCompressionLevel = 'none' | 'light' | 'moderate' | 'forced';
 
 export interface AgentContextSummaryContent {
-  userGoals: string[]
-  userConstraints: string[]
-  decisions: { decision: string; rationale?: string }[]
-  facts: { statement: string; source: string }[]
-  openQuestions: string[]
-  pendingTasks: { task: string; status: 'pending' | 'in_progress' | 'blocked' }[]
-  toolFindings: { toolName: string; finding: string }[]
-  referencedArtifacts: { name: string; reference: string }[]
-  recentOutcome: string
-  compressionNotes: string[]
+  userGoals: string[];
+  userConstraints: string[];
+  decisions: { decision: string; rationale?: string }[];
+  facts: { statement: string; source: string }[];
+  openQuestions: string[];
+  pendingTasks: { task: string; status: 'pending' | 'in_progress' | 'blocked' }[];
+  toolFindings: { toolName: string; finding: string }[];
+  referencedArtifacts: { name: string; reference: string }[];
+  recentOutcome: string;
+  compressionNotes: string[];
 }
 
 export interface AgentContextSummary {
-  id: string
-  revision: number
-  coveredThroughSequence: number
-  schemaVersion: string
-  modelId: string
-  content: AgentContextSummaryContent
-  inputTokens: number | null
-  outputTokens: number | null
-  totalTokens: number | null
-  updatedAt: string
+  id: string;
+  revision: number;
+  coveredThroughSequence: number;
+  schemaVersion: string;
+  modelId: string;
+  content: AgentContextSummaryContent;
+  inputTokens: number | null;
+  outputTokens: number | null;
+  totalTokens: number | null;
+  updatedAt: string;
 }
 
 export interface AgentContextBudgetState {
-  usedTokens: number
-  usableTokens: number
-  contextWindowTokens: number
-  estimated: boolean
-  level: AgentContextCompressionLevel
-  summaryId?: string
+  usedTokens: number;
+  usableTokens: number;
+  contextWindowTokens: number;
+  estimated: boolean;
+  level: AgentContextCompressionLevel;
+  summaryId?: string;
 }
 
 export interface CreateAgentThreadRequest {
-  model: TextModelId
-  title?: string
+  model: TextModelId;
+  title?: string;
 }
 
 export interface UpdateAgentThreadRequest {
-  title: string
+  title: string;
 }
 
 export interface UpdateAgentThreadModelRequest {
-  model: TextModelId
+  model: TextModelId;
 }
 
 /** Agent run 级思考强度；厂商字段由服务端 Adapter 映射。 */
-export type AgentThinkingEffort = 'fast' | 'balanced' | 'deep'
+export type AgentThinkingEffort = 'fast' | 'balanced' | 'deep';
+export type AgentRunMode = 'website' | 'document' | 'image';
 
 export interface CreateAgentRunRequest {
-  input: string
-  mode?: 'website' | 'document'
+  input: string;
+  mode?: AgentRunMode;
   /**
    * 三档用户表达在所有模型上保持一致，服务端映射为厂商支持的开关、budget 或 effort。
    * 省略时服务端默认 `balanced`。
    */
-  thinkingEffort?: AgentThinkingEffort
+  thinkingEffort?: AgentThinkingEffort;
   /**
    * 在首次模型调用前预激活的、当前用户已添加的 Skill。
    * 名称全局唯一；省略或传空数组时由模型自行决定是否调用 `skill`。
    */
-  skills?: SelectAgentSkill[]
+  skills?: SelectAgentSkill[];
 }
 
 /**
@@ -395,135 +469,135 @@ export interface CreateAgentRunRequest {
 export type AgentStreamEvent =
   | { type: 'run-status'; sequence: number; runId: string; status: AgentRunStatus }
   | {
-      type: 'sandbox-status'
-      sequence: number
-      runId: string
-      status: AgentSandboxStatus
-      sandboxId?: string
+      type: 'sandbox-status';
+      sequence: number;
+      runId: string;
+      status: AgentSandboxStatus;
+      sandboxId?: string;
     }
   | {
-      type: 'run-terminal'
-      sequence: number
-      runId: string
-      status: AgentRunTerminalStatus
-      limitReason: AgentRunLimitReason | null
+      type: 'run-terminal';
+      sequence: number;
+      runId: string;
+      status: AgentRunTerminalStatus;
+      limitReason: AgentRunLimitReason | null;
     }
   | {
-      type: 'message-start'
-      sequence: number
-      runId: string
-      messageId: string
-      role: AgentMessageRole
+      type: 'message-start';
+      sequence: number;
+      runId: string;
+      messageId: string;
+      role: AgentMessageRole;
     }
   | { type: 'text-delta'; sequence: number; runId: string; messageId: string; delta: string }
   | { type: 'reasoning-delta'; sequence: number; runId: string; messageId: string; delta: string }
   | {
-      type: 'user-question-asked'
-      sequence: number
-      runId: string
-      question: AgentUserQuestion
+      type: 'user-question-asked';
+      sequence: number;
+      runId: string;
+      question: AgentUserQuestion;
     }
   | {
-      type: 'user-question-answered'
-      sequence: number
-      runId: string
-      questionId: string
-      answers: AgentUserQuestionAnswerItem[]
+      type: 'user-question-answered';
+      sequence: number;
+      runId: string;
+      questionId: string;
+      answers: AgentUserQuestionAnswerItem[];
     }
   | { type: 'user-question-skipped'; sequence: number; runId: string; questionId: string }
   | ({ type: 'context-budget'; sequence: number; runId: string } & AgentContextBudgetState)
   | {
-      type: 'context-compressed'
-      sequence: number
-      runId: string
-      level: Exclude<AgentContextCompressionLevel, 'none'>
-      notes: string[]
-      summaryId?: string
-      revision?: number
-      coveredThroughSequence?: number
+      type: 'context-compressed';
+      sequence: number;
+      runId: string;
+      level: Exclude<AgentContextCompressionLevel, 'none'>;
+      notes: string[];
+      summaryId?: string;
+      revision?: number;
+      coveredThroughSequence?: number;
     }
   | { type: 'message-end'; sequence: number; runId: string; messageId: string }
   | {
-      type: 'tool-call'
-      sequence: number
-      runId: string
-      messageId: string
-      toolCallId: string
-      toolName: string
-      args: Record<string, unknown>
+      type: 'tool-call';
+      sequence: number;
+      runId: string;
+      messageId: string;
+      toolCallId: string;
+      toolName: string;
+      args: Record<string, unknown>;
     }
   | {
-      type: 'tool-status'
-      sequence: number
-      runId: string
-      toolCallId: string
-      toolName: string
-      status: AgentToolCallStatus
+      type: 'tool-status';
+      sequence: number;
+      runId: string;
+      toolCallId: string;
+      toolName: string;
+      status: AgentToolCallStatus;
     }
   | {
-      type: 'tool-progress'
-      sequence: number
-      runId: string
-      toolCallId: string
-      toolName: string
-      content: string
-      details?: Record<string, unknown>
+      type: 'tool-progress';
+      sequence: number;
+      runId: string;
+      toolCallId: string;
+      toolName: string;
+      content: string;
+      details?: Record<string, unknown>;
     }
   | {
-      type: 'tool-result'
-      sequence: number
-      runId: string
-      toolCallId: string
-      toolName: string
-      status: AgentToolCallStatus
-      isError: boolean
-      summary: string
-      audit?: Record<string, unknown>
+      type: 'tool-result';
+      sequence: number;
+      runId: string;
+      toolCallId: string;
+      toolName: string;
+      status: AgentToolCallStatus;
+      isError: boolean;
+      summary: string;
+      audit?: Record<string, unknown>;
     }
   | {
-      type: 'skill-activation'
-      sequence: number
-      runId: string
-      status: AgentSkillActivationStatus
-      source: 'manual' | 'model'
-      skillId: string
-      skillName: string
+      type: 'skill-activation';
+      sequence: number;
+      runId: string;
+      status: AgentSkillActivationStatus;
+      source: 'manual' | 'model';
+      skillId: string;
+      skillName: string;
       /** 成功激活时记录实际下载并校验过的当前包哈希。 */
-      packageSha256?: string
-      error?: AgentExecutionError
+      packageSha256?: string;
+      error?: AgentExecutionError;
     }
   | {
-      type: 'shell-execution'
-      sequence: number
-      runId: string
-      toolCallId: string
-      status: AgentToolCallStatus
-      sandboxId: string
-      command: string
-      workingDirectory: string
-      exitCode: number | null
-      durationMs: number | null
-      stdout?: AgentShellOutput
-      stderr?: AgentShellOutput
-      limitReason: AgentSandboxLimitReason | null
-      error?: AgentExecutionError
+      type: 'shell-execution';
+      sequence: number;
+      runId: string;
+      toolCallId: string;
+      status: AgentToolCallStatus;
+      sandboxId: string;
+      command: string;
+      workingDirectory: string;
+      exitCode: number | null;
+      durationMs: number | null;
+      stdout?: AgentShellOutput;
+      stderr?: AgentShellOutput;
+      limitReason: AgentSandboxLimitReason | null;
+      error?: AgentExecutionError;
     }
   | {
-      type: 'file-operation'
-      sequence: number
-      runId: string
-      toolCallId: string
-      status: AgentToolCallStatus
-      operation: AgentFileOperation
-      direction: 'input' | 'output' | 'internal'
+      type: 'file-operation';
+      sequence: number;
+      runId: string;
+      toolCallId: string;
+      status: AgentToolCallStatus;
+      operation: AgentFileOperation;
+      direction: 'input' | 'output' | 'internal';
       /** OSS 中的稳定逻辑文件 ID；内部临时文件可省略。 */
-      fileId?: string
-      path: string
-      size: number | null
-      sha256?: string
-      error?: AgentExecutionError
+      fileId?: string;
+      path: string;
+      size: number | null;
+      sha256?: string;
+      error?: AgentExecutionError;
     }
   | { type: 'usage'; sequence: number; runId: string; usage: AgentRunUsage }
-  | { type: 'error'; sequence: number; runId: string; error: GatewayError }
+  | { type: 'error'; sequence: number; runId: string; error: GatewayError };
 
-export const AGENT_EVENT_SSE_DONE = '[DONE]' as const
+export const AGENT_EVENT_SSE_DONE = '[DONE]' as const;

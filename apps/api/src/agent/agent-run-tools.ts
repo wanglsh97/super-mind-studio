@@ -1,4 +1,4 @@
-import { AgentToolRegistry } from './tools/agent-tool.registry'
+import { AgentToolRegistry } from './tools/agent-tool.registry';
 
 /**
  * MCP 远端工具按需经 discover_mcp_tools/call_mcp_tool 访问；Run 不再携带全量远端定义。
@@ -6,10 +6,19 @@ import { AgentToolRegistry } from './tools/agent-tool.registry'
 export async function createAgentRunToolRegistry(
   builtIns: AgentToolRegistry,
   _mcp: unknown,
-  input: { mode?: 'website' | 'document'; runId?: string; userId?: string; signal?: AbortSignal },
+  input: {
+    mode?: 'website' | 'document' | 'image';
+    runId?: string;
+    userId?: string;
+    signal?: AbortSignal;
+  },
 ): Promise<AgentToolRegistry> {
-  void _mcp
+  void _mcp;
   return new AgentToolRegistry(
-    builtIns.list().filter((tool) => input.mode === 'website' || tool.name !== 'create_website'),
-  )
+    builtIns.list().filter((tool) => {
+      if (tool.name === 'create_website') return input.mode === 'website';
+      if (tool.name === 'generate_image') return input.mode === 'image';
+      return true;
+    }),
+  );
 }

@@ -22,6 +22,7 @@ import {
   PlusIcon,
   ThumbsDownIcon,
   ThumbsUpIcon,
+  XIcon,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -522,6 +523,45 @@ export function AgentWebCreationOption({
         <span className="font-semibold">{label}</span>
       </button>
     </div>
+  );
+}
+
+export function AgentComposerModeIndicator({
+  label,
+  disabled,
+  onClear,
+}: Readonly<{
+  label: string;
+  disabled?: boolean;
+  onClear: () => void;
+}>) {
+  return (
+    <button
+      type="button"
+      aria-label={`退出${label}模式`}
+      title={`退出${label}模式`}
+      disabled={disabled}
+      onClick={onClear}
+      className={cn(
+        'group inline-flex h-8 cursor-pointer items-center gap-1.5 px-1.5 text-xs font-semibold text-[#0B84FF] transition-colors hover:text-[#0060D6] dark:text-[#64D2FF] dark:hover:text-[#8ADEFF]',
+        'disabled:cursor-not-allowed disabled:opacity-45',
+        focusRing,
+      )}
+    >
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 20 20"
+        className="size-4 shrink-0 fill-none stroke-current stroke-[1.7] group-hover:hidden group-focus-visible:hidden"
+      >
+        <rect x="3.25" y="3.5" width="13.5" height="13" rx="2.25" />
+        <path d="M3.5 7.5h13M7.5 7.5v8.75" strokeLinejoin="round" />
+      </svg>
+      <XIcon
+        aria-hidden="true"
+        className="hidden size-4 shrink-0 group-hover:block group-focus-visible:block"
+      />
+      <span>{label}</span>
+    </button>
   );
 }
 

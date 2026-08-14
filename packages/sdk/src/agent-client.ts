@@ -18,6 +18,7 @@ import type {
   CreateAgentThreadRequest,
   UpdateAgentThreadModelRequest,
   UpdateAgentThreadRequest,
+  ImageModelCapability,
   UpdateAgentMcpServerRequest,
 } from './agent-types.js';
 import { AIGatewayAuthenticationError, AIGatewayError, AIGatewayProtocolError } from './errors.js';
@@ -51,6 +52,13 @@ export interface AgentTokenAnalyticsOptions extends RequestOptions {
 }
 
 export interface AgentClient {
+  images: {
+    models(options?: RequestOptions): Promise<{ enabled: boolean; models: ImageModelCapability[] }>;
+    save(
+      imageId: string,
+      options?: RequestOptions,
+    ): Promise<{ creationId: string; assetId: string | null; saved: true }>;
+  };
   files: {
     upload(
       threadId: string,
@@ -127,6 +135,24 @@ export function createAgentClient(
 ): AgentClient {
   const directUpload = options.skillUploadTransport ?? createBrowserSkillUploadTransport();
   return {
+    images: {
+      models: (requestOptions) =>
+        requestJson(
+          fetchImplementation,
+          'GET',
+          `${baseUrl}/api/v1/agent/images/models`,
+          undefined,
+          requestOptions,
+        ),
+      save: (imageId, requestOptions) =>
+        requestJson(
+          fetchImplementation,
+          'POST',
+          `${baseUrl}/api/v1/agent/images/${encodeURIComponent(imageId)}/save`,
+          undefined,
+          requestOptions,
+        ),
+    },
     files: {
       upload: async (threadId, files, fileNames, options) => {
         if (files.length !== fileNames.length) {

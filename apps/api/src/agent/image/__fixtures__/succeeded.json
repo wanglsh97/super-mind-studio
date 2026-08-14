@@ -1,0 +1,21 @@
+{
+  "output": {
+    "task_id": "fixture-task-1",
+    "task_status": "SUCCEEDED",
+    "choices": [
+      {
+        "message": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "image",
+              "image": "https://dashscope-result-bj.oss-cn-beijing.aliyuncs.com/fixture.png"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "request_id": "fixture-request-1",
+  "usage": { "image_count": 1 }
+}

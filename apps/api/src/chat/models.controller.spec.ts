@@ -1,28 +1,16 @@
-import type { ChatAdapter } from '../adapters/chat-adapter'
-import type { ChatModelCatalog, ChatModelDefinition } from './chat-model-catalog'
-import { canAdvertiseAgentCapability } from './chat-model-capabilities'
-import { ChatAdapterRegistry } from '../adapters/chat-adapter.registry'
-import type { ImageAdapter } from '../image/adapters/image-adapter'
-import { ImageAdapterRegistry } from '../image/adapters/image-adapter.registry'
-import { ModelsController } from './models.controller'
-import type { ProviderHealthService } from './provider-health.service'
+import type { ChatAdapter } from '../adapters/chat-adapter';
+import type { ChatModelCatalog, ChatModelDefinition } from './chat-model-catalog';
+import { canAdvertiseAgentCapability } from './chat-model-capabilities';
+import { ChatAdapterRegistry } from '../adapters/chat-adapter.registry';
+import { ModelsController } from './models.controller';
+import type { ProviderHealthService } from './provider-health.service';
 
 function adapter(id: ChatAdapter['id']): ChatAdapter {
   return {
     id,
     resolvedModel: `${id}-model`,
     stream: jest.fn(),
-  }
-}
-
-function imageAdapter(id: ImageAdapter['id']): ImageAdapter {
-  return {
-    id,
-    resolvedModel: `${id}-image-model`,
-    submit: jest.fn(),
-    getStatus: jest.fn(),
-    download: jest.fn(),
-  }
+  };
 }
 
 describe('ModelsController', () => {
@@ -30,7 +18,7 @@ describe('ModelsController', () => {
     getStatus: jest.fn(async (provider: string) =>
       provider === 'qwen' ? ('healthy' as const) : ('unhealthy' as const),
     ),
-  } as unknown as ProviderHealthService
+  } as unknown as ProviderHealthService;
 
   it('returns only enabled public aliases with their passive health summary', async () => {
     const controller = new ModelsController(
@@ -52,8 +40,7 @@ describe('ModelsController', () => {
         ],
       } as unknown as ChatModelCatalog,
       providerHealth,
-      new ImageAdapterRegistry([imageAdapter('mock')]),
-    )
+    );
 
     await expect(controller.list()).resolves.toEqual([
       {
@@ -76,18 +63,8 @@ describe('ModelsController', () => {
         configured: true,
         health: 'unhealthy',
       },
-      {
-        id: 'mock-image',
-        alias: 'mock-image',
-        modelId: 'mock-image-model',
-        capabilities: ['image'],
-        displayName: 'Mock Image',
-        enabled: true,
-        configured: true,
-        health: 'unknown',
-      },
-    ])
-  })
+    ]);
+  });
 
   it('advertises agent for configured real providers', () => {
     const model = {
@@ -96,13 +73,13 @@ describe('ModelsController', () => {
       upstreamModelId: 'qwen3.7-plus',
       displayName: 'Qwen',
       contextWindowTokens: 1_000_000,
-    } satisfies ChatModelDefinition
+    } satisfies ChatModelDefinition;
     expect(
       canAdvertiseAgentCapability({
         modelId: model.id,
         provider: model.provider,
         providerConfigured: true,
       }),
-    ).toBe(true)
-  })
-})
+    ).toBe(true);
+  });
+});

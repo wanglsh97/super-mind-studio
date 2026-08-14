@@ -109,6 +109,13 @@ function CreationCard({ item }: { item: CreativeItem }) {
         <span className="text-xs text-ink-muted">{item.status}</span>
       </div>
       <h2 className="mt-4 line-clamp-2 font-semibold">{item.title}</h2>
+      {item.type === 'image' && item.assets?.[0]?.previewUrl ? (
+        <img
+          src={item.assets[0].previewUrl}
+          alt={item.title}
+          className="mt-4 aspect-square w-full rounded-xl bg-surface object-contain"
+        />
+      ) : null}
       <p className="mt-3 text-xs text-ink-muted">
         创建于 {new Date(item.createdAt).toLocaleString('zh-CN')}
       </p>
@@ -134,6 +141,20 @@ function CreationCard({ item }: { item: CreativeItem }) {
               查看生成对话 →
             </Link>
           ) : null}
+        </div>
+      ) : item.type === 'image' ? (
+        <div className="mt-4 flex flex-wrap gap-2">
+          {item.assets
+            ?.filter((asset) => asset.downloadUrl)
+            .map((asset) => (
+              <a
+                key={asset.id}
+                href={asset.downloadUrl}
+                className="rounded-lg border border-line px-3 py-1.5 text-xs font-semibold text-ink transition hover:border-brand/40 hover:text-brand"
+              >
+                下载图片
+              </a>
+            ))}
         </div>
       ) : null}
     </article>

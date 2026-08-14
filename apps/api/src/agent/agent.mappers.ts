@@ -8,7 +8,7 @@ import type {
   AgentThreadSandbox,
   AgentThreadSummary,
   AgentContextSummary as AgentContextSummaryDto,
-} from '@supermind/sdk'
+} from '@supermind/sdk';
 
 import type {
   AgentMessage as AgentMessageRow,
@@ -17,8 +17,8 @@ import type {
   AgentContextSummary,
   AgentRunLimitReason as PrismaLimitReason,
   AgentRunStatus as PrismaRunStatus,
-} from '../generated/prisma/client'
-import type { AgentThreadSummaryRow } from './agent-thread.repository'
+} from '../generated/prisma/client';
+import type { AgentThreadSummaryRow } from './agent-thread.repository';
 
 const RUN_STATUS_MAP: Record<PrismaRunStatus, AgentRunStatus> = {
   RUNNING: 'running',
@@ -29,7 +29,7 @@ const RUN_STATUS_MAP: Record<PrismaRunStatus, AgentRunStatus> = {
   CANCELLED: 'cancelled',
   LIMIT_REACHED: 'limit_reached',
   INTERRUPTED: 'interrupted',
-}
+};
 
 const LIMIT_REASON_MAP: Record<PrismaLimitReason, AgentRunLimitReason> = {
   MODEL_CALLS: 'model_calls',
@@ -42,13 +42,13 @@ const LIMIT_REASON_MAP: Record<PrismaLimitReason, AgentRunLimitReason> = {
   SANDBOX_OUTPUT: 'sandbox_output',
   SANDBOX_EGRESS: 'sandbox_egress',
   SANDBOX_RESOURCE: 'sandbox_resource',
-}
+};
 
 const MESSAGE_ROLE_MAP: Record<PrismaMessageRole, AgentMessageRole> = {
   USER: 'user',
   ASSISTANT: 'assistant',
   TOOL: 'tool',
-}
+};
 
 export function toThreadSummary(row: AgentThreadSummaryRow): AgentThreadSummary {
   return {
@@ -57,7 +57,7 @@ export function toThreadSummary(row: AgentThreadSummaryRow): AgentThreadSummary 
     model: row.modelId,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
-  }
+  };
 }
 
 export function toRunSummary(run: AgentRun): AgentRunSummary {
@@ -66,6 +66,7 @@ export function toRunSummary(run: AgentRun): AgentRunSummary {
     threadId: run.threadId,
     model: run.modelId,
     provider: run.provider as AgentRunSummary['provider'],
+    mode: (run.mode as AgentRunSummary['mode']) ?? null,
     status: RUN_STATUS_MAP[run.status],
     limitReason: run.limitReason ? LIMIT_REASON_MAP[run.limitReason] : null,
     usage: {
@@ -82,7 +83,7 @@ export function toRunSummary(run: AgentRun): AgentRunSummary {
     createdAt: run.createdAt.toISOString(),
     startedAt: run.startedAt ? run.startedAt.toISOString() : null,
     completedAt: run.completedAt ? run.completedAt.toISOString() : null,
-  }
+  };
 }
 
 export function toThreadSandbox(row: AgentThreadSummaryRow): AgentThreadSandbox | null {
@@ -93,7 +94,7 @@ export function toThreadSandbox(row: AgentThreadSummaryRow): AgentThreadSandbox 
     !row.sandboxExpiresAt ||
     !['creating', 'ready', 'idle', 'failed'].includes(row.sandboxStatus ?? '')
   ) {
-    return null
+    return null;
   }
   return {
     id: row.sandboxId,
@@ -101,7 +102,7 @@ export function toThreadSandbox(row: AgentThreadSummaryRow): AgentThreadSandbox 
     createdAt: row.sandboxCreatedAt.toISOString(),
     lastUsedAt: row.sandboxLastUsedAt.toISOString(),
     expiresAt: row.sandboxExpiresAt.toISOString(),
-  }
+  };
 }
 
 export function toMessage(row: AgentMessageRow): AgentMessage {
@@ -110,7 +111,7 @@ export function toMessage(row: AgentMessageRow): AgentMessage {
     role: MESSAGE_ROLE_MAP[row.role],
     parts: (row.parts as unknown as AgentMessagePart[]) ?? [],
     createdAt: row.createdAt.toISOString(),
-  }
+  };
 }
 
 export function toContextSummary(row: AgentContextSummary): AgentContextSummaryDto {
@@ -125,5 +126,5 @@ export function toContextSummary(row: AgentContextSummary): AgentContextSummaryD
     outputTokens: row.outputTokens,
     totalTokens: row.totalTokens,
     updatedAt: row.updatedAt.toISOString(),
-  }
+  };
 }

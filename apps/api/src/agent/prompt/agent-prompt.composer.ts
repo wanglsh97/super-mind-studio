@@ -1,29 +1,36 @@
-import { createHash } from 'node:crypto'
+import { createHash } from 'node:crypto';
 
-import { Inject, Injectable } from '@nestjs/common'
+import { Inject, Injectable } from '@nestjs/common';
 
-import { AGENT_MCP_REGISTRY, type AgentMcpRegistry } from '../mcp/agent-mcp.registry'
-import { AGENT_MEMORY_PROVIDER, type AgentMemoryProvider } from '../memory/agent-memory.provider'
-import { AGENT_SKILL_REGISTRY, type AgentSkillRegistry } from '../skills/agent-skill.registry'
-import type { AgentToolDefinition } from '../tools/agent-tool'
-import { AgentToolRegistry } from '../tools/agent-tool.registry'
+import { AGENT_MCP_REGISTRY, type AgentMcpRegistry } from '../mcp/agent-mcp.registry';
+import { AGENT_MEMORY_PROVIDER, type AgentMemoryProvider } from '../memory/agent-memory.provider';
+import { AGENT_SKILL_REGISTRY, type AgentSkillRegistry } from '../skills/agent-skill.registry';
+import type { AgentToolDefinition } from '../tools/agent-tool';
+import { AgentToolRegistry } from '../tools/agent-tool.registry';
 import {
   loadWebsiteBuildingSkill,
   renderWebsiteBuildingSkill,
   WEBSITE_BUILDING_SKILL,
   type WebsiteBuildingSkill,
-} from '../skills/builtin/website-building.skill'
+} from '../skills/builtin/website-building.skill';
 import {
   DOCUMENT_ANALYSIS_SKILL,
   loadDocumentAnalysisSkill,
   renderDocumentAnalysisSkill,
   type DocumentAnalysisSkill,
-} from '../skills/builtin/document-analysis.skill'
+} from '../skills/builtin/document-analysis.skill';
+import {
+  GEN_IMAGE_SKILL,
+  loadGenImageSkill,
+  renderGenImageSkill,
+  type GenImageSkill,
+} from '../skills/builtin/gen-image.skill';
+import { ImageModelCatalog } from '../image/image-model.catalog';
 
-export const AGENT_PROMPT_PROFILE_VERSION = 'web-agent-v5'
-export const MAX_PROMPT_CANDIDATE_SKILLS = 50
-export const MAX_PROMPT_CANDIDATE_DESCRIPTION_CHARS = 400
-export const MAX_PROMPT_CANDIDATE_DIRECTORY_CHARS = 24_000
+export const AGENT_PROMPT_PROFILE_VERSION = 'web-agent-v5';
+export const MAX_PROMPT_CANDIDATE_SKILLS = 50;
+export const MAX_PROMPT_CANDIDATE_DESCRIPTION_CHARS = 400;
+export const MAX_PROMPT_CANDIDATE_DIRECTORY_CHARS = 24_000;
 
 const COMPONENT_VERSIONS = Object.freeze({
   identity: '2',
@@ -33,23 +40,23 @@ const COMPONENT_VERSIONS = Object.freeze({
   runtimeContext: '1',
   capabilities: '2',
   responseContract: '2',
-})
+});
 
 export interface AgentPromptManifest {
-  profileVersion: string
-  promptHash: string
-  componentVersions: Readonly<Record<string, string>>
-  toolNames: readonly string[]
-  candidateSkillIds: readonly string[]
-  memoryIds: readonly string[]
-  mcpServerIds: readonly string[]
-  summaryId: string | null
-  contextWindowTokens: number
+  profileVersion: string;
+  promptHash: string;
+  componentVersions: Readonly<Record<string, string>>;
+  toolNames: readonly string[];
+  candidateSkillIds: readonly string[];
+  memoryIds: readonly string[];
+  mcpServerIds: readonly string[];
+  summaryId: string | null;
+  contextWindowTokens: number;
 }
 
 export interface ComposedAgentPrompt {
-  systemPrompt: string
-  manifest: AgentPromptManifest
+  systemPrompt: string;
+  manifest: AgentPromptManifest;
 }
 
 @Injectable()
@@ -63,50 +70,53 @@ export class AgentPromptComposer {
     private readonly websiteSkill: WebsiteBuildingSkill = loadWebsiteBuildingSkill(),
     @Inject(DOCUMENT_ANALYSIS_SKILL)
     private readonly documentSkill: DocumentAnalysisSkill = loadDocumentAnalysisSkill(),
+    @Inject(GEN_IMAGE_SKILL)
+    private readonly genImageSkill: GenImageSkill = loadGenImageSkill(),
+    @Inject(ImageModelCatalog) private readonly imageModels?: ImageModelCatalog,
   ) {}
 
   async compose(input: {
-    userId: string
-    threadId: string
-    modelId: string
-    provider: string
-    contextWindowTokens: number
-    mode?: 'website' | 'document'
-    summaryId?: string | null
-    now?: Date
-    tools?: readonly AgentToolDefinition[]
+    userId: string;
+    threadId: string;
+    modelId: string;
+    provider: string;
+    contextWindowTokens: number;
+    mode?: 'website' | 'document' | 'image';
+    summaryId?: string | null;
+    now?: Date;
+    tools?: readonly AgentToolDefinition[];
     mcpServers?: readonly {
-      id: string
-      name: string
-      description: string
-    }[]
+      id: string;
+      name: string;
+      description: string;
+    }[];
   }): Promise<ComposedAgentPrompt> {
-    const tools = input.tools ?? this.tools.list()
+    const tools = input.tools ?? this.tools.list();
     const skills = (await this.skills.listCandidates(input.userId)).slice(
       0,
       MAX_PROMPT_CANDIDATE_SKILLS,
-    )
-    const mcpServers = input.mcpServers ?? (await this.mcp.listServers(input.userId))
-    const memories = await this.memory.recall({ userId: input.userId, threadId: input.threadId })
-    const now = input.now ?? new Date()
+    );
+    const mcpServers = input.mcpServers ?? (await this.mcp.listServers(input.userId));
+    const memories = await this.memory.recall({ userId: input.userId, threadId: input.threadId });
+    const now = input.now ?? new Date();
     const toolDirectory = renderLines(
       tools.map(
         (tool) =>
           `- ${escapeText(tool.name)} [risk=${tool.riskLevel}, approval=${tool.approvalPolicy}]: ${escapeText(tool.description)} (arguments and permissions are governed by the server-side tool schema)`,
       ),
-    )
+    );
     const memoryDirectory = renderLines(
       memories.map(
         (entry) =>
           `<memory id="${escapeAttribute(entry.id)}" kind="${entry.kind}" scope="${entry.scope}">${escapeText(entry.content)}</memory>`,
       ),
-    )
+    );
     const mcpDirectory = renderLines(
       mcpServers.map(
         (server) =>
           `- ${escapeText(server.id)}｜${escapeText(server.name)}｜${escapeText(truncateCharacters(server.description, 120))}｜tools on demand`,
       ),
-    )
+    );
 
     const systemPrompt = renderPromptSections(
       section(
@@ -139,6 +149,13 @@ Stop calling tools and answer once you have enough information. Ask the user onl
             'website_generation_profile',
             `Website mode is active. Follow the immutable built-in Skill below as platform execution policy.
 ${renderWebsiteBuildingSkill(this.websiteSkill)}`,
+          )
+        : '',
+      input.mode === 'image'
+        ? section(
+            'image_generation_profile',
+            `Image generation mode is active. Follow the immutable built-in Skill below as platform execution policy.
+${renderGenImageSkill(this.genImageSkill, renderImageCapabilities(this.imageModels))}`,
           )
         : '',
       section(
@@ -192,8 +209,8 @@ ${mcpDirectory}`,
 When using external material, provide clickable sources and distinguish verified facts, tool output, reasonable inference, and unknown information.
 Do not reveal or fabricate hidden reasoning. You may briefly state the evidence, actions performed, and verification results.`,
       ),
-    )
-    const promptHash = createHash('sha256').update(systemPrompt).digest('hex')
+    );
+    const promptHash = createHash('sha256').update(systemPrompt).digest('hex');
 
     return {
       systemPrompt,
@@ -208,60 +225,71 @@ Do not reveal or fabricate hidden reasoning. You may briefly state the evidence,
         summaryId: input.summaryId ?? null,
         contextWindowTokens: input.contextWindowTokens,
       },
-    }
+    };
   }
 }
 
 function renderCandidateDirectory(
   skills: readonly { id: string; name: string; description: string }[],
 ): string {
-  let directory = ''
-  let remaining = MAX_PROMPT_CANDIDATE_DIRECTORY_CHARS
+  let directory = '';
+  let remaining = MAX_PROMPT_CANDIDATE_DIRECTORY_CHARS;
   for (const skill of skills) {
-    const prefix = `<skill_candidate id="${escapeAttribute(skill.id)}" name="${escapeAttribute(skill.name)}">`
-    const suffix = '</skill_candidate>'
+    const prefix = `<skill_candidate id="${escapeAttribute(skill.id)}" name="${escapeAttribute(skill.name)}">`;
+    const suffix = '</skill_candidate>';
     const description = escapeText(
       truncateCharacters(skill.description, MAX_PROMPT_CANDIDATE_DESCRIPTION_CHARS),
-    )
-    const available = remaining - prefix.length - suffix.length - 1
-    if (available < 0) break
-    const entry = `${prefix}${truncateCharacters(description, available)}${suffix}`
-    directory = `${directory}${directory ? '\n' : ''}${entry}`
-    remaining -= entry.length + 1
+    );
+    const available = remaining - prefix.length - suffix.length - 1;
+    if (available < 0) break;
+    const entry = `${prefix}${truncateCharacters(description, available)}${suffix}`;
+    directory = `${directory}${directory ? '\n' : ''}${entry}`;
+    remaining -= entry.length + 1;
   }
-  return directory
+  return directory;
 }
 
 function renderPromptSections(...sections: string[]): string {
   return sections.reduce(
     (prompt, current) => (current ? `${prompt}${prompt ? '\n\n' : ''}${current}` : prompt),
     '',
-  )
+  );
 }
 
 function renderLines(lines: readonly string[]): string {
-  return lines.reduce((content, line) => `${content}${content ? '\n' : ''}${line}`, '')
+  return lines.reduce((content, line) => `${content}${content ? '\n' : ''}${line}`, '');
 }
 
 function section(name: string, content: string): string {
-  return `<${name}>\n${content}\n</${name}>`
+  return `<${name}>\n${content}\n</${name}>`;
 }
 
 function escapeAttribute(value: string): string {
-  return escapeText(value).replaceAll('"', '&quot;').replaceAll("'", '&#39;')
+  return escapeText(value).replaceAll('"', '&quot;').replaceAll("'", '&#39;');
 }
 
 function escapeText(value: string): string {
-  return value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+  return value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
 }
 
 function truncateCharacters(value: string, limit: number): string {
-  let truncated = ''
-  let count = 0
+  let truncated = '';
+  let count = 0;
   for (const character of value) {
-    if (count >= Math.max(0, limit)) break
-    truncated = `${truncated}${character}`
-    count += 1
+    if (count >= Math.max(0, limit)) break;
+    truncated = `${truncated}${character}`;
+    count += 1;
   }
-  return truncated
+  return truncated;
+}
+
+function renderImageCapabilities(catalog: ImageModelCatalog | undefined): string {
+  const models = catalog?.capabilities() ?? [];
+  if (models.length === 0) return '当前没有已启用的图片模型；不要调用 generate_image。';
+  return renderLines(
+    models.map(
+      (model) =>
+        `- ${model.id}｜${model.name}｜比例=${model.aspectRatios.join(',')}｜质量=${model.qualities.join(',')}｜水印=${model.supportsWatermark ? '可调' : '不支持'}｜参考图=${model.supportsReferenceImage ? '支持' : '不支持'}`,
+    ),
+  );
 }

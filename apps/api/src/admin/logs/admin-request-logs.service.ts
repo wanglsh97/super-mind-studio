@@ -1,38 +1,38 @@
-import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common'
+import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 
-import { PrismaService } from '../../database/prisma.service'
-import { RequestCapability, RequestStatus } from '../../generated/prisma/client'
-import type { Prisma } from '../../generated/prisma/client'
-import type { RequestLogQueryDto } from './dto/request-log-query.dto'
-import { serializeAdminRows, serializeAdminValue } from '../admin-serialize'
+import { PrismaService } from '../../database/prisma.service';
+import { RequestCapability, RequestStatus } from '../../generated/prisma/client';
+import type { Prisma } from '../../generated/prisma/client';
+import type { RequestLogQueryDto } from './dto/request-log-query.dto';
+import { serializeAdminRows, serializeAdminValue } from '../admin-serialize';
 
 const CAPABILITY = {
   chat: RequestCapability.CHAT,
   image: RequestCapability.IMAGE,
   prompt: RequestCapability.PROMPT,
-} as const
+} as const;
 
 const STATUS = {
   pending: RequestStatus.PENDING,
   succeeded: RequestStatus.SUCCEEDED,
   failed: RequestStatus.FAILED,
   cancelled: RequestStatus.CANCELLED,
-} as const
+} as const;
 
 @Injectable()
 export class AdminRequestLogsService {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
   async list(query: RequestLogQueryDto) {
-    return this.listRows(query)
+    return this.listRows(query);
   }
 
   private async listRows(query: RequestLogQueryDto) {
-    const page = Number(query.page ?? 1)
-    const pageSize = Number(query.pageSize ?? 20)
-    const from = query.from === undefined ? undefined : new Date(query.from)
-    const to = query.to === undefined ? undefined : new Date(query.to)
-    if (from && to && from > to) throw new BadRequestException('开始时间不能晚于结束时间')
+    const page = Number(query.page ?? 1);
+    const pageSize = Number(query.pageSize ?? 20);
+    const from = query.from === undefined ? undefined : new Date(query.from);
+    const to = query.to === undefined ? undefined : new Date(query.to);
+    if (from && to && from > to) throw new BadRequestException('开始时间不能晚于结束时间');
 
     const where: Prisma.RequestLogWhereInput = {
       ...(from || to
@@ -69,7 +69,7 @@ export class AdminRequestLogsService {
               },
             },
           }),
-    }
+    };
     const [total, items] = await Promise.all([
       this.prisma.requestLog.count({ where }),
       this.prisma.requestLog.findMany({
@@ -108,14 +108,14 @@ export class AdminRequestLogsService {
           },
         },
       }),
-    ])
+    ]);
     return {
       items: serializeAdminRows(items),
       page,
       pageSize,
       total,
       pageCount: Math.ceil(total / pageSize),
-    }
+    };
   }
 
   async detail(requestId: string) {
@@ -178,14 +178,20 @@ export class AdminRequestLogsService {
             taskId: true,
             providerTaskId: true,
             status: true,
+            effectivePrompt: true,
+            modelAlias: true,
+            resolvedModel: true,
+            options: true,
+            imageId: true,
+            sandboxExpiresAt: true,
             results: true,
             errorCode: true,
             errorMessage: true,
           },
         },
       },
-    })
-    if (!detail) throw new NotFoundException('请求日志不存在')
-    return serializeAdminValue(detail)
+    });
+    if (!detail) throw new NotFoundException('请求日志不存在');
+    return serializeAdminValue(detail);
   }
 }

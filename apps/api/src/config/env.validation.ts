@@ -1,35 +1,35 @@
-import { z } from 'zod'
+import { z } from 'zod';
 
-import { assertAgentMcpEnvironment, parseAgentMcpServersJson } from '../agent/mcp/agent-mcp.config'
+import { assertAgentMcpEnvironment, parseAgentMcpServersJson } from '../agent/mcp/agent-mcp.config';
 
 const booleanFromEnv = z.preprocess((value) => {
-  if (typeof value !== 'string') return value
-  if (value.toLowerCase() === 'true') return true
-  if (value.toLowerCase() === 'false') return false
-  return value
-}, z.boolean())
+  if (typeof value !== 'string') return value;
+  if (value.toLowerCase() === 'true') return true;
+  if (value.toLowerCase() === 'false') return false;
+  return value;
+}, z.boolean());
 
 const optionalSecret = z.preprocess(
   (value) => (value === '' ? undefined : value),
   z.string().min(1).optional(),
-)
+);
 
 const adminSessionSecret = z.preprocess(
   (value) =>
     value === undefined || value === '' ? 'development-only-admin-session-secret-change-me' : value,
   z.string().min(32),
-)
+);
 
 const userSessionSecret = z.preprocess(
   (value) =>
     value === undefined || value === '' ? 'development-only-user-session-secret-change-me' : value,
   z.string().min(32),
-)
+);
 
 const optionalTextModelAlias = z.preprocess(
   (value) => (value === '' ? undefined : value),
   z.enum(['qwen', 'glm', 'deepseek', 'kimi']).optional(),
-)
+);
 
 const optionalNonNegativeDecimal = z.preprocess(
   (value) => (value === '' ? undefined : value),
@@ -37,7 +37,7 @@ const optionalNonNegativeDecimal = z.preprocess(
     .string()
     .regex(/^\d+(?:\.\d+)?$/)
     .optional(),
-)
+);
 
 const environmentSchema = z
   .object({
@@ -66,13 +66,26 @@ const environmentSchema = z
     LANGSMITH_EVAL_LIVE: booleanFromEnv.default(false),
     LANGSMITH_EVAL_MODEL: z.string().min(1).default('kimi'),
     LANGSMITH_EVAL_JUDGE_MODEL: z.string().min(1).default('kimi'),
-    LANGSMITH_EVAL_GENERAL_DATASET: z.string().min(1).default('super-mind-studio-web-agent-eval-v1'),
+    LANGSMITH_EVAL_GENERAL_DATASET: z
+      .string()
+      .min(1)
+      .default('super-mind-studio-web-agent-eval-v1'),
     LANGSMITH_EVAL_WEBSITE_DATASET: z
       .string()
       .min(1)
       .default('super-mind-studio-website-agent-eval-v1'),
-    LANGSMITH_EVAL_GENERAL_TIMEOUT_MS: z.coerce.number().int().min(1_000).max(3_600_000).default(180_000),
-    LANGSMITH_EVAL_WEBSITE_TIMEOUT_MS: z.coerce.number().int().min(1_000).max(3_600_000).default(600_000),
+    LANGSMITH_EVAL_GENERAL_TIMEOUT_MS: z.coerce
+      .number()
+      .int()
+      .min(1_000)
+      .max(3_600_000)
+      .default(180_000),
+    LANGSMITH_EVAL_WEBSITE_TIMEOUT_MS: z.coerce
+      .number()
+      .int()
+      .min(1_000)
+      .max(3_600_000)
+      .default(600_000),
     DATABASE_URL: z.string().min(1, 'DATABASE_URL 必填'),
     DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(50).default(10),
     REDIS_URL: z.string().min(1, 'REDIS_URL 必填'),
@@ -108,7 +121,7 @@ const environmentSchema = z
     OSS_TIMEOUT_MS: z.coerce.number().int().min(1_000).max(120_000).default(30_000),
     SKILL_UPLOAD_TTL_SECONDS: z.coerce.number().int().min(60).max(900).default(300),
     SKILL_STAGING_CLEANUP_BATCH: z.coerce.number().int().min(1).max(500).default(100),
-    SANDBOX_TIMEOUT_SECONDS: z.coerce.number().int().min(60).max(86_400).default(3_600),
+    SANDBOX_TIMEOUT_SECONDS: z.coerce.number().int().min(60).max(86_400).default(10_800),
     OPEN_SANDBOX_DOMAIN: z.string().min(1, 'OPEN_SANDBOX_DOMAIN 必填'),
     OPEN_SANDBOX_PROTOCOL: z.enum(['http', 'https']).default('http'),
     OPEN_SANDBOX_API_KEY: z.string().min(1, 'OPEN_SANDBOX_API_KEY 必填'),
@@ -138,13 +151,13 @@ const environmentSchema = z
       .default(30_000),
     AGENT_MCP_SERVERS_JSON: z.preprocess((value, context) => {
       try {
-        return parseAgentMcpServersJson(value)
+        return parseAgentMcpServersJson(value);
       } catch (error) {
         context.addIssue({
           code: 'custom',
           message: error instanceof Error ? error.message : 'MCP Server 配置无效',
-        })
-        return z.NEVER
+        });
+        return z.NEVER;
       }
     }, z.array(z.unknown()).default([])),
     AGENT_MCP_DISCOVERY_TIMEOUT_MS: z.coerce.number().int().min(1_000).max(60_000).default(10_000),
@@ -181,13 +194,11 @@ const environmentSchema = z
     KIMI_FALLBACK_ALIAS: optionalTextModelAlias,
     PROMPT_OPTIMIZER_MODEL: z.enum(['qwen', 'glm', 'deepseek']).default('qwen'),
     CHAT_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().positive().default(10),
-    IMAGE_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().positive().default(5),
-    IMAGE_DOWNLOAD_MAX_BYTES: z.coerce
-      .number()
-      .int()
-      .min(1_024)
-      .max(50_000_000)
-      .default(10_000_000),
+    BAILIAN_IMAGE_API_KEY: optionalSecret,
+    BAILIAN_IMAGE_BASE_URL: z.preprocess(
+      (value) => (value === '' ? undefined : value),
+      z.string().url().optional(),
+    ),
     ADMIN_LOGIN_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().positive().default(5),
     ADMIN_FIXED_CREDENTIALS_ENABLED: booleanFromEnv.default(true),
     ADMIN_SESSION_SECRET: adminSessionSecret,
@@ -209,12 +220,19 @@ const environmentSchema = z
   })
   .passthrough()
   .superRefine((env, context) => {
+    if (Boolean(env.BAILIAN_IMAGE_API_KEY) !== Boolean(env.BAILIAN_IMAGE_BASE_URL)) {
+      context.addIssue({
+        code: 'custom',
+        path: [env.BAILIAN_IMAGE_API_KEY ? 'BAILIAN_IMAGE_BASE_URL' : 'BAILIAN_IMAGE_API_KEY'],
+        message: '百炼图像生成的 Base URL 与 API Key 必须同时配置',
+      });
+    }
     if (env.USER_SESSION_TTL_SECONDS !== 2_592_000) {
       context.addIssue({
         code: 'custom',
         path: ['USER_SESSION_TTL_SECONDS'],
         message: '用户 Session 必须使用固定 30 天有效期（2592000 秒）',
-      })
+      });
     }
     if (env.SKILL_OBJECT_STORE_DRIVER === 'oss') {
       for (const key of [
@@ -228,7 +246,7 @@ const environmentSchema = z
             code: 'custom',
             path: [key],
             message: `使用 OSS 对象存储时必须配置 ${key}`,
-          })
+          });
         }
       }
     }
@@ -238,14 +256,14 @@ const environmentSchema = z
           code: 'custom',
           path: ['GITHUB_CLIENT_ID'],
           message: '启用 GitHub OAuth 时必须配置 Client ID',
-        })
+        });
       }
       if (!env.GITHUB_CLIENT_SECRET) {
         context.addIssue({
           code: 'custom',
           path: ['GITHUB_CLIENT_SECRET'],
           message: '启用 GitHub OAuth 时必须配置 Client Secret',
-        })
+        });
       }
     }
     if (env.GOOGLE_OAUTH_ENABLED) {
@@ -254,14 +272,14 @@ const environmentSchema = z
           code: 'custom',
           path: ['GOOGLE_CLIENT_ID'],
           message: '启用 Google OAuth 时必须配置 Client ID',
-        })
+        });
       }
       if (!env.GOOGLE_CLIENT_SECRET) {
         context.addIssue({
           code: 'custom',
           path: ['GOOGLE_CLIENT_SECRET'],
           message: '启用 Google OAuth 时必须配置 Client Secret',
-        })
+        });
       }
     }
     if (
@@ -272,7 +290,7 @@ const environmentSchema = z
         code: 'custom',
         path: ['USER_SESSION_SECRET'],
         message: '生产环境必须配置独立的用户会话密钥',
-      })
+      });
     }
     if (
       env.NODE_ENV === 'production' &&
@@ -283,7 +301,7 @@ const environmentSchema = z
         code: 'custom',
         path: ['GITHUB_CALLBACK_URL'],
         message: '生产环境 GitHub callback 必须使用 HTTPS',
-      })
+      });
     }
     if (
       env.NODE_ENV === 'production' &&
@@ -294,7 +312,7 @@ const environmentSchema = z
         code: 'custom',
         path: ['GOOGLE_CALLBACK_URL'],
         message: '生产环境 Google callback 必须使用 HTTPS',
-      })
+      });
     }
     if (
       env.NODE_ENV === 'production' &&
@@ -304,7 +322,7 @@ const environmentSchema = z
         code: 'custom',
         path: ['ADMIN_SESSION_SECRET'],
         message: '生产环境必须配置独立的管理员会话密钥',
-      })
+      });
     }
     const providers = [
       { name: 'QWEN', enabled: env.QWEN_ENABLED, key: env.QWEN_API_KEY },
@@ -315,16 +333,16 @@ const environmentSchema = z
         key: env.DEEPSEEK_API_KEY,
       },
       { name: 'KIMI', enabled: env.KIMI_ENABLED, key: env.KIMI_API_KEY },
-    ]
+    ];
 
     for (const provider of providers) {
-      if (!provider.enabled) continue
+      if (!provider.enabled) continue;
       if (!provider.key) {
         context.addIssue({
           code: 'custom',
           path: [`${provider.name}_API_KEY`],
           message: `${provider.name} 启用时必须配置 API Key`,
-        })
+        });
       }
     }
 
@@ -333,22 +351,22 @@ const environmentSchema = z
       { alias: 'glm', fallback: env.GLM_FALLBACK_ALIAS },
       { alias: 'deepseek', fallback: env.DEEPSEEK_FALLBACK_ALIAS },
       { alias: 'kimi', fallback: env.KIMI_FALLBACK_ALIAS },
-    ]
+    ];
     for (const { alias, fallback } of fallbacks) {
       if (fallback === alias) {
         context.addIssue({
           code: 'custom',
           path: [`${alias.toUpperCase()}_FALLBACK_ALIAS`],
           message: 'fallback alias 不能与主模型 alias 相同',
-        })
+        });
       }
     }
-  })
+  });
 
-export type Environment = z.infer<typeof environmentSchema>
+export type Environment = z.infer<typeof environmentSchema>;
 
 export function validateEnvironment(input: Record<string, unknown>): Environment {
-  const result = environmentSchema.safeParse(input)
+  const result = environmentSchema.safeParse(input);
 
   if (result.success) {
     try {
@@ -356,16 +374,16 @@ export function validateEnvironment(input: Record<string, unknown>): Environment
         result.data.AGENT_MCP_SERVERS_JSON as ReturnType<typeof parseAgentMcpServersJson>,
         { ...process.env, ...input },
         result.data.NODE_ENV,
-      )
+      );
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'MCP Server 配置无效'
-      throw new Error(`环境变量校验失败：AGENT_MCP_SERVERS_JSON: ${message}`)
+      const message = error instanceof Error ? error.message : 'MCP Server 配置无效';
+      throw new Error(`环境变量校验失败：AGENT_MCP_SERVERS_JSON: ${message}`);
     }
-    return result.data
+    return result.data;
   }
 
   const reasons = result.error.issues
     .map((issue) => `${issue.path.join('.') || 'environment'}: ${issue.message}`)
-    .join('; ')
-  throw new Error(`环境变量校验失败：${reasons}`)
+    .join('; ');
+  throw new Error(`环境变量校验失败：${reasons}`);
 }

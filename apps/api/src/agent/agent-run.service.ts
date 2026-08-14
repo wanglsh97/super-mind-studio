@@ -1,67 +1,67 @@
-import { randomUUID } from 'node:crypto'
+import { randomUUID } from 'node:crypto';
 
 import type {
   AgentExecutionError,
   AgentRunTerminalStatus,
   AgentThinkingEffort,
-} from '@supermind/sdk'
-import { Inject, Injectable, Logger } from '@nestjs/common'
+} from '@supermind/sdk';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 
-import type { Message, Usage as PiUsage } from '@earendil-works/pi-ai'
-import type { AgentEvent } from '@earendil-works/pi-agent-core'
+import type { Message, Usage as PiUsage } from '@earendil-works/pi-ai';
+import type { AgentEvent } from '@earendil-works/pi-agent-core';
 
-import type { AgentRunStatus } from '../generated/prisma/client'
-import { MODEL_INVOCATION_PORT } from '../chat/model-invocation.port'
-import type { ModelInvocationPort } from '../chat/model-invocation.port'
-import { PricingService } from '../billing/pricing.service'
-import { RequestLifecycleService } from '../request-lifecycle/request-lifecycle.service'
-import { TelemetryService } from '../observability/telemetry.service'
-import { createAgentModelInvocationPort } from './agent-model-invocation'
-import { AgentModelInvocationRepository } from './agent-model-invocation.repository'
-import { AgentActiveRunLock } from './agent-active-run.lock'
-import { AgentContextPreparer } from './context/agent-context-preparer'
-import { compressAgentContext } from './context/agent-context-compressor'
-import { AgentContextSummaryRepository } from './context/agent-context-summary.repository'
+import type { AgentRunStatus } from '../generated/prisma/client';
+import { MODEL_INVOCATION_PORT } from '../chat/model-invocation.port';
+import type { ModelInvocationPort } from '../chat/model-invocation.port';
+import { PricingService } from '../billing/pricing.service';
+import { RequestLifecycleService } from '../request-lifecycle/request-lifecycle.service';
+import { TelemetryService } from '../observability/telemetry.service';
+import { createAgentModelInvocationPort } from './agent-model-invocation';
+import { AgentModelInvocationRepository } from './agent-model-invocation.repository';
+import { AgentActiveRunLock } from './agent-active-run.lock';
+import { AgentContextPreparer } from './context/agent-context-preparer';
+import { compressAgentContext } from './context/agent-context-compressor';
+import { AgentContextSummaryRepository } from './context/agent-context-summary.repository';
 import {
   AgentContextCompressionFailedError,
   AgentContextSummaryService,
-} from './context/agent-context-summary.service'
-import type { AgentContextSummaryV1 } from './context/agent-context-summary.schema'
+} from './context/agent-context-summary.service';
+import type { AgentContextSummaryV1 } from './context/agent-context-summary.schema';
 import {
   assembleAgentHistory,
   persistedMessageToAdapter,
   selectMessagesForForcedSummary,
-} from './context/agent-history-context'
-import { AgentMessageRepository } from './agent-message.repository'
-import { createAgentRunToolRegistry } from './agent-run-tools'
-import { AGENT_MCP_REGISTRY, type AgentMcpRegistry } from './mcp/agent-mcp.registry'
-import { AgentRunEventBus } from './agent-run-event-bus'
-import { AgentRunProjector } from './agent-run.projector'
-import { AgentRunQuestionEventBridge } from './agent-run-question-event-bridge'
-import { AgentRunRepository } from './agent-run.repository'
-import { AgentPromptComposer } from './prompt/agent-prompt.composer'
-import { prepareAgentInput } from './uploaded-files-input'
-import { AgentExecutionSessionService } from './sandbox/agent-execution-session.service'
-import type { ActivatedSkill } from './skills/executable-skill.service'
-import { renderSkillContentPrompt } from './skills/skill-content-prompt'
-import { AgentToolRegistry } from './tools/agent-tool.registry'
-import { loadPiAgentCore } from './pi-runtime'
-import { createPiModel, createPiStreamFn } from './pi-stream-bridge'
-import { toPiAgentTool } from './pi-tool.adapter'
+} from './context/agent-history-context';
+import { AgentMessageRepository } from './agent-message.repository';
+import { createAgentRunToolRegistry } from './agent-run-tools';
+import { AGENT_MCP_REGISTRY, type AgentMcpRegistry } from './mcp/agent-mcp.registry';
+import { AgentRunEventBus } from './agent-run-event-bus';
+import { AgentRunProjector } from './agent-run.projector';
+import { AgentRunQuestionEventBridge } from './agent-run-question-event-bridge';
+import { AgentRunRepository } from './agent-run.repository';
+import { AgentPromptComposer } from './prompt/agent-prompt.composer';
+import { prepareAgentInput } from './uploaded-files-input';
+import { AgentExecutionSessionService } from './sandbox/agent-execution-session.service';
+import type { ActivatedSkill } from './skills/executable-skill.service';
+import { renderSkillContentPrompt } from './skills/skill-content-prompt';
+import { AgentToolRegistry } from './tools/agent-tool.registry';
+import { loadPiAgentCore } from './pi-runtime';
+import { createPiModel, createPiStreamFn } from './pi-stream-bridge';
+import { toPiAgentTool } from './pi-tool.adapter';
 
 export interface ExecuteAgentRunInput {
-  runId: string
-  threadId: string
-  userId: string
-  modelId: string
-  provider: string
-  contextWindowTokens: number
-  input: string
-  mode?: 'website' | 'document'
-  thinkingEffort: AgentThinkingEffort
-  selectedSkillNames: readonly string[]
+  runId: string;
+  threadId: string;
+  userId: string;
+  modelId: string;
+  provider: string;
+  contextWindowTokens: number;
+  input: string;
+  mode?: 'website' | 'document' | 'image';
+  thinkingEffort: AgentThinkingEffort;
+  selectedSkillNames: readonly string[];
   /** createRun 持有的用户级 Redis 锁 token，终态 finally 中释放。 */
-  activeRunLockToken: string
+  activeRunLockToken: string;
 }
 
 const TERMINAL_STATUS_MAP: Record<AgentRunTerminalStatus, AgentRunStatus> = {
@@ -70,10 +70,10 @@ const TERMINAL_STATUS_MAP: Record<AgentRunTerminalStatus, AgentRunStatus> = {
   cancelled: 'CANCELLED',
   limit_reached: 'LIMIT_REACHED',
   interrupted: 'INTERRUPTED',
-}
+};
 
 interface ActiveRun {
-  controller: AbortController
+  controller: AbortController;
 }
 
 /**
@@ -85,8 +85,8 @@ interface ActiveRun {
  */
 @Injectable()
 export class AgentRunService {
-  private readonly logger = new Logger(AgentRunService.name)
-  private readonly activeRuns = new Map<string, ActiveRun>()
+  private readonly logger = new Logger(AgentRunService.name);
+  private readonly activeRuns = new Map<string, ActiveRun>();
 
   constructor(
     @Inject(AgentRunRepository) private readonly runs: AgentRunRepository,
@@ -114,11 +114,11 @@ export class AgentRunService {
   ) {}
 
   isRunning(runId: string): boolean {
-    return this.activeRuns.has(runId)
+    return this.activeRuns.has(runId);
   }
 
   cancel(runId: string): void {
-    this.activeRuns.get(runId)?.controller.abort()
+    this.activeRuns.get(runId)?.controller.abort();
   }
 
   /**
@@ -126,78 +126,78 @@ export class AgentRunService {
    * 该方法在进程内异步执行，浏览器断线不影响其完成。
    */
   async execute(input: ExecuteAgentRunInput): Promise<void> {
-    const startedAt = performance.now()
-    let status: 'succeeded' | 'failed' | 'cancelled' = 'succeeded'
+    const startedAt = performance.now();
+    let status: 'succeeded' | 'failed' | 'cancelled' = 'succeeded';
     try {
       await this.telemetry.withSpan(
         'agent.run',
         { runId: input.runId, capability: 'agent', provider: input.provider, model: input.modelId },
         () => this.executeWithinSpan(input),
-      )
+      );
     } catch (error) {
-      status = this.activeRuns.get(input.runId)?.controller.signal.aborted ? 'cancelled' : 'failed'
-      throw error
+      status = this.activeRuns.get(input.runId)?.controller.signal.aborted ? 'cancelled' : 'failed';
+      throw error;
     } finally {
       this.telemetry.recordAgentRunDuration(performance.now() - startedAt, {
         capability: 'agent',
         provider: input.provider,
         model: input.modelId,
         status,
-      })
+      });
     }
   }
 
   private async executeWithinSpan(input: ExecuteAgentRunInput): Promise<void> {
-    const controller = new AbortController()
-    this.activeRuns.set(input.runId, { controller })
-    this.bus.open(input.runId)
+    const controller = new AbortController();
+    this.activeRuns.set(input.runId, { controller });
+    this.bus.open(input.runId);
 
-    const projector = new AgentRunProjector(input.runId, () => randomUUID())
-    let persistQueue: Promise<void> = Promise.resolve()
+    const projector = new AgentRunProjector(input.runId, () => randomUUID());
+    let persistQueue: Promise<void> = Promise.resolve();
     const persistAndPublish = async (
       events: ReturnType<AgentRunProjector['ingest']>,
     ): Promise<void> => {
       const operation = persistQueue.then(async () => {
         // 必须先落库再广播：确保任何已投影到 SSE 的事件都已在 PostgreSQL 中可补读，
         // 避免订阅者在“已广播未入库”窗口做游标补读时丢失事件、产生 sequence 间隙。
-        const persistedEvents = events.filter((event) => event.type !== 'tool-progress')
-        if (persistedEvents.length > 0) await this.runs.appendEvents(input.runId, persistedEvents)
-        for (const event of events) this.bus.publish(input.runId, event)
-      })
-      persistQueue = operation
-      await operation
-    }
+        const persistedEvents = events.filter((event) => event.type !== 'tool-progress');
+        if (persistedEvents.length > 0) await this.runs.appendEvents(input.runId, persistedEvents);
+        for (const event of events) this.bus.publish(input.runId, event);
+      });
+      persistQueue = operation;
+      await operation;
+    };
     this.questionEventBridge.register(input.runId, {
       flush: () => persistQueue,
       advancePast: (sequence) => projector.advancePast(sequence),
-    })
+    });
 
     try {
-      await this.runs.markStarted(input.runId)
-      await persistAndPublish(projector.start())
-      await persistAndPublish(projector.sandboxStatus({ status: 'creating' }))
+      await this.runs.markStarted(input.runId);
+      await persistAndPublish(projector.start());
+      await persistAndPublish(projector.sandboxStatus({ status: 'creating' }));
       try {
         const sandboxId = await this.executionSessions.startRun(
           input.runId,
           input.threadId,
           input.userId,
           controller.signal,
-        )
-        await this.runs.markSandboxReady(input.runId, sandboxId)
-        await persistAndPublish(projector.sandboxStatus({ status: 'ready', sandboxId }))
+        );
+        await this.runs.markSandboxReady(input.runId, sandboxId);
+        await persistAndPublish(projector.sandboxStatus({ status: 'ready', sandboxId }));
         if (input.mode === 'website') {
           await this.executionSessions.installWebsiteBuildingSkill(
             input.runId,
             input.userId,
             controller.signal,
-          )
+          );
         }
       } catch (error) {
-        await persistAndPublish(projector.sandboxStatus({ status: 'failed' }))
-        throw error
+        await persistAndPublish(projector.sandboxStatus({ status: 'failed' }));
+        throw error;
       }
 
-      const manuallyActivated: ActivatedSkill[] = []
+      const manuallyActivated: ActivatedSkill[] = [];
       for (const skillName of [...new Set(input.selectedSkillNames)]) {
         await persistAndPublish(
           projector.skillActivation({
@@ -206,15 +206,15 @@ export class AgentRunService {
             skillId: skillName,
             skillName,
           }),
-        )
-        let activated: Awaited<ReturnType<AgentExecutionSessionService['activateSkill']>>
+        );
+        let activated: Awaited<ReturnType<AgentExecutionSessionService['activateSkill']>>;
         try {
           activated = await this.executionSessions.activateSkill(
             input.runId,
             input.userId,
             skillName,
             controller.signal,
-          )
+          );
         } catch (error) {
           await persistAndPublish(
             projector.skillActivation({
@@ -224,10 +224,10 @@ export class AgentRunService {
               skillName,
               error: normalizeExecutionError(error),
             }),
-          )
-          throw error
+          );
+          throw error;
         }
-        manuallyActivated.push(activated.skill)
+        manuallyActivated.push(activated.skill);
         await persistAndPublish(
           projector.skillActivation({
             status: 'succeeded',
@@ -236,7 +236,7 @@ export class AgentRunService {
             skillName: activated.skill.manifest.name,
             packageSha256: activated.skill.manifest.packageSha256,
           }),
-        )
+        );
       }
 
       const boundPort = createAgentModelInvocationPort(
@@ -251,17 +251,17 @@ export class AgentRunService {
           activeSkillNames: () =>
             this.executionSessions.activeSkillNames(input.runId, input.userId),
         },
-      )
+      );
 
-      const { Agent } = await loadPiAgentCore()
+      const { Agent } = await loadPiAgentCore();
       const [persistedHistory, initialSummary] = await Promise.all([
         this.messages.listForThread(input.threadId),
         this.contextSummaries.findForThread(input.threadId),
-      ])
-      let activeSummary = initialSummary
+      ]);
+      let activeSummary = initialSummary;
       const runTools = await createAgentRunToolRegistry(this.tools, this.mcp, {
         ...(input.mode === undefined ? {} : { mode: input.mode }),
-      })
+      });
       const composedPrompt = await this.promptComposer.compose({
         userId: input.userId,
         threadId: input.threadId,
@@ -272,9 +272,9 @@ export class AgentRunService {
         summaryId: activeSummary?.id ?? null,
         tools: runTools.list(),
         mcpServers: await this.mcp.listServers(input.userId),
-      })
-      await this.runs.savePromptAudit(input.runId, composedPrompt.manifest)
-      let contextLimitError: AgentContextLimitError | undefined
+      });
+      await this.runs.savePromptAudit(input.runId, composedPrompt.manifest);
+      let contextLimitError: AgentContextLimitError | undefined;
       const agent = new Agent({
         initialState: {
           systemPrompt: appendManualSkillInstructions(
@@ -311,7 +311,7 @@ export class AgentRunService {
                         coveredThroughSequence: activeSummary.coveredThroughSequence,
                       },
                     }),
-              })
+              });
               const prepared = await this.telemetry.withSpan(
                 'agent.context.prepare',
                 { runId: input.runId, capability: 'agent', model: input.modelId },
@@ -321,7 +321,7 @@ export class AgentRunService {
                     messages: assembled,
                     tools,
                   }),
-              )
+              );
               await persistAndPublish(
                 projector.contextBudget({
                   usedTokens: prepared.budget.usedTokens,
@@ -331,7 +331,7 @@ export class AgentRunService {
                   level: prepared.budget.level,
                   ...(activeSummary === null ? {} : { summaryId: activeSummary.id }),
                 }),
-              )
+              );
               if (prepared.budget.level !== 'forced') {
                 if (
                   prepared.compressionNotes.length > 0 &&
@@ -343,23 +343,23 @@ export class AgentRunService {
                       notes: prepared.compressionNotes,
                       ...(activeSummary === null ? {} : { summaryId: activeSummary.id }),
                     }),
-                  )
+                  );
                 }
-                return prepared.messages
+                return prepared.messages;
               }
 
               const candidates = selectMessagesForForcedSummary(
                 persistedHistory,
                 input.runId,
                 activeSummary?.coveredThroughSequence ?? -1,
-              )
+              );
               if (candidates.length === 0) {
-                const fallback = compressAgentContext(currentMessages, 'moderate')
+                const fallback = compressAgentContext(currentMessages, 'moderate');
                 const fallbackBudget = this.contextPreparer.prepare({
                   contextWindowTokens: input.contextWindowTokens,
                   messages: fallback.messages,
                   tools,
-                }).budget
+                }).budget;
                 if (fallbackBudget.level !== 'forced') {
                   if (fallback.changed) {
                     await persistAndPublish(
@@ -368,7 +368,7 @@ export class AgentRunService {
                         notes: fallback.notes,
                         ...(activeSummary === null ? {} : { summaryId: activeSummary.id }),
                       }),
-                    )
+                    );
                   }
                   await persistAndPublish(
                     projector.contextBudget({
@@ -379,12 +379,12 @@ export class AgentRunService {
                       level: fallbackBudget.level,
                       ...(activeSummary === null ? {} : { summaryId: activeSummary.id }),
                     }),
-                  )
-                  return fallback.messages
+                  );
+                  return fallback.messages;
                 }
-                throw new AgentContextWindowExceededError()
+                throw new AgentContextWindowExceededError();
               }
-              let generated
+              let generated;
               try {
                 generated = await this.contextSummaryService.generate({
                   port: boundPort,
@@ -401,16 +401,16 @@ export class AgentRunService {
                         previousSummary: activeSummary.content as unknown as AgentContextSummaryV1,
                       }),
                   signal: controller.signal,
-                })
+                });
               } catch (error) {
                 if (error instanceof AgentContextCompressionFailedError) {
-                  throw new AgentContextLimitError(error.code, error.message)
+                  throw new AgentContextLimitError(error.code, error.message);
                 }
-                throw error
+                throw error;
               }
-              const boundary = candidates.at(-1)?.sequence
-              if (boundary === undefined) throw new AgentContextWindowExceededError()
-              projector.addUsage(generated.usage)
+              const boundary = candidates.at(-1)?.sequence;
+              if (boundary === undefined) throw new AgentContextWindowExceededError();
+              projector.addUsage(generated.usage);
               activeSummary = await this.contextSummaries.saveValid({
                 threadId: input.threadId,
                 coveredThroughSequence: boundary,
@@ -421,7 +421,7 @@ export class AgentRunService {
                 inputTokens: generated.usage.inputTokens,
                 outputTokens: generated.usage.outputTokens,
                 totalTokens: generated.usage.totalTokens,
-              })
+              });
               await persistAndPublish(
                 projector.contextCompressed({
                   level: 'forced',
@@ -430,7 +430,7 @@ export class AgentRunService {
                   revision: activeSummary.revision,
                   coveredThroughSequence: boundary,
                 }),
-              )
+              );
               const afterSummary = assembleAgentHistory({
                 persistedMessages: persistedHistory,
                 currentRunId: input.runId,
@@ -440,13 +440,13 @@ export class AgentRunService {
                   content: generated.content,
                   coveredThroughSequence: boundary,
                 },
-              })
+              });
               const recounted = this.contextPreparer.prepare({
                 contextWindowTokens: input.contextWindowTokens,
                 messages: afterSummary,
                 tools,
-              })
-              if (recounted.budget.level === 'forced') throw new AgentContextWindowExceededError()
+              });
+              if (recounted.budget.level === 'forced') throw new AgentContextWindowExceededError();
               await persistAndPublish(
                 projector.contextBudget({
                   usedTokens: recounted.budget.usedTokens,
@@ -456,48 +456,48 @@ export class AgentRunService {
                   level: recounted.budget.level,
                   summaryId: activeSummary.id,
                 }),
-              )
-              return recounted.messages
+              );
+              return recounted.messages;
             } catch (error) {
-              if (error instanceof AgentContextLimitError) contextLimitError = error
-              throw error
+              if (error instanceof AgentContextLimitError) contextLimitError = error;
+              throw error;
             }
           },
         }),
         convertToLlm: (messages) => messages as Message[],
-      })
+      });
 
       agent.subscribe(async (event: AgentEvent, signal) => {
-        void signal
+        void signal;
         if (event.type === 'turn_end') {
-          const message = event.message
+          const message = event.message;
           if (message.role === 'assistant') {
-            projector.addUsage(fromPiUsage(message.usage))
+            projector.addUsage(fromPiUsage(message.usage));
             if (message.stopReason === 'error') {
               projector.recordFailure({
                 code: 'AGENT_MODEL_ERROR',
                 message: message.errorMessage ?? '模型调用失败',
                 retryable: true,
-              })
+              });
             }
           }
         }
-        await persistAndPublish(projector.ingest(event))
-      })
+        await persistAndPublish(projector.ingest(event));
+      });
 
       // 把外部取消传播到 Pi 运行。
-      controller.signal.addEventListener('abort', () => agent.abort(), { once: true })
+      controller.signal.addEventListener('abort', () => agent.abort(), { once: true });
 
       try {
-        await agent.prompt(prepareAgentInput(input.input))
+        await agent.prompt(prepareAgentInput(input.input));
       } catch (error) {
-        this.logger.warn({ error, runId: input.runId }, 'Agent prompt rejected')
+        this.logger.warn({ error, runId: input.runId }, 'Agent prompt rejected');
       }
-      await persistQueue
+      await persistQueue;
 
       const status = contextLimitError
         ? 'limit_reached'
-        : this.determineTerminal(controller.signal.aborted, agent.state.errorMessage)
+        : this.determineTerminal(controller.signal.aborted, agent.state.errorMessage);
       const error = contextLimitError
         ? { code: contextLimitError.code, message: contextLimitError.message, retryable: false }
         : status === 'failed'
@@ -506,31 +506,31 @@ export class AgentRunService {
               message: agent.state.errorMessage ?? '模型调用失败',
               retryable: true,
             }
-          : undefined
+          : undefined;
       await this.finalize(
         input,
         projector,
         status,
         error,
         contextLimitError ? 'context_window' : undefined,
-      )
+      );
     } catch (error) {
-      this.logger.error({ error, runId: input.runId }, 'Agent run crashed')
+      this.logger.error({ error, runId: input.runId }, 'Agent run crashed');
       await this.finalize(input, projector, 'failed', {
         code: 'AGENT_RUN_CRASHED',
         message: error instanceof Error ? error.message : 'Agent run 失败',
         retryable: true,
       }).catch((finalizeError) => {
-        this.logger.error({ error: finalizeError, runId: input.runId }, 'Agent finalize failed')
-      })
+        this.logger.error({ error: finalizeError, runId: input.runId }, 'Agent finalize failed');
+      });
     } finally {
       await this.executionSessions.finishRun(input.runId).catch((error) => {
-        this.logger.error({ error, runId: input.runId }, 'Agent Thread sandbox release failed')
-      })
-      this.activeRuns.delete(input.runId)
-      this.questionEventBridge.unregister(input.runId)
-      this.bus.close(input.runId)
-      await this.activeRunLock.release(input.threadId, input.activeRunLockToken)
+        this.logger.error({ error, runId: input.runId }, 'Agent Thread sandbox release failed');
+      });
+      this.activeRuns.delete(input.runId);
+      this.questionEventBridge.unregister(input.runId);
+      this.bus.close(input.runId);
+      await this.activeRunLock.release(input.threadId, input.activeRunLockToken);
     }
   }
 
@@ -538,9 +538,9 @@ export class AgentRunService {
     aborted: boolean,
     errorMessage: string | undefined,
   ): AgentRunTerminalStatus {
-    if (aborted) return 'cancelled'
-    if (errorMessage) return 'failed'
-    return 'succeeded'
+    if (aborted) return 'cancelled';
+    if (errorMessage) return 'failed';
+    return 'succeeded';
   }
 
   private async finalize(
@@ -554,19 +554,19 @@ export class AgentRunService {
     const terminalEvents = projector.finalize(status, {
       ...(error === undefined ? {} : { error }),
       ...(limitReason === undefined ? {} : { limitReason }),
-    })
+    });
 
     // 在向客户端发出终态事件前，先持久化消息快照、工具调用与 run 计数，
     // 使“收到 run-terminal”即代表刷新可恢复完整快照。
-    const snapshot = projector.messagesSnapshot()
+    const snapshot = projector.messagesSnapshot();
     await this.messages.appendMessages(
       input.threadId,
       input.runId,
       snapshot.map((message) => ({ role: message.role, parts: message.parts })),
-    )
-    await this.runs.saveToolCalls(input.runId, projector.toolCallRecords())
+    );
+    await this.runs.saveToolCalls(input.runId, projector.toolCallRecords());
 
-    const usage = projector.usageAggregate()
+    const usage = projector.usageAggregate();
     await this.runs.finalize(input.runId, {
       status: TERMINAL_STATUS_MAP[status],
       lastSequence: projector.lastSequence,
@@ -579,11 +579,11 @@ export class AgentRunService {
       usageUnknown: usage.usageUnknown,
       ...(limitReason === undefined ? {} : { limitReason: 'CONTEXT_WINDOW' }),
       ...(error === undefined ? {} : { errorCode: error.code, errorMessage: error.message }),
-    })
+    });
 
     // 快照落库后再持久化并广播终态事件（usage + run-terminal）。
-    if (terminalEvents.length > 0) await this.runs.appendEvents(input.runId, terminalEvents)
-    for (const event of terminalEvents) this.bus.publish(input.runId, event)
+    if (terminalEvents.length > 0) await this.runs.appendEvents(input.runId, terminalEvents);
+    for (const event of terminalEvents) this.bus.publish(input.runId, event);
   }
 }
 
@@ -592,15 +592,15 @@ class AgentContextLimitError extends Error {
     readonly code: string,
     message: string,
   ) {
-    super(message)
-    this.name = 'AgentContextLimitError'
+    super(message);
+    this.name = 'AgentContextLimitError';
   }
 }
 
 class AgentContextWindowExceededError extends AgentContextLimitError {
   constructor() {
-    super('AGENT_CONTEXT_WINDOW_EXCEEDED', '当前输入与必须保留的上下文超过模型可用窗口')
-    this.name = 'AgentContextWindowExceededError'
+    super('AGENT_CONTEXT_WINDOW_EXCEEDED', '当前输入与必须保留的上下文超过模型可用窗口');
+    this.name = 'AgentContextWindowExceededError';
   }
 }
 
@@ -608,9 +608,9 @@ function appendManualSkillInstructions(
   systemPrompt: string,
   skills: readonly { name: string; packageSha256: string; skillMarkdown: string }[],
 ): string {
-  if (skills.length === 0) return systemPrompt
-  const instructions = skills.map(renderSkillContentPrompt).join('\n\n')
-  return `${systemPrompt}\n\n# Manually activated Skills\n\n${instructions}`
+  if (skills.length === 0) return systemPrompt;
+  const instructions = skills.map(renderSkillContentPrompt).join('\n\n');
+  return `${systemPrompt}\n\n# Manually activated Skills\n\n${instructions}`;
 }
 
 function normalizeExecutionError(error: unknown): AgentExecutionError {
@@ -626,25 +626,25 @@ function normalizeExecutionError(error: unknown): AgentExecutionError {
       code: error.code as AgentExecutionError['code'],
       message: error.message,
       retryable: 'retryable' in error && error.retryable === true,
-    }
+    };
   }
   return {
     code: 'SANDBOX_UNAVAILABLE',
     message: error instanceof Error ? error.message : 'Skill 激活失败',
     retryable: false,
-  }
+  };
 }
 
 function fromPiUsage(usage: PiUsage): {
-  inputTokens: number | null
-  outputTokens: number | null
-  totalTokens: number | null
-  usageUnknown: boolean
+  inputTokens: number | null;
+  outputTokens: number | null;
+  totalTokens: number | null;
+  usageUnknown: boolean;
 } {
   return {
     inputTokens: usage.input,
     outputTokens: usage.output,
     totalTokens: usage.totalTokens,
     usageUnknown: false,
-  }
+  };
 }

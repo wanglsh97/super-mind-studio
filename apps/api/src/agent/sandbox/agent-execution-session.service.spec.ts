@@ -1,28 +1,28 @@
-import type { ConfigService } from '@nestjs/config'
+import type { ConfigService } from '@nestjs/config';
 
-import type { AgentThreadRepository, AgentThreadSandboxRow } from '../agent-thread.repository'
-import type { ExecutableSkillService } from '../skills/executable-skill.service'
-import type { ExecutableSkillRecord } from '../skills/executable-skill.repository'
+import type { AgentThreadRepository, AgentThreadSandboxRow } from '../agent-thread.repository';
+import type { ExecutableSkillService } from '../skills/executable-skill.service';
+import type { ExecutableSkillRecord } from '../skills/executable-skill.repository';
 import {
   MOCK_EXECUTABLE_SKILL_DOWNLOAD,
   MOCK_EXECUTABLE_SKILL_SHA256,
-} from '../skills/executable-skill.fixture'
-import { AgentExecutionSessionService } from './agent-execution-session.service'
-import { createOpenSandboxRuntimeTestDouble } from './open-sandbox-runtime.test'
-import type { SandboxRuntimePort } from './sandbox-runtime.port'
+} from '../skills/executable-skill.fixture';
+import { AgentExecutionSessionService } from './agent-execution-session.service';
+import { createOpenSandboxRuntimeTestDouble } from './open-sandbox-runtime.test';
+import type { SandboxRuntimePort } from './sandbox-runtime.port';
 
 function setup(
   options: {
-    sandboxes?: SandboxRuntimePort
-    prepareActivation?: ExecutableSkillService['prepareActivation']
-    listCandidates?: ExecutableSkillService['listCandidates']
+    sandboxes?: SandboxRuntimePort;
+    prepareActivation?: ExecutableSkillService['prepareActivation'];
+    listCandidates?: ExecutableSkillService['listCandidates'];
   } = {},
 ) {
-  const records = new Map<string, AgentThreadSandboxRow>()
+  const records = new Map<string, AgentThreadSandboxRow>();
   const threads = {
     findSandboxForOwner: jest.fn(async (threadId: string, userId: string) => {
-      const row = records.get(threadId)
-      return row?.userId === userId ? row : null
+      const row = records.get(threadId);
+      return row?.userId === userId ? row : null;
     }),
     markSandboxReady: jest.fn(
       async (
@@ -38,18 +38,18 @@ function setup(
           sandboxCreatedAt: input.createdAt,
           sandboxLastUsedAt: input.lastUsedAt ?? new Date(),
           sandboxExpiresAt: input.expiresAt,
-        })
+        });
       },
     ),
     markSandboxIdle: jest.fn(async (threadId: string) => {
-      const row = records.get(threadId)
-      if (row) row.sandboxStatus = 'idle'
+      const row = records.get(threadId);
+      if (row) row.sandboxStatus = 'idle';
     }),
     clearSandbox: jest.fn(async (threadId: string) => {
-      records.delete(threadId)
+      records.delete(threadId);
     }),
     listOwnedSandboxes: jest.fn(async () => [...records.values()]),
-  } as unknown as AgentThreadRepository
+  } as unknown as AgentThreadRepository;
   const skills = {
     listCandidates: options.listCandidates ?? jest.fn(async () => []),
     prepareActivation:
@@ -64,13 +64,13 @@ function setup(
           download: MOCK_EXECUTABLE_SKILL_DOWNLOAD,
         },
       ]),
-  } as unknown as ExecutableSkillService
-  const sandboxes = options.sandboxes ?? createOpenSandboxRuntimeTestDouble()
+  } as unknown as ExecutableSkillService;
+  const sandboxes = options.sandboxes ?? createOpenSandboxRuntimeTestDouble();
   const config = {
     get: jest.fn((_key: string, fallback: number) => fallback),
-  } as unknown as ConfigService
-  const service = new AgentExecutionSessionService(skills, sandboxes, threads, config)
-  return { records, sandboxes, service, skills, threads }
+  } as unknown as ConfigService;
+  const service = new AgentExecutionSessionService(skills, sandboxes, threads, config);
+  return { records, sandboxes, service, skills, threads };
 }
 
 function candidate(name = 'test-skill'): ExecutableSkillRecord {
@@ -82,97 +82,97 @@ function candidate(name = 'test-skill'): ExecutableSkillRecord {
     status: 'PUBLISHED',
     packageObjectKey: `skills/${name}/package.zip`,
     packageSha256: MOCK_EXECUTABLE_SKILL_SHA256,
-  }
+  };
 }
 
 describe('AgentExecutionSessionService Thread sandbox lifecycle', () => {
   it('installs the immutable static website Skill files into a website Run sandbox', async () => {
-    const { service } = setup()
-    await service.startRun('run-web', 'thread-web', 'user-1')
+    const { service } = setup();
+    await service.startRun('run-web', 'thread-web', 'user-1');
 
-    await service.installWebsiteBuildingSkill('run-web', 'user-1')
+    await service.installWebsiteBuildingSkill('run-web', 'user-1');
 
     await expect(
       service.readFile('run-web', 'user-1', '/workspace/.skills/website-building/SKILL.md'),
-    ).resolves.toMatchObject({ sizeBytes: expect.any(Number) })
+    ).resolves.toMatchObject({ sizeBytes: expect.any(Number) });
     const init = await service.readFile(
       'run-web',
       'user-1',
       '/workspace/.skills/website-building/scripts/init.sh',
-    )
+    );
     const packager = await service.readFile(
       'run-web',
       'user-1',
       '/workspace/.skills/website-building/scripts/package.py',
-    )
-    const initScript = new TextDecoder().decode(init?.bytes)
-    expect(initScript).toContain('npm install --global pnpm@9.15.9')
-    expect(initScript).toContain('pnpm create vite@6.5.0')
-    expect(new TextDecoder().decode(packager?.bytes)).toContain("excluded_dirs = {'.git'")
+    );
+    const initScript = new TextDecoder().decode(init?.bytes);
+    expect(initScript).toContain('npm install --global pnpm@9.15.9');
+    expect(initScript).toContain('pnpm create vite@6.5.0');
+    expect(new TextDecoder().decode(packager?.bytes)).toContain("excluded_dirs = {'.git'");
 
-    await service.finishRun('run-web')
-    await service.destroyThread('thread-web')
-  })
+    await service.finishRun('run-web');
+    await service.destroyThread('thread-web');
+  });
 
   it('keeps base file tools available while resetting per-Run Skill activation', async () => {
-    const { service, sandboxes, skills } = setup()
-    const createSandbox = jest.spyOn(sandboxes, 'createSandbox')
+    const { service, sandboxes, skills } = setup();
+    const createSandbox = jest.spyOn(sandboxes, 'createSandbox');
 
-    const firstSandbox = await service.startRun('run-1', 'thread-1', 'user-1')
+    const firstSandbox = await service.startRun('run-1', 'thread-1', 'user-1');
     await service.writeFile(
       'run-1',
       'user-1',
       '/workspace/work/shared.txt',
       new TextEncoder().encode('thread-workspace'),
-    )
-    await service.activateSkill('run-1', 'user-1', 'test-skill')
+    );
+    await service.activateSkill('run-1', 'user-1', 'test-skill');
     await expect(
       service.readFile('run-1', 'user-1', '/workspace/.skills/test-skill/SKILL.md'),
-    ).resolves.toMatchObject({ path: '/workspace/.skills/test-skill/SKILL.md' })
-    await service.finishRun('run-1')
+    ).resolves.toMatchObject({ path: '/workspace/.skills/test-skill/SKILL.md' });
+    await service.finishRun('run-1');
 
-    const secondSandbox = await service.startRun('run-2', 'thread-1', 'user-1')
-    expect(secondSandbox).toBe(firstSandbox)
+    const secondSandbox = await service.startRun('run-2', 'thread-1', 'user-1');
+    expect(secondSandbox).toBe(firstSandbox);
     await expect(
       service.readFile('run-2', 'user-1', '/workspace/work/shared.txt'),
-    ).resolves.toMatchObject({ path: '/workspace/work/shared.txt' })
-    await service.activateSkill('run-2', 'user-1', 'test-skill')
-    expect(createSandbox).toHaveBeenCalledTimes(1)
+    ).resolves.toMatchObject({ path: '/workspace/work/shared.txt' });
+    await service.activateSkill('run-2', 'user-1', 'test-skill');
+    expect(createSandbox).toHaveBeenCalledTimes(1);
     expect(createSandbox).toHaveBeenCalledWith(
       expect.objectContaining({
         threadId: 'thread-1',
-        limits: expect.objectContaining({ sandboxTimeoutMs: 3_600_000 }),
+        limits: expect.objectContaining({ sandboxTimeoutMs: 10_800_000 }),
       }),
-    )
-    expect(skills.prepareActivation).toHaveBeenCalledTimes(1)
+    );
+    expect(skills.prepareActivation).toHaveBeenCalledTimes(1);
 
-    await service.finishRun('run-2')
-    await service.destroyThread('thread-1')
-  })
+    await service.finishRun('run-2');
+    await service.destroyThread('thread-1');
+  });
 
   it('prefetches candidates without blocking Run startup and reuses the local package', async () => {
     let resolvePreparation:
       | ((value: Awaited<ReturnType<ExecutableSkillService['prepareActivation']>>) => void)
-      | undefined
+      | undefined;
     const prepareActivation = jest.fn(
       () =>
         new Promise<Awaited<ReturnType<ExecutableSkillService['prepareActivation']>>>((resolve) => {
-          resolvePreparation = resolve
+          resolvePreparation = resolve;
         }),
-    )
+    );
     const { service, sandboxes, skills } = setup({
       listCandidates: jest.fn(async () => [candidate()]),
       prepareActivation,
-    })
-    const install = jest.spyOn(sandboxes, 'installSkillPackage')
+    });
+    const install = jest.spyOn(sandboxes, 'installSkillPackage');
 
     await expect(service.startRun('run-prefetch', 'thread-prefetch', 'user-1')).resolves.toEqual(
       expect.any(String),
-    )
-    const activationPromise = service.activateSkill('run-prefetch', 'user-1', 'test-skill')
-    await new Promise<void>((resolve) => setImmediate(resolve))
-    expect(prepareActivation).toHaveBeenCalledTimes(1)
-    if (!resolvePreparation) throw new Error('prefetch did not start')
+    );
+    const activationPromise = service.activateSkill('run-prefetch', 'user-1', 'test-skill');
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    expect(prepareActivation).toHaveBeenCalledTimes(1);
+    if (!resolvePreparation) throw new Error('prefetch did not start');
 
     resolvePreparation([
       {
@@ -183,50 +183,50 @@ describe('AgentExecutionSessionService Thread sandbox lifecycle', () => {
         },
         download: MOCK_EXECUTABLE_SKILL_DOWNLOAD,
       },
-    ])
-    const activation = await activationPromise
+    ]);
+    const activation = await activationPromise;
 
     expect(activation.skill.manifest).toEqual({
       skillId: 'id-test-skill',
       name: 'test-skill',
       packageSha256: MOCK_EXECUTABLE_SKILL_SHA256,
-    })
-    expect(skills.prepareActivation).toHaveBeenCalledTimes(1)
-    expect(install).toHaveBeenCalledTimes(1)
-    expect(install).toHaveBeenCalledWith(expect.objectContaining({ background: true }))
+    });
+    expect(skills.prepareActivation).toHaveBeenCalledTimes(1);
+    expect(install).toHaveBeenCalledTimes(1);
+    expect(install).toHaveBeenCalledWith(expect.objectContaining({ background: true }));
 
-    await service.finishRun('run-prefetch')
-    await service.destroyThread('thread-prefetch')
-  })
+    await service.finishRun('run-prefetch');
+    await service.destroyThread('thread-prefetch');
+  });
 
   it('retries one synchronous download when candidate prefetch fails', async () => {
-    const sandboxes = createOpenSandboxRuntimeTestDouble()
-    const originalInstall = sandboxes.installSkillPackage.bind(sandboxes)
+    const sandboxes = createOpenSandboxRuntimeTestDouble();
+    const originalInstall = sandboxes.installSkillPackage.bind(sandboxes);
     const install = jest
       .spyOn(sandboxes, 'installSkillPackage')
       .mockRejectedValueOnce(new Error('prefetch download failed'))
-      .mockImplementation((input) => originalInstall(input))
+      .mockImplementation((input) => originalInstall(input));
     const { service, skills } = setup({
       sandboxes,
       listCandidates: jest.fn(async () => [candidate()]),
-    })
+    });
 
-    await service.startRun('run-retry', 'thread-retry', 'user-1')
+    await service.startRun('run-retry', 'thread-retry', 'user-1');
     await expect(service.activateSkill('run-retry', 'user-1', 'test-skill')).resolves.toMatchObject(
       {
         alreadyActive: false,
         skill: { manifest: { name: 'test-skill' } },
       },
-    )
+    );
 
-    expect(skills.prepareActivation).toHaveBeenCalledTimes(2)
-    expect(install).toHaveBeenCalledTimes(2)
-    expect(install.mock.calls[0]?.[0]).toMatchObject({ background: true })
-    expect(install.mock.calls[1]?.[0]).not.toHaveProperty('background')
+    expect(skills.prepareActivation).toHaveBeenCalledTimes(2);
+    expect(install).toHaveBeenCalledTimes(2);
+    expect(install.mock.calls[0]?.[0]).toMatchObject({ background: true });
+    expect(install.mock.calls[1]?.[0]).not.toHaveProperty('background');
 
-    await service.finishRun('run-retry')
-    await service.destroyThread('thread-retry')
-  })
+    await service.finishRun('run-retry');
+    await service.destroyThread('thread-retry');
+  });
 
   it('keeps a downloaded Skill executable in the current Thread after candidate removal', async () => {
     const listCandidates = jest
@@ -235,35 +235,35 @@ describe('AgentExecutionSessionService Thread sandbox lifecycle', () => {
         Parameters<ExecutableSkillService['listCandidates']>
       >()
       .mockResolvedValueOnce([candidate()])
-      .mockResolvedValue([])
-    const { service, skills } = setup({ listCandidates })
+      .mockResolvedValue([]);
+    const { service, skills } = setup({ listCandidates });
 
-    await service.startRun('run-before-removal', 'thread-sticky', 'user-1')
-    await service.activateSkill('run-before-removal', 'user-1', 'test-skill')
-    await service.finishRun('run-before-removal')
+    await service.startRun('run-before-removal', 'thread-sticky', 'user-1');
+    await service.activateSkill('run-before-removal', 'user-1', 'test-skill');
+    await service.finishRun('run-before-removal');
 
-    await service.startRun('run-after-removal', 'thread-sticky', 'user-1')
-    await service.activateSkill('run-after-removal', 'user-1', 'test-skill')
+    await service.startRun('run-after-removal', 'thread-sticky', 'user-1');
+    await service.activateSkill('run-after-removal', 'user-1', 'test-skill');
 
-    expect(listCandidates).toHaveBeenCalledTimes(2)
-    expect(skills.prepareActivation).toHaveBeenCalledTimes(1)
+    expect(listCandidates).toHaveBeenCalledTimes(2);
+    expect(skills.prepareActivation).toHaveBeenCalledTimes(1);
 
-    await service.finishRun('run-after-removal')
-    await service.destroyThread('thread-sticky')
-  })
+    await service.finishRun('run-after-removal');
+    await service.destroyThread('thread-sticky');
+  });
 
   it('limits candidate prefetch to four concurrent package operations', async () => {
-    const candidates = Array.from({ length: 6 }, (_, index) => candidate(`candidate-${index}`))
-    const releases: Array<() => void> = []
-    let active = 0
-    let peak = 0
+    const candidates = Array.from({ length: 6 }, (_, index) => candidate(`candidate-${index}`));
+    const releases: Array<() => void> = [];
+    let active = 0;
+    let peak = 0;
     const prepareActivation = jest.fn(
       (_userId: string, names: readonly string[]) =>
         new Promise<Awaited<ReturnType<ExecutableSkillService['prepareActivation']>>>((resolve) => {
-          active += 1
-          peak = Math.max(peak, active)
+          active += 1;
+          peak = Math.max(peak, active);
           releases.push(() => {
-            active -= 1
+            active -= 1;
             resolve([
               {
                 manifest: {
@@ -273,77 +273,77 @@ describe('AgentExecutionSessionService Thread sandbox lifecycle', () => {
                 },
                 download: MOCK_EXECUTABLE_SKILL_DOWNLOAD,
               },
-            ])
-          })
+            ]);
+          });
         }),
-    )
+    );
     const { service } = setup({
       listCandidates: jest.fn(async () => candidates),
       prepareActivation,
-    })
+    });
 
-    await service.startRun('run-bounded', 'thread-bounded', 'user-1')
-    await waitUntil(() => prepareActivation.mock.calls.length === 4)
-    expect(peak).toBe(4)
+    await service.startRun('run-bounded', 'thread-bounded', 'user-1');
+    await waitUntil(() => prepareActivation.mock.calls.length === 4);
+    expect(peak).toBe(4);
 
-    releases.splice(0, 4).forEach((release) => release())
-    await waitUntil(() => prepareActivation.mock.calls.length === 6)
-    expect(peak).toBe(4)
-    releases.splice(0).forEach((release) => release())
+    releases.splice(0, 4).forEach((release) => release());
+    await waitUntil(() => prepareActivation.mock.calls.length === 6);
+    expect(peak).toBe(4);
+    releases.splice(0).forEach((release) => release());
 
     for (const skill of candidates) {
-      await service.activateSkill('run-bounded', 'user-1', skill.name)
+      await service.activateSkill('run-bounded', 'user-1', skill.name);
     }
-    expect(prepareActivation).toHaveBeenCalledTimes(6)
+    expect(prepareActivation).toHaveBeenCalledTimes(6);
 
-    await service.finishRun('run-bounded')
-    await service.destroyThread('thread-bounded')
-  })
+    await service.finishRun('run-bounded');
+    await service.destroyThread('thread-bounded');
+  });
 
   it('isolates different Thread workspaces and rejects cross-user reuse', async () => {
-    const { service } = setup()
-    const first = await service.startRun('run-1', 'thread-1', 'user-1')
-    const second = await service.startRun('run-2', 'thread-2', 'user-1')
-    expect(first).not.toBe(second)
+    const { service } = setup();
+    const first = await service.startRun('run-1', 'thread-1', 'user-1');
+    const second = await service.startRun('run-2', 'thread-2', 'user-1');
+    expect(first).not.toBe(second);
 
-    await expect(service.startRun('run-3', 'thread-1', 'user-2')).rejects.toThrow('owner mismatch')
-    await service.finishRun('run-1')
-    await service.finishRun('run-2')
-    await service.destroyThread('thread-1')
-    await service.destroyThread('thread-2')
-  })
+    await expect(service.startRun('run-3', 'thread-1', 'user-2')).rejects.toThrow('owner mismatch');
+    await service.finishRun('run-1');
+    await service.finishRun('run-2');
+    await service.destroyThread('thread-1');
+    await service.destroyThread('thread-2');
+  });
 
   it('destroys a partially created sandbox when readiness fails', async () => {
-    const readyError = new Error('ready timeout')
-    const destroySandbox = jest.fn().mockRejectedValue(new Error('temporary network failure'))
+    const readyError = new Error('ready timeout');
+    const destroySandbox = jest.fn().mockRejectedValue(new Error('temporary network failure'));
     const sandboxes = {
       createSandbox: jest.fn().mockResolvedValue({ sandboxId: 'sandbox-partial' }),
       waitUntilReady: jest.fn().mockRejectedValue(readyError),
       destroySandbox,
-    } as unknown as SandboxRuntimePort
-    const { service } = setup({ sandboxes })
+    } as unknown as SandboxRuntimePort;
+    const { service } = setup({ sandboxes });
 
-    await expect(service.startRun('run-1', 'thread-1', 'user-1')).rejects.toBe(readyError)
-    expect(destroySandbox).toHaveBeenCalledWith('sandbox-partial')
-  })
+    await expect(service.startRun('run-1', 'thread-1', 'user-1')).rejects.toBe(readyError);
+    expect(destroySandbox).toHaveBeenCalledWith('sandbox-partial');
+  });
 
   it('destroys the retained sandbox when its Thread is deleted', async () => {
-    const { service, sandboxes, records } = setup()
-    const destroySandbox = jest.spyOn(sandboxes, 'destroySandbox')
-    await service.startRun('run-1', 'thread-1', 'user-1')
-    await service.finishRun('run-1')
+    const { service, sandboxes, records } = setup();
+    const destroySandbox = jest.spyOn(sandboxes, 'destroySandbox');
+    await service.startRun('run-1', 'thread-1', 'user-1');
+    await service.finishRun('run-1');
 
-    await service.destroyThread('thread-1')
+    await service.destroyThread('thread-1');
 
-    expect(destroySandbox).toHaveBeenCalledTimes(1)
-    expect(records.has('thread-1')).toBe(false)
-  })
-})
+    expect(destroySandbox).toHaveBeenCalledTimes(1);
+    expect(records.has('thread-1')).toBe(false);
+  });
+});
 
 async function waitUntil(predicate: () => boolean): Promise<void> {
   for (let attempt = 0; attempt < 50; attempt += 1) {
-    if (predicate()) return
-    await new Promise<void>((resolve) => setImmediate(resolve))
+    if (predicate()) return;
+    await new Promise<void>((resolve) => setImmediate(resolve));
   }
-  throw new Error('condition was not reached')
+  throw new Error('condition was not reached');
 }

@@ -56,7 +56,7 @@ export class AgentExecutionSessionService {
     @Inject(WEBSITE_BUILDING_SKILL)
     private readonly websiteSkill: WebsiteBuildingSkill = loadWebsiteBuildingSkill(),
   ) {
-    this.timeoutMs = config.get<number>('SANDBOX_TIMEOUT_SECONDS', 3_600) * 1_000;
+    this.timeoutMs = config.get<number>('SANDBOX_TIMEOUT_SECONDS', 10_800) * 1_000;
   }
 
   async startRun(
