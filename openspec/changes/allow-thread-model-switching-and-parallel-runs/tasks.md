@@ -25,6 +25,6 @@
 
 ## 5. 并发与端到端验收
 
-- [ ] 5.1 扩展并发集成/E2E：五个不同 Thread 成功、第六个在消息/Run/RequestLog/Provider/Sandbox 前拒绝、同 Thread 第二个拒绝
-- [ ] 5.2 增加完整纵向 E2E：Qwen Thread 保留历史切到 GLM，下一 Run 使用 GLM 快照，旧 Run/账单不变，active 时切换返回 409
+- [x] 5.1 扩展并发集成/E2E：五个不同 Thread 成功、第六个在消息/Run/RequestLog/Provider/Sandbox 前拒绝、同 Thread 第二个拒绝
+- [x] 5.2 增加完整纵向 E2E：Qwen Thread 保留历史切到 GLM，下一 Run 使用 GLM 快照，旧 Run/账单不变，active 时切换返回 409
 - [ ] 5.3 运行相关 unit、contract、integration、E2E、typecheck、lint、build、Prisma migration validate 和 OpenSpec strict validation，记录验证结果

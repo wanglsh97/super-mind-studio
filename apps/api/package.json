@@ -24,7 +24,7 @@
     "eval": "tsx --env-file-if-exists=../../.env scripts/eval-agent.ts",
     "test:eval": "tsx --env-file-if-exists=../../.env scripts/eval-agent.ts",
     "pretest:e2e": "DATABASE_URL=\"$TEST_DATABASE_URL\" corepack pnpm --workspace-root db:generate",
-    "test:e2e": "jest --config jest.e2e.config.cjs --runInBand"
+    "test:e2e": "NODE_OPTIONS=\"${NODE_OPTIONS:+$NODE_OPTIONS }--experimental-vm-modules\" jest --config jest.e2e.config.cjs --runInBand"
   },
   "dependencies": {
     "@alibaba-group/opensandbox": "0.1.10",
