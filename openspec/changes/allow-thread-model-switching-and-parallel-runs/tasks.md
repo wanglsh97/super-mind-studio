@@ -19,9 +19,9 @@
 
 ## 4. Web 当前 Thread 切换体验
 
-- [ ] 4.1 将已有 Thread 的模型选择从创建新 Thread 改为立即调用 `threads.updateModel`，成功后更新 Thread 列表与详情缓存，失败回滚并提示
-- [ ] 4.2 当前 Thread 为 running/cancelling/waiting 时禁用模型选择器；其他 Thread active 不影响切换或提交
-- [ ] 4.3 保持后台 Run 继续、侧边栏逐 Thread 状态、切回 sequence 补读和独立取消，增加刷新恢复测试
+- [x] 4.1 将已有 Thread 的模型选择从创建新 Thread 改为立即调用 `threads.updateModel`，成功后更新 Thread 列表与详情缓存，失败回滚并提示
+- [x] 4.2 当前 Thread 为 running/cancelling/waiting 时禁用模型选择器；其他 Thread active 不影响切换或提交
+- [x] 4.3 保持后台 Run 继续、侧边栏逐 Thread 状态、切回 sequence 补读和独立取消，增加刷新恢复测试
 
 ## 5. 并发与端到端验收
 

@@ -104,7 +104,11 @@ import {
   type AgentRunMetadata as AgentRunMetadataType,
   type AgentRunProgressStage,
 } from '@/utils/agent/agent-run-adapter';
-import { shouldStartNewThreadOnModelChange } from '@/utils/agent/agent-model-policy';
+import {
+  isCurrentThreadModelSelectionDisabled,
+  shouldUpdateCurrentThreadModel,
+  updateThreadModelOptimistically,
+} from '@/utils/agent/agent-model-policy';
 import {
   AGENT_TOOL_ACTIVITY_LABELS,
   agentToolDetailLabels,
@@ -158,6 +162,7 @@ function AgentConsole() {
     prependThread,
     startNewThread,
     refreshThreads,
+    updateThreadModel,
     activeRuns,
     upsertActiveRun,
     removeActiveRun,
@@ -180,6 +185,11 @@ function AgentConsole() {
   const [runProgress, setRunProgress] = useState<AgentRunProgressStage | null>(null);
   const [pendingQuestion, setPendingQuestion] = useState<AgentUserQuestion | null>(null);
   const [questionActionError, setQuestionActionError] = useState<string | null>(null);
+  const [modelUpdatingThreadId, setModelUpdatingThreadId] = useState<string | null>(null);
+  const [modelChangeError, setModelChangeError] = useState<{
+    threadId: string;
+    message: string;
+  } | null>(null);
   const [webCreationSelected, setWebCreationSelected] = useState(false);
   const [documentAnalysisSelected, setDocumentAnalysisSelected] = useState(false);
   const [composerFiles, setComposerFiles] = useState<ComposerDocumentFile[]>([]);
@@ -366,13 +376,44 @@ function AgentConsole() {
     [models],
   );
 
-  const handleModelChange = (nextModel: TextModelId) => {
+  const handleModelChange = async (nextModel: TextModelId) => {
     const current = (selectedModel as TextModelId) || modelOptions[0]?.value || 'qwen3.7-plus';
-    const leaveThread = shouldStartNewThreadOnModelChange(activeThreadId, current, nextModel);
-    setSelectedModel(nextModel);
-    if (leaveThread) {
-      skipHydrationRef.current = false;
-      startNewThread();
+    if (current === nextModel) return;
+    if (!shouldUpdateCurrentThreadModel(activeThreadId, current, nextModel)) {
+      setSelectedModel(nextModel);
+      return;
+    }
+    const threadId = activeThreadId;
+    if (!threadId || isCurrentThreadModelSelectionDisabled(threadId, activeRuns)) return;
+
+    setModelChangeError(null);
+    setModelUpdatingThreadId(threadId);
+    try {
+      const updated = await updateThreadModelOptimistically({
+        currentModel: current,
+        nextModel,
+        applySelection: setSelectedModel,
+        persist: () => updateThreadModel(threadId, nextModel),
+        isStillCurrent: () => contextRef.current.threadId === threadId,
+      });
+      if (contextRef.current.threadId !== threadId) return;
+      try {
+        const detail = await client.agent.threads.get(threadId);
+        if (contextRef.current.threadId === threadId) {
+          setThreadTokenUsage(detail.tokenUsage);
+          setContextSummary(detail.contextSummary);
+        }
+      } catch (cause) {
+        handleAuthenticationFailure(cause);
+      }
+    } catch (cause) {
+      handleAuthenticationFailure(cause);
+      setModelChangeError({
+        threadId,
+        message: toModelChangeError(cause),
+      });
+    } finally {
+      setModelUpdatingThreadId((updating) => (updating === threadId ? null : updating));
     }
   };
 
@@ -416,7 +457,12 @@ function AgentConsole() {
   const aui = useAui({ tools: Tools({ toolkit: agentToolUiToolkit }) });
   const modelDisabled = modelOptions.length === 0;
   const currentActiveRun = activeRunForThread(activeRuns, activeThreadId);
-  const submitBlocked = modelDisabled || currentActiveRun !== null;
+  const modelSelectionDisabled =
+    modelDisabled ||
+    modelUpdatingThreadId === activeThreadId ||
+    isCurrentThreadModelSelectionDisabled(activeThreadId, activeRuns);
+  const submitBlocked =
+    modelDisabled || currentActiveRun !== null || modelUpdatingThreadId === activeThreadId;
   const canCreateWebsite = session.user?.authProvider === 'GITHUB';
 
   const switchToGithubLogin = async () => {
@@ -574,6 +620,14 @@ function AgentConsole() {
                     {activeRuns.some((run) => run.threadId !== activeThreadId) ? (
                       <AgentActiveRunHint message="其他会话正在后台运行；当前会话仍可独立提交" />
                     ) : null}
+                    {modelChangeError?.threadId === activeThreadId ? (
+                      <p
+                        role="alert"
+                        className="mx-auto mb-2 w-full max-w-[44rem] rounded-xl border border-danger/25 bg-danger/7 px-3 py-2 text-xs font-medium text-danger sm:w-[calc(100%-2rem)]"
+                      >
+                        {modelChangeError.message}
+                      </p>
+                    ) : null}
                     <div className="mx-auto mb-2 flex w-full max-w-[44rem] gap-2 overflow-x-auto sm:w-[calc(100%-2rem)]">
                       <AgentWebCreationOption
                         selected={webCreationSelected}
@@ -687,9 +741,10 @@ function AgentConsole() {
                               'qwen3.7-plus'
                             }
                             options={modelOptions}
-                            disabled={modelDisabled}
+                            disabled={modelSelectionDisabled}
                             boundHint={activeThreadId !== null}
-                            onChange={handleModelChange}
+                            menuTitle={activeThreadId ? '切换当前会话模型' : '运行模型'}
+                            onChange={(model) => void handleModelChange(model)}
                           />
                           {dictationSupported ? (
                             <AgentDictationButton disabled={submitBlocked} />
@@ -1168,6 +1223,12 @@ function toSandboxTelemetry(sandbox: AgentThreadSandbox | null): SandboxTelemetr
 
 function toQuestionActionError(cause: unknown, fallback: string): string {
   return cause instanceof Error && cause.message ? cause.message : fallback;
+}
+
+function toModelChangeError(cause: unknown): string {
+  return cause instanceof Error && cause.message
+    ? cause.message
+    : '模型切换失败，当前会话仍使用原模型。';
 }
 
 function ThreadHydrator({

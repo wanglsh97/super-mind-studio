@@ -46,6 +46,7 @@ export type AgentWorkspaceValue = {
   upsertActiveRun: (run: AgentRunSummary) => void
   removeActiveRun: (threadId: string) => void
   renameThread: (threadId: string, title: string) => Promise<AgentThreadSummary>
+  updateThreadModel: (threadId: string, modelId: string) => Promise<AgentThreadSummary>
   deleteThread: (threadId: string) => Promise<void>
 }
 
@@ -147,6 +148,12 @@ export function AgentWorkspaceProvider({ children }: Readonly<{ children: ReactN
     return updated
   }, [])
 
+  const updateThreadModel = useCallback(async (threadId: string, modelId: string) => {
+    const updated = await client.agent.threads.updateModel(threadId, { model: modelId })
+    setThreads((current) => current.map((item) => (item.id === threadId ? updated : item)))
+    return updated
+  }, [])
+
   const deleteThread = useCallback(
     async (threadId: string) => {
       await client.agent.threads.delete(threadId)
@@ -177,6 +184,7 @@ export function AgentWorkspaceProvider({ children }: Readonly<{ children: ReactN
       upsertActiveRun,
       removeActiveRun,
       renameThread,
+      updateThreadModel,
       deleteThread,
     }),
     [
@@ -194,6 +202,7 @@ export function AgentWorkspaceProvider({ children }: Readonly<{ children: ReactN
       upsertActiveRun,
       removeActiveRun,
       renameThread,
+      updateThreadModel,
       deleteThread,
     ],
   )

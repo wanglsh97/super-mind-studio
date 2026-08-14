@@ -1,10 +1,33 @@
-/**
- * 根 Agent 工作台规则：已存在 thread 的 model 不可改；在会话内改选模型 = 离开当前 thread、新建会话。
- */
-export function shouldStartNewThreadOnModelChange(
+/** 已有 Thread 只有在模型确实变化时才调用持久化更新；草稿选择保持本地。 */
+export function shouldUpdateCurrentThreadModel(
   activeThreadId: string | null,
   currentModel: string,
   nextModel: string,
 ): boolean {
   return activeThreadId !== null && currentModel !== nextModel
+}
+
+export function isCurrentThreadModelSelectionDisabled(
+  activeThreadId: string | null,
+  activeRuns: readonly { threadId: string }[],
+): boolean {
+  return activeThreadId !== null && activeRuns.some((run) => run.threadId === activeThreadId)
+}
+
+export async function updateThreadModelOptimistically<T extends { model: string }>(input: {
+  currentModel: string
+  nextModel: string
+  applySelection: (model: string) => void
+  persist: () => Promise<T>
+  isStillCurrent: () => boolean
+}): Promise<T> {
+  input.applySelection(input.nextModel)
+  try {
+    const updated = await input.persist()
+    if (input.isStillCurrent()) input.applySelection(updated.model)
+    return updated
+  } catch (error) {
+    if (input.isStillCurrent()) input.applySelection(input.currentModel)
+    throw error
+  }
 }

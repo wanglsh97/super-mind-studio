@@ -850,10 +850,10 @@ export function ModelSelect({
         disabled={disabled}
         aria-label={
           boundHint
-            ? `当前会话模型：${selectedLabel}（切换将新建会话）`
+            ? `当前会话模型：${selectedLabel}（切换后继续当前会话）`
             : `运行模型：${selectedLabel}`
         }
-        title={boundHint ? '切换模型将新建会话，当前会话保持不变' : undefined}
+        title={boundHint ? '切换模型后，下一次任务将在当前会话中继续' : undefined}
         aria-haspopup="listbox"
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
@@ -881,7 +881,7 @@ export function ModelSelect({
           className="liquid-glass absolute right-0 bottom-[calc(100%+0.45rem)] z-10 w-48 overflow-hidden rounded-xl p-1 shadow-[0_14px_34px_rgb(39_59_112/0.16)]"
         >
           <p className="px-2 py-1 text-[0.55rem] font-semibold text-ink-subtle">
-            {menuTitle ?? (boundHint ? '切换模型将新建会话' : '运行模型')}
+            {menuTitle ?? (boundHint ? '切换当前会话模型' : '运行模型')}
           </p>
           {options.map((option) => {
             const isSelected = option.value === value;
