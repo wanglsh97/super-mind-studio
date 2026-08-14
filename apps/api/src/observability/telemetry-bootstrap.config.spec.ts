@@ -6,6 +6,8 @@ describe('resolveTelemetryBootstrapConfig', () => {
       enabled: true,
       serviceName: 'supermind-api',
       tracesEndpoint: 'http://otel-collector:4318/v1/traces',
+      metricsEndpoint: 'http://otel-collector:4318/v1/metrics',
+      ingestToken: undefined,
     })
   })
 
@@ -19,6 +21,8 @@ describe('resolveTelemetryBootstrapConfig', () => {
       enabled: true,
       serviceName: 'api',
       tracesEndpoint: 'http://otel-collector:4318/v1/traces',
+      metricsEndpoint: 'http://otel-collector:4318/v1/metrics',
+      ingestToken: undefined,
     })
   })
 })

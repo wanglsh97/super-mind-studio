@@ -27,4 +27,14 @@
 
 - [x] 5.1 扩展并发集成/E2E：五个不同 Thread 成功、第六个在消息/Run/RequestLog/Provider/Sandbox 前拒绝、同 Thread 第二个拒绝
 - [x] 5.2 增加完整纵向 E2E：Qwen Thread 保留历史切到 GLM，下一 Run 使用 GLM 快照，旧 Run/账单不变，active 时切换返回 409
-- [ ] 5.3 运行相关 unit、contract、integration、E2E、typecheck、lint、build、Prisma migration validate 和 OpenSpec strict validation，记录验证结果
+- [x] 5.3 运行相关 unit、contract、integration、E2E、typecheck、lint、build、Prisma migration validate 和 OpenSpec strict validation，记录验证结果
+
+### 验证记录（2026-08-14）
+
+- `pnpm test`：通过；API 128 suites / 687 tests、SDK 46 tests、Web 79 tests。
+- 相关 E2E：通过；覆盖五个不同 Thread 并行、第六个准入拒绝、同 Thread 单 active Run，以及 Qwen → GLM 的 active 切换拒绝与完成后切换链路。
+- `pnpm typecheck`：通过。
+- `pnpm build`：通过。
+- `pnpm db:validate`：通过；测试库 `prisma migrate deploy` 已成功应用 `20260814113000_add_agent_run_model_snapshot`。
+- OpenSpec strict validation：通过。
+- 功能改动文件 `eslint --quiet`：通过；`pnpm lint` 已运行，但全仓仍被 21 个与本 change 无关的既有 error 阻断（条件断言、未使用变量和 standalone expect），另有历史 warning。未在本 change 中扩大范围批量修复。

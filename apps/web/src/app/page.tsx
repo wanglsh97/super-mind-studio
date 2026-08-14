@@ -389,7 +389,7 @@ function AgentConsole() {
     setModelChangeError(null);
     setModelUpdatingThreadId(threadId);
     try {
-      const updated = await updateThreadModelOptimistically({
+      await updateThreadModelOptimistically({
         currentModel: current,
         nextModel,
         applySelection: setSelectedModel,
