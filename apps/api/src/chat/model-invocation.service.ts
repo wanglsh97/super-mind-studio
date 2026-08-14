@@ -6,9 +6,9 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common'
 
-import type { ChatAdapter, ChatAdapterEvent } from './adapters/chat-adapter'
-import { ChatAdapterError } from './adapters/chat-adapter'
-import { ChatAdapterRegistry } from './adapters/chat-adapter.registry'
+import type { ChatAdapter, ChatAdapterEvent } from '../adapters/chat-adapter'
+import { ChatAdapterError } from '../adapters/chat-adapter'
+import { ChatAdapterRegistry } from '../adapters/chat-adapter.registry'
 import { ChatFailoverService } from './chat-failover.service'
 import { ChatModelCatalog } from './chat-model-catalog'
 import type {
@@ -162,7 +162,6 @@ export class ModelInvocationService implements ModelInvocationPort {
 
   private resolveAdapter(provider: TextModelAlias): ChatAdapter {
     if (this.adapters.has(provider)) return this.adapters.get(provider)
-    if (this.adapters.has('mock')) return this.adapters.get('mock')
     throw new ServiceUnavailableException('当前没有可用的模型 Adapter')
   }
 }

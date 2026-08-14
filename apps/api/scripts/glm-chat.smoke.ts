@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto'
 
-import { GlmChatAdapter } from '../src/chat/adapters/glm-chat-adapter'
+import { GlmChatAdapter } from '../src/adapters/glm-chat-adapter'
 import { defaultUpstreamModelId } from '../src/chat/chat-models.config'
-import { OpenAICompatibleChatTransport } from '../src/chat/transports/openai-compatible-chat.transport'
+import { OpenAICompatibleChatTransport } from '../src/adapters/openai-compatible-chat.transport'
 
 void main()
 

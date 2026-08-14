@@ -4,8 +4,8 @@ import {
   OpenAICompatibleHttpError,
   OpenAICompatibleProtocolError,
   OpenAICompatibleTimeoutError,
-} from '../transports/openai-compatible-chat.transport'
-import type { OpenAICompatibleChatTransport } from '../transports/openai-compatible-chat.transport'
+} from './openai-compatible-chat.transport'
+import type { OpenAICompatibleChatTransport } from './openai-compatible-chat.transport'
 import type {
   ChatAdapter,
   ChatAdapterEvent,

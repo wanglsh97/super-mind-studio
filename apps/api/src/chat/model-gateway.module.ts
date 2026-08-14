@@ -4,17 +4,12 @@ import { ConfigModule, ConfigService } from '@nestjs/config'
 import { PricingService } from '../billing/pricing.service'
 import { ImageModule } from '../image/image.module'
 import { RedisModule } from '../redis/redis.module'
-import type { ChatAdapter } from './adapters/chat-adapter'
-import { CHAT_ADAPTERS, ChatAdapterRegistry } from './adapters/chat-adapter.registry'
-import { DeepSeekChatAdapter } from './adapters/deepseek-chat-adapter'
-import { GlmChatAdapter } from './adapters/glm-chat-adapter'
-import { KimiChatAdapter } from './adapters/kimi-chat-adapter'
-import {
-  DEFAULT_MOCK_CHAT_ADAPTER_OPTIONS,
-  MOCK_CHAT_ADAPTER_OPTIONS,
-  MockChatAdapter,
-} from './adapters/mock-chat-adapter'
-import { QwenChatAdapter } from './adapters/qwen-chat-adapter'
+import type { ChatAdapter } from '../adapters/chat-adapter'
+import { CHAT_ADAPTERS, ChatAdapterRegistry } from '../adapters/chat-adapter.registry'
+import { DeepSeekChatAdapter } from '../adapters/deepseek-chat-adapter'
+import { GlmChatAdapter } from '../adapters/glm-chat-adapter'
+import { KimiChatAdapter } from '../adapters/kimi-chat-adapter'
+import { QwenChatAdapter } from '../adapters/qwen-chat-adapter'
 import { ChatFailoverService } from './chat-failover.service'
 import { ChatModelCatalog } from './chat-model-catalog'
 import { defaultUpstreamModelId } from './chat-models.config'
@@ -22,7 +17,7 @@ import { MODEL_INVOCATION_PORT } from './model-invocation.port'
 import { ModelInvocationService } from './model-invocation.service'
 import { ModelsController } from './models.controller'
 import { ProviderHealthService } from './provider-health.service'
-import { OpenAICompatibleChatTransport } from './transports/openai-compatible-chat.transport'
+import { OpenAICompatibleChatTransport } from '../adapters/openai-compatible-chat.transport'
 
 /**
  * Agent 与内部 Prompt 能力共享的模型网关。
@@ -34,11 +29,6 @@ import { OpenAICompatibleChatTransport } from './transports/openai-compatible-ch
   imports: [ConfigModule, RedisModule, ImageModule],
   providers: [
     {
-      provide: MOCK_CHAT_ADAPTER_OPTIONS,
-      useValue: DEFAULT_MOCK_CHAT_ADAPTER_OPTIONS,
-    },
-    MockChatAdapter,
-    {
       provide: OpenAICompatibleChatTransport,
       inject: [ConfigService],
       useFactory: (config: ConfigService) =>
@@ -49,14 +39,12 @@ import { OpenAICompatibleChatTransport } from './transports/openai-compatible-ch
     },
     {
       provide: CHAT_ADAPTERS,
-      inject: [ConfigService, MockChatAdapter, OpenAICompatibleChatTransport],
+      inject: [ConfigService, OpenAICompatibleChatTransport],
       useFactory: (
         config: ConfigService,
-        mock: MockChatAdapter,
         transport: OpenAICompatibleChatTransport,
       ): readonly ChatAdapter[] => {
         const adapters: ChatAdapter[] = []
-        if (config.get<boolean>('MOCK_PROVIDER_ENABLED')) adapters.push(mock)
         if (config.get<boolean>('QWEN_ENABLED')) {
           adapters.push(
             new QwenChatAdapter(transport, {

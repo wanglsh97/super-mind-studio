@@ -1,7 +1,7 @@
 import type {
   ChatAdapterMessage,
   ChatAdapterToolDefinition,
-} from '../../chat/adapters/chat-adapter'
+} from '../../adapters/chat-adapter'
 
 export interface AgentTokenEstimate {
   tokens: number

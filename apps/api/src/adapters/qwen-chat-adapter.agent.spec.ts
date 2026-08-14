@@ -1,5 +1,5 @@
-import type { OpenAICompatibleFetch } from '../transports/openai-compatible-chat.transport'
-import { OpenAICompatibleChatTransport } from '../transports/openai-compatible-chat.transport'
+import type { OpenAICompatibleFetch } from './openai-compatible-chat.transport'
+import { OpenAICompatibleChatTransport } from './openai-compatible-chat.transport'
 import type { ChatAdapterEvent, ChatAdapterRequest } from './chat-adapter'
 import { QwenChatAdapter } from './qwen-chat-adapter'
 import { describeAgentToolCallingContract } from './testing/agent-tool-calling.contract'

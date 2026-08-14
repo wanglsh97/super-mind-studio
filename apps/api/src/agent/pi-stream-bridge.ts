@@ -22,7 +22,7 @@ import type {
   ChatAdapterToolChoice,
   ChatAdapterToolDefinition,
   ChatAdapterUsage,
-} from '../chat/adapters/chat-adapter'
+} from '../adapters/chat-adapter'
 import type {
   ModelInvocationPort,
   ModelInvocationRequest,

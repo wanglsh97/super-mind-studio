@@ -17,7 +17,7 @@ Super Mind Studio 定位为 AI 灵感创作平台，由两个认证边界组成�
 
 **Goals:**
 
-- 先交付一条可重复验收的纵向主链路：Agent Web → SDK → Agent API → ModelInvocationPort → Mock Adapter → 可恢复事件流 → PostgreSQL 日志/计费。
+- 交付一条真实厂商纵向主链路：Agent Web → SDK → Agent API → ModelInvocationPort → Provider Adapter → 可恢复事件流 → PostgreSQL 日志/计费；离线测试使用非生产注册的脚本夹具。
 - 以能力模块组织模块化单体，使新增厂商只增加 Adapter 和配置，不改变公开 SDK 契约。
 - 为 Chat、Image、Prompt 和 Admin 定义清晰的控制器、服务、数据和错误边界。
 - 使真实模型接入、对比模式和后台能力可以按里程碑增量上线，每一步都保持现有链路可运行。
@@ -47,7 +47,7 @@ flowchart LR
     A --> Q["Qwen"]
     A --> Z["GLM"]
     A --> D["DeepSeek"]
-    A --> K["Mock Adapter"]
+    A --> K["Kimi"]
 ```
 
 Nginx 是唯一公网入口。Web 和 API 不直接暴露主机端口；PostgreSQL、Redis 只在 Compose 网络可见。浏览器通过同源 `/api/v1` 访问 API，域名和公网 IP 不需要两套前端配置。
@@ -83,7 +83,7 @@ flowchart TB
     TR --> QA["QwenAdapter"]
     TR --> GA["GlmAdapter"]
     TR --> DA["DeepSeekAdapter"]
-    TR --> MA["MockChatAdapter"]
+    TR --> KA["KimiAdapter"]
     IR --> MI["MockImageAdapter"]
     C --> RL["RequestLifecycleService"]
     O --> RL
@@ -256,6 +256,8 @@ Web 强制使用 `@supermind/sdk`，用真实页面验证 SDK，而不是为每�
 ### Decision 3: Provider-neutral Adapter plus shared compatible transport
 
 Chat Adapter 暴露统一 async iterable 事件。Qwen、GLM、DeepSeek 可复用内部 `OpenAICompatibleChatTransport`，但鉴权、模型映射和 usage/error mapping 仍由各 Adapter 持有。相比直接把某个官方 SDK 的类型作为领域模型，该方式减少供应商锁定，也避免 Web 安装多套 SDK。
+
+真实文本模型厂商 Adapter、共享 Chat Adapter contract 及 OpenAI-compatible HTTP/SSE transport 统一放置在 `apps/api/src/adapters`。生产 registry 只注册 Qwen、GLM、DeepSeek、Kimi，不提供 Mock Chat Adapter；没有启用真实厂商时文本模型目录为空。无网络测试通过 `scripts/support` 或测试文件内的 fixture Adapter 完成，测试夹具不得进入 NestJS 生产注册表。文生图的 `MockImageAdapter` 属于已接受的独立 V1 边界，不受本目录调整影响。
 
 ### Decision 4: PostgreSQL as system of record, Redis as disposable control state
 

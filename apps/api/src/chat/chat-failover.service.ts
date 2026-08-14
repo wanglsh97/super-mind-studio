@@ -2,9 +2,9 @@ import type { TextModelAlias } from '@supermind/sdk'
 import { Inject, Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 
-import type { ChatAdapter } from './adapters/chat-adapter'
-import { ChatAdapterError } from './adapters/chat-adapter'
-import { ChatAdapterRegistry } from './adapters/chat-adapter.registry'
+import type { ChatAdapter } from '../adapters/chat-adapter'
+import { ChatAdapterError } from '../adapters/chat-adapter'
+import { ChatAdapterRegistry } from '../adapters/chat-adapter.registry'
 
 const FALLBACK_ENV = {
   qwen: 'QWEN_FALLBACK_ALIAS',

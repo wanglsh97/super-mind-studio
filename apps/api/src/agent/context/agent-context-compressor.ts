@@ -1,4 +1,4 @@
-import type { ChatAdapterMessage } from '../../chat/adapters/chat-adapter'
+import type { ChatAdapterMessage } from '../../adapters/chat-adapter'
 import type { AgentContextCompressionLevel } from './agent-context-budget'
 
 const RECENT_TURNS_TO_KEEP = 4

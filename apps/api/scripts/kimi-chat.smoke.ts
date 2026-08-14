@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto'
 
-import { KimiChatAdapter } from '../src/chat/adapters/kimi-chat-adapter'
+import { KimiChatAdapter } from '../src/adapters/kimi-chat-adapter'
 import { defaultUpstreamModelId } from '../src/chat/chat-models.config'
-import { OpenAICompatibleChatTransport } from '../src/chat/transports/openai-compatible-chat.transport'
+import { OpenAICompatibleChatTransport } from '../src/adapters/openai-compatible-chat.transport'
 
 void main()
 

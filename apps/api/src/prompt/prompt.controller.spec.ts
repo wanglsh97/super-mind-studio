@@ -4,8 +4,8 @@ import { ConfigService } from '@nestjs/config'
 import type { Request } from 'express'
 
 import type { PricingService } from '../billing/pricing.service'
-import type { ChatAdapter } from '../chat/adapters/chat-adapter'
-import { ChatAdapterRegistry } from '../chat/adapters/chat-adapter.registry'
+import type { ChatAdapter } from '../adapters/chat-adapter'
+import { ChatAdapterRegistry } from '../adapters/chat-adapter.registry'
 import type { RateLimitService } from '../rate-limit/rate-limit.service'
 import type { RequestLifecycleService } from '../request-lifecycle/request-lifecycle.service'
 import { PromptController } from './prompt.controller'
@@ -24,6 +24,7 @@ function setup(
     PROMPT_OPTIMIZER_MODEL: 'qwen',
     MOCK_PROVIDER_ENABLED: true,
   },
+  registerAdapter = true,
 ) {
   const stream = jest.fn(() =>
     (async function* () {
@@ -37,7 +38,7 @@ function setup(
       yield { type: 'finish' as const, finishReason: 'stop' as const }
     })(),
   )
-  const adapter: ChatAdapter = { id: 'mock', resolvedModel: 'mock-chat-v1', stream }
+  const adapter: ChatAdapter = { id: 'qwen', resolvedModel: 'qwen-fixture-v1', stream }
   const consumeChat = jest.fn().mockResolvedValue(undefined)
   const rateLimit = { consumeChat } as unknown as RateLimitService
   const start = jest.fn().mockResolvedValue({
@@ -55,7 +56,7 @@ function setup(
   const pricing = { calculate } as unknown as PricingService
   const controller = new PromptController(
     new ConfigService(configValues),
-    new ChatAdapterRegistry([adapter]),
+    new ChatAdapterRegistry(registerAdapter ? [adapter] : []),
     new PromptTemplateRegistry(),
     lifecycle,
     rateLimit,
@@ -113,8 +114,8 @@ describe('PromptController', () => {
           ],
         },
         modelAlias: 'qwen',
-        provider: 'mock',
-        resolvedModel: 'mock-chat-v1',
+        provider: 'qwen',
+        resolvedModel: 'qwen-fixture-v1',
         stream: false,
         clientIp: '127.0.0.1',
       })
@@ -129,14 +130,14 @@ describe('PromptController', () => {
           ],
         }),
       )
-      expect(calculate).toHaveBeenCalledWith('mock', expect.objectContaining({ totalTokens: 15 }))
+      expect(calculate).toHaveBeenCalledWith('qwen', expect.objectContaining({ totalTokens: 15 }))
       expect(finish).toHaveBeenCalledWith({
         requestLogId: 'log-1',
         requestId: request.id,
         startedAt: new Date('2026-07-17T00:00:00.000Z'),
         status: 'succeeded',
-        provider: 'mock',
-        resolvedModel: 'mock-chat-v1',
+        provider: 'qwen',
+        resolvedModel: 'qwen-fixture-v1',
         usage: {
           inputTokens: 10,
           outputTokens: 5,
@@ -164,10 +165,11 @@ describe('PromptController', () => {
   })
 
   it('returns an explicit error and never switches to another real model when the configured alias is disabled', async () => {
-    const { controller, request, start, stream } = setup(undefined, {
-      PROMPT_OPTIMIZER_MODEL: 'qwen',
-      MOCK_PROVIDER_ENABLED: false,
-    })
+    const { controller, request, start, stream } = setup(
+      undefined,
+      { PROMPT_OPTIMIZER_MODEL: 'qwen' },
+      false,
+    )
 
     await expect(
       controller.optimize({ prompt: '原始 Prompt', mode: 'simplify' }, request, authenticatedUser),

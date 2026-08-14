@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-import type { OpenAICompatibleFetch } from '../transports/openai-compatible-chat.transport'
-import { OpenAICompatibleChatTransport } from '../transports/openai-compatible-chat.transport'
+import type { OpenAICompatibleFetch } from './openai-compatible-chat.transport'
+import { OpenAICompatibleChatTransport } from './openai-compatible-chat.transport'
 import { KimiChatAdapter } from './kimi-chat-adapter'
 import { describeChatAdapterContract } from './testing/chat-adapter.contract'
 

@@ -21,7 +21,7 @@ Nginx SHALL route `/` and `/admin` to Web, `/api/v1/*`, `/api-docs`, and health 
 For the Chat SSE route, Nginx SHALL disable proxy buffering and caching, use suitable read timeouts, preserve connection-close propagation, and avoid response transformations that batch chunks.
 
 #### Scenario: Stream traverses production proxy
-- **GIVEN** Mock Adapter emits delayed chunks
+- **GIVEN** the SSE smoke harness emits delayed fixture chunks
 - **WHEN** a browser calls Chat through Nginx
 - **THEN** chunks arrive incrementally before the stream completes
 - **AND** cancelling the browser request closes the upstream API request best effort

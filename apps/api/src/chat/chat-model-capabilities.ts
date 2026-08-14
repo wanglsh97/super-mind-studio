@@ -5,8 +5,6 @@ export interface ChatCapabilityContext {
   provider: TextModelAlias
   /** 该厂商真实 Adapter 是否已注册（API Key / 启用）。 */
   providerConfigured: boolean
-  /** Mock Adapter 是否可用。 */
-  mockAvailable: boolean
 }
 
 /**
@@ -22,5 +20,5 @@ export function resolveChatModelCapabilities(context: ChatCapabilityContext): Ca
 }
 
 export function canAdvertiseAgentCapability(context: ChatCapabilityContext): boolean {
-  return context.providerConfigured || context.mockAvailable
+  return context.providerConfigured
 }

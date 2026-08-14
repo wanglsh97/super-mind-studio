@@ -49,16 +49,4 @@ describe('PricingService', () => {
       priceVersion: '2026-07-v1',
     })
   })
-
-  it('uses a deterministic zero-cost price version for Mock', () => {
-    const service = new PricingService(new ConfigService())
-    expect(
-      service.calculate('mock', {
-        inputTokens: 1,
-        outputTokens: 2,
-        totalTokens: 3,
-        usageUnknown: false,
-      }),
-    ).toMatchObject({ priceVersion: 'mock-v1', estimatedCostCny: '0.00000000' })
-  })
 })

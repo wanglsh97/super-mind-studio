@@ -6,7 +6,7 @@ import type {
   ChatAdapterToolChoice,
   ChatAdapterToolDefinition,
   ChatAdapterUsage,
-} from './adapters/chat-adapter'
+} from '../adapters/chat-adapter'
 
 /**
  * Provider-neutral 内部模型调用端口。

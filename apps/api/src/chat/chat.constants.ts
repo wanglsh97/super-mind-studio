@@ -7,7 +7,7 @@ export const TEXT_MODEL_ALIASES = [
   'kimi',
 ] as const satisfies readonly TextModelAlias[]
 
-export const CHAT_ADAPTER_IDS = ['mock', ...TEXT_MODEL_ALIASES] as const
+export const CHAT_ADAPTER_IDS = TEXT_MODEL_ALIASES
 
 export type ChatAdapterId = (typeof CHAT_ADAPTER_IDS)[number]
 

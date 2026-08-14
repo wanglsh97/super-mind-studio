@@ -1,7 +1,7 @@
 import type { Context } from '@earendil-works/pi-ai'
 
 import type { ModelStreamEvent } from '../chat/model-invocation.port'
-import { ChatAdapterError } from '../chat/adapters/chat-adapter'
+import { ChatAdapterError } from '../adapters/chat-adapter'
 import {
   mapModelStreamToPiEvents,
   piContextToInvocationMessages,

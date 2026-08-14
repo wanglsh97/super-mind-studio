@@ -37,8 +37,6 @@ export class ProviderHealthService {
   }
 
   async getStatus(provider: ChatAdapterId): Promise<ProviderHealthStatus> {
-    if (provider === 'mock') return 'unknown'
-
     try {
       return (await this.read(provider))?.status ?? 'unknown'
     } catch (error) {
@@ -48,8 +46,6 @@ export class ProviderHealthService {
   }
 
   async recordSuccess(provider: ChatAdapterId, latencyMs: number): Promise<void> {
-    if (provider === 'mock') return
-
     await this.update(provider, (previous, now) => ({
       status: 'healthy',
       consecutiveFailures: 0,
@@ -76,8 +72,6 @@ export class ProviderHealthService {
     latencyMs: number,
     failure: ProviderFailure,
   ): Promise<void> {
-    if (provider === 'mock') return
-
     await this.update(provider, (previous, now) => {
       const consecutiveFailures = failure.affectsHealth
         ? (previous?.consecutiveFailures ?? 0) + 1

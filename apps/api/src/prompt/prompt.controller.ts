@@ -16,9 +16,9 @@ import { ApiCookieAuth, ApiTags } from '@nestjs/swagger'
 import type { Request } from 'express'
 
 import { PricingService } from '../billing/pricing.service'
-import type { ChatAdapter, ChatAdapterUsage } from '../chat/adapters/chat-adapter'
-import { ChatAdapterError } from '../chat/adapters/chat-adapter'
-import { ChatAdapterRegistry } from '../chat/adapters/chat-adapter.registry'
+import type { ChatAdapter, ChatAdapterUsage } from '../adapters/chat-adapter'
+import { ChatAdapterError } from '../adapters/chat-adapter'
+import { ChatAdapterRegistry } from '../adapters/chat-adapter.registry'
 import { RateLimitService } from '../rate-limit/rate-limit.service'
 import { RequestLifecycleService } from '../request-lifecycle/request-lifecycle.service'
 import { CurrentUser } from '../user-auth/current-user.decorator'
@@ -134,9 +134,6 @@ export class PromptController {
 
   private resolveAdapter(model: TextModelAlias): ChatAdapter {
     if (this.adapters.has(model)) return this.adapters.get(model)
-    if (this.config.get<boolean>('MOCK_PROVIDER_ENABLED') && this.adapters.has('mock')) {
-      return this.adapters.get('mock')
-    }
     throw new PromptOptimizerModelUnavailableException(model)
   }
 }

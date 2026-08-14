@@ -3,7 +3,7 @@ import { createHash, randomUUID } from 'node:crypto'
 import { Injectable } from '@nestjs/common'
 import type { AgentThinkingEffort } from '@supermind/sdk'
 
-import type { ChatAdapterMessage, ChatAdapterUsage } from '../../chat/adapters/chat-adapter'
+import type { ChatAdapterMessage, ChatAdapterUsage } from '../../adapters/chat-adapter'
 import type { ModelInvocationPort } from '../../chat/model-invocation.port'
 import {
   AGENT_CONTEXT_SUMMARY_SCHEMA_VERSION,

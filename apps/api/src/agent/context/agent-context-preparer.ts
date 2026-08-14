@@ -3,7 +3,7 @@ import { Injectable } from '@nestjs/common'
 import type {
   ChatAdapterMessage,
   ChatAdapterToolDefinition,
-} from '../../chat/adapters/chat-adapter'
+} from '../../adapters/chat-adapter'
 import { calculateAgentContextBudget } from './agent-context-budget'
 import type { AgentContextBudget } from './agent-context-budget'
 import { compressAgentContext } from './agent-context-compressor'

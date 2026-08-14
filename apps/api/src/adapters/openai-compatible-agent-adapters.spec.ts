@@ -1,7 +1,7 @@
 import type { TextModelAlias } from '@supermind/sdk'
 
-import type { OpenAICompatibleFetch } from '../transports/openai-compatible-chat.transport'
-import { OpenAICompatibleChatTransport } from '../transports/openai-compatible-chat.transport'
+import type { OpenAICompatibleFetch } from './openai-compatible-chat.transport'
+import { OpenAICompatibleChatTransport } from './openai-compatible-chat.transport'
 import type { ChatAdapter, ChatAdapterRequest } from './chat-adapter'
 import { DeepSeekChatAdapter } from './deepseek-chat-adapter'
 import { GlmChatAdapter } from './glm-chat-adapter'

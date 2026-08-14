@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common'
 
-import type { ChatAdapterId } from '../chat.constants'
+import type { ChatAdapterId } from '../chat/chat.constants'
 import type { ChatAdapter } from './chat-adapter'
 
 export const CHAT_ADAPTERS = Symbol('CHAT_ADAPTERS')

@@ -2,7 +2,7 @@ import { Inject, Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 
 import { Prisma } from '../generated/prisma/client'
-import type { ChatAdapterUsage } from '../chat/adapters/chat-adapter'
+import type { ChatAdapterUsage } from '../adapters/chat-adapter'
 import type { ChatAdapterId } from '../chat/chat.constants'
 import type { RequestLifecycleUsage } from '../request-lifecycle/request-lifecycle.service'
 
@@ -21,16 +21,6 @@ export class PricingService {
     if (usage.usageUnknown || usage.inputTokens === null || usage.outputTokens === null) {
       const priceVersion = this.config.get<string>('PRICING_VERSION')
       return { ...usage, ...(priceVersion === undefined ? {} : { priceVersion }) }
-    }
-
-    if (provider === 'mock') {
-      return {
-        ...usage,
-        priceVersion: 'mock-v1',
-        inputCostCny: '0.00000000',
-        outputCostCny: '0.00000000',
-        estimatedCostCny: '0.00000000',
-      }
     }
 
     const [inputKey, outputKey] = PRICE_KEYS[provider]

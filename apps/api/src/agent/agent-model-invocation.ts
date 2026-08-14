@@ -1,6 +1,6 @@
 import type { Prisma } from '../generated/prisma/client'
 import type { ChatAdapterId } from '../chat/chat.constants'
-import type { ChatAdapterUsage } from '../chat/adapters/chat-adapter'
+import type { ChatAdapterUsage } from '../adapters/chat-adapter'
 import type {
   ModelInvocationPort,
   ModelInvocationRequest,

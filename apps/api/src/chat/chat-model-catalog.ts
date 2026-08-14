@@ -1,7 +1,7 @@
 import type { TextModelAlias } from '@supermind/sdk'
 import { Inject, Injectable } from '@nestjs/common'
 
-import { ChatAdapterRegistry } from './adapters/chat-adapter.registry'
+import { ChatAdapterRegistry } from '../adapters/chat-adapter.registry'
 import { canAdvertiseAgentCapability } from './chat-model-capabilities'
 import { CHAT_MODELS } from './chat-models.config'
 
@@ -18,9 +18,7 @@ export class ChatModelCatalog {
   constructor(@Inject(ChatAdapterRegistry) private readonly adapters: ChatAdapterRegistry) {}
 
   list(): readonly ChatModelDefinition[] {
-    return CHAT_MODELS.filter(
-      ({ provider }) => this.adapters.has(provider) || this.adapters.has('mock'),
-    )
+    return CHAT_MODELS.filter(({ provider }) => this.adapters.has(provider))
   }
 
   resolve(id: string): ChatModelDefinition | undefined {
@@ -36,7 +34,6 @@ export class ChatModelCatalog {
         modelId: model.id,
         provider: model.provider,
         providerConfigured: this.adapters.has(model.provider),
-        mockAvailable: this.adapters.has('mock'),
       })
     ) {
       return undefined

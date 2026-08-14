@@ -1,7 +1,7 @@
 import type { AgentMediaReferencePart, AgentMessagePart } from '@supermind/sdk'
 
 import type { AgentMessage, AgentMessageRole } from '../../generated/prisma/client'
-import type { ChatAdapterMessage } from '../../chat/adapters/chat-adapter'
+import type { ChatAdapterMessage } from '../../adapters/chat-adapter'
 import type { AgentContextSummaryV1 } from './agent-context-summary.schema'
 import { mediaReferencePlaceholder } from './agent-media-placeholder'
 

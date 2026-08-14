@@ -1,7 +1,7 @@
 import type {
   ChatAdapterMessage,
   ChatAdapterToolDefinition,
-} from '../../chat/adapters/chat-adapter'
+} from '../../adapters/chat-adapter'
 import {
   AGENT_CONTEXT_SAFETY_RESERVE_MIN_TOKENS,
   calculateAgentContextBudget,

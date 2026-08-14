@@ -6,7 +6,7 @@ import {
   Prisma,
 } from '../generated/prisma/client'
 import { PrismaService } from '../database/prisma.service'
-import type { ChatAdapterUsage } from '../chat/adapters/chat-adapter'
+import type { ChatAdapterUsage } from '../adapters/chat-adapter'
 
 export interface SaveAgentModelInvocationInput {
   requestId: string

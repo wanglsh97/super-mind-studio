@@ -1,6 +1,6 @@
 import type { AgentThinkingEffort, ChatFinishReason, TextModelAlias } from '@supermind/sdk'
 
-import type { ChatAdapterId } from '../chat.constants'
+import type { ChatAdapterId } from '../chat/chat.constants'
 
 /** 平台中立的工具调用块，供助手回放上一轮 tool call 与本轮新 tool call 使用。 */
 export interface ChatAdapterToolCall {

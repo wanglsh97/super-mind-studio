@@ -1,6 +1,6 @@
 import type { ChatFinishReason } from '@supermind/sdk'
 
-import type { ChatAdapterId } from '../../chat.constants'
+import type { ChatAdapterId } from '../../chat/chat.constants'
 import type {
   ChatAdapter,
   ChatAdapterError,

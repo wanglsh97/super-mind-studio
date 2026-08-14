@@ -3,8 +3,8 @@ import { randomUUID } from 'node:crypto'
 
 import type { ConfigService } from '@nestjs/config'
 
-import { ChatAdapterRegistry } from '../src/chat/adapters/chat-adapter.registry'
-import { MockChatAdapter } from '../src/chat/adapters/mock-chat-adapter'
+import { ChatAdapterRegistry } from '../src/adapters/chat-adapter.registry'
+import { ScriptedChatFixture } from './support/scripted-chat-fixture'
 import type { ChatFailoverService } from '../src/chat/chat-failover.service'
 import { ChatModelCatalog } from '../src/chat/chat-model-catalog'
 import { ModelInvocationService } from '../src/chat/model-invocation.service'
@@ -43,9 +43,7 @@ function fakeConfig(): ConfigService {
 }
 
 function buildModelInvocation(): ModelInvocationService {
-  const registry = new ChatAdapterRegistry([
-    new MockChatAdapter({ chunks: ['未使用'], delayMs: 0 }),
-  ])
+  const registry = new ChatAdapterRegistry([new ScriptedChatFixture()])
   const catalog = new ChatModelCatalog(registry)
   const failover = { resolve: () => undefined } as unknown as ChatFailoverService
   const providerHealth = {

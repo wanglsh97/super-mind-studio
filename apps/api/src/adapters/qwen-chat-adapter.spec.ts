@@ -4,8 +4,8 @@ import { join } from 'node:path'
 import type { ChatAdapterEvent, ChatAdapterRequest } from './chat-adapter'
 import { QwenChatAdapter } from './qwen-chat-adapter'
 import { describeChatAdapterContract } from './testing/chat-adapter.contract'
-import type { OpenAICompatibleFetch } from '../transports/openai-compatible-chat.transport'
-import { OpenAICompatibleChatTransport } from '../transports/openai-compatible-chat.transport'
+import type { OpenAICompatibleFetch } from './openai-compatible-chat.transport'
+import { OpenAICompatibleChatTransport } from './openai-compatible-chat.transport'
 
 const successFixture = readFileSync(
   join(__dirname, 'testing/fixtures/qwen-chat-success.sse'),
@@ -172,10 +172,8 @@ describe('QwenChatAdapter', () => {
               { role: 'user', content: '继续' },
             ],
       })
-      if (budget === undefined) expect(body).not.toHaveProperty('thinking_budget')
-      else expect(body).toHaveProperty('thinking_budget', budget)
-      if (preservesThinking) expect(body).toHaveProperty('preserve_thinking', true)
-      else expect(body).not.toHaveProperty('preserve_thinking')
+      expect(body?.thinking_budget).toBe(budget)
+      expect(body?.preserve_thinking).toBe(preservesThinking ? true : undefined)
     },
   )
 

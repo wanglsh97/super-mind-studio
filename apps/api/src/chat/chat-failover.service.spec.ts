@@ -1,8 +1,8 @@
 import { ConfigService } from '@nestjs/config'
 
-import type { ChatAdapter } from './adapters/chat-adapter'
-import { ChatAdapterError } from './adapters/chat-adapter'
-import { ChatAdapterRegistry } from './adapters/chat-adapter.registry'
+import type { ChatAdapter } from '../adapters/chat-adapter'
+import { ChatAdapterError } from '../adapters/chat-adapter'
+import { ChatAdapterRegistry } from '../adapters/chat-adapter.registry'
 import { ChatFailoverService, isEligibleFailure } from './chat-failover.service'
 
 function adapter(id: ChatAdapter['id']): ChatAdapter {

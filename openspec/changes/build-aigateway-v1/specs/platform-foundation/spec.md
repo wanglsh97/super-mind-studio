@@ -25,13 +25,14 @@ The API SHALL validate required environment variables and model alias mappings b
 - **WHEN** the API starts
 - **THEN** startup fails with a configuration error that names the missing variable without printing secret values
 
-### Requirement: Deterministic Mock Adapter supports the first vertical slice
-The system SHALL provide a deterministic Mock Adapter for development, tests, and CI that supports stream chunks, usage, completion, configured failures, configured delay, and cancellation without calling an external network.
+### Requirement: Production text adapters represent real providers only
+The production Chat Adapter registry SHALL contain only enabled real model-provider adapters. Offline tests and CI MAY use deterministic fixture implementations outside the production Adapter registry, and SHALL NOT require external model network access.
 
 #### Scenario: No provider key is available
-- **GIVEN** Mock mode is enabled and no real provider API key exists
-- **WHEN** a valid chat request is sent
-- **THEN** the request completes through the same registry, service, SDK, SSE, and persistence path used by real adapters
+- **GIVEN** no real text provider is enabled
+- **WHEN** the API builds its model catalog
+- **THEN** no text model is advertised as available
+- **AND** CI validates normalized events with non-production fixture adapters without external network access
 
 ### Requirement: Dependency health is explicit
 The API SHALL expose liveness and readiness states for the application, PostgreSQL, and Redis. Readiness SHALL fail if PostgreSQL or Redis is unavailable because request logging and paid-call limiting are required on the main path.

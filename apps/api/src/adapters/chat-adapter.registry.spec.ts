@@ -18,18 +18,18 @@ function adapter(id: ChatAdapter['id']): ChatAdapter {
 
 describe('ChatAdapterRegistry', () => {
   it('resolves registered adapters by stable adapter id', () => {
-    const mock = adapter('mock')
+    const glm = adapter('glm')
     const qwen = adapter('qwen')
-    const registry = new ChatAdapterRegistry([mock, qwen])
+    const registry = new ChatAdapterRegistry([glm, qwen])
 
-    expect(registry.get('mock')).toBe(mock)
+    expect(registry.get('glm')).toBe(glm)
     expect(registry.get('qwen')).toBe(qwen)
-    expect(registry.has('glm')).toBe(false)
-    expect(registry.list()).toEqual([mock, qwen])
+    expect(registry.has('deepseek')).toBe(false)
+    expect(registry.list()).toEqual([glm, qwen])
   })
 
   it('rejects duplicate adapter ids at startup', () => {
-    expect(() => new ChatAdapterRegistry([adapter('mock'), adapter('mock')])).toThrow(
+    expect(() => new ChatAdapterRegistry([adapter('qwen'), adapter('qwen')])).toThrow(
       DuplicateChatAdapterError,
     )
   })

@@ -4,8 +4,8 @@ import { randomUUID } from 'node:crypto'
 import type { Message } from '@earendil-works/pi-ai'
 import type { AgentEvent } from '@earendil-works/pi-agent-core'
 
-import { ChatAdapterRegistry } from '../src/chat/adapters/chat-adapter.registry'
-import { MockChatAdapter } from '../src/chat/adapters/mock-chat-adapter'
+import { ChatAdapterRegistry } from '../src/adapters/chat-adapter.registry'
+import { ScriptedChatFixture } from './support/scripted-chat-fixture'
 import type { ChatFailoverService } from '../src/chat/chat-failover.service'
 import { ChatModelCatalog } from '../src/chat/chat-model-catalog'
 import { ModelInvocationService } from '../src/chat/model-invocation.service'
@@ -20,13 +20,11 @@ import { webFetchFixtureTool } from '../src/agent/tools/web-fetch-fixture.tool'
  * Agent 工具闭环集成检查（tsx 运行，不依赖公网）。
  *
  * Jest 默认无法动态 import ESM 的 Pi 运行时，故这里用 tsx 运行真实 Pi harness：
- * Mock tool-calling Adapter → web_fetch fixture → follow-up turn。
+ * Scripted provider fixture → web_fetch fixture → follow-up turn。
  * 通过 `pnpm test:agent-harness` 执行。
  */
 function buildModelInvocation(): ModelInvocationService {
-  const registry = new ChatAdapterRegistry([
-    new MockChatAdapter({ chunks: ['未使用'], delayMs: 0 }),
-  ])
+  const registry = new ChatAdapterRegistry([new ScriptedChatFixture()])
   const catalog = new ChatModelCatalog(registry)
   const failover = { resolve: () => undefined } as unknown as ChatFailoverService
   const providerHealth = {

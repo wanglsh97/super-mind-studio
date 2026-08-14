@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-import type { OpenAICompatibleFetch } from '../transports/openai-compatible-chat.transport'
-import { OpenAICompatibleChatTransport } from '../transports/openai-compatible-chat.transport'
+import type { OpenAICompatibleFetch } from './openai-compatible-chat.transport'
+import { OpenAICompatibleChatTransport } from './openai-compatible-chat.transport'
 import { DeepSeekChatAdapter } from './deepseek-chat-adapter'
 import { describeChatAdapterContract } from './testing/chat-adapter.contract'
 
@@ -108,8 +108,7 @@ describe('DeepSeekChatAdapter thinking effort', () => {
         void _event
       }
       expect(body).toHaveProperty('thinking.type', thinkingType)
-      if (reasoningEffort === undefined) expect(body).not.toHaveProperty('reasoning_effort')
-      else expect(body).toHaveProperty('reasoning_effort', reasoningEffort)
+      expect(body?.reasoning_effort).toBe(reasoningEffort)
     },
   )
 })

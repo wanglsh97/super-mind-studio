@@ -1,5 +1,5 @@
-import type { ChatAdapter } from './adapters/chat-adapter'
-import { ChatAdapterRegistry } from './adapters/chat-adapter.registry'
+import type { ChatAdapter } from '../adapters/chat-adapter'
+import { ChatAdapterRegistry } from '../adapters/chat-adapter.registry'
 import { ChatModelCatalog } from './chat-model-catalog'
 import { CHAT_MODELS, validateChatModels } from './chat-models.config'
 
@@ -61,23 +61,16 @@ describe('ChatModelCatalog', () => {
     ])
   })
 
-  it('exposes the complete repository catalog in deterministic Mock mode', () => {
-    const catalog = new ChatModelCatalog(new ChatAdapterRegistry([adapter('mock', 'mock-chat')]))
+  it('does not expose text models when no real provider adapter is registered', () => {
+    const catalog = new ChatModelCatalog(new ChatAdapterRegistry([]))
 
-    expect(catalog.list()).toEqual(CHAT_MODELS)
-    expect(catalog.resolve('qwen3.7-plus')?.contextWindowTokens).toBe(50_000)
+    expect(catalog.list()).toEqual([])
+    expect(catalog.resolve('qwen3.7-plus')).toBeUndefined()
   })
 
-  it('resolveForAgent allows Mock-backed and configured real providers', () => {
-    const mockCatalog = new ChatModelCatalog(
-      new ChatAdapterRegistry([adapter('mock', 'mock-chat')]),
-    )
-    expect(mockCatalog.resolveForAgent('qwen3.7-plus')).toEqual(
-      expect.objectContaining({ id: 'qwen3.7-plus', provider: 'qwen' }),
-    )
-
+  it('resolveForAgent allows configured real providers only', () => {
     const realCatalog = new ChatModelCatalog(
-      new ChatAdapterRegistry([adapter('mock', 'mock-chat'), adapter('qwen', 'qwen3.7-plus')]),
+      new ChatAdapterRegistry([adapter('qwen', 'qwen3.7-plus')]),
     )
     expect(realCatalog.resolveForAgent('qwen3.7-plus')).toEqual(
       expect.objectContaining({ id: 'qwen3.7-plus', provider: 'qwen' }),
