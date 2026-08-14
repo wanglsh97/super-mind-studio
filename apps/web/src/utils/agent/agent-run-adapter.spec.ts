@@ -181,6 +181,63 @@ test('marks the last assistant message incomplete when last run was interrupted'
   })
 })
 
+test('binds a newly created Thread before notifying the route change', async () => {
+  const calls: string[] = []
+  const client = {
+    agent: {
+      threads: {
+        create: async () => {
+          calls.push('create-thread')
+          return { id: 'thread-new' }
+        },
+      },
+      runs: {
+        create: async () => {
+          calls.push('create-run')
+          return {
+            id: 'run-new',
+            threadId: 'thread-new',
+            model: 'qwen3.7-plus',
+            provider: 'qwen',
+          }
+        },
+        subscribe: async function* () {
+          yield {
+            type: 'run-terminal',
+            sequence: 0,
+            runId: 'run-new',
+            status: 'succeeded',
+            limitReason: null,
+          } as const
+        },
+      },
+    },
+  } as unknown as SuperMindClient
+  const adapter = createAgentRunAdapter(client, () => ({
+    threadId: null,
+    model: 'qwen3.7-plus',
+    thinkingEffort: 'balanced',
+    selectedSkillNames: [],
+    onRunThreadBound: (threadId) => calls.push(`bind:${threadId}`),
+    onThreadCreated: (thread) => calls.push(`route:${thread.id}`),
+  }))
+
+  const stream = adapter.run({
+    messages: [{ role: 'user', content: [{ type: 'text', text: '开始' }] }],
+    abortSignal: new AbortController().signal,
+  } as never) as AsyncGenerator<unknown>
+  for await (const chunk of stream) {
+    void chunk
+  }
+
+  assert.deepEqual(calls, [
+    'create-thread',
+    'bind:thread-new',
+    'route:thread-new',
+    'create-run',
+  ])
+})
+
 test('aborting local SSE does not call runs.cancel (browser disconnect must not cancel)', async () => {
   let cancelCalls = 0
   const abort = new AbortController()

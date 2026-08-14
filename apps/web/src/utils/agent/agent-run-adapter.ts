@@ -25,6 +25,7 @@ export interface AgentRunAdapterContext {
   selectedSkillNames: readonly string[]
   websiteMode?: boolean
   documentMode?: boolean
+  onRunThreadBound?: (threadId: string) => void
   onThreadCreated: (thread: AgentThreadSummary) => void
   onRunCreated?: (run: Pick<AgentRunSummary, 'id' | 'threadId' | 'model' | 'provider'>) => void
   onRunFinished?: (status: AgentRunTerminalStatus) => void
@@ -91,7 +92,10 @@ export function createAgentRunAdapter(
         context.onRunProgressChange?.('creating-thread')
         const created = await client.agent.threads.create({ model: context.model })
         threadId = created.id
+        context.onRunThreadBound?.(threadId)
         context.onThreadCreated(created)
+      } else {
+        context.onRunThreadBound?.(threadId)
       }
 
       context.onRunProgressChange?.('starting-run')

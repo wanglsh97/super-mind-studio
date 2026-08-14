@@ -115,7 +115,10 @@ import {
   agentToolDetailLabels,
   resolveAgentToolActivityState,
 } from '@/utils/agent/agent-tool-activity';
-import { resetThreadIfIdle } from '@/utils/agent/agent-thread-hydration';
+import {
+  resetThreadIfIdle,
+  shouldDetachLocalRun,
+} from '@/utils/agent/agent-thread-hydration';
 import {
   foldEventsFromCursor,
   isResumableActiveRun,
@@ -199,6 +202,7 @@ function AgentConsole() {
   const [githubLoginPromptError, setGithubLoginPromptError] = useState<string | null>(null);
 
   const skipHydrationRef = useRef(false);
+  const localRunThreadIdRef = useRef<string | null>(null);
   const dismissedQuestionIdsRef = useRef(new Set<string>());
 
   useEffect(() => {
@@ -226,6 +230,7 @@ function AgentConsole() {
     selectedSkillNames: [] as readonly string[],
     websiteMode: false,
     documentMode: false,
+    onRunThreadBound: (() => undefined) as (threadId: string) => void,
     onThreadCreated: (() => undefined) as (thread: Parameters<typeof prependThread>[0]) => void,
     onRunCreated: (() => undefined) as (
       run: Pick<AgentRunSummary, 'id' | 'threadId' | 'model' | 'provider'>,
@@ -246,6 +251,9 @@ function AgentConsole() {
   contextRef.current.selectedSkillNames = selectedSkillNames;
   contextRef.current.websiteMode = webCreationSelected;
   contextRef.current.documentMode = documentAnalysisSelected;
+  contextRef.current.onRunThreadBound = (threadId) => {
+    localRunThreadIdRef.current = threadId;
+  };
   contextRef.current.onThreadCreated = (thread) => {
     skipHydrationRef.current = true;
     setThreadTokenUsage(null);
@@ -489,6 +497,7 @@ function AgentConsole() {
     <AssistantRuntimeProvider runtime={runtime} aui={aui}>
       <ThreadHydrator
         skipHydrationRef={skipHydrationRef}
+        localRunThreadIdRef={localRunThreadIdRef}
         onTokenUsage={setThreadTokenUsage}
         onContextSummary={setContextSummary}
         onCompressionEvent={(event) => setCompressionEvents((current) => [...current, event])}
@@ -1237,6 +1246,7 @@ function toModelChangeError(cause: unknown): string {
 
 function ThreadHydrator({
   skipHydrationRef,
+  localRunThreadIdRef,
   onTokenUsage,
   onContextSummary,
   onCompressionEvent,
@@ -1246,6 +1256,7 @@ function ThreadHydrator({
   onUserQuestion,
 }: {
   skipHydrationRef: { current: boolean };
+  localRunThreadIdRef: { current: string | null };
   onTokenUsage: (usage: AgentThread['tokenUsage'] | null) => void;
   onContextSummary: (summary: AgentContextSummary | null) => void;
   onCompressionEvent: (event: Extract<AgentStreamEvent, { type: 'context-compressed' }>) => void;
@@ -1263,6 +1274,14 @@ function ThreadHydrator({
 
   const [interruptedNotice, setInterruptedNotice] = useState<string | null>(null);
   const [resumeNotice, setResumeNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!shouldDetachLocalRun(isLocalRunRunning, localRunThreadIdRef.current, activeThreadId)) {
+      return;
+    }
+    skipHydrationRef.current = false;
+    api.thread().cancelRun();
+  }, [activeThreadId, isLocalRunRunning]);
 
   useEffect(() => {
     // LocalRuntime owns the message repository for the duration of a local run.

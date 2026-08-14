@@ -3,7 +3,7 @@ import test from 'node:test'
 
 import type { ThreadMessageLike } from '@assistant-ui/react'
 
-import { resetThreadIfIdle } from './agent-thread-hydration'
+import { resetThreadIfIdle, shouldDetachLocalRun } from './agent-thread-hydration'
 
 const messages: ThreadMessageLike[] = [
   {
@@ -46,4 +46,12 @@ test('hydrates persisted messages after the LocalRuntime run is idle', () => {
   assert.equal(applied, true)
   assert.deepEqual(received, messages)
   assert.notEqual(received, messages)
+})
+
+test('detaches a running LocalRuntime only when the visible Thread changes', () => {
+  assert.equal(shouldDetachLocalRun(true, 'thread-a', null), true)
+  assert.equal(shouldDetachLocalRun(true, 'thread-a', 'thread-b'), true)
+  assert.equal(shouldDetachLocalRun(true, 'thread-a', 'thread-a'), false)
+  assert.equal(shouldDetachLocalRun(false, 'thread-a', 'thread-b'), false)
+  assert.equal(shouldDetachLocalRun(true, null, 'thread-b'), false)
 })

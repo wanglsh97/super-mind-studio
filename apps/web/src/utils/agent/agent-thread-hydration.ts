@@ -5,6 +5,18 @@ interface HydratableThreadRuntime {
   reset: (messages: ThreadMessageLike[]) => void
 }
 
+export function shouldDetachLocalRun(
+  isLocalRunRunning: boolean,
+  localRunThreadId: string | null,
+  activeThreadId: string | null,
+): boolean {
+  return (
+    isLocalRunRunning &&
+    localRunThreadId !== null &&
+    localRunThreadId !== activeThreadId
+  )
+}
+
 /**
  * LocalRuntime 生成中不能替换消息仓库，否则流式 assistant 消息仍持有的 parentId
  * 会指向已被 reset 清除的 user 消息。
