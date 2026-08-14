@@ -3,6 +3,7 @@ import { describe, it } from 'node:test'
 
 import {
   isCurrentThreadModelSelectionDisabled,
+  isCurrentThreadModelUpdatePending,
   shouldUpdateCurrentThreadModel,
   updateThreadModelOptimistically,
 } from './agent-model-policy'
@@ -25,6 +26,13 @@ describe('Agent Thread model selection policy', () => {
     assert.equal(isCurrentThreadModelSelectionDisabled('thread-a', activeRuns), true)
     assert.equal(isCurrentThreadModelSelectionDisabled('thread-b', activeRuns), false)
     assert.equal(isCurrentThreadModelSelectionDisabled(null, activeRuns), false)
+  })
+
+  it('does not treat a new Thread as a pending model update when both ids are null', () => {
+    assert.equal(isCurrentThreadModelUpdatePending(null, null), false)
+    assert.equal(isCurrentThreadModelUpdatePending('thread-a', null), false)
+    assert.equal(isCurrentThreadModelUpdatePending('thread-a', 'thread-b'), false)
+    assert.equal(isCurrentThreadModelUpdatePending('thread-a', 'thread-a'), true)
   })
 
   it('keeps the persisted model on success and rolls back only the still-current Thread on failure', async () => {

@@ -14,6 +14,13 @@ export function isCurrentThreadModelSelectionDisabled(
   return activeThreadId !== null && activeRuns.some((run) => run.threadId === activeThreadId)
 }
 
+export function isCurrentThreadModelUpdatePending(
+  activeThreadId: string | null,
+  updatingThreadId: string | null,
+): boolean {
+  return activeThreadId !== null && updatingThreadId === activeThreadId
+}
+
 export async function updateThreadModelOptimistically<T extends { model: string }>(input: {
   currentModel: string
   nextModel: string

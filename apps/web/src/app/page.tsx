@@ -106,6 +106,7 @@ import {
 } from '@/utils/agent/agent-run-adapter';
 import {
   isCurrentThreadModelSelectionDisabled,
+  isCurrentThreadModelUpdatePending,
   shouldUpdateCurrentThreadModel,
   updateThreadModelOptimistically,
 } from '@/utils/agent/agent-model-policy';
@@ -457,12 +458,15 @@ function AgentConsole() {
   const aui = useAui({ tools: Tools({ toolkit: agentToolUiToolkit }) });
   const modelDisabled = modelOptions.length === 0;
   const currentActiveRun = activeRunForThread(activeRuns, activeThreadId);
+  const modelUpdatePending = isCurrentThreadModelUpdatePending(
+    activeThreadId,
+    modelUpdatingThreadId,
+  );
   const modelSelectionDisabled =
     modelDisabled ||
-    modelUpdatingThreadId === activeThreadId ||
+    modelUpdatePending ||
     isCurrentThreadModelSelectionDisabled(activeThreadId, activeRuns);
-  const submitBlocked =
-    modelDisabled || currentActiveRun !== null || modelUpdatingThreadId === activeThreadId;
+  const submitBlocked = modelDisabled || currentActiveRun !== null || modelUpdatePending;
   const canCreateWebsite = session.user?.authProvider === 'GITHUB';
 
   const switchToGithubLogin = async () => {
