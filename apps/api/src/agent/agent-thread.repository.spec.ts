@@ -91,6 +91,19 @@ describe('AgentThreadRepository', () => {
     await expect(repository.deleteForOwner('thread-1', 'user-a')).resolves.toBe(true)
   })
 
+  it('updates modelId and provider together within the owner scope', async () => {
+    const { updateMany, repository } = setup()
+    updateMany.mockResolvedValue({ count: 1 })
+
+    await expect(
+      repository.updateModelForOwner('thread-1', 'user-a', 'glm-5.2', 'glm'),
+    ).resolves.toBe(true)
+    expect(updateMany).toHaveBeenCalledWith({
+      where: { id: 'thread-1', userId: 'user-a' },
+      data: { modelId: 'glm-5.2', provider: 'glm' },
+    })
+  })
+
   it('persists and clears a Thread-owned Sandbox with owner-scoped updates', async () => {
     const { findFirst, updateMany, repository } = setup()
     findFirst.mockResolvedValue(null)

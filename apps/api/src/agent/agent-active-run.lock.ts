@@ -52,13 +52,10 @@ export class AgentActiveRunLock {
   threadConflict(existingRunId?: string): ConflictException {
     return new ConflictException({
       message: '当前会话已有进行中的 Agent 运行，请等待其结束',
-      details:
-        existingRunId === undefined
-          ? { code: 'AGENT_ACTIVE_RUN' }
-          : {
-              code: 'AGENT_THREAD_ACTIVE_RUN',
-              activeRunId: existingRunId,
-            },
+      details: {
+        code: 'AGENT_THREAD_ACTIVE_RUN',
+        ...(existingRunId === undefined ? {} : { activeRunId: existingRunId }),
+      },
     })
   }
 

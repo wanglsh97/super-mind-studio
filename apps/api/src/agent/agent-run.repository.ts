@@ -28,9 +28,19 @@ export interface CreateAgentRunInput {
   provider: string
 }
 
-export interface AdmitAgentRunInput extends CreateAgentRunInput {
+export interface AdmitAgentRunInput {
+  threadId: string
+  userId: string
+  input: string
   maxConcurrentRuns: number
   derivedTitle?: string
+}
+
+export class AgentThreadAdmissionNotFoundError extends Error {
+  constructor() {
+    super('Owned Agent Thread disappeared during admission')
+    this.name = 'AgentThreadAdmissionNotFoundError'
+  }
 }
 
 export class AgentThreadActiveRunError extends Error {
@@ -102,6 +112,12 @@ export class AgentRunRepository {
     return this.prisma.$transaction(async (tx) => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${input.userId}, 0))`
 
+      const thread = await tx.agentThread.findFirst({
+        where: { id: input.threadId, userId: input.userId },
+        select: { modelId: true, provider: true },
+      })
+      if (!thread) throw new AgentThreadAdmissionNotFoundError()
+
       const threadActive = await tx.agentRun.findFirst({
         where: {
           threadId: input.threadId,
@@ -127,8 +143,8 @@ export class AgentRunRepository {
           threadId: input.threadId,
           userId: input.userId,
           input: input.input,
-          modelId: input.modelId,
-          provider: input.provider,
+          modelId: thread.modelId,
+          provider: thread.provider,
         },
       })
       const lastMessage = await tx.agentMessage.findFirst({

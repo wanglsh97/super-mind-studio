@@ -95,7 +95,13 @@ describe('AgentRunRepository', () => {
   })
 
   it('atomically admits a second run for the user in a different Thread', async () => {
-    const run = { id: 'run-b', threadId: 'thread-b', userId: 'user-a' }
+    const run = {
+      id: 'run-b',
+      threadId: 'thread-b',
+      userId: 'user-a',
+      modelId: 'glm-5.2',
+      provider: 'glm',
+    }
     const executeRaw = jest.fn().mockResolvedValue(1)
     const runFindFirst = jest.fn().mockResolvedValue(null)
     const runCount = jest.fn().mockResolvedValue(1)
@@ -107,7 +113,10 @@ describe('AgentRunRepository', () => {
       $executeRaw: executeRaw,
       agentRun: { findFirst: runFindFirst, count: runCount, create: runCreate },
       agentMessage: { findFirst: messageFindFirst, create: messageCreate },
-      agentThread: { updateMany: threadUpdateMany },
+      agentThread: {
+        findFirst: jest.fn().mockResolvedValue({ modelId: 'glm-5.2', provider: 'glm' }),
+        updateMany: threadUpdateMany,
+      },
     }
     const prisma = {
       $transaction: jest.fn(async (operation: (client: typeof tx) => unknown) => operation(tx)),
@@ -119,8 +128,6 @@ describe('AgentRunRepository', () => {
         threadId: 'thread-b',
         userId: 'user-a',
         input: 'parallel task',
-        modelId: 'qwen3.7-plus',
-        provider: 'qwen',
         maxConcurrentRuns: 2,
         derivedTitle: 'parallel task',
       }),
@@ -130,6 +137,9 @@ describe('AgentRunRepository', () => {
         userId: 'user-a',
         status: { in: ['RUNNING', 'CANCELLING', 'WAITING_FOR_USER'] },
       },
+    })
+    expect(runCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({ modelId: 'glm-5.2', provider: 'glm' }),
     })
     expect(messageCreate).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -141,6 +151,9 @@ describe('AgentRunRepository', () => {
   it('rejects atomic admission when the target Thread already has an active run', async () => {
     const tx = {
       $executeRaw: jest.fn().mockResolvedValue(1),
+      agentThread: {
+        findFirst: jest.fn().mockResolvedValue({ modelId: 'qwen3.7-plus', provider: 'qwen' }),
+      },
       agentRun: {
         findFirst: jest.fn().mockResolvedValue({ id: 'run-existing' }),
         count: jest.fn(),
@@ -156,8 +169,6 @@ describe('AgentRunRepository', () => {
         threadId: 'thread-a',
         userId: 'user-a',
         input: 'duplicate',
-        modelId: 'qwen3.7-plus',
-        provider: 'qwen',
         maxConcurrentRuns: 2,
       }),
     ).rejects.toMatchObject<Partial<AgentThreadActiveRunError>>({
@@ -169,6 +180,9 @@ describe('AgentRunRepository', () => {
   it('rejects atomic admission when the user concurrency limit is reached', async () => {
     const tx = {
       $executeRaw: jest.fn().mockResolvedValue(1),
+      agentThread: {
+        findFirst: jest.fn().mockResolvedValue({ modelId: 'qwen3.7-plus', provider: 'qwen' }),
+      },
       agentRun: {
         findFirst: jest.fn().mockResolvedValue(null),
         count: jest.fn().mockResolvedValue(2),
@@ -185,8 +199,6 @@ describe('AgentRunRepository', () => {
         threadId: 'thread-c',
         userId: 'user-a',
         input: 'over limit',
-        modelId: 'qwen3.7-plus',
-        provider: 'qwen',
         maxConcurrentRuns: 2,
       }),
     ).rejects.toMatchObject<Partial<AgentUserConcurrencyLimitError>>({ limit: 2 })

@@ -34,6 +34,7 @@ import {
 import { AgentMessageRepository } from './agent-message.repository'
 import {
   AgentRunRepository,
+  AgentThreadAdmissionNotFoundError,
   AgentThreadActiveRunError,
   AgentUserConcurrencyLimitError,
 } from './agent-run.repository'
@@ -166,6 +167,58 @@ export class AgentService {
     return toThreadSummary(summary)
   }
 
+  async updateThreadModel(
+    user: AuthenticatedUser,
+    threadId: string,
+    modelId: string,
+  ): Promise<AgentThreadSummary> {
+    const model = this.models.resolveForAgent(modelId)
+    if (!model) {
+      throw new BadRequestException(
+        `未知、未启用或不支持 Agent（tool-calling）的模型 "${modelId}"`,
+      )
+    }
+
+    const owned = await this.threads.findSummaryForOwner(threadId, user.id)
+    if (!owned) throw new NotFoundException('Agent 会话不存在')
+
+    const existing = await this.runs.findActiveForThread(threadId)
+    if (existing) throw this.activeRunLock.threadConflict(existing.id)
+
+    const lockToken = randomUUID()
+    const acquired = await this.activeRunLock.tryAcquire(threadId, lockToken)
+    if (!acquired) {
+      const raced = await this.runs.findActiveForThread(threadId)
+      throw this.activeRunLock.threadConflict(raced?.id)
+    }
+
+    try {
+      const lockedThread = await this.threads.findSummaryForOwner(threadId, user.id)
+      if (!lockedThread) throw new NotFoundException('Agent 会话不存在')
+
+      const activeRun = await this.runs.findActiveForThread(threadId)
+      if (activeRun) throw this.activeRunLock.threadConflict(activeRun.id)
+
+      if (lockedThread.modelId === model.id && lockedThread.provider === model.provider) {
+        return toThreadSummary(lockedThread)
+      }
+
+      const updated = await this.threads.updateModelForOwner(
+        threadId,
+        user.id,
+        model.id,
+        model.provider,
+      )
+      if (!updated) throw new NotFoundException('Agent 会话不存在')
+
+      const summary = await this.threads.findSummaryForOwner(threadId, user.id)
+      if (!summary) throw new NotFoundException('Agent 会话不存在')
+      return toThreadSummary(summary)
+    } finally {
+      await this.activeRunLock.release(threadId, lockToken)
+    }
+  }
+
   async deleteThread(user: AuthenticatedUser, threadId: string): Promise<void> {
     const summary = await this.threads.findSummaryForOwner(threadId, user.id)
     if (!summary) throw new NotFoundException('Agent 会话不存在')
@@ -193,8 +246,7 @@ export class AgentService {
     const thread = await this.threads.findSummaryForOwner(threadId, user.id)
     if (!thread) throw new NotFoundException('Agent 会话不存在')
 
-    const model = this.models.resolve(thread.modelId)
-    if (!model) {
+    if (!this.models.resolve(thread.modelId)) {
       throw new BadRequestException(`会话绑定的模型 "${thread.modelId}" 当前不可用`)
     }
 
@@ -211,14 +263,19 @@ export class AgentService {
     }
 
     try {
+      const lockedThread = await this.threads.findSummaryForOwner(threadId, user.id)
+      if (!lockedThread) throw new NotFoundException('Agent 会话不存在')
+      const model = this.models.resolve(lockedThread.modelId)
+      if (!model) {
+        throw new BadRequestException(`会话绑定的模型 "${lockedThread.modelId}" 当前不可用`)
+      }
+
       const run = await this.runs.admit({
         threadId,
         userId: user.id,
         input,
-        modelId: model.id,
-        provider: model.provider,
         maxConcurrentRuns: this.config.get<number>('AGENT_MAX_CONCURRENT_RUNS_PER_USER', 5),
-        ...(thread.title === AGENT_DEFAULT_THREAD_TITLE
+        ...(lockedThread.title === AGENT_DEFAULT_THREAD_TITLE
           ? { derivedTitle: deriveAgentThreadTitle(input) }
           : {}),
       })
@@ -232,8 +289,8 @@ export class AgentService {
           runId: run.id,
           threadId,
           userId: user.id,
-          modelId: model.id,
-          provider: model.provider,
+          modelId: run.modelId,
+          provider: run.provider,
           contextWindowTokens: model.contextWindowTokens,
           input,
           ...(mode === undefined ? {} : { mode }),
@@ -248,6 +305,9 @@ export class AgentService {
       await this.activeRunLock.release(threadId, lockToken)
       if (error instanceof AgentThreadActiveRunError) {
         throw this.activeRunLock.threadConflict(error.activeRunId)
+      }
+      if (error instanceof AgentThreadAdmissionNotFoundError) {
+        throw new NotFoundException('Agent 会话不存在')
       }
       if (error instanceof AgentUserConcurrencyLimitError) {
         throw this.activeRunLock.userLimit(error.limit)

@@ -107,6 +107,20 @@ export class AgentThreadRepository {
     return result.count === 1
   }
 
+  /** 仅当线程属于该用户时同步更新公开模型 ID 与 Provider，返回是否命中。 */
+  async updateModelForOwner(
+    threadId: string,
+    userId: string,
+    modelId: string,
+    provider: string,
+  ): Promise<boolean> {
+    const result = await this.prisma.agentThread.updateMany({
+      where: { id: threadId, userId },
+      data: { modelId, provider },
+    })
+    return result.count === 1
+  }
+
   /** 仅当线程属于该用户时删除，级联删除其消息、run、event、tool call。返回是否命中。 */
   async deleteForOwner(threadId: string, userId: string): Promise<boolean> {
     const result = await this.prisma.agentThread.deleteMany({ where: { id: threadId, userId } })

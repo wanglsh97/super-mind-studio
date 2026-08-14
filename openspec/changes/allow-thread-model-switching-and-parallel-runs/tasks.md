@@ -6,10 +6,10 @@
 
 ## 2. Thread 模型即时更新
 
-- [ ] 2.1 新增 Thread 模型更新 DTO、`PATCH /api/v1/agent/threads/:threadId/model` 和 `@supermind/sdk` typed client，覆盖 owner、输入、AbortSignal 与统一错误
-- [ ] 2.2 实现 owner-scoped Repository 更新，在同一写入中同步 `modelId/provider`，同模型更新保持幂等
-- [ ] 2.3 复用 Thread Redis 锁串行化模型更新与 `createRun`，active/Redis 故障 fail closed，其他 Thread 不受阻塞
-- [ ] 2.4 调整 Run 准入事务：持锁后重新读取 Thread，并原子创建用户消息与带模型快照的 AgentRun，覆盖切换/创建竞态测试
+- [x] 2.1 新增 Thread 模型更新 DTO、`PATCH /api/v1/agent/threads/:threadId/model` 和 `@supermind/sdk` typed client，覆盖 owner、输入、AbortSignal 与统一错误
+- [x] 2.2 实现 owner-scoped Repository 更新，在同一写入中同步 `modelId/provider`，同模型更新保持幂等
+- [x] 2.3 复用 Thread Redis 锁串行化模型更新与 `createRun`，active/Redis 故障 fail closed，其他 Thread 不受阻塞
+- [x] 2.4 调整 Run 准入事务：持锁后重新读取 Thread，并原子创建用户消息与带模型快照的 AgentRun，覆盖切换/创建竞态测试
 
 ## 3. 跨模型上下文
 

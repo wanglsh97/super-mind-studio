@@ -49,6 +49,7 @@ import { UpdateAgentMcpServerDto } from './dto/update-agent-mcp-server.dto';
 import {
   CreateAgentThreadDto,
   ListAgentThreadsQueryDto,
+  UpdateAgentThreadModelDto,
   UpdateAgentThreadDto,
 } from './dto/agent-thread.dto';
 import { AnswerAgentUserQuestionDto } from './dto/answer-agent-user-question.dto';
@@ -263,6 +264,15 @@ export class AgentController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.agent.renameThread(user, threadId, body.title);
+  }
+
+  @Patch('threads/:threadId/model')
+  async updateThreadModel(
+    @Param('threadId', ParseUUIDPipe) threadId: string,
+    @Body() body: UpdateAgentThreadModelDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.agent.updateThreadModel(user, threadId, body.model);
   }
 
   @Delete('threads/:threadId')

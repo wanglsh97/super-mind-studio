@@ -120,6 +120,7 @@ export type {
   AnswerAgentUserQuestionRequest,
   CreateAgentRunRequest,
   CreateAgentThreadRequest,
+  UpdateAgentThreadModelRequest,
   UpdateAgentThreadRequest,
   UpdateAgentMcpServerRequest,
 } from './agent-types.js'

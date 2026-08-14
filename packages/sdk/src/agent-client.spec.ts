@@ -342,12 +342,22 @@ async function collect(events: AsyncIterable<AgentStreamEvent>): Promise<AgentSt
 }
 
 describe('AgentClient threads and runs', () => {
-  it('creates, lists, renames and deletes threads with correct HTTP shapes', async () => {
-    const calls: Array<{ url: string; method: string | undefined; body: unknown }> = []
+  it('creates, lists, renames, updates model and deletes threads with correct HTTP shapes', async () => {
+    const calls: Array<{
+      url: string
+      method: string | undefined
+      body: unknown
+      signal: AbortSignal | null | undefined
+    }> = []
     const client = createSuperMindClient({
       baseUrl: 'http://localhost:3001',
       fetch: async (input, init) => {
-        calls.push({ url: String(input), method: init?.method, body: init?.body })
+        calls.push({
+          url: String(input),
+          method: init?.method,
+          body: init?.body,
+          signal: init?.signal,
+        })
         if (init?.method === 'DELETE') return new Response(null, { status: 204 })
         if (
           String(input).includes('/api/v1/agent/threads?') ||
@@ -378,6 +388,8 @@ describe('AgentClient threads and runs', () => {
     await client.agent.threads.list({ page: 2, pageSize: 20 })
     await client.agent.threads.get(threadId)
     await client.agent.threads.rename(threadId, { title: '新标题' })
+    const abort = new AbortController()
+    await client.agent.threads.updateModel(threadId, { model: 'glm-5.2' }, { signal: abort.signal })
     await client.agent.threads.delete(threadId)
 
     assert.equal(calls[0]?.url, 'http://localhost:3001/api/v1/agent/threads')
@@ -387,7 +399,35 @@ describe('AgentClient threads and runs', () => {
     assert.equal(calls[2]?.url, `http://localhost:3001/api/v1/agent/threads/${threadId}`)
     assert.equal(calls[3]?.method, 'PATCH')
     assert.equal(calls[3]?.body, JSON.stringify({ title: '新标题' }))
-    assert.equal(calls[4]?.method, 'DELETE')
+    assert.equal(calls[4]?.url, `http://localhost:3001/api/v1/agent/threads/${threadId}/model`)
+    assert.equal(calls[4]?.method, 'PATCH')
+    assert.equal(calls[4]?.body, JSON.stringify({ model: 'glm-5.2' }))
+    assert.equal(calls[4]?.signal, abort.signal)
+    assert.equal(calls[5]?.method, 'DELETE')
+  })
+
+  it('preserves the unified model-update error envelope', async () => {
+    const client = createSuperMindClient({
+      fetch: async () =>
+        new Response(
+          JSON.stringify({
+            requestId: runId,
+            code: 'CONFLICT',
+            message: '当前会话已有进行中的 Agent 运行',
+            retryable: false,
+            details: { code: 'AGENT_THREAD_ACTIVE_RUN', activeRunId: runId },
+          }),
+          { status: 409, headers: { 'x-request-id': runId } },
+        ),
+    })
+
+    await assert.rejects(
+      () => client.agent.threads.updateModel(threadId, { model: 'glm-5.2' }),
+      (error: unknown) =>
+        error instanceof AIGatewayError &&
+        error.status === 409 &&
+        error.details?.code === 'AGENT_THREAD_ACTIVE_RUN',
+    )
   })
 
   it('returns a paginated thread list page', async () => {

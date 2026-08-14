@@ -74,6 +74,14 @@ describe('AgentActiveRunLock', () => {
     )
   })
 
+  it('keeps the stable Thread conflict code when the active run id is not observable yet', () => {
+    const lock = new AgentActiveRunLock({} as RedisService)
+    const error = lock.threadConflict()
+    expect(error.getResponse()).toEqual(
+      expect.objectContaining({ details: { code: 'AGENT_THREAD_ACTIVE_RUN' } }),
+    )
+  })
+
   it('builds a user concurrency-limit conflict', () => {
     const lock = new AgentActiveRunLock({} as RedisService)
     const error = lock.userLimit(2)

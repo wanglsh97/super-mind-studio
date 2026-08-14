@@ -365,6 +365,10 @@ export interface UpdateAgentThreadRequest {
   title: string
 }
 
+export interface UpdateAgentThreadModelRequest {
+  model: TextModelId
+}
+
 /** Agent run 级思考强度；厂商字段由服务端 Adapter 映射。 */
 export type AgentThinkingEffort = 'fast' | 'balanced' | 'deep'
 

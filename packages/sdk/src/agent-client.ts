@@ -16,6 +16,7 @@ import type {
   AgentThreadSummary,
   CreateAgentRunRequest,
   CreateAgentThreadRequest,
+  UpdateAgentThreadModelRequest,
   UpdateAgentThreadRequest,
   UpdateAgentMcpServerRequest,
 } from './agent-types.js';
@@ -88,6 +89,11 @@ export interface AgentClient {
     rename(
       threadId: string,
       input: UpdateAgentThreadRequest,
+      options?: RequestOptions,
+    ): Promise<AgentThreadSummary>;
+    updateModel(
+      threadId: string,
+      input: UpdateAgentThreadModelRequest,
       options?: RequestOptions,
     ): Promise<AgentThreadSummary>;
     delete(threadId: string, options?: RequestOptions): Promise<void>;
@@ -290,6 +296,14 @@ export function createAgentClient(
           fetchImplementation,
           'PATCH',
           `${baseUrl}/api/v1/agent/threads/${encodeURIComponent(threadId)}`,
+          input,
+          options,
+        ),
+      updateModel: (threadId, input, options) =>
+        requestJson(
+          fetchImplementation,
+          'PATCH',
+          `${baseUrl}/api/v1/agent/threads/${encodeURIComponent(threadId)}/model`,
           input,
           options,
         ),

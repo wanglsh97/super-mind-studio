@@ -1,4 +1,8 @@
-import type { CreateAgentThreadRequest, UpdateAgentThreadRequest } from '@supermind/sdk'
+import type {
+  CreateAgentThreadRequest,
+  UpdateAgentThreadModelRequest,
+  UpdateAgentThreadRequest,
+} from '@supermind/sdk'
 import { Type } from 'class-transformer'
 import {
   IsInt,
@@ -32,6 +36,14 @@ export class UpdateAgentThreadDto implements UpdateAgentThreadRequest {
   @MinLength(1)
   @MaxLength(AGENT_THREAD_TITLE_MAX_LENGTH)
   declare title: string
+}
+
+export class UpdateAgentThreadModelDto implements UpdateAgentThreadModelRequest {
+  @IsString()
+  @MinLength(1)
+  @MaxLength(64)
+  @Matches(/^[a-z0-9][a-z0-9._-]*$/)
+  declare model: string
 }
 
 export class ListAgentThreadsQueryDto {

@@ -33,6 +33,7 @@ function setup() {
     listForOwner: jest.fn(),
     findSummaryForOwner: jest.fn(),
     renameForOwner: jest.fn(),
+    updateModelForOwner: jest.fn(),
     deleteForOwner: jest.fn(),
   } as unknown as jest.Mocked<AgentThreadRepository>
   const runs = {
@@ -64,10 +65,10 @@ function setup() {
       (activeRunId?: string) =>
         new ConflictException({
           message: '已有进行中的 Agent 运行，请等待其结束',
-          details:
-            activeRunId === undefined
-              ? { code: 'AGENT_ACTIVE_RUN' }
-              : { code: 'AGENT_THREAD_ACTIVE_RUN', activeRunId },
+          details: {
+            code: 'AGENT_THREAD_ACTIVE_RUN',
+            ...(activeRunId === undefined ? {} : { activeRunId }),
+          },
         }),
     ),
     userLimit: jest.fn(
@@ -449,6 +450,8 @@ describe('AgentService', () => {
     ;(runs.admit as jest.Mock).mockResolvedValue({
       id: 'run-1',
       threadId: 'thread-1',
+      modelId: 'qwen3.7-plus',
+      provider: 'qwen',
       status: 'RUNNING',
       limitReason: null,
       usageUnknown: false,
@@ -638,6 +641,8 @@ describe('AgentService', () => {
       id: 'run-skill',
       threadId: 'thread-1',
       userId: 'user-a',
+      modelId: 'qwen3.7-plus',
+      provider: 'qwen',
       status: 'RUNNING',
       limitReason: null,
       input: '清洗数据',
@@ -724,20 +729,137 @@ describe('AgentService', () => {
     expect(threads.renameForOwner).toHaveBeenCalledTimes(1)
   })
 
-  it('createRun always uses the thread-bound modelId rather than a client-supplied model', async () => {
-    const { service, threads, runs, models, runService } = setup()
-    ;(threads.findSummaryForOwner as jest.Mock).mockResolvedValue(
-      threadRow({ modelId: 'glm-5.2', provider: 'glm', title: '已绑定' }),
+  it('rejects a disabled Agent model before changing the owned Thread', async () => {
+    const { service, models, threads, activeRunLock } = setup()
+    ;(models.resolveForAgent as jest.Mock).mockReturnValue(undefined)
+
+    await expect(service.updateThreadModel(user, 'thread-1', 'disabled')).rejects.toBeInstanceOf(
+      BadRequestException,
     )
-    ;(models.resolve as jest.Mock).mockReturnValue({
+    expect(threads.findSummaryForOwner).not.toHaveBeenCalled()
+    expect(activeRunLock.tryAcquire).not.toHaveBeenCalled()
+  })
+
+  it('does not reveal another owner Thread during a model update', async () => {
+    const { service, models, threads, activeRunLock } = setup()
+    ;(models.resolveForAgent as jest.Mock).mockReturnValue({ id: 'glm-5.2', provider: 'glm' })
+    ;(threads.findSummaryForOwner as jest.Mock).mockResolvedValue(null)
+
+    await expect(service.updateThreadModel(user, 'thread-private', 'glm-5.2')).rejects.toBeInstanceOf(
+      NotFoundException,
+    )
+    expect(activeRunLock.tryAcquire).not.toHaveBeenCalled()
+    expect(threads.updateModelForOwner).not.toHaveBeenCalled()
+  })
+
+  it('updates an idle owned Thread model and provider under the Thread lock', async () => {
+    const { service, models, threads, runs, activeRunLock } = setup()
+    const before = threadRow()
+    const after = threadRow({ modelId: 'glm-5.2', provider: 'glm' })
+    ;(models.resolveForAgent as jest.Mock).mockReturnValue({
       id: 'glm-5.2',
       provider: 'glm',
-      upstreamModelId: 'glm-5.2',
-      displayName: 'GLM',
     })
+    ;(threads.findSummaryForOwner as jest.Mock)
+      .mockResolvedValueOnce(before)
+      .mockResolvedValueOnce(before)
+      .mockResolvedValueOnce(after)
+    ;(runs.findActiveForThread as jest.Mock).mockResolvedValue(null)
+    ;(threads.updateModelForOwner as jest.Mock).mockResolvedValue(true)
+
+    await expect(service.updateThreadModel(user, 'thread-1', 'glm-5.2')).resolves.toEqual(
+      expect.objectContaining({ id: 'thread-1', model: 'glm-5.2' }),
+    )
+    expect(activeRunLock.tryAcquire).toHaveBeenCalledWith('thread-1', expect.any(String))
+    expect(threads.updateModelForOwner).toHaveBeenCalledWith(
+      'thread-1',
+      'user-a',
+      'glm-5.2',
+      'glm',
+    )
+    expect(activeRunLock.release).toHaveBeenCalledWith('thread-1', expect.any(String))
+  })
+
+  it('keeps a same-model update idempotent without a database write', async () => {
+    const { service, models, threads, runs, activeRunLock } = setup()
+    const current = threadRow()
+    ;(models.resolveForAgent as jest.Mock).mockReturnValue({
+      id: current.modelId,
+      provider: current.provider,
+    })
+    ;(threads.findSummaryForOwner as jest.Mock).mockResolvedValue(current)
+    ;(runs.findActiveForThread as jest.Mock).mockResolvedValue(null)
+
+    await expect(service.updateThreadModel(user, 'thread-1', current.modelId)).resolves.toEqual(
+      expect.objectContaining({ model: current.modelId }),
+    )
+    expect(threads.updateModelForOwner).not.toHaveBeenCalled()
+    expect(activeRunLock.release).toHaveBeenCalledWith('thread-1', expect.any(String))
+  })
+
+  it('rejects model switching for every active Thread state before acquiring a second lock', async () => {
+    const { service, models, threads, runs, activeRunLock } = setup()
+    ;(models.resolveForAgent as jest.Mock).mockReturnValue({ id: 'glm-5.2', provider: 'glm' })
+    ;(threads.findSummaryForOwner as jest.Mock).mockResolvedValue(threadRow())
+
+    for (const status of ['RUNNING', 'CANCELLING', 'WAITING_FOR_USER']) {
+      ;(runs.findActiveForThread as jest.Mock).mockResolvedValueOnce({ id: `run-${status}`, status })
+      await expect(service.updateThreadModel(user, 'thread-1', 'glm-5.2')).rejects.toBeInstanceOf(
+        ConflictException,
+      )
+    }
+    expect(activeRunLock.tryAcquire).not.toHaveBeenCalled()
+    expect(threads.updateModelForOwner).not.toHaveBeenCalled()
+  })
+
+  it('fails model switching closed when the Thread lock service is unavailable', async () => {
+    const { service, models, threads, runs, activeRunLock } = setup()
+    ;(models.resolveForAgent as jest.Mock).mockReturnValue({ id: 'glm-5.2', provider: 'glm' })
+    ;(threads.findSummaryForOwner as jest.Mock).mockResolvedValue(threadRow())
+    ;(runs.findActiveForThread as jest.Mock).mockResolvedValue(null)
+    ;(activeRunLock.tryAcquire as jest.Mock).mockRejectedValue(
+      new HttpException('Agent 并发锁服务暂时不可用', 503),
+    )
+
+    await expect(service.updateThreadModel(user, 'thread-1', 'glm-5.2')).rejects.toMatchObject({
+      status: 503,
+    })
+    expect(threads.updateModelForOwner).not.toHaveBeenCalled()
+  })
+
+  it('rechecks active state after acquiring the Thread lock and releases on conflict', async () => {
+    const { service, models, threads, runs, activeRunLock } = setup()
+    ;(models.resolveForAgent as jest.Mock).mockReturnValue({ id: 'glm-5.2', provider: 'glm' })
+    ;(threads.findSummaryForOwner as jest.Mock).mockResolvedValue(threadRow())
+    ;(runs.findActiveForThread as jest.Mock)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ id: 'run-raced', status: 'RUNNING' })
+
+    await expect(service.updateThreadModel(user, 'thread-1', 'glm-5.2')).rejects.toBeInstanceOf(
+      ConflictException,
+    )
+    expect(threads.updateModelForOwner).not.toHaveBeenCalled()
+    expect(activeRunLock.release).toHaveBeenCalledWith('thread-1', expect.any(String))
+  })
+
+  it('createRun rereads the Thread under lock and executes from the admitted model snapshot', async () => {
+    const { service, threads, runs, models, runService } = setup()
+    ;(threads.findSummaryForOwner as jest.Mock)
+      .mockResolvedValueOnce(threadRow({ title: '已绑定' }))
+      .mockResolvedValueOnce(
+        threadRow({ modelId: 'glm-5.2', provider: 'glm', title: '已绑定' }),
+      )
+    ;(models.resolve as jest.Mock).mockImplementation((modelId: string) => ({
+      id: modelId,
+      provider: modelId === 'glm-5.2' ? 'glm' : 'qwen',
+      upstreamModelId: modelId,
+      displayName: modelId,
+    }))
     ;(runs.admit as jest.Mock).mockResolvedValue({
       id: 'run-1',
       threadId: 'thread-1',
+      modelId: 'glm-5.2',
+      provider: 'glm',
       status: 'RUNNING',
       limitReason: null,
       usageUnknown: false,
@@ -759,6 +881,9 @@ describe('AgentService', () => {
     )
     expect(runs.admit).toHaveBeenCalledWith(
       expect.objectContaining({ threadId: 'thread-1', userId: 'user-a' }),
+    )
+    expect(runs.admit).not.toHaveBeenCalledWith(
+      expect.objectContaining({ modelId: expect.anything(), provider: expect.anything() }),
     )
   })
 
