@@ -17,6 +17,29 @@ function setup() {
 }
 
 describe('AgentRunRepository', () => {
+  it('persists an immutable model snapshot when creating a run', async () => {
+    const { create, repository } = setup()
+    create.mockResolvedValue({ id: 'run-1' })
+
+    await repository.create({
+      threadId: 'thread-1',
+      userId: 'user-a',
+      input: 'continue',
+      modelId: 'qwen3.7-plus',
+      provider: 'qwen',
+    })
+
+    expect(create).toHaveBeenCalledWith({
+      data: {
+        threadId: 'thread-1',
+        userId: 'user-a',
+        input: 'continue',
+        modelId: 'qwen3.7-plus',
+        provider: 'qwen',
+      },
+    })
+  })
+
   it('scopes run lookups by owner userId', async () => {
     const { findFirst, repository } = setup()
     findFirst.mockResolvedValue(null)
@@ -96,6 +119,8 @@ describe('AgentRunRepository', () => {
         threadId: 'thread-b',
         userId: 'user-a',
         input: 'parallel task',
+        modelId: 'qwen3.7-plus',
+        provider: 'qwen',
         maxConcurrentRuns: 2,
         derivedTitle: 'parallel task',
       }),
@@ -131,6 +156,8 @@ describe('AgentRunRepository', () => {
         threadId: 'thread-a',
         userId: 'user-a',
         input: 'duplicate',
+        modelId: 'qwen3.7-plus',
+        provider: 'qwen',
         maxConcurrentRuns: 2,
       }),
     ).rejects.toMatchObject<Partial<AgentThreadActiveRunError>>({
@@ -158,6 +185,8 @@ describe('AgentRunRepository', () => {
         threadId: 'thread-c',
         userId: 'user-a',
         input: 'over limit',
+        modelId: 'qwen3.7-plus',
+        provider: 'qwen',
         maxConcurrentRuns: 2,
       }),
     ).rejects.toMatchObject<Partial<AgentUserConcurrencyLimitError>>({ limit: 2 })

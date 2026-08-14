@@ -102,7 +102,13 @@ async function main(): Promise<void> {
 
   try {
     const input = 'FETCH:1 请阅读 https://example.com/ 并总结'
-    const run = await runs.create({ threadId: thread.id, userId: user.id, input })
+    const run = await runs.create({
+      threadId: thread.id,
+      userId: user.id,
+      input,
+      modelId: 'qwen3.7-plus',
+      provider: 'qwen',
+    })
     await messages.appendUserMessage(thread.id, run.id, input)
 
     await service.execute({

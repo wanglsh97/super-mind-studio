@@ -24,6 +24,8 @@ export interface CreateAgentRunInput {
   threadId: string
   userId: string
   input: string
+  modelId: string
+  provider: string
 }
 
 export interface AdmitAgentRunInput extends CreateAgentRunInput {
@@ -84,6 +86,8 @@ export class AgentRunRepository {
         threadId: input.threadId,
         userId: input.userId,
         input: input.input,
+        modelId: input.modelId,
+        provider: input.provider,
       },
     })
   }
@@ -123,6 +127,8 @@ export class AgentRunRepository {
           threadId: input.threadId,
           userId: input.userId,
           input: input.input,
+          modelId: input.modelId,
+          provider: input.provider,
         },
       })
       const lastMessage = await tx.agentMessage.findFirst({

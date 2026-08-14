@@ -571,6 +571,8 @@ model AgentRun {
   id                   String               @id @default(uuid()) @db.Uuid
   threadId             String               @db.Uuid
   userId               String               @db.Uuid
+  modelId              String               @db.VarChar(128)
+  provider             String               @db.VarChar(64)
   status               AgentRunStatus       @default(RUNNING)
   limitReason          AgentRunLimitReason?
   input                String               @db.Text
@@ -612,6 +614,7 @@ model AgentRun {
 
   @@index([threadId, createdAt])
   @@index([userId, status])
+  @@index([modelId, createdAt])
   @@index([sandboxId])
 }
 

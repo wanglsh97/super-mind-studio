@@ -1,6 +1,6 @@
 ## 1. 数据契约与迁移
 
-- [ ] 1.1 为 `AgentRun` 增加非空 `modelId/provider` 快照，创建 Prisma migration，以所属 `AgentThread` 回填既有 Run，并验证旧 Run 不随 Thread 更新
+- [x] 1.1 为 `AgentRun` 增加非空 `modelId/provider` 快照，创建 Prisma migration，以所属 `AgentThread` 回填既有 Run，并验证旧 Run 不随 Thread 更新
 - [ ] 1.2 扩展 API mapper、SDK types 和管理员/分析读取边界，返回 Run 模型快照且不改变现有实际 invocation 归因
 - [ ] 1.3 将 `AGENT_MAX_CONCURRENT_RUNS_PER_USER` 默认值从 3 调整为 5，同步 `.env.example`、配置校验测试和部署说明
 
