@@ -11,14 +11,36 @@ current_step='bootstrap'
 current_step_label='初始化发布脚本'
 current_step_started_at="$deploy_started_at"
 
+if [ -t 1 ] && [ -z "${NO_COLOR:-}" ] && [ "${TERM:-}" != 'dumb' ]; then
+  COLOR_CYAN='\033[36m'
+  COLOR_GREEN='\033[1;32m'
+  COLOR_YELLOW='\033[1;33m'
+  COLOR_RED='\033[1;31m'
+  COLOR_RESET='\033[0m'
+else
+  COLOR_CYAN=''
+  COLOR_GREEN=''
+  COLOR_YELLOW=''
+  COLOR_RED=''
+  COLOR_RESET=''
+fi
+
 log_step() {
   event="$1"
   result="$2"
   exit_code="${3:--}"
+  case "$result" in
+    running) color="$COLOR_CYAN" ;;
+    success) color="$COLOR_GREEN" ;;
+    warning | skipped) color="$COLOR_YELLOW" ;;
+    failed) color="$COLOR_RED" ;;
+    *) color='' ;;
+  esac
   now="$(date +%s)"
   step_elapsed=$((now - current_step_started_at))
   total_elapsed=$((now - deploy_started_at))
-  printf '[deploy] event=%s step=%s result=%s exit_code=%s step_seconds=%s total_seconds=%s time=%s label="%s"\n' \
+  printf '\n%b[deploy] event=%s step=%s result=%s exit_code=%s step_seconds=%s total_seconds=%s time=%s label="%s"%b\n\n' \
+    "$color" \
     "$event" \
     "$current_step" \
     "$result" \
@@ -26,7 +48,8 @@ log_step() {
     "$step_elapsed" \
     "$total_elapsed" \
     "$(date '+%Y-%m-%dT%H:%M:%S%z')" \
-    "$current_step_label"
+    "$current_step_label" \
+    "$COLOR_RESET"
 }
 
 begin_step() {
