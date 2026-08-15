@@ -4,10 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "NODE_USE_ENV_PROXY=1 NO_PROXY=\"localhost,127.0.0.1,::1${NO_PROXY:+,$NO_PROXY}\" tsx watch --import ./src/observability/instrumentation.ts src/main.ts",
-    "prebuild": "corepack pnpm --workspace-root db:generate",
+    "prebuild": "pnpm --workspace-root db:generate",
     "build": "tsc -p tsconfig.build.json",
     "start": "node --import ./dist/observability/instrumentation.js dist/main.js",
-    "pretypecheck": "corepack pnpm --workspace-root db:generate",
+    "pretypecheck": "pnpm --workspace-root db:generate",
     "typecheck": "tsc --noEmit",
     "test": "jest --runInBand",
     "test:agent-harness": "AGENT_WEB_FETCH_FIXTURE=true tsx scripts/agent-harness.check.ts",
@@ -23,7 +23,7 @@
     "test:smoke:web-search": "tsx scripts/web-search.smoke.ts",
     "eval": "tsx --env-file-if-exists=../../.env scripts/eval-agent.ts",
     "test:eval": "tsx --env-file-if-exists=../../.env scripts/eval-agent.ts",
-    "pretest:e2e": "DATABASE_URL=\"$TEST_DATABASE_URL\" corepack pnpm --workspace-root db:generate",
+    "pretest:e2e": "DATABASE_URL=\"$TEST_DATABASE_URL\" pnpm --workspace-root db:generate",
     "test:e2e": "NODE_OPTIONS=\"${NODE_OPTIONS:+$NODE_OPTIONS }--experimental-vm-modules\" jest --config jest.e2e.config.cjs --runInBand"
   },
   "dependencies": {
