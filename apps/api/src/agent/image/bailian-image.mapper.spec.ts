@@ -1,8 +1,12 @@
+import { ConfigService } from '@nestjs/config';
+
 import { mapBailianImageRequest } from './bailian-image.mapper';
 import { ImageModelCatalog } from './image-model.catalog';
 
 describe('Bailian image request mappers', () => {
-  const catalog = new ImageModelCatalog();
+  const catalog = new ImageModelCatalog(
+    new ConfigService({ BAILIAN_IMAGE_DEFAULT_MODEL: 'qwen-image' }),
+  );
   const input = {
     prompt: 'fixture prompt',
     aspectRatio: '1:1' as const,

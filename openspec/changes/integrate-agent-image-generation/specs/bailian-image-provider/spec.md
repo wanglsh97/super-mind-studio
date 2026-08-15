@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: A versioned image catalog controls provider routing
-The API SHALL maintain a repository-owned image-model catalog that separates public model IDs from provider and upstream model IDs. The initial catalog SHALL contain `qwen-image`, `wan-image`, `kling-image` and `vidu-image`, with Qwen Image as default, and SHALL declare each model's image-input, aspect-ratio, quality and watermark capabilities.
+The API SHALL maintain a repository-owned image-model catalog that separates public model IDs from provider and upstream model IDs. The initial catalog SHALL contain `qwen-image`, `wan-image`, `kling-image` and `vidu-image`, SHALL select the default through `BAILIAN_IMAGE_DEFAULT_MODEL` with Qwen Image as the environment default, and SHALL declare each model's image-input, aspect-ratio, quality and watermark capabilities.
 
 #### Scenario: Catalog resolves an enabled model
 - **GIVEN** a Tool call selects an enabled platform image model
@@ -14,7 +14,7 @@ The API SHALL maintain a repository-owned image-model catalog that separates pub
 - **THEN** the server blocks the paid call and returns enabled alternatives without silently changing models
 
 ### Requirement: Bailian models use one normalized task transport
-The Bailian Adapter SHALL call the configured Beijing Base URL with the server-held API Key; these SHALL be the only image-specific environment settings and SHALL be configured together. It SHALL use the official synchronous multimodal endpoint for Qwen Image 2.0 Pro and `X-DashScope-Async: enable` plus task lookup for Wan, Kling and Vidu. The four mappers SHALL translate only their model-specific request and response fields while the shared Transport owns authentication, code-defined timeout, abort, submission, status lookup and normalized errors.
+The Bailian Adapter SHALL call the configured Beijing Base URL with the server-held API Key, which SHALL be configured together; the default platform image model SHALL be selected by a separate validated environment setting. It SHALL use the official synchronous multimodal endpoint for Qwen Image 2.0 Pro and `X-DashScope-Async: enable` plus task lookup for Wan, Kling and Vidu. The four mappers SHALL translate only their model-specific request and response fields while the shared Transport owns authentication, code-defined timeout, abort, submission, status lookup and normalized errors.
 
 #### Scenario: Text-to-image task is submitted
 - **GIVEN** the pending database transaction succeeded and the model is enabled

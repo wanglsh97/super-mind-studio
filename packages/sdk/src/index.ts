@@ -70,6 +70,7 @@ export {
   AGENT_SKILL_ACTIVATION_STATUSES,
   AGENT_TOOL_CALL_STATUSES,
   IMAGE_GENERATION_STATUSES,
+  VIDEO_GENERATION_STATUSES,
 } from './agent-types.js';
 export type {
   AgentExecutionError,
@@ -118,6 +119,12 @@ export type {
   ImageModelCapability,
   ImageModelId,
   ImageQuality,
+  GenerateVideoToolArguments,
+  VideoAspectRatio,
+  VideoGenerationStatus,
+  VideoGenerationSuggestion,
+  VideoGenerationToolResult,
+  VideoResolution,
   AgentUserQuestion,
   AgentUserQuestionAnswerItem,
   AgentUserQuestionItem,

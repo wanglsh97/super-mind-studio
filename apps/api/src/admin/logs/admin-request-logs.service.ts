@@ -10,6 +10,7 @@ const CAPABILITY = {
   chat: RequestCapability.CHAT,
   image: RequestCapability.IMAGE,
   prompt: RequestCapability.PROMPT,
+  video: RequestCapability.VIDEO,
 } as const;
 
 const STATUS = {

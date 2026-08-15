@@ -1,8 +1,8 @@
-import type { ThreadMessageLike } from '@assistant-ui/react'
+import type { ThreadMessageLike } from '@assistant-ui/react';
 
 interface HydratableThreadRuntime {
-  getState: () => { isRunning: boolean }
-  reset: (messages: ThreadMessageLike[]) => void
+  getState: () => { isRunning: boolean };
+  reset: (messages: ThreadMessageLike[]) => void;
 }
 
 export function shouldDetachLocalRun(
@@ -10,11 +10,7 @@ export function shouldDetachLocalRun(
   localRunThreadId: string | null,
   activeThreadId: string | null,
 ): boolean {
-  return (
-    isLocalRunRunning &&
-    localRunThreadId !== null &&
-    localRunThreadId !== activeThreadId
-  )
+  return isLocalRunRunning && localRunThreadId !== null && localRunThreadId !== activeThreadId;
 }
 
 /**
@@ -25,7 +21,7 @@ export function resetThreadIfIdle(
   runtime: HydratableThreadRuntime,
   messages: readonly ThreadMessageLike[],
 ): boolean {
-  if (runtime.getState().isRunning) return false
-  runtime.reset([...messages])
-  return true
+  if (runtime.getState().isRunning) return false;
+  runtime.reset([...messages]);
+  return true;
 }

@@ -11,7 +11,7 @@ import {
   Min,
 } from 'class-validator';
 
-export const REQUEST_LOG_CAPABILITIES = ['chat', 'image', 'prompt'] as const;
+export const REQUEST_LOG_CAPABILITIES = ['chat', 'image', 'prompt', 'video'] as const;
 export const REQUEST_LOG_STATUSES = ['pending', 'succeeded', 'failed', 'cancelled'] as const;
 export const AUTH_PROVIDERS = ['ANONYMOUS', 'GITHUB', 'GOOGLE'] as const;
 export const REQUEST_LOG_MODELS = [
@@ -23,6 +23,7 @@ export const REQUEST_LOG_MODELS = [
   'wan-image',
   'kling-image',
   'vidu-image',
+  'video-auto',
 ] as const;
 
 export class RequestLogQueryDto {

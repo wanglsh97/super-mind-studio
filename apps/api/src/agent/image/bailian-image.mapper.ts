@@ -1,4 +1,9 @@
-import type { GenerateImageToolArguments, ImageAspectRatio, ImageQuality } from '@supermind/sdk';
+import type {
+  GenerateImageToolArguments,
+  ImageAspectRatio,
+  ImageModelId,
+  ImageQuality,
+} from '@supermind/sdk';
 
 import type { ImageModelDefinition } from './image-model.catalog';
 
@@ -97,11 +102,12 @@ export function mapBailianImageRequest(
 
 export function normalizeGenerateImageArgs(
   args: GenerateImageToolArguments,
+  defaultModel: ImageModelId,
 ): Required<Omit<GenerateImageToolArguments, 'referenceImageId'>> &
   Pick<GenerateImageToolArguments, 'referenceImageId'> {
   return {
     prompt: args.prompt.trim(),
-    model: args.model ?? 'qwen-image',
+    model: args.model ?? defaultModel,
     aspectRatio: args.aspectRatio ?? '1:1',
     quality: args.quality ?? '2K',
     watermark: args.watermark ?? false,

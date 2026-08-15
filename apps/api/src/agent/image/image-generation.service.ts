@@ -77,7 +77,7 @@ export class ImageGenerationService {
         code: 'IMAGE_GENERATION_DISABLED',
         message: '图像生成功能当前未开放',
       });
-    const args = normalizeGenerateImageArgs(rawArgs);
+    const args = normalizeGenerateImageArgs(rawArgs, this.catalog.defaultModelId());
     if (!args.prompt || args.prompt.length > 5_000)
       throw new BadRequestException('图片 Prompt 长度必须为 1–5000 字符');
     const model = this.catalog.resolve(args.model);

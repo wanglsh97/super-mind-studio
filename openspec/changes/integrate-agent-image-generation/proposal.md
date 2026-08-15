@@ -7,7 +7,7 @@
 - 在现有 Composer 的“网页开发”“文档操作”入口旁增加“图像生成”模式；模式保持当前文本模型作为外层 Agent 编排模型，不提供独立图片模型选择器。
 - 新增平台内置、不可编辑的 `gen-image` Skill。每个图像生成模式 Run 在首次模型调用前自动加载 Skill，并向该 Run 注册 `generate_image` Tool。
 - `generate_image` 由 Agent 传入 Prompt、可选平台图片模型、参考图片标识和受支持参数；服务端负责模型目录解析、所有权校验、默认值和厂商协议，不允许模型传入厂商 ID、任意 URL 或 Sandbox 路径。
-- 通过阿里云百炼北京地域接入 `qwen-image-2.0-pro`、`wan2.7-image-pro`、`kling/kling-v3-image-generation` 和 `vidu/vidu-image_reference2image`；平台统一为持久图片任务，Transport 按官方能力归一化 Qwen 2.0 Pro 同步结果与其余模型异步提交/查询/取消；Qwen Image 为默认图片模型。
+- 通过阿里云百炼北京地域接入 `qwen-image-2.0-pro`、`wan2.7-image-pro`、`kling/kling-v3-image-generation` 和 `vidu/vidu-image_reference2image`；平台统一为持久图片任务，Transport 按官方能力归一化 Qwen 2.0 Pro 同步结果与其余模型异步提交/查询/取消；默认图片模型由服务端环境变量配置，环境默认值为Qwen Image。
 - 新增 API 进程内的持久化 Image Reconciler 和 Agent Run 恢复机制，以 PostgreSQL lease 恢复等待中的百炼任务、Tool result 和最后一轮 Agent 总结，不引入 BullMQ 或独立 Worker。
 - 将 Thread Sandbox 统一有效期调整为三小时。生成图片默认只保存于当前 Thread Sandbox；过期后未保存图片不可预览、下载或继续编辑，消息保留并显示已过期。
 - 用户可将成功图片下载到本地，或显式保存到平台私有 OSS 和 `/creations`“我的创作”；保存操作幂等，保存后的作品永久保留且本期不提供删除或继续创作。

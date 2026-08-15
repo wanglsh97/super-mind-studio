@@ -26,6 +26,7 @@ export interface AgentRunAdapterContext {
   websiteMode?: boolean;
   documentMode?: boolean;
   imageMode?: boolean;
+  videoMode?: boolean;
   onRunThreadBound?: (threadId: string) => void;
   onThreadCreated: (thread: AgentThreadSummary) => void;
   onRunCreated?: (run: Pick<AgentRunSummary, 'id' | 'threadId' | 'model' | 'provider'>) => void;
@@ -113,7 +114,9 @@ export function createAgentRunAdapter(
             ? { mode: 'document' as const }
             : context.imageMode
               ? { mode: 'image' as const }
-              : {}),
+              : context.videoMode
+                ? { mode: 'video' as const }
+                : {}),
       });
       context.onRunCreated?.({
         id: run.id,

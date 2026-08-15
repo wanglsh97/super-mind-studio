@@ -46,7 +46,7 @@ describe('CreationsService', () => {
   it('lists only explicitly saved image Creations with controlled asset routes', async () => {
     const { service, prisma } = setup();
     const now = new Date('2026-08-14T00:00:00.000Z');
-    prisma.creation.findMany.mockResolvedValue([
+    prisma.creation.findMany.mockResolvedValueOnce([
       {
         id: crypto.randomUUID(),
         title: '保存的图片',
@@ -55,7 +55,7 @@ describe('CreationsService', () => {
         imageTask: { taskId: crypto.randomUUID() },
         assets: [{ id: crypto.randomUUID(), name: 'image.png' }],
       },
-    ]);
+    ]).mockResolvedValueOnce([]);
     await expect(service.list(githubUser)).resolves.toEqual([
       expect.objectContaining({
         type: 'image',

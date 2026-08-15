@@ -22,12 +22,17 @@ export class CreationsService {
 
   async list(user: AuthenticatedUser) {
     const now = new Date();
-    const [websites, images] = await Promise.all([
+    const [websites, images, videos] = await Promise.all([
       this.projects.listWebsitesForOwner(user.id),
       this.prisma.creation.findMany({
         where: { userId: user.id, type: 'IMAGE', status: 'SUCCEEDED' },
         orderBy: { createdAt: 'desc' },
         include: { assets: { where: { kind: 'IMAGE' } }, imageTask: true },
+      }),
+      this.prisma.creation.findMany({
+        where: { userId: user.id, type: 'VIDEO', status: 'SUCCEEDED' },
+        orderBy: { createdAt: 'desc' },
+        include: { assets: { where: { kind: 'VIDEO' } }, videoTask: true },
       }),
     ]);
     return [
@@ -50,6 +55,24 @@ export class CreationsService {
         assets: image.assets.map((asset) => ({
           id: asset.id,
           kind: 'image',
+          name: asset.name,
+          expiresAt: null,
+          previewUrl: `/api/v1/creations/assets/${asset.id}/preview`,
+          downloadUrl: `/api/v1/creations/assets/${asset.id}/content`,
+        })),
+      })),
+      ...videos.map((video) => ({
+        id: video.id,
+        type: 'video' as const,
+        status: 'succeeded',
+        title: video.title,
+        createdAt: video.createdAt.toISOString(),
+        updatedAt: video.updatedAt.toISOString(),
+        videoTaskId: video.videoTask?.taskId,
+        expiresAt: null,
+        assets: video.assets.map((asset) => ({
+          id: asset.id,
+          kind: 'video',
           name: asset.name,
           expiresAt: null,
           previewUrl: `/api/v1/creations/assets/${asset.id}/preview`,

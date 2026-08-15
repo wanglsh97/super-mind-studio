@@ -148,6 +148,62 @@ export interface AgentToolResultPart {
   audit?: Record<string, unknown>;
   /** 图像生成工具的稳定业务投影；不包含厂商 URL、OSS key 或 Sandbox 路径。 */
   imageGeneration?: ImageGenerationToolResult;
+  /** 视频生成工具的稳定业务投影；不包含厂商身份、URL、OSS key 或 Sandbox 路径。 */
+  videoGeneration?: VideoGenerationToolResult;
+}
+
+export const VIDEO_GENERATION_STATUSES = [
+  'pending',
+  'submitting',
+  'running',
+  'persisting',
+  'succeeded',
+  'failed',
+  'timed_out',
+  'cancelled',
+  'expired',
+] as const;
+export type VideoGenerationStatus = (typeof VIDEO_GENERATION_STATUSES)[number];
+export type VideoResolution = '540p' | '720p' | '1080p';
+export type VideoAspectRatio = '16:9' | '9:16' | '1:1';
+
+export interface GenerateVideoToolArguments {
+  prompt: string;
+  referenceImageId?: string;
+  durationSeconds?: number;
+  resolution?: VideoResolution;
+  aspectRatio?: VideoAspectRatio;
+  audio?: boolean;
+  preferredBrand?: 'kling' | 'happyhorse' | 'vidu' | 'pixverse';
+}
+
+export interface VideoGenerationSuggestion {
+  label: string;
+  prompt: string;
+}
+
+export interface VideoGenerationToolResult {
+  taskId: string;
+  videoId: string | null;
+  status: VideoGenerationStatus;
+  originalPrompt: string;
+  effectivePrompt: string;
+  settings: {
+    durationSeconds: number;
+    resolution: VideoResolution;
+    aspectRatio: VideoAspectRatio | null;
+    audio: boolean;
+    inputMode: 'text' | 'first_frame';
+  };
+  previewUrl: string | null;
+  saveUrl: string | null;
+  downloadUrl: string | null;
+  sandboxExpiresAt: string | null;
+  saved: boolean;
+  creationId: string | null;
+  modelSwitched: boolean;
+  suggestions: VideoGenerationSuggestion[];
+  error?: GatewayError;
 }
 
 export const IMAGE_GENERATION_STATUSES = [
@@ -444,7 +500,7 @@ export interface UpdateAgentThreadModelRequest {
 
 /** Agent run 级思考强度；厂商字段由服务端 Adapter 映射。 */
 export type AgentThinkingEffort = 'fast' | 'balanced' | 'deep';
-export type AgentRunMode = 'website' | 'document' | 'image';
+export type AgentRunMode = 'website' | 'document' | 'image' | 'video';
 
 export interface CreateAgentRunRequest {
   input: string;

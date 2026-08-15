@@ -143,6 +143,25 @@ export class AliyunOssSkillObjectStore
     }
   }
 
+  async createUserFileDownload(
+    objectKey: string,
+    expiresInSeconds: number,
+    signal?: AbortSignal,
+  ) {
+    const metadata = await this.statObject(objectKey, signal)
+    if (!metadata || metadata.kind === 'skill-package') return null
+    const boundedExpiry = Math.min(Math.max(Math.trunc(expiresInSeconds), 60), 7_200)
+    const url = await withAbort(
+      this.client.signatureUrlV4('GET', boundedExpiry, { headers: {} }, objectKey, []),
+      signal,
+    )
+    return {
+      metadata: { ...metadata, kind: metadata.kind },
+      url,
+      expiresAt: new Date(Date.now() + boundedExpiry * 1_000).toISOString(),
+    }
+  }
+
   async writeUserFile(input: WriteUserFileInput): Promise<StoredUserFile> {
     assertObjectKey(input.objectKey)
     throwIfAborted(input.signal)

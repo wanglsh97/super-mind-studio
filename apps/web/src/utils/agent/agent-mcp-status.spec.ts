@@ -1,7 +1,7 @@
-import assert from 'node:assert/strict'
-import { describe, it } from 'node:test'
+import assert from 'node:assert/strict';
+import { describe, it } from 'node:test';
 
-import { parseNamespacedMcpToolName, summarizeAgentMcpStatuses } from './agent-mcp-status'
+import { parseNamespacedMcpToolName, summarizeAgentMcpStatuses } from './agent-mcp-status';
 
 describe('Agent MCP UI helpers', () => {
   it('summarizes ready/error servers and registered tools', () => {
@@ -33,15 +33,15 @@ describe('Agent MCP UI helpers', () => {
         },
       ]),
       { serverCount: 2, readyCount: 1, errorCount: 1, registeredToolCount: 2 },
-    )
-  })
+    );
+  });
 
   it('parses only namespaced MCP tool names', () => {
     assert.deepEqual(parseNamespacedMcpToolName('mcp__docs__lookup'), {
       serverId: 'docs',
       remoteToolName: 'lookup',
-    })
-    assert.equal(parseNamespacedMcpToolName('web_search'), null)
-    assert.equal(parseNamespacedMcpToolName('mcp__bad server__lookup'), null)
-  })
-})
+    });
+    assert.equal(parseNamespacedMcpToolName('web_search'), null);
+    assert.equal(parseNamespacedMcpToolName('mcp__bad server__lookup'), null);
+  });
+});

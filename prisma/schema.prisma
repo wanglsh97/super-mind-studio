@@ -15,6 +15,7 @@ enum RequestCapability {
   IMAGE
   PROMPT
   AGENT
+  VIDEO
 }
 
 enum RequestStatus {
@@ -145,6 +146,7 @@ enum AuthProvider {
 enum CreationType {
   WEBSITE
   IMAGE
+  VIDEO
 }
 
 enum CreationStatus {
@@ -153,6 +155,7 @@ enum CreationStatus {
   SUCCEEDED
   FAILED
   EXPIRED
+  DELETING
 }
 
 enum WebProjectStatus {
@@ -168,31 +171,46 @@ enum CreationAssetKind {
   DIST_ZIP
   PREVIEW
   IMAGE
+  VIDEO
+}
+
+enum VideoTaskStatus {
+  PENDING
+  SUBMITTING
+  RUNNING
+  PERSISTING
+  SUCCEEDED
+  FAILED
+  TIMED_OUT
+  CANCELLED
+  EXPIRED
 }
 
 model User {
-  id             String                @id @default(uuid()) @db.Uuid
-  authProvider   AuthProvider
-  providerUserId String                @db.VarChar(255)
-  userName       String                @db.VarChar(255)
-  avatarUrl      String?               @db.VarChar(2048)
-  email          String?               @db.VarChar(320)
-  lastLoginAt    DateTime              @db.Timestamptz(3)
-  createdAt      DateTime              @default(now()) @db.Timestamptz(3)
-  updatedAt      DateTime              @updatedAt @db.Timestamptz(3)
-  sessions       UserSession[]
-  requestLogs    RequestLog[]
-  imageTasks     ImageGenerationTask[]
-  agentThreads   AgentThread[]
-  agentRuns      AgentRun[]
-  agentSkills    UserAgentSkill[]
-  mcpPreferences UserMcpServerPreference[]
-  ownedSkills    Skill[]               @relation("SkillOwner")
-  files          UserFile[]
-  skillUploads   SkillUploadSession[]
+  id               String                    @id @default(uuid()) @db.Uuid
+  authProvider     AuthProvider
+  providerUserId   String                    @db.VarChar(255)
+  userName         String                    @db.VarChar(255)
+  avatarUrl        String?                   @db.VarChar(2048)
+  email            String?                   @db.VarChar(320)
+  lastLoginAt      DateTime                  @db.Timestamptz(3)
+  createdAt        DateTime                  @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime                  @updatedAt @db.Timestamptz(3)
+  sessions         UserSession[]
+  requestLogs      RequestLog[]
+  imageTasks       ImageGenerationTask[]
+  videoTasks       VideoGenerationTask[]
+  videoInputAssets VideoInputAsset[]
+  agentThreads     AgentThread[]
+  agentRuns        AgentRun[]
+  agentSkills      UserAgentSkill[]
+  mcpPreferences   UserMcpServerPreference[]
+  ownedSkills      Skill[]                   @relation("SkillOwner")
+  files            UserFile[]
+  skillUploads     SkillUploadSession[]
   modelInvocations AgentModelInvocation[]
-  creations       Creation[]
-  webProjects     WebProject[]
+  creations        Creation[]
+  webProjects      WebProject[]
 
   @@unique([authProvider, providerUserId])
   @@index([userName])
@@ -324,10 +342,10 @@ model UserFile {
   run              AgentRun?         @relation(fields: [runId], references: [id], onDelete: SetNull)
   sourceToolCall   AgentToolCall?    @relation(fields: [sourceToolCallId], references: [id], onDelete: SetNull)
 
+  @@unique([runId, direction, sandboxPath])
   @@index([userId, status, createdAt])
   @@index([runId])
   @@index([sourceToolCallId])
-  @@unique([runId, direction, sandboxPath])
 }
 
 model UserSession {
@@ -344,37 +362,38 @@ model UserSession {
 }
 
 model RequestLog {
-  id                String               @id @default(uuid()) @db.Uuid
-  requestId         String               @unique @default(uuid()) @db.Uuid
-  capability        RequestCapability
-  prompt            Json
-  modelAlias        String               @db.VarChar(64)
-  provider          String?              @db.VarChar(64)
-  resolvedModel     String?              @db.VarChar(128)
-  providerRequestId String?              @db.VarChar(191)
-  status            RequestStatus        @default(PENDING)
-  stream            Boolean              @default(false)
-  clientIp          String?              @db.VarChar(64)
-  startedAt         DateTime             @default(now()) @db.Timestamptz(3)
-  firstTokenAt      DateTime?            @db.Timestamptz(3)
-  completedAt       DateTime?            @db.Timestamptz(3)
-  durationMs        Int?
-  failoverFrom      String?              @db.VarChar(64)
-  failoverTo        String?              @db.VarChar(64)
-  failoverReason    String?              @db.VarChar(255)
-  errorCode         String?              @db.VarChar(64)
-  errorMessage      String?              @db.Text
-  errorDetails      Json?
-  metadata          Json?
-  createdAt         DateTime             @default(now()) @db.Timestamptz(3)
-  updatedAt         DateTime             @updatedAt @db.Timestamptz(3)
-  userId            String               @db.Uuid
-  user              User                 @relation(fields: [userId], references: [id], onDelete: Restrict)
-  agentRunId        String?              @db.Uuid
-  agentRun          AgentRun?            @relation(fields: [agentRunId], references: [id], onDelete: SetNull)
-  billing           BillingRecord?
+  id                   String                @id @default(uuid()) @db.Uuid
+  requestId            String                @unique @default(uuid()) @db.Uuid
+  capability           RequestCapability
+  prompt               Json
+  modelAlias           String                @db.VarChar(64)
+  provider             String?               @db.VarChar(64)
+  resolvedModel        String?               @db.VarChar(128)
+  providerRequestId    String?               @db.VarChar(191)
+  status               RequestStatus         @default(PENDING)
+  stream               Boolean               @default(false)
+  clientIp             String?               @db.VarChar(64)
+  startedAt            DateTime              @default(now()) @db.Timestamptz(3)
+  firstTokenAt         DateTime?             @db.Timestamptz(3)
+  completedAt          DateTime?             @db.Timestamptz(3)
+  durationMs           Int?
+  failoverFrom         String?               @db.VarChar(64)
+  failoverTo           String?               @db.VarChar(64)
+  failoverReason       String?               @db.VarChar(255)
+  errorCode            String?               @db.VarChar(64)
+  errorMessage         String?               @db.Text
+  errorDetails         Json?
+  metadata             Json?
+  createdAt            DateTime              @default(now()) @db.Timestamptz(3)
+  updatedAt            DateTime              @updatedAt @db.Timestamptz(3)
+  userId               String                @db.Uuid
+  user                 User                  @relation(fields: [userId], references: [id], onDelete: Restrict)
+  agentRunId           String?               @db.Uuid
+  agentRun             AgentRun?             @relation(fields: [agentRunId], references: [id], onDelete: SetNull)
+  billing              BillingRecord?
   agentModelInvocation AgentModelInvocation?
-  imageTask         ImageGenerationTask?
+  imageTask            ImageGenerationTask?
+  videoGenerationTask  VideoGenerationTask?
 
   @@index([userId, createdAt])
   @@index([createdAt])
@@ -403,51 +422,51 @@ model BillingRecord {
 }
 
 model ImageGenerationTask {
-  id             String          @id @default(uuid()) @db.Uuid
-  taskId         String          @unique @default(uuid()) @db.Uuid
-  requestLogId   String          @unique @db.Uuid
-  providerTaskId String?         @db.VarChar(191)
-  prompt         String          @db.Text
-  effectivePrompt String?        @db.Text
-  modelAlias     String          @db.VarChar(64)
-  provider       String?         @db.VarChar(64)
-  resolvedModel  String?         @db.VarChar(128)
-  options        Json?
-  status         ImageTaskStatus @default(PENDING)
-  results        Json?
-  errorCode      String?         @db.VarChar(64)
-  errorMessage   String?         @db.Text
-  lastPolledAt   DateTime?       @db.Timestamptz(3)
-  nextPollAt     DateTime?       @db.Timestamptz(3)
-  pollAttempts   Int             @default(0)
-  persistAttempts Int            @default(0)
-  leaseOwner     String?         @db.VarChar(191)
-  leaseExpiresAt DateTime?       @db.Timestamptz(3)
-  agentRunId     String?         @db.Uuid
-  agentToolCallId String?        @unique @db.Uuid
-  parentImageTaskId String?      @db.Uuid
-  imageId        String?         @unique @db.Uuid
-  sandboxId      String?         @db.VarChar(191)
-  sandboxPath    String?         @db.Text
-  sandboxExpiresAt DateTime?     @db.Timestamptz(3)
-  mimeType       String?         @db.VarChar(255)
-  sizeBytes      BigInt?
-  sha256         String?         @db.Char(64)
-  providerResultUrl String?      @db.Text
-  cancelRequestedAt DateTime?    @db.Timestamptz(3)
-  expiredAt      DateTime?       @db.Timestamptz(3)
-  startedAt      DateTime?       @db.Timestamptz(3)
-  completedAt    DateTime?       @db.Timestamptz(3)
-  createdAt      DateTime        @default(now()) @db.Timestamptz(3)
-  updatedAt      DateTime        @updatedAt @db.Timestamptz(3)
-  userId         String          @db.Uuid
-  user           User            @relation(fields: [userId], references: [id], onDelete: Restrict)
-  requestLog     RequestLog      @relation(fields: [requestLogId], references: [id], onDelete: Cascade)
-  agentRun       AgentRun?       @relation(fields: [agentRunId], references: [id], onDelete: SetNull)
-  agentToolCall  AgentToolCall?  @relation(fields: [agentToolCallId], references: [id], onDelete: SetNull)
-  parentImageTask ImageGenerationTask? @relation("ImageTaskChain", fields: [parentImageTaskId], references: [id], onDelete: SetNull)
-  childImageTasks ImageGenerationTask[] @relation("ImageTaskChain")
-  creation       Creation?
+  id                String                @id @default(uuid()) @db.Uuid
+  taskId            String                @unique @default(uuid()) @db.Uuid
+  requestLogId      String                @unique @db.Uuid
+  providerTaskId    String?               @db.VarChar(191)
+  prompt            String                @db.Text
+  effectivePrompt   String?               @db.Text
+  modelAlias        String                @db.VarChar(64)
+  provider          String?               @db.VarChar(64)
+  resolvedModel     String?               @db.VarChar(128)
+  options           Json?
+  status            ImageTaskStatus       @default(PENDING)
+  results           Json?
+  errorCode         String?               @db.VarChar(64)
+  errorMessage      String?               @db.Text
+  lastPolledAt      DateTime?             @db.Timestamptz(3)
+  nextPollAt        DateTime?             @db.Timestamptz(3)
+  pollAttempts      Int                   @default(0)
+  persistAttempts   Int                   @default(0)
+  leaseOwner        String?               @db.VarChar(191)
+  leaseExpiresAt    DateTime?             @db.Timestamptz(3)
+  agentRunId        String?               @db.Uuid
+  agentToolCallId   String?               @unique @db.Uuid
+  parentImageTaskId String?               @db.Uuid
+  imageId           String?               @unique @db.Uuid
+  sandboxId         String?               @db.VarChar(191)
+  sandboxPath       String?               @db.Text
+  sandboxExpiresAt  DateTime?             @db.Timestamptz(3)
+  mimeType          String?               @db.VarChar(255)
+  sizeBytes         BigInt?
+  sha256            String?               @db.Char(64)
+  providerResultUrl String?               @db.Text
+  cancelRequestedAt DateTime?             @db.Timestamptz(3)
+  expiredAt         DateTime?             @db.Timestamptz(3)
+  startedAt         DateTime?             @db.Timestamptz(3)
+  completedAt       DateTime?             @db.Timestamptz(3)
+  createdAt         DateTime              @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime              @updatedAt @db.Timestamptz(3)
+  userId            String                @db.Uuid
+  user              User                  @relation(fields: [userId], references: [id], onDelete: Restrict)
+  requestLog        RequestLog            @relation(fields: [requestLogId], references: [id], onDelete: Cascade)
+  agentRun          AgentRun?             @relation(fields: [agentRunId], references: [id], onDelete: SetNull)
+  agentToolCall     AgentToolCall?        @relation(fields: [agentToolCallId], references: [id], onDelete: SetNull)
+  parentImageTask   ImageGenerationTask?  @relation("ImageTaskChain", fields: [parentImageTaskId], references: [id], onDelete: SetNull)
+  childImageTasks   ImageGenerationTask[] @relation("ImageTaskChain")
+  creation          Creation?
 
   @@unique([provider, providerTaskId])
   @@index([userId, createdAt])
@@ -458,20 +477,111 @@ model ImageGenerationTask {
   @@index([createdAt])
 }
 
+model VideoGenerationTask {
+  id                  String                @id @default(uuid()) @db.Uuid
+  taskId              String                @unique @default(uuid()) @db.Uuid
+  requestLogId        String                @unique @db.Uuid
+  userId              String                @db.Uuid
+  threadId            String                @db.Uuid
+  agentRunId          String?               @db.Uuid
+  agentToolCallId     String?               @unique @db.Uuid
+  parentVideoTaskId   String?               @db.Uuid
+  videoId             String?               @unique @db.Uuid
+  idempotencyKey      String                @unique @db.VarChar(191)
+  prompt              String                @db.Text
+  effectivePrompt     String                @db.Text
+  inputMode           String                @db.VarChar(32)
+  referenceImageId    String?               @db.Uuid
+  options             Json?
+  candidateAudit      Json?
+  provider            String?               @db.VarChar(64)
+  resolvedModel       String?               @db.VarChar(128)
+  providerTaskId      String?               @db.VarChar(191)
+  status              VideoTaskStatus       @default(PENDING)
+  providerFinalStatus String?               @db.VarChar(32)
+  providerResultUrl   String?               @db.Text
+  nextPollAt          DateTime?             @db.Timestamptz(3)
+  lastPolledAt        DateTime?             @db.Timestamptz(3)
+  pollAttempts        Int                   @default(0)
+  leaseOwner          String?               @db.VarChar(191)
+  leaseExpiresAt      DateTime?             @db.Timestamptz(3)
+  sandboxId           String?               @db.VarChar(191)
+  sandboxPath         String?               @db.Text
+  sandboxExpiresAt    DateTime?             @db.Timestamptz(3)
+  mimeType            String?               @db.VarChar(255)
+  sizeBytes           BigInt?
+  sha256              String?               @db.Char(64)
+  durationSeconds     Int?
+  width               Int?
+  height              Int?
+  audio               Boolean?
+  priceVersion        String?               @db.VarChar(64)
+  estimatedCostCny    Decimal?              @db.Decimal(18, 8)
+  costEstimated       Boolean               @default(true)
+  errorCode           String?               @db.VarChar(64)
+  errorMessage        String?               @db.Text
+  cancelledAt         DateTime?             @db.Timestamptz(3)
+  timedOutAt          DateTime?             @db.Timestamptz(3)
+  startedAt           DateTime?             @db.Timestamptz(3)
+  completedAt         DateTime?             @db.Timestamptz(3)
+  createdAt           DateTime              @default(now()) @db.Timestamptz(3)
+  updatedAt           DateTime              @updatedAt @db.Timestamptz(3)
+  requestLog          RequestLog            @relation(fields: [requestLogId], references: [id], onDelete: Cascade)
+  user                User                  @relation(fields: [userId], references: [id], onDelete: Restrict)
+  thread              AgentThread           @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  agentRun            AgentRun?             @relation(fields: [agentRunId], references: [id], onDelete: SetNull)
+  agentToolCall       AgentToolCall?        @relation(fields: [agentToolCallId], references: [id], onDelete: SetNull)
+  parentVideoTask     VideoGenerationTask?  @relation("VideoTaskChain", fields: [parentVideoTaskId], references: [id], onDelete: SetNull)
+  childVideoTasks     VideoGenerationTask[] @relation("VideoTaskChain")
+  creation            Creation?
+
+  @@unique([provider, providerTaskId])
+  @@index([status, nextPollAt, leaseExpiresAt])
+  @@index([userId, createdAt])
+  @@index([threadId, createdAt])
+  @@index([agentRunId])
+}
+
+model VideoInputAsset {
+  id          String      @id @default(uuid()) @db.Uuid
+  userId      String      @db.Uuid
+  threadId    String      @db.Uuid
+  sandboxId   String?     @db.VarChar(191)
+  sandboxPath String?     @db.Text
+  objectKey   String?     @db.Text
+  name        String      @db.VarChar(255)
+  mimeType    String      @db.VarChar(64)
+  sizeBytes   BigInt
+  sha256      String      @db.Char(64)
+  expiresAt   DateTime    @db.Timestamptz(3)
+  createdAt   DateTime    @default(now()) @db.Timestamptz(3)
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  thread      AgentThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  @@index([userId, threadId, createdAt])
+  @@index([expiresAt])
+  @@index([objectKey])
+}
+
 model Creation {
-  id          String         @id @default(uuid()) @db.Uuid
-  userId      String         @db.Uuid
-  type        CreationType
-  status      CreationStatus @default(PENDING)
-  title       String         @db.VarChar(200)
-  expiresAt   DateTime?      @db.Timestamptz(3)
-  createdAt   DateTime       @default(now()) @db.Timestamptz(3)
-  updatedAt   DateTime       @updatedAt @db.Timestamptz(3)
-  user        User           @relation(fields: [userId], references: [id], onDelete: Restrict)
-  webProject  WebProject?
-  imageTaskId String?        @unique @db.Uuid
-  imageTask   ImageGenerationTask? @relation(fields: [imageTaskId], references: [id], onDelete: SetNull)
-  assets      CreationAsset[]
+  id               String               @id @default(uuid()) @db.Uuid
+  userId           String               @db.Uuid
+  type             CreationType
+  status           CreationStatus       @default(PENDING)
+  title            String               @db.VarChar(200)
+  expiresAt        DateTime?            @db.Timestamptz(3)
+  createdAt        DateTime             @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime             @updatedAt @db.Timestamptz(3)
+  user             User                 @relation(fields: [userId], references: [id], onDelete: Restrict)
+  webProject       WebProject?
+  imageTaskId      String?              @unique @db.Uuid
+  imageTask        ImageGenerationTask? @relation(fields: [imageTaskId], references: [id], onDelete: SetNull)
+  videoTaskId      String?              @unique @db.Uuid
+  videoTask        VideoGenerationTask? @relation(fields: [videoTaskId], references: [id], onDelete: SetNull)
+  parentCreationId String?              @db.Uuid
+  parentCreation   Creation?            @relation("CreationVersions", fields: [parentCreationId], references: [id], onDelete: SetNull)
+  childCreations   Creation[]           @relation("CreationVersions")
+  assets           CreationAsset[]
 
   @@index([userId, createdAt])
   @@index([userId, type, createdAt])
@@ -497,24 +607,24 @@ model WebProject {
   agentThread   AgentThread?     @relation(fields: [agentThreadId], references: [id], onDelete: SetNull)
   agentRun      AgentRun?        @relation(fields: [agentRunId], references: [id], onDelete: SetNull)
 
+  @@unique([userId, agentThreadId])
   @@index([userId, createdAt])
   @@index([agentThreadId])
   @@index([agentRunId])
-  @@unique([userId, agentThreadId])
 }
 
 model CreationAsset {
-  id          String            @id @default(uuid()) @db.Uuid
-  creationId  String            @db.Uuid
-  kind        CreationAssetKind
-  name        String            @db.VarChar(255)
-  mimeType    String            @db.VarChar(255)
-  objectKey   String            @unique @db.VarChar(1024)
-  sizeBytes   BigInt
-  sha256      String?           @db.Char(64)
-  expiresAt   DateTime?         @db.Timestamptz(3)
-  createdAt   DateTime          @default(now()) @db.Timestamptz(3)
-  creation    Creation          @relation(fields: [creationId], references: [id], onDelete: Cascade)
+  id         String            @id @default(uuid()) @db.Uuid
+  creationId String            @db.Uuid
+  kind       CreationAssetKind
+  name       String            @db.VarChar(255)
+  mimeType   String            @db.VarChar(255)
+  objectKey  String            @unique @db.VarChar(1024)
+  sizeBytes  BigInt
+  sha256     String?           @db.Char(64)
+  expiresAt  DateTime?         @db.Timestamptz(3)
+  createdAt  DateTime          @default(now()) @db.Timestamptz(3)
+  creation   Creation          @relation(fields: [creationId], references: [id], onDelete: Cascade)
 
   @@index([creationId, kind])
   @@index([expiresAt])
@@ -538,24 +648,28 @@ model AdminAuditLog {
 }
 
 model AgentThread {
-  id                 String               @id @default(uuid()) @db.Uuid
-  userId             String               @db.Uuid
-  title              String               @db.VarChar(200)
-  modelId            String               @db.VarChar(128)
-  provider           String               @db.VarChar(64)
-  sandboxId          String?              @unique @db.VarChar(191)
-  sandboxStatus      String?              @db.VarChar(32)
-  sandboxCreatedAt   DateTime?            @db.Timestamptz(3)
-  sandboxLastUsedAt  DateTime?            @db.Timestamptz(3)
-  sandboxExpiresAt   DateTime?            @db.Timestamptz(3)
-  sandboxDestroyedAt DateTime?            @db.Timestamptz(3)
-  createdAt          DateTime             @default(now()) @db.Timestamptz(3)
-  updatedAt          DateTime             @updatedAt @db.Timestamptz(3)
-  user               User                 @relation(fields: [userId], references: [id], onDelete: Restrict)
+  id                 String                @id @default(uuid()) @db.Uuid
+  userId             String                @db.Uuid
+  title              String                @db.VarChar(200)
+  modelId            String                @db.VarChar(128)
+  provider           String                @db.VarChar(64)
+  sandboxId          String?               @unique @db.VarChar(191)
+  sandboxStatus      String?               @db.VarChar(32)
+  sandboxCreatedAt   DateTime?             @db.Timestamptz(3)
+  sandboxLastUsedAt  DateTime?             @db.Timestamptz(3)
+  sandboxExpiresAt   DateTime?             @db.Timestamptz(3)
+  sandboxDestroyedAt DateTime?             @db.Timestamptz(3)
+  preferredMode      String?               @db.VarChar(32)
+  videoModelBinding  String?               @db.VarChar(128)
+  createdAt          DateTime              @default(now()) @db.Timestamptz(3)
+  updatedAt          DateTime              @updatedAt @db.Timestamptz(3)
+  user               User                  @relation(fields: [userId], references: [id], onDelete: Restrict)
   messages           AgentMessage[]
   runs               AgentRun[]
   contextSummary     AgentContextSummary?
   webProjects        WebProject[]
+  videoTasks         VideoGenerationTask[]
+  videoInputAssets   VideoInputAsset[]
 
   @@index([userId, updatedAt])
   @@index([userId, createdAt])
@@ -598,42 +712,42 @@ model AgentMessage {
 }
 
 model AgentRun {
-  id                   String               @id @default(uuid()) @db.Uuid
-  threadId             String               @db.Uuid
-  userId               String               @db.Uuid
-  modelId              String               @db.VarChar(128)
-  provider             String               @db.VarChar(64)
-  mode                 String?              @db.VarChar(32)
-  status               AgentRunStatus       @default(RUNNING)
+  id                   String                 @id @default(uuid()) @db.Uuid
+  threadId             String                 @db.Uuid
+  userId               String                 @db.Uuid
+  modelId              String                 @db.VarChar(128)
+  provider             String                 @db.VarChar(64)
+  mode                 String?                @db.VarChar(32)
+  status               AgentRunStatus         @default(RUNNING)
   limitReason          AgentRunLimitReason?
-  input                String               @db.Text
-  errorCode            String?              @db.VarChar(64)
-  errorMessage         String?              @db.Text
-  promptProfileVersion String?              @db.VarChar(64)
-  promptHash           String?              @db.VarChar(64)
+  input                String                 @db.Text
+  errorCode            String?                @db.VarChar(64)
+  errorMessage         String?                @db.Text
+  promptProfileVersion String?                @db.VarChar(64)
+  promptHash           String?                @db.VarChar(64)
   promptManifest       Json?
-  modelCallCount       Int                  @default(0)
-  toolCallCount        Int                  @default(0)
-  webFetchCount        Int                  @default(0)
-  shellCallCount       Int                  @default(0)
-  sandboxId            String?              @db.VarChar(191)
+  modelCallCount       Int                    @default(0)
+  toolCallCount        Int                    @default(0)
+  webFetchCount        Int                    @default(0)
+  shellCallCount       Int                    @default(0)
+  sandboxId            String?                @db.VarChar(191)
   activeSkillManifest  Json?
   fileManifest         Json?
   sandboxUsage         Json?
-  sandboxStartedAt     DateTime?            @db.Timestamptz(3)
-  sandboxDestroyedAt   DateTime?            @db.Timestamptz(3)
-  inputTokens          Int                  @default(0)
-  outputTokens         Int                  @default(0)
-  totalTokens          Int                  @default(0)
-  usageUnknown         Boolean              @default(false)
-  estimatedCostCny     Decimal?             @db.Decimal(18, 8)
-  lastSequence         Int                  @default(-1)
-  startedAt            DateTime?            @db.Timestamptz(3)
-  completedAt          DateTime?            @db.Timestamptz(3)
-  createdAt            DateTime             @default(now()) @db.Timestamptz(3)
-  updatedAt            DateTime             @updatedAt @db.Timestamptz(3)
-  thread               AgentThread          @relation(fields: [threadId], references: [id], onDelete: Cascade)
-  user                 User                 @relation(fields: [userId], references: [id], onDelete: Restrict)
+  sandboxStartedAt     DateTime?              @db.Timestamptz(3)
+  sandboxDestroyedAt   DateTime?              @db.Timestamptz(3)
+  inputTokens          Int                    @default(0)
+  outputTokens         Int                    @default(0)
+  totalTokens          Int                    @default(0)
+  usageUnknown         Boolean                @default(false)
+  estimatedCostCny     Decimal?               @db.Decimal(18, 8)
+  lastSequence         Int                    @default(-1)
+  startedAt            DateTime?              @db.Timestamptz(3)
+  completedAt          DateTime?              @db.Timestamptz(3)
+  createdAt            DateTime               @default(now()) @db.Timestamptz(3)
+  updatedAt            DateTime               @updatedAt @db.Timestamptz(3)
+  thread               AgentThread            @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  user                 User                   @relation(fields: [userId], references: [id], onDelete: Restrict)
   events               AgentEvent[]
   toolCallRecords      AgentToolCall[]
   messages             AgentMessage[]
@@ -643,6 +757,7 @@ model AgentRun {
   userQuestions        AgentUserQuestion[]
   webProjects          WebProject[]
   imageTasks           ImageGenerationTask[]
+  videoTasks           VideoGenerationTask[]
 
   @@index([threadId, createdAt])
   @@index([userId, status])
@@ -651,14 +766,14 @@ model AgentRun {
 }
 
 model AgentUserQuestion {
-  id         String                  @id @default(uuid()) @db.Uuid
-  runId      String                  @db.Uuid
-  toolCallId String                  @db.VarChar(191)
-  status     AgentUserQuestionStatus @default(PENDING)
+  id         String                    @id @default(uuid()) @db.Uuid
+  runId      String                    @db.Uuid
+  toolCallId String                    @db.VarChar(191)
+  status     AgentUserQuestionStatus   @default(PENDING)
   questions  Json
-  createdAt  DateTime                @default(now()) @db.Timestamptz(3)
-  settledAt  DateTime?               @db.Timestamptz(3)
-  run        AgentRun                @relation(fields: [runId], references: [id], onDelete: Cascade)
+  createdAt  DateTime                  @default(now()) @db.Timestamptz(3)
+  settledAt  DateTime?                 @db.Timestamptz(3)
+  run        AgentRun                  @relation(fields: [runId], references: [id], onDelete: Cascade)
   answers    AgentUserQuestionAnswer[]
 
   @@unique([runId, toolCallId])
@@ -679,30 +794,30 @@ model AgentUserQuestionAnswer {
 }
 
 model AgentModelInvocation {
-  id                       String                          @id @default(uuid()) @db.Uuid
-  requestId                String                          @unique @db.Uuid
-  requestLogId             String                          @unique @db.Uuid
-  agentRunId               String?                         @db.Uuid
-  userId                   String                          @db.Uuid
-  status                   AgentInvocationStatus
-  provider                 String?                         @db.VarChar(64)
-  resolvedModel            String?                         @db.VarChar(128)
-  inputTokens              Int?
-  outputTokens             Int?
-  totalTokens              Int?
-  cachedInputTokens        Int?
-  reasoningTokens          Int?
-  usageUnknown             Boolean                         @default(true)
-  cacheUsageAvailable      Boolean                         @default(false)
-  reasoningUsageAvailable  Boolean                         @default(false)
-  startedAt                DateTime                        @db.Timestamptz(3)
-  completedAt              DateTime                        @db.Timestamptz(3)
-  createdAt                DateTime                        @default(now()) @db.Timestamptz(3)
-  updatedAt                DateTime                        @updatedAt @db.Timestamptz(3)
-  requestLog               RequestLog                      @relation(fields: [requestLogId], references: [id], onDelete: Cascade)
-  agentRun                 AgentRun?                       @relation(fields: [agentRunId], references: [id], onDelete: SetNull)
-  user                     User                            @relation(fields: [userId], references: [id], onDelete: Restrict)
-  attributions             AgentModelInvocationAttribution[]
+  id                      String                            @id @default(uuid()) @db.Uuid
+  requestId               String                            @unique @db.Uuid
+  requestLogId            String                            @unique @db.Uuid
+  agentRunId              String?                           @db.Uuid
+  userId                  String                            @db.Uuid
+  status                  AgentInvocationStatus
+  provider                String?                           @db.VarChar(64)
+  resolvedModel           String?                           @db.VarChar(128)
+  inputTokens             Int?
+  outputTokens            Int?
+  totalTokens             Int?
+  cachedInputTokens       Int?
+  reasoningTokens         Int?
+  usageUnknown            Boolean                           @default(true)
+  cacheUsageAvailable     Boolean                           @default(false)
+  reasoningUsageAvailable Boolean                           @default(false)
+  startedAt               DateTime                          @db.Timestamptz(3)
+  completedAt             DateTime                          @db.Timestamptz(3)
+  createdAt               DateTime                          @default(now()) @db.Timestamptz(3)
+  updatedAt               DateTime                          @updatedAt @db.Timestamptz(3)
+  requestLog              RequestLog                        @relation(fields: [requestLogId], references: [id], onDelete: Cascade)
+  agentRun                AgentRun?                         @relation(fields: [agentRunId], references: [id], onDelete: SetNull)
+  user                    User                              @relation(fields: [userId], references: [id], onDelete: Restrict)
+  attributions            AgentModelInvocationAttribution[]
 
   @@index([userId, completedAt])
   @@index([resolvedModel, completedAt])
@@ -736,38 +851,39 @@ model AgentEvent {
 }
 
 model AgentToolCall {
-  id                 String              @id @default(uuid()) @db.Uuid
-  runId              String              @db.Uuid
-  toolCallId         String              @db.VarChar(191)
-  toolName           String              @db.VarChar(64)
-  args               Json
-  status             AgentToolCallStatus @default(RUNNING)
-  summary            String?             @db.Text
-  audit              Json?
-  errorCode          String?             @db.VarChar(64)
-  errorMessage       String?             @db.Text
-  sandboxId          String?             @db.VarChar(191)
-  skillId            String?             @db.Uuid
-  skillName          String?             @db.VarChar(64)
-  packageSha256      String?             @db.Char(64)
-  command            String?             @db.Text
-  workingDirectory   String?             @db.Text
-  exitCode           Int?
-  durationMs         Int?
-  stdoutBytes        Int?
-  stderrBytes        Int?
-  stdoutTruncated    Boolean?
-  stderrTruncated    Boolean?
-  sandboxLimitReason String?             @db.VarChar(64)
-  startedAt          DateTime            @default(now()) @db.Timestamptz(3)
-  completedAt        DateTime?           @db.Timestamptz(3)
-  result             Json?
-  resumeLeaseOwner   String?             @db.VarChar(191)
-  resumeLeaseExpiresAt DateTime?          @db.Timestamptz(3)
-  run                AgentRun            @relation(fields: [runId], references: [id], onDelete: Cascade)
-  skill              Skill?              @relation(fields: [skillId], references: [id], onDelete: SetNull)
-  files              UserFile[]
-  imageTask          ImageGenerationTask?
+  id                   String               @id @default(uuid()) @db.Uuid
+  runId                String               @db.Uuid
+  toolCallId           String               @db.VarChar(191)
+  toolName             String               @db.VarChar(64)
+  args                 Json
+  status               AgentToolCallStatus  @default(RUNNING)
+  summary              String?              @db.Text
+  audit                Json?
+  errorCode            String?              @db.VarChar(64)
+  errorMessage         String?              @db.Text
+  sandboxId            String?              @db.VarChar(191)
+  skillId              String?              @db.Uuid
+  skillName            String?              @db.VarChar(64)
+  packageSha256        String?              @db.Char(64)
+  command              String?              @db.Text
+  workingDirectory     String?              @db.Text
+  exitCode             Int?
+  durationMs           Int?
+  stdoutBytes          Int?
+  stderrBytes          Int?
+  stdoutTruncated      Boolean?
+  stderrTruncated      Boolean?
+  sandboxLimitReason   String?              @db.VarChar(64)
+  startedAt            DateTime             @default(now()) @db.Timestamptz(3)
+  completedAt          DateTime?            @db.Timestamptz(3)
+  result               Json?
+  resumeLeaseOwner     String?              @db.VarChar(191)
+  resumeLeaseExpiresAt DateTime?            @db.Timestamptz(3)
+  run                  AgentRun             @relation(fields: [runId], references: [id], onDelete: Cascade)
+  skill                Skill?               @relation(fields: [skillId], references: [id], onDelete: SetNull)
+  files                UserFile[]
+  imageTask            ImageGenerationTask?
+  videoGenerationTask  VideoGenerationTask?
 
   @@unique([runId, toolCallId])
   @@index([runId])

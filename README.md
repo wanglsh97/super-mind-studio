@@ -1,8 +1,10 @@
 # Super Mind Studio
 
+视频生成由外层文本 Agent 自动加载 `gen-video` Skill 并调用 `generate_video` Tool，通过百炼北京地域接入可灵、HappyHorse、Vidu 与爱诗。支持文生视频和文本加单张首帧图，默认 5 秒、720P、16:9 并开启音频；默认视频品牌由 `BAILIAN_VIDEO_DEFAULT_BRAND` 配置。任务 15 分钟超时且失败不自动重试。参考图与未保存 MP4 只进入 Thread Sandbox，百炼通过短期签名代理读取首帧；保存会写入私有 OSS，下载会先执行同一保存链路，因此下载过的视频也会出现在“我的创作”。实际视频模型仅供管理员审计。首版不提供视频编辑、转码、平台内容审核、视频成本硬顶或连续取消防刷，不能把厂商审核视为完整保障。
+
 Super Mind Studio 是一个面向灵感探索与任务执行的 AI Agent 工作空间。用户可通过一次性匿名、GitHub OAuth 或 Google OAuth 登录，在持久 Agent 中进行普通对话、多步任务或图像生成并使用 Skill；管理员中后台负责模型调用、费用、日志和业务数据治理。图像生成由外层文本 Agent 自动加载 `gen-image` Skill 并调用 `generate_image` Tool，通过百炼北京地域接入 Qwen Image、万相、可灵与 Vidu。
 
-生成图片默认只保留在所属 Thread 的三小时 Sandbox 中；“下载”只下载到本地，“保存到我的创作”才会将图片写入私有 OSS 并展示于 `/creations`。图片能力仅配置 `BAILIAN_IMAGE_BASE_URL` 与 `BAILIAN_IMAGE_API_KEY`；两项同时存在时开放入口，四个模型及其稳定运行参数由代码内置。
+生成图片默认只保留在所属 Thread 的三小时 Sandbox 中；“下载”只下载到本地，“保存到我的创作”才会将图片写入私有 OSS 并展示于 `/creations`。图片能力通过 `BAILIAN_IMAGE_BASE_URL` 与 `BAILIAN_IMAGE_API_KEY` 接入；两项同时存在时开放入口，默认图片模型由 `BAILIAN_IMAGE_DEFAULT_MODEL` 配置。
 
 ## 环境要求
 

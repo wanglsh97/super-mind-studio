@@ -1,20 +1,20 @@
-import type { GatewayError } from './types.js'
+import type { GatewayError } from './types.js';
 
 export class AIGatewayError extends Error implements GatewayError {
-  readonly requestId: string
-  readonly code: string
-  readonly retryable: boolean
-  readonly details?: Record<string, unknown>
-  readonly status?: number
+  readonly requestId: string;
+  readonly code: string;
+  readonly retryable: boolean;
+  readonly details?: Record<string, unknown>;
+  readonly status?: number;
 
   constructor(error: GatewayError, options: { status?: number; cause?: unknown } = {}) {
-    super(error.message, { cause: options.cause })
-    this.name = 'AIGatewayError'
-    this.requestId = error.requestId
-    this.code = error.code
-    this.retryable = error.retryable
-    if (error.details !== undefined) this.details = error.details
-    if (options.status !== undefined) this.status = options.status
+    super(error.message, { cause: options.cause });
+    this.name = 'AIGatewayError';
+    this.requestId = error.requestId;
+    this.code = error.code;
+    this.retryable = error.retryable;
+    if (error.details !== undefined) this.details = error.details;
+    if (options.status !== undefined) this.status = options.status;
   }
 }
 
@@ -28,8 +28,8 @@ export class AIGatewayProtocolError extends AIGatewayError {
         retryable: true,
       },
       { cause },
-    )
-    this.name = 'AIGatewayProtocolError'
+    );
+    this.name = 'AIGatewayProtocolError';
   }
 }
 
@@ -42,8 +42,8 @@ export class AIGatewayAuthenticationError extends AIGatewayError {
         retryable: false,
       },
       { status: 401, ...options },
-    )
-    this.name = 'AIGatewayAuthenticationError'
+    );
+    this.name = 'AIGatewayAuthenticationError';
   }
 }
 
@@ -54,8 +54,8 @@ export class AIGatewayFeatureUnavailableError extends AIGatewayError {
       code: 'SDK_FEATURE_UNAVAILABLE',
       message: `SDK feature "${feature}" is not implemented yet`,
       retryable: false,
-    })
-    this.name = 'AIGatewayFeatureUnavailableError'
+    });
+    this.name = 'AIGatewayFeatureUnavailableError';
   }
 }
 
@@ -67,7 +67,7 @@ export class AIGatewayTimeoutError extends AIGatewayError {
       message: `${operation} timed out after ${timeoutMs}ms`,
       retryable: true,
       details: { timeoutMs },
-    })
-    this.name = 'AIGatewayTimeoutError'
+    });
+    this.name = 'AIGatewayTimeoutError';
   }
 }

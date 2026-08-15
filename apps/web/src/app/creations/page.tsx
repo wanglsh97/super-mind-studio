@@ -46,13 +46,16 @@ function CreationsContent() {
           新建网页创作
         </Link>
       </div>
-      <p className="mt-3 text-sm text-ink-muted">网站产物会在 30 天后自动删除；图片也会集中显示在这里。</p>
+      <p className="mt-3 text-sm text-ink-muted">
+        网站产物会在 30 天后自动删除；保存的图片和视频会永久显示在这里。
+      </p>
       <div className="mt-6 flex gap-2" aria-label="创作类型筛选">
         {(
           [
             ['all', '全部'],
             ['website', '网站'],
             ['image', '图片'],
+            ['video', '视频'],
           ] as const
         ).map(([value, label]) => (
           <button
@@ -78,11 +81,23 @@ function CreationsContent() {
       ) : (
         <section className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {visibleItems.map((item) => (
-            <CreationCard key={item.id} item={item} />
+            <CreationCard
+              key={item.id}
+              item={item}
+              onDeleted={(id) => setItems((current) => current.filter((entry) => entry.id !== id))}
+            />
           ))}
           {visibleItems.length === 0 ? (
             <p className="rounded-2xl border border-dashed border-line p-5 text-sm text-ink-muted">
-              还没有{filter === 'all' ? '' : filter === 'website' ? '网站' : '图片'}创作。
+              还没有
+              {filter === 'all'
+                ? ''
+                : filter === 'website'
+                  ? '网站'
+                  : filter === 'image'
+                    ? '图片'
+                    : '视频'}
+              创作。
             </p>
           ) : null}
         </section>
@@ -91,13 +106,14 @@ function CreationsContent() {
   );
 }
 
-function CreationCard({ item }: { item: CreativeItem }) {
+function CreationCard({ item, onDeleted }: { item: CreativeItem; onDeleted: (id: string) => void }) {
   const expiryLabel = creationExpiryLabel(item);
+  const [deleting, setDeleting] = useState(false);
   return (
     <article className="rounded-2xl border border-line bg-surface-card p-5">
       <div className="flex items-center justify-between">
         <span className="rounded-full bg-brand/10 px-2 py-1 text-xs font-semibold text-brand-hover">
-          {item.type === 'website' ? '网站' : '图片'}
+          {item.type === 'website' ? '网站' : item.type === 'image' ? '图片' : '视频'}
         </span>
         <span className="text-xs text-ink-muted">{item.status}</span>
       </div>
@@ -107,6 +123,14 @@ function CreationCard({ item }: { item: CreativeItem }) {
           src={item.assets[0].previewUrl}
           alt={item.title}
           className="mt-4 aspect-square w-full rounded-xl bg-surface object-contain"
+        />
+      ) : null}
+      {item.type === 'video' && item.assets?.[0]?.previewUrl ? (
+        <video
+          src={item.assets[0].previewUrl}
+          controls
+          preload="metadata"
+          className="mt-4 aspect-video w-full rounded-xl bg-black"
         />
       ) : null}
       <p className="mt-3 text-xs text-ink-muted">
@@ -148,6 +172,34 @@ function CreationCard({ item }: { item: CreativeItem }) {
                 下载图片
               </a>
             ))}
+        </div>
+      ) : item.type === 'video' ? (
+        <div className="mt-4 flex flex-wrap gap-2">
+          {item.assets
+            ?.filter((asset) => asset.downloadUrl)
+            .map((asset) => (
+              <a
+                key={asset.id}
+                href={asset.downloadUrl}
+                className="rounded-lg border border-line px-3 py-1.5 text-xs font-semibold text-ink transition hover:border-brand/40 hover:text-brand"
+              >
+                下载视频
+              </a>
+            ))}
+          <button
+            type="button"
+            disabled={deleting}
+            onClick={() => {
+              setDeleting(true);
+              void client.agent.videos
+                .deleteCreation(item.id)
+                .then(() => onDeleted(item.id))
+                .finally(() => setDeleting(false));
+            }}
+            className="rounded-lg border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-600 disabled:opacity-50"
+          >
+            {deleting ? '删除中…' : '删除'}
+          </button>
         </div>
       ) : null}
     </article>

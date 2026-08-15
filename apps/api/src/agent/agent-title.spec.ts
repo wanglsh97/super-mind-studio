@@ -19,6 +19,14 @@ describe('deriveAgentThreadTitle', () => {
     ).toBe('分析这份简历')
   })
 
+  it('does not expose an internal video reference asset id in the title', () => {
+    expect(
+      deriveAgentThreadTitle(
+        '让人物站起来\n\n[当前视频首帧资产ID: da8fb2cc-63c1-4161-92b9-cefc27cc02a0]',
+      ),
+    ).toBe('让人物站起来')
+  })
+
   it('keeps titles within the derived length limit', () => {
     const short = 'a'.repeat(AGENT_DERIVED_TITLE_MAX_LENGTH)
     expect(deriveAgentThreadTitle(short)).toBe(short)

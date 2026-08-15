@@ -7,7 +7,7 @@ export async function createAgentRunToolRegistry(
   builtIns: AgentToolRegistry,
   _mcp: unknown,
   input: {
-    mode?: 'website' | 'document' | 'image';
+    mode?: 'website' | 'document' | 'image' | 'video';
     runId?: string;
     userId?: string;
     signal?: AbortSignal;
@@ -18,6 +18,7 @@ export async function createAgentRunToolRegistry(
     builtIns.list().filter((tool) => {
       if (tool.name === 'create_website') return input.mode === 'website';
       if (tool.name === 'generate_image') return input.mode === 'image';
+      if (tool.name === 'generate_video') return input.mode === 'video';
       return true;
     }),
   );

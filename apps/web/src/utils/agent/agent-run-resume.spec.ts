@@ -1,15 +1,15 @@
-import assert from 'node:assert/strict'
-import { describe, it } from 'node:test'
+import assert from 'node:assert/strict';
+import { describe, it } from 'node:test';
 
-import type { AgentMessage, AgentStreamEvent } from '@supermind/sdk'
+import type { AgentMessage, AgentStreamEvent } from '@supermind/sdk';
 
 import {
   foldEventsFromCursor,
   isResumableActiveRun,
   mergeThreadMessagesWithRunView,
-} from './agent-run-resume'
+} from './agent-run-resume';
 
-const runId = 'run-1'
+const runId = 'run-1';
 
 const events: AgentStreamEvent[] = [
   { type: 'run-status', sequence: 0, runId, status: 'running' },
@@ -35,22 +35,22 @@ const events: AgentStreamEvent[] = [
     summary: 'ok',
   },
   { type: 'run-terminal', sequence: 5, runId, status: 'succeeded', limitReason: null },
-]
+];
 
 describe('agent run resume helpers', () => {
   it('skips events at or before the cursor so reconnect does not duplicate tools', () => {
-    const full = foldEventsFromCursor(events, -1)
-    const resumed = foldEventsFromCursor(events, 3)
-    assert.equal(full.messages.filter((message) => message.role === 'tool').length, 1)
+    const full = foldEventsFromCursor(events, -1);
+    const resumed = foldEventsFromCursor(events, 3);
+    assert.equal(full.messages.filter((message) => message.role === 'tool').length, 1);
     // 从 sequence 3 之后开始：跳过已见的 tool-call，只吃 tool-result → 单独 tool 消息
     assert.equal(
       resumed.messages.some((message) => message.role === 'tool'),
       true,
-    )
-    const fromMid = foldEventsFromCursor(events, 4)
-    assert.equal(fromMid.messages.length, 0)
-    assert.equal(fromMid.status, 'succeeded')
-  })
+    );
+    const fromMid = foldEventsFromCursor(events, 4);
+    assert.equal(fromMid.messages.length, 0);
+    assert.equal(fromMid.status, 'succeeded');
+  });
 
   it('merges history user messages with resumed assistant/tool turns without duplicating trailing assistant', () => {
     const history: AgentMessage[] = [
@@ -66,16 +66,16 @@ describe('agent run resume helpers', () => {
         parts: [{ type: 'text', text: '旧快照' }],
         createdAt: '2026-07-20T00:00:01.000Z',
       },
-    ]
-    const view = foldEventsFromCursor(events, -1)
-    const merged = mergeThreadMessagesWithRunView(history, view)
-    assert.equal(merged[0]?.role, 'user')
+    ];
+    const view = foldEventsFromCursor(events, -1);
+    const merged = mergeThreadMessagesWithRunView(history, view);
+    assert.equal(merged[0]?.role, 'user');
     assert.equal(
       merged.some((message) => message.id === 'stale-a'),
       false,
-    )
-    assert.ok(merged.some((message) => message.role === 'assistant'))
-  })
+    );
+    assert.ok(merged.some((message) => message.role === 'assistant'));
+  });
 
   it('detects resumable active runs', () => {
     assert.equal(
@@ -102,8 +102,8 @@ describe('agent run resume helpers', () => {
         completedAt: null,
       }),
       true,
-    )
-    assert.equal(isResumableActiveRun(null), false)
+    );
+    assert.equal(isResumableActiveRun(null), false);
 
     assert.equal(
       isResumableActiveRun({
@@ -129,6 +129,6 @@ describe('agent run resume helpers', () => {
         completedAt: null,
       }),
       true,
-    )
-  })
-})
+    );
+  });
+});

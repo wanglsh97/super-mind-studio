@@ -1,76 +1,77 @@
-'use client'
+'use client';
 
-import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
-import { Suspense, type ReactNode, useEffect, useRef, useState } from 'react'
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
+import { Suspense, type ReactNode, useEffect, useRef, useState } from 'react';
 
-import type { AgentThreadSummary } from '@supermind/sdk'
+import type { AgentThreadSummary } from '@supermind/sdk';
 
-import { logoutUser, sanitizeUserReturnTo } from '@/utils/auth/user-auth-client'
-import { cn } from '@/utils/cn'
-import { AGENT_THREAD_TITLE_MAX_LENGTH } from './agent-workspace-provider'
+import { logoutUser, sanitizeUserReturnTo } from '@/utils/auth/user-auth-client';
+import { cn } from '@/utils/cn';
+import { AGENT_THREAD_TITLE_MAX_LENGTH } from './agent-workspace-provider';
 import {
   AGENT_THREAD_PREVIEW_LIMIT,
   hiddenAgentThreadCount,
   visibleAgentThreads,
-} from '@/utils/agent/agent-thread-list'
-import { useAgentActiveThreadId } from '@/hooks/use-agent-active-thread-id'
-import { useAgentWorkspace } from '@/hooks/use-agent-workspace'
-import { BrandMark } from './brand-mark'
-import { ThemeToggle } from './theme-toggle'
-import { useUserSession } from './user-session-provider'
+} from '@/utils/agent/agent-thread-list';
+import { useAgentActiveThreadId } from '@/hooks/use-agent-active-thread-id';
+import { useAgentWorkspace } from '@/hooks/use-agent-workspace';
+import { BrandMark } from './brand-mark';
+import { ThemeToggle } from './theme-toggle';
+import { useUserSession } from './user-session-provider';
 
 const focusRing =
-  'focus-visible:outline-3 focus-visible:outline-brand-focus focus-visible:outline-offset-3'
+  'focus-visible:outline-3 focus-visible:outline-brand-focus focus-visible:outline-offset-3';
 
 const shellIconButtonClass =
-  'liquid-glass-soft grid size-9 shrink-0 place-items-center rounded-lg text-ink-muted transition-[background,color] hover:bg-surface-muted hover:text-brand-hover dark:hover:text-ink [&_svg]:size-4'
+  'liquid-glass-soft grid size-9 shrink-0 place-items-center rounded-lg text-ink-muted transition-[background,color] hover:bg-surface-muted hover:text-brand-hover dark:hover:text-ink [&_svg]:size-4';
 
 export function AppShell({ children }: Readonly<{ children: ReactNode }>) {
-  const pathname = usePathname()
-  if (pathname.startsWith('/admin')) return children
-  return <UserWorkspace>{children}</UserWorkspace>
+  const pathname = usePathname();
+  if (pathname.startsWith('/admin')) return children;
+  return <UserWorkspace>{children}</UserWorkspace>;
 }
 
 function UserWorkspace({ children }: Readonly<{ children: ReactNode }>) {
-  const router = useRouter()
-  const pathname = usePathname()
-  const session = useUserSession()
-  const [collapsed, setCollapsed] = useState(false)
-  const [avatarFailed, setAvatarFailed] = useState(false)
-  const [loggingOut, setLoggingOut] = useState(false)
-  const [userMenuOpen, setUserMenuOpen] = useState(false)
-  const userMenuRef = useRef<HTMLDivElement | null>(null)
+  const router = useRouter();
+  const pathname = usePathname();
+  const session = useUserSession();
+  const [collapsed, setCollapsed] = useState(false);
+  const [avatarFailed, setAvatarFailed] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => setAvatarFailed(false), [session.user?.avatarUrl])
+  useEffect(() => setAvatarFailed(false), [session.user?.avatarUrl]);
   useEffect(() => {
-    if (window.matchMedia('(max-width: 767px)').matches) setCollapsed(true)
-  }, [])
+    if (window.matchMedia('(max-width: 767px)').matches) setCollapsed(true);
+  }, []);
   useEffect(() => {
-    if (!userMenuOpen) return
+    if (!userMenuOpen) return;
     function closeMenu(event: MouseEvent | KeyboardEvent) {
-      if (event instanceof KeyboardEvent && event.key !== 'Escape') return
-      if (event instanceof MouseEvent && userMenuRef.current?.contains(event.target as Node)) return
-      setUserMenuOpen(false)
+      if (event instanceof KeyboardEvent && event.key !== 'Escape') return;
+      if (event instanceof MouseEvent && userMenuRef.current?.contains(event.target as Node))
+        return;
+      setUserMenuOpen(false);
     }
-    document.addEventListener('mousedown', closeMenu)
-    document.addEventListener('keydown', closeMenu)
+    document.addEventListener('mousedown', closeMenu);
+    document.addEventListener('keydown', closeMenu);
     return () => {
-      document.removeEventListener('mousedown', closeMenu)
-      document.removeEventListener('keydown', closeMenu)
-    }
-  }, [userMenuOpen])
+      document.removeEventListener('mousedown', closeMenu);
+      document.removeEventListener('keydown', closeMenu);
+    };
+  }, [userMenuOpen]);
 
   async function logout() {
-    if (loggingOut) return
-    setLoggingOut(true)
+    if (loggingOut) return;
+    setLoggingOut(true);
     try {
-      await logoutUser()
+      await logoutUser();
     } finally {
-      session.clear()
-      router.replace(`/login?returnTo=${encodeURIComponent(sanitizeUserReturnTo(pathname))}`)
-      router.refresh()
-      setLoggingOut(false)
+      session.clear();
+      router.replace(`/login?returnTo=${encodeURIComponent(sanitizeUserReturnTo(pathname))}`);
+      router.refresh();
+      setLoggingOut(false);
     }
   }
 
@@ -265,11 +266,11 @@ function UserWorkspace({ children }: Readonly<{ children: ReactNode }>) {
         {children}
       </div>
     </div>
-  )
+  );
 }
 
 const menuItemClass =
-  'flex min-h-[2.65rem] w-full items-center gap-3 rounded-xl border-0 bg-transparent px-3 py-2 text-left text-[0.78rem] font-semibold text-ink-secondary shadow-none transition-[background,color] hover:bg-surface-inset hover:text-brand-hover dark:text-[#d8d1e3] dark:hover:bg-[#352d45] dark:hover:text-ink [&_svg]:size-4 [&_svg]:shrink-0'
+  'flex min-h-[2.65rem] w-full items-center gap-3 rounded-xl border-0 bg-transparent px-3 py-2 text-left text-[0.78rem] font-semibold text-ink-secondary shadow-none transition-[background,color] hover:bg-surface-inset hover:text-brand-hover dark:text-[#d8d1e3] dark:hover:bg-[#352d45] dark:hover:text-ink [&_svg]:size-4 [&_svg]:shrink-0';
 
 function SidebarCapabilityLinks({
   collapsed,
@@ -328,14 +329,14 @@ function SidebarCapabilityLinks({
         {!collapsed && <span>技能中心</span>}
       </Link>
     </nav>
-  )
+  );
 }
 
 const capabilityLinkClass =
-  'flex min-h-10 items-center gap-2.5 rounded-xl px-3 text-[0.76rem] font-semibold text-ink-secondary transition-[background,color,transform] hover:bg-brand/8 hover:text-brand-hover dark:text-ink-dark-muted dark:hover:bg-brand/14 dark:hover:text-brand-light [&_svg]:size-4'
+  'flex min-h-10 items-center gap-2.5 rounded-xl px-3 text-[0.76rem] font-semibold text-ink-secondary transition-[background,color,transform] hover:bg-brand/8 hover:text-brand-hover dark:text-ink-dark-muted dark:hover:bg-brand/14 dark:hover:text-brand-light [&_svg]:size-4';
 
 const capabilityLinkActiveClass =
-  'bg-brand/12 text-brand-hover shadow-[inset_0_1px_0_rgb(255_255_255/0.76)] dark:bg-brand/18 dark:text-brand-light'
+  'bg-brand/12 text-brand-hover shadow-[inset_0_1px_0_rgb(255_255_255/0.76)] dark:bg-brand/18 dark:text-brand-light';
 
 function NewConversationButton({ collapsed }: Readonly<{ collapsed: boolean }>) {
   return (
@@ -357,7 +358,7 @@ function NewConversationButton({ collapsed }: Readonly<{ collapsed: boolean }>) 
       </span>
       {!collapsed && <span>新建会话</span>}
     </Link>
-  )
+  );
 }
 
 function UsageIcon() {
@@ -365,73 +366,73 @@ function UsageIcon() {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
       <path d="M4 19V9m5 10V5m5 14v-7m5 7V3" strokeWidth="1.8" strokeLinecap="round" />
     </svg>
-  )
+  );
 }
 
 function AgentThreadLinks() {
-  const session = useUserSession()
+  const session = useUserSession();
   const { threads, activeRuns, loading, listError, renameThread, deleteThread } =
-    useAgentWorkspace()
-  const activeThreadId = useAgentActiveThreadId()
-  const [renamingId, setRenamingId] = useState<string | null>(null)
-  const [pendingDelete, setPendingDelete] = useState<AgentThreadSummary | null>(null)
-  const [actionError, setActionError] = useState<string | null>(null)
-  const [busy, setBusy] = useState(false)
-  const [expanded, setExpanded] = useState(false)
-  const [openActionsId, setOpenActionsId] = useState<string | null>(null)
-  const openActionsRef = useRef<HTMLDivElement | null>(null)
+    useAgentWorkspace();
+  const activeThreadId = useAgentActiveThreadId();
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<AgentThreadSummary | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const [openActionsId, setOpenActionsId] = useState<string | null>(null);
+  const openActionsRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    if (!openActionsId) return
+    if (!openActionsId) return;
     function closeActions(event: MouseEvent | KeyboardEvent) {
-      if (event instanceof KeyboardEvent && event.key !== 'Escape') return
+      if (event instanceof KeyboardEvent && event.key !== 'Escape') return;
       if (event instanceof MouseEvent && openActionsRef.current?.contains(event.target as Node)) {
-        return
+        return;
       }
-      setOpenActionsId(null)
+      setOpenActionsId(null);
     }
-    document.addEventListener('mousedown', closeActions)
-    document.addEventListener('keydown', closeActions)
+    document.addEventListener('mousedown', closeActions);
+    document.addEventListener('keydown', closeActions);
     return () => {
-      document.removeEventListener('mousedown', closeActions)
-      document.removeEventListener('keydown', closeActions)
-    }
-  }, [openActionsId])
+      document.removeEventListener('mousedown', closeActions);
+      document.removeEventListener('keydown', closeActions);
+    };
+  }, [openActionsId]);
 
-  if (session.status !== 'authenticated') return null
+  if (session.status !== 'authenticated') return null;
 
-  const visibleThreads = visibleAgentThreads(threads, expanded)
-  const hiddenCount = hiddenAgentThreadCount(threads, expanded)
+  const visibleThreads = visibleAgentThreads(threads, expanded);
+  const hiddenCount = hiddenAgentThreadCount(threads, expanded);
 
   async function submitRename(threadId: string, title: string) {
-    const trimmed = title.trim()
+    const trimmed = title.trim();
     if (!trimmed) {
-      setActionError('会话标题不能为空')
-      return
+      setActionError('会话标题不能为空');
+      return;
     }
-    setBusy(true)
-    setActionError(null)
+    setBusy(true);
+    setActionError(null);
     try {
-      await renameThread(threadId, trimmed)
-      setRenamingId(null)
+      await renameThread(threadId, trimmed);
+      setRenamingId(null);
     } catch (unknownError) {
-      setActionError(unknownError instanceof Error ? unknownError.message : '重命名失败')
+      setActionError(unknownError instanceof Error ? unknownError.message : '重命名失败');
     } finally {
-      setBusy(false)
+      setBusy(false);
     }
   }
 
   async function confirmDelete() {
-    if (!pendingDelete || busy) return
-    setBusy(true)
-    setActionError(null)
+    if (!pendingDelete || busy) return;
+    setBusy(true);
+    setActionError(null);
     try {
-      await deleteThread(pendingDelete.id)
-      setPendingDelete(null)
+      await deleteThread(pendingDelete.id);
+      setPendingDelete(null);
     } catch (unknownError) {
-      setActionError(unknownError instanceof Error ? unknownError.message : '删除失败')
+      setActionError(unknownError instanceof Error ? unknownError.message : '删除失败');
     } finally {
-      setBusy(false)
+      setBusy(false);
     }
   }
 
@@ -449,11 +450,11 @@ function AgentThreadLinks() {
       ) : null}
       <ul className="m-0 flex list-none flex-col gap-0.5 p-0">
         {visibleThreads.map((thread) => {
-          const href = `/?thread=${encodeURIComponent(thread.id)}`
-          const isActive = thread.id === activeThreadId
-          const isRenaming = renamingId === thread.id
-          const actionsOpen = openActionsId === thread.id
-          const isRunning = activeRuns.some((run) => run.threadId === thread.id)
+          const href = `/?thread=${encodeURIComponent(thread.id)}`;
+          const isActive = thread.id === activeThreadId;
+          const isRenaming = renamingId === thread.id;
+          const actionsOpen = openActionsId === thread.id;
+          const isRunning = activeRuns.some((run) => run.threadId === thread.id);
           return (
             <li
               key={thread.id}
@@ -467,9 +468,9 @@ function AgentThreadLinks() {
                 <form
                   className="col-span-2 flex items-center gap-0.5"
                   onSubmit={(event) => {
-                    event.preventDefault()
-                    const form = new FormData(event.currentTarget)
-                    void submitRename(thread.id, String(form.get('title') ?? ''))
+                    event.preventDefault();
+                    const form = new FormData(event.currentTarget);
+                    void submitRename(thread.id, String(form.get('title') ?? ''));
                   }}
                 >
                   <input
@@ -550,9 +551,9 @@ function AgentThreadLinks() {
                             'text-ink-secondary hover:text-brand-hover dark:text-ink-dark-muted dark:hover:text-ink',
                           )}
                           onClick={() => {
-                            setOpenActionsId(null)
-                            setActionError(null)
-                            setRenamingId(thread.id)
+                            setOpenActionsId(null);
+                            setActionError(null);
+                            setRenamingId(thread.id);
                           }}
                         >
                           <EditIcon />
@@ -566,9 +567,9 @@ function AgentThreadLinks() {
                             'text-danger hover:bg-danger/10 hover:text-danger dark:text-danger-light dark:hover:bg-danger/12 dark:hover:text-danger-light',
                           )}
                           onClick={() => {
-                            setOpenActionsId(null)
-                            setActionError(null)
-                            setPendingDelete(thread)
+                            setOpenActionsId(null);
+                            setActionError(null);
+                            setPendingDelete(thread);
                           }}
                         >
                           <TrashIcon />
@@ -580,7 +581,7 @@ function AgentThreadLinks() {
                 </>
               )}
             </li>
-          )
+          );
         })}
       </ul>
       {threads.length > AGENT_THREAD_PREVIEW_LIMIT ? (
@@ -643,17 +644,17 @@ function AgentThreadLinks() {
         </div>
       ) : null}
     </div>
-  )
+  );
 }
 
 const threadActionClass =
-  'cursor-pointer rounded-md border-0 bg-transparent px-1.5 py-1 text-[0.68rem] font-semibold leading-none text-ink-subtle transition-colors hover:bg-brand/10 hover:text-ink-secondary disabled:cursor-not-allowed disabled:opacity-50 dark:hover:text-ink'
+  'cursor-pointer rounded-md border-0 bg-transparent px-1.5 py-1 text-[0.68rem] font-semibold leading-none text-ink-subtle transition-colors hover:bg-brand/10 hover:text-ink-secondary disabled:cursor-not-allowed disabled:opacity-50 dark:hover:text-ink';
 
 const threadMenuActionClass =
-  'flex min-h-9 w-full items-center gap-2.5 rounded-lg border-0 bg-transparent px-2.5 text-left text-[0.75rem] font-semibold shadow-none transition-[background,color] hover:bg-surface-inset focus-visible:outline-2 focus-visible:outline-brand-focus focus-visible:outline-offset-1 dark:hover:bg-brand/12 [&_svg]:size-4 [&_svg]:shrink-0'
+  'flex min-h-9 w-full items-center gap-2.5 rounded-lg border-0 bg-transparent px-2.5 text-left text-[0.75rem] font-semibold shadow-none transition-[background,color] hover:bg-surface-inset focus-visible:outline-2 focus-visible:outline-brand-focus focus-visible:outline-offset-1 dark:hover:bg-brand/12 [&_svg]:size-4 [&_svg]:shrink-0';
 
 const confirmActionClass =
-  'rounded-lg border border-line px-3 py-2 text-sm font-semibold dark:border-line-soft'
+  'rounded-lg border border-line px-3 py-2 text-sm font-semibold dark:border-line-soft';
 
 function Brand({ compact = false }: Readonly<{ compact?: boolean }>) {
   return (
@@ -669,7 +670,7 @@ function Brand({ compact = false }: Readonly<{ compact?: boolean }>) {
         </span>
       )}
     </Link>
-  )
+  );
 }
 
 function LogoMark({ className }: Readonly<{ className?: string }>) {
@@ -682,7 +683,7 @@ function LogoMark({ className }: Readonly<{ className?: string }>) {
     >
       <BrandMark className="size-10 object-contain" />
     </span>
-  )
+  );
 }
 
 function UserAvatar({
@@ -691,10 +692,10 @@ function UserAvatar({
   onAvatarError,
   label,
 }: Readonly<{
-  avatarUrl?: string | null
-  avatarFailed?: boolean
-  onAvatarError?: () => void
-  label: ReactNode
+  avatarUrl?: string | null;
+  avatarFailed?: boolean;
+  onAvatarError?: () => void;
+  label: ReactNode;
 }>) {
   return (
     <span className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-full bg-brand-muted text-brand-hover text-xs font-extrabold dark:text-brand-light [&_svg]:size-4">
@@ -710,10 +711,10 @@ function UserAvatar({
         label
       )}
     </span>
-  )
+  );
 }
 
-type SvgProps = Readonly<{ children?: ReactNode; className?: string }>
+type SvgProps = Readonly<{ children?: ReactNode; className?: string }>;
 function Icon({ children, className }: SvgProps) {
   return (
     <svg
@@ -728,7 +729,7 @@ function Icon({ children, className }: SvgProps) {
     >
       {children}
     </svg>
-  )
+  );
 }
 function SparkIcon() {
   return (
@@ -736,7 +737,7 @@ function SparkIcon() {
       <path d="m12 3 1.2 3.8L17 8l-3.8 1.2L12 13l-1.2-3.8L7 8l3.8-1.2L12 3Z" />
       <path d="m18 14 .8 2.2L21 17l-2.2.8L18 20l-.8-2.2L15 17l2.2-.8L18 14ZM5 13l.7 1.8 1.8.7-1.8.7L5 18l-.7-1.8-1.8-.7 1.8-.7L5 13Z" />
     </Icon>
-  )
+  );
 }
 function PluginIcon() {
   return (
@@ -745,7 +746,7 @@ function PluginIcon() {
       <circle cx="18" cy="18" r="2" />
       <path d="M8 6h4a3 3 0 0 1 3 3v6M16 18h-4a3 3 0 0 1-3-3V9" />
     </Icon>
-  )
+  );
 }
 function EllipsisIcon() {
   return (
@@ -754,7 +755,7 @@ function EllipsisIcon() {
       <circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" />
       <circle cx="19" cy="12" r="1" fill="currentColor" stroke="none" />
     </Icon>
-  )
+  );
 }
 function EditIcon() {
   return (
@@ -762,14 +763,14 @@ function EditIcon() {
       <path d="M4 20h4l11-11a2.8 2.8 0 0 0-4-4L4 16v4Z" />
       <path d="m13.5 6.5 4 4" />
     </Icon>
-  )
+  );
 }
 function TrashIcon() {
   return (
     <Icon>
       <path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5" />
     </Icon>
-  )
+  );
 }
 function UserIcon() {
   return (
@@ -777,7 +778,7 @@ function UserIcon() {
       <circle cx="12" cy="8" r="4" />
       <path d="M4 21a8 8 0 0 1 16 0" />
     </Icon>
-  )
+  );
 }
 function AdminIcon() {
   return (
@@ -785,7 +786,7 @@ function AdminIcon() {
       <rect x="3" y="4" width="18" height="16" rx="2" />
       <path d="M3 9h18M8 20V9" />
     </Icon>
-  )
+  );
 }
 function LogoutIcon() {
   return (
@@ -793,14 +794,14 @@ function LogoutIcon() {
       <path d="M10 17l5-5-5-5M15 12H3" />
       <path d="M14 3h5a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-5" />
     </Icon>
-  )
+  );
 }
 function ChevronIcon({ className }: Readonly<{ className?: string }>) {
   return (
     <Icon className={cn(className)}>
       <path d="m9 15 3-3-3-3" />
     </Icon>
-  )
+  );
 }
 function CollapseIcon({
   collapsed,
@@ -813,5 +814,5 @@ function CollapseIcon({
         className={collapsed ? 'origin-center rotate-180' : ''}
       />
     </Icon>
-  )
+  );
 }

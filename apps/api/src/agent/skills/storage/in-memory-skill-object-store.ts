@@ -8,6 +8,7 @@ import type {
   SkillStoredObjectMetadata,
   StoredSkillPackage,
   StoredUserFile,
+  UserFileDownload,
   WriteUserFileInput,
 } from './skill-object-store.port'
 
@@ -85,6 +86,21 @@ export class InMemorySkillObjectStore implements SkillObjectStorePort {
     throwIfAborted(signal)
     const object = this.objects.get(objectKey)
     return object && !isSkillPackage(object) ? cloneUserFile(object) : null
+  }
+
+  async createUserFileDownload(
+    objectKey: string,
+    expiresInSeconds: number,
+    signal?: AbortSignal,
+  ): Promise<UserFileDownload | null> {
+    throwIfAborted(signal)
+    const object = this.objects.get(objectKey)
+    if (!object || isSkillPackage(object)) return null
+    return {
+      metadata: { ...object.metadata },
+      url: `data:${object.metadata.contentType};base64,${Buffer.from(object.bytes).toString('base64')}`,
+      expiresAt: new Date(this.now().getTime() + expiresInSeconds * 1_000).toISOString(),
+    }
   }
 
   async writeUserFile(input: WriteUserFileInput): Promise<StoredUserFile> {

@@ -1,11 +1,15 @@
-import assert from 'node:assert/strict'
-import { describe, it } from 'node:test'
+import assert from 'node:assert/strict';
+import { describe, it } from 'node:test';
 
-import type { AgentStreamEvent } from '@supermind/sdk'
+import type { AgentStreamEvent } from '@supermind/sdk';
 
-import { initialAgentRunViewState, isActiveStatus, reduceAgentEvents } from './agent-run-reducer.js'
+import {
+  initialAgentRunViewState,
+  isActiveStatus,
+  reduceAgentEvents,
+} from './agent-run-reducer.js';
 
-const runId = 'run-1'
+const runId = 'run-1';
 
 const events: AgentStreamEvent[] = [
   { type: 'run-status', sequence: 0, runId, status: 'running' },
@@ -61,15 +65,15 @@ const events: AgentStreamEvent[] = [
     },
   },
   { type: 'run-terminal', sequence: 13, runId, status: 'succeeded', limitReason: null },
-]
+];
 
 describe('reduceAgentEvents', () => {
   it('folds a full tool loop into rendered messages matching persisted shape', () => {
-    const state = reduceAgentEvents(initialAgentRunViewState(), events)
+    const state = reduceAgentEvents(initialAgentRunViewState(), events);
 
-    assert.equal(state.status, 'succeeded')
-    assert.equal(state.usage?.modelCalls, 2)
-    assert.equal(state.messages.length, 3)
+    assert.equal(state.status, 'succeeded');
+    assert.equal(state.usage?.modelCalls, 2);
+    assert.equal(state.messages.length, 3);
 
     assert.deepEqual(state.messages[0], {
       id: 'm1',
@@ -84,7 +88,7 @@ describe('reduceAgentEvents', () => {
         },
       ],
       createdAt: '',
-    })
+    });
     assert.deepEqual(state.messages[1], {
       id: 't1',
       role: 'tool',
@@ -100,9 +104,9 @@ describe('reduceAgentEvents', () => {
         },
       ],
       createdAt: '',
-    })
-    assert.deepEqual(state.messages[2]?.parts, [{ type: 'text', text: '答案' }])
-  })
+    });
+    assert.deepEqual(state.messages[2]?.parts, [{ type: 'text', text: '答案' }]);
+  });
 
   it('reports error and limit reason terminal states', () => {
     const errored = reduceAgentEvents(initialAgentRunViewState(), [
@@ -114,9 +118,9 @@ describe('reduceAgentEvents', () => {
         error: { requestId: 'r', code: 'AGENT_RUN_FAILED', message: '失败', retryable: true },
       },
       { type: 'run-terminal', sequence: 2, runId, status: 'failed', limitReason: null },
-    ])
-    assert.equal(errored.status, 'failed')
-    assert.equal(errored.error?.code, 'AGENT_RUN_FAILED')
+    ]);
+    assert.equal(errored.status, 'failed');
+    assert.equal(errored.error?.code, 'AGENT_RUN_FAILED');
 
     const limited = reduceAgentEvents(initialAgentRunViewState(), [
       {
@@ -126,10 +130,10 @@ describe('reduceAgentEvents', () => {
         status: 'limit_reached',
         limitReason: 'web_fetch_calls',
       },
-    ])
-    assert.equal(limited.status, 'limit_reached')
-    assert.equal(limited.limitReason, 'web_fetch_calls')
-  })
+    ]);
+    assert.equal(limited.status, 'limit_reached');
+    assert.equal(limited.limitReason, 'web_fetch_calls');
+  });
 
   it('restores context budget and compression timeline from replayed events', () => {
     const state = reduceAgentEvents(initialAgentRunViewState(), [
@@ -150,16 +154,16 @@ describe('reduceAgentEvents', () => {
         level: 'moderate',
         notes: ['removed-completed-reasoning'],
       },
-    ])
-    assert.equal(state.contextBudget?.usedTokens, 75)
-    assert.equal(state.compressionEvents[0]?.level, 'moderate')
-  })
+    ]);
+    assert.equal(state.contextBudget?.usedTokens, 75);
+    assert.equal(state.compressionEvents[0]?.level, 'moderate');
+  });
 
   it('classifies active statuses', () => {
-    assert.equal(isActiveStatus('running'), true)
-    assert.equal(isActiveStatus('cancelling'), true)
-    assert.equal(isActiveStatus('waiting_for_user'), true)
-    assert.equal(isActiveStatus('succeeded'), false)
-    assert.equal(isActiveStatus('idle'), false)
-  })
-})
+    assert.equal(isActiveStatus('running'), true);
+    assert.equal(isActiveStatus('cancelling'), true);
+    assert.equal(isActiveStatus('waiting_for_user'), true);
+    assert.equal(isActiveStatus('succeeded'), false);
+    assert.equal(isActiveStatus('idle'), false);
+  });
+});

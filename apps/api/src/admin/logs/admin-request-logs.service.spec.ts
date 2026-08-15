@@ -1,19 +1,19 @@
-import type { PrismaService } from '../../database/prisma.service'
-import { AdminRequestLogsService } from './admin-request-logs.service'
+import type { PrismaService } from '../../database/prisma.service';
+import { AdminRequestLogsService } from './admin-request-logs.service';
 
 function setup() {
-  const count = jest.fn().mockResolvedValue(2)
-  const findMany = jest.fn().mockResolvedValue([{ requestId: 'request-1' }])
-  const findUnique = jest.fn()
+  const count = jest.fn().mockResolvedValue(2);
+  const findMany = jest.fn().mockResolvedValue([{ requestId: 'request-1' }]);
+  const findUnique = jest.fn();
   const prisma = {
     requestLog: { count, findMany, findUnique },
-  } as unknown as PrismaService
-  return { count, findMany, findUnique, service: new AdminRequestLogsService(prisma) }
+  } as unknown as PrismaService;
+  return { count, findMany, findUnique, service: new AdminRequestLogsService(prisma) };
 }
 
 describe('AdminRequestLogsService', () => {
   it('combines filters, paginates, and never selects Prompt', async () => {
-    const { count, findMany, service } = setup()
+    const { count, findMany, service } = setup();
 
     await expect(
       service.list({
@@ -35,7 +35,7 @@ describe('AdminRequestLogsService', () => {
       pageSize: 25,
       total: 2,
       pageCount: 1,
-    })
+    });
 
     const where = {
       createdAt: {
@@ -53,10 +53,10 @@ describe('AdminRequestLogsService', () => {
           providerUserId: '90000001',
         },
       },
-    }
-    expect(count).toHaveBeenCalledWith({ where })
-    expect(findMany).toHaveBeenCalledWith(expect.objectContaining({ where, skip: 25, take: 25 }))
-    expect(JSON.stringify(findMany.mock.calls)).not.toContain('prompt')
+    };
+    expect(count).toHaveBeenCalledWith({ where });
+    expect(findMany).toHaveBeenCalledWith(expect.objectContaining({ where, skip: 25, take: 25 }));
+    expect(JSON.stringify(findMany.mock.calls)).not.toContain('prompt');
     expect(findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         select: expect.objectContaining({
@@ -70,22 +70,22 @@ describe('AdminRequestLogsService', () => {
           },
         }),
       }),
-    )
-    expect(JSON.stringify(findMany.mock.calls)).not.toContain('email')
-  })
+    );
+    expect(JSON.stringify(findMany.mock.calls)).not.toContain('email');
+  });
 
   it('uses bounded defaults and rejects an inverted time range before querying', async () => {
-    const { count, service } = setup()
+    const { count, service } = setup();
 
-    await expect(service.list({})).resolves.toMatchObject({ page: 1, pageSize: 20 })
+    await expect(service.list({})).resolves.toMatchObject({ page: 1, pageSize: 20 });
     await expect(
       service.list({ from: '2026-07-18T00:00:00.000Z', to: '2026-07-17T00:00:00.000Z' }),
-    ).rejects.toMatchObject({ status: 400 })
-    expect(count).toHaveBeenCalledTimes(1)
-  })
+    ).rejects.toMatchObject({ status: 400 });
+    expect(count).toHaveBeenCalledTimes(1);
+  });
 
   it('returns the authenticated diagnostic detail including complete Prompt and relations', async () => {
-    const { findUnique, service } = setup()
+    const { findUnique, service } = setup();
     findUnique.mockResolvedValue({
       requestId: '00000000-0000-4000-8000-000000000210',
       prompt: { messages: [{ role: 'user', content: '完整问题' }] },
@@ -105,7 +105,7 @@ describe('AdminRequestLogsService', () => {
           },
         ],
       },
-    })
+    });
 
     await expect(service.detail('00000000-0000-4000-8000-000000000210')).resolves.toMatchObject({
       prompt: expect.any(Object),
@@ -119,7 +119,7 @@ describe('AdminRequestLogsService', () => {
           }),
         ],
       },
-    })
+    });
     expect(findUnique).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { requestId: '00000000-0000-4000-8000-000000000210' },
@@ -153,13 +153,13 @@ describe('AdminRequestLogsService', () => {
           imageTask: expect.any(Object),
         }),
       }),
-    )
-  })
+    );
+  });
 
   it('filters user names case-insensitively when no provider ID is supplied', async () => {
-    const { count, service } = setup()
+    const { count, service } = setup();
 
-    await service.list({ userName: 'Fixture-Octocat' })
+    await service.list({ userName: 'Fixture-Octocat' });
 
     expect(count).toHaveBeenCalledWith({
       where: {
@@ -169,15 +169,15 @@ describe('AdminRequestLogsService', () => {
           },
         },
       },
-    })
-  })
+    });
+  });
 
   it('returns 404 for an unknown request ID', async () => {
-    const { findUnique, service } = setup()
-    findUnique.mockResolvedValue(null)
+    const { findUnique, service } = setup();
+    findUnique.mockResolvedValue(null);
 
     await expect(service.detail('00000000-0000-4000-8000-000000000210')).rejects.toMatchObject({
       status: 404,
-    })
-  })
-})
+    });
+  });
+});

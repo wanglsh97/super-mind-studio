@@ -63,6 +63,8 @@ describe('validateEnvironment', () => {
     expect(environment.AGENT_MCP_MAX_RESPONSE_BYTES).toBe(1_048_576);
     expect(environment.AGENT_MCP_MAX_OUTPUT_CHARS).toBe(20_000);
     expect(environment.AGENT_MAX_CONCURRENT_RUNS_PER_USER).toBe(5);
+    expect(environment.BAILIAN_IMAGE_DEFAULT_MODEL).toBe('qwen-image');
+    expect(environment.BAILIAN_VIDEO_DEFAULT_BRAND).toBe('happyhorse');
   });
 
   it('accepts only the paired Bailian image Base URL and API Key', () => {
@@ -75,6 +77,21 @@ describe('validateEnvironment', () => {
     ).toMatchObject({
       BAILIAN_IMAGE_BASE_URL: 'https://example.cn-beijing.maas.aliyuncs.com/api/v1',
       BAILIAN_IMAGE_API_KEY: 'fixture-secret',
+      BAILIAN_IMAGE_DEFAULT_MODEL: 'qwen-image',
+      BAILIAN_VIDEO_DEFAULT_BRAND: 'happyhorse',
+    });
+  });
+
+  it('accepts configured default image and video models', () => {
+    expect(
+      validateEnvironment({
+        ...requiredEnvironment,
+        BAILIAN_IMAGE_DEFAULT_MODEL: 'wan-image',
+        BAILIAN_VIDEO_DEFAULT_BRAND: 'vidu',
+      }),
+    ).toMatchObject({
+      BAILIAN_IMAGE_DEFAULT_MODEL: 'wan-image',
+      BAILIAN_VIDEO_DEFAULT_BRAND: 'vidu',
     });
   });
 

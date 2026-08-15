@@ -246,7 +246,7 @@ export class AgentService {
     input: string,
     skills: readonly { name: string }[] = [],
     thinkingEffort: AgentThinkingEffort = 'balanced',
-    mode?: 'website' | 'document' | 'image',
+    mode?: 'website' | 'document' | 'image' | 'video',
   ): Promise<AgentRunSummary> {
     if (mode === 'website' && user.authProvider !== 'GITHUB') {
       throw new ForbiddenException('网页创作需要使用 GitHub 账号登录');
@@ -258,6 +258,13 @@ export class AgentService {
         this.imageModels.capabilities().length === 0)
     ) {
       throw new BadRequestException('图像生成功能当前未开放');
+    }
+    if (
+      mode === 'video' &&
+      (!this.config.get<string>('BAILIAN_IMAGE_BASE_URL') ||
+        !this.config.get<string>('BAILIAN_IMAGE_API_KEY'))
+    ) {
+      throw new BadRequestException('视频生成功能当前未配置');
     }
     const thread = await this.threads.findSummaryForOwner(threadId, user.id);
     if (!thread) throw new NotFoundException('Agent 会话不存在');

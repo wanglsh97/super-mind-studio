@@ -1,11 +1,11 @@
-import assert from 'node:assert/strict'
-import { describe, it } from 'node:test'
+import assert from 'node:assert/strict';
+import { describe, it } from 'node:test';
 
-import type { AgentSkillMarketDetail, AgentSkillMarketSummary } from './agent-skill-types.js'
-import type { CreateAgentRunRequest } from './agent-types.js'
+import type { AgentSkillMarketDetail, AgentSkillMarketSummary } from './agent-skill-types.js';
+import type { CreateAgentRunRequest } from './agent-types.js';
 
 function jsonRoundTrip<T>(value: T): T {
-  return JSON.parse(JSON.stringify(value)) as T
+  return JSON.parse(JSON.stringify(value)) as T;
 }
 
 describe('executable Skill public contracts', () => {
@@ -21,7 +21,7 @@ describe('executable Skill public contracts', () => {
       addCount: 12,
       ownedByCurrentUser: true,
       updatedAt: '2026-07-23T12:00:00.000Z',
-    }
+    };
     const detail: AgentSkillMarketDetail = {
       ...summary,
       skillMarkdown: '# Data Cleaner\n\nRun the bundled script.',
@@ -30,23 +30,23 @@ describe('executable Skill public contracts', () => {
         { path: 'scripts', type: 'directory', size: null },
         { path: 'scripts/clean.mjs', type: 'file', size: 128 },
       ],
-    }
+    };
 
-    assert.deepEqual(jsonRoundTrip(summary), summary)
-    assert.deepEqual(jsonRoundTrip(detail), detail)
-    assert.equal(JSON.stringify(detail).includes('signature='), false)
-  })
+    assert.deepEqual(jsonRoundTrip(summary), summary);
+    assert.deepEqual(jsonRoundTrip(detail), detail);
+    assert.equal(JSON.stringify(detail).includes('signature='), false);
+  });
 
   it('serializes manual Skill selection by globally unique name', () => {
     const request: CreateAgentRunRequest = {
       input: '清洗我上传的数据',
       skills: [{ name: 'data-cleaner' }],
-    }
+    };
 
-    assert.deepEqual(jsonRoundTrip(request), request)
+    assert.deepEqual(jsonRoundTrip(request), request);
     assert.deepEqual(
       request.skills?.map((skill) => skill.name),
       ['data-cleaner'],
-    )
-  })
-})
+    );
+  });
+});

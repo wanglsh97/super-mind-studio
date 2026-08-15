@@ -1,11 +1,11 @@
-import type { AgentRunSummary } from '@supermind/sdk'
+import type { AgentRunSummary } from '@supermind/sdk';
 
 export function activeRunForThread(
   runs: readonly AgentRunSummary[],
   threadId: string | null | undefined,
 ): AgentRunSummary | null {
-  if (!threadId) return null
-  return runs.find((run) => run.threadId === threadId) ?? null
+  if (!threadId) return null;
+  return runs.find((run) => run.threadId === threadId) ?? null;
 }
 
 export function upsertActiveRun(
@@ -17,14 +17,14 @@ export function upsertActiveRun(
     run.status !== 'cancelling' &&
     run.status !== 'waiting_for_user'
   ) {
-    return removeActiveRun(runs, run.threadId)
+    return removeActiveRun(runs, run.threadId);
   }
-  return [run, ...runs.filter((current) => current.threadId !== run.threadId)]
+  return [run, ...runs.filter((current) => current.threadId !== run.threadId)];
 }
 
 export function removeActiveRun(
   runs: readonly AgentRunSummary[],
   threadId: string,
 ): AgentRunSummary[] {
-  return runs.filter((run) => run.threadId !== threadId)
+  return runs.filter((run) => run.threadId !== threadId);
 }

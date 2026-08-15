@@ -1,13 +1,13 @@
-import assert from 'node:assert/strict'
-import { describe, it } from 'node:test'
+import assert from 'node:assert/strict';
+import { describe, it } from 'node:test';
 
-import { decodeAgentEvent, encodeAgentEvent } from './agent-events.js'
-import type { AgentStreamEvent } from './agent-types.js'
-import { AIGatewayProtocolError } from './errors.js'
+import { decodeAgentEvent, encodeAgentEvent } from './agent-events.js';
+import type { AgentStreamEvent } from './agent-types.js';
+import { AIGatewayProtocolError } from './errors.js';
 
-const runId = '00000000-0000-4000-8000-00000000abcd'
-const packageSha256 = 'a'.repeat(64)
-const outputSha256 = 'b'.repeat(64)
+const runId = '00000000-0000-4000-8000-00000000abcd';
+const packageSha256 = 'a'.repeat(64);
+const outputSha256 = 'b'.repeat(64);
 
 const events: AgentStreamEvent[] = [
   { type: 'run-status', sequence: 0, runId, status: 'running' },
@@ -163,18 +163,18 @@ const events: AgentStreamEvent[] = [
     status: 'ready',
     sandboxId: 'sandbox-1',
   },
-]
+];
 
 describe('agent event wire codec', () => {
   it('round-trips every event type through encode/decode with matching runId', () => {
     for (const event of events) {
-      const wire = encodeAgentEvent(event)
-      assert.equal(wire.runId, runId)
-      assert.equal(wire.type, event.type)
-      const decoded = decodeAgentEvent(JSON.parse(JSON.stringify(wire)), runId)
-      assert.deepEqual(decoded, event)
+      const wire = encodeAgentEvent(event);
+      assert.equal(wire.runId, runId);
+      assert.equal(wire.type, event.type);
+      const decoded = decodeAgentEvent(JSON.parse(JSON.stringify(wire)), runId);
+      assert.deepEqual(decoded, event);
     }
-  })
+  });
 
   it('decodes a terminal limit_reached event with an explicit reason', () => {
     const decoded = decodeAgentEvent(
@@ -186,15 +186,15 @@ describe('agent event wire codec', () => {
         limitReason: 'sandbox_resource',
       }),
       runId,
-    )
+    );
     assert.deepEqual(decoded, {
       type: 'run-terminal',
       sequence: 12,
       runId,
       status: 'limit_reached',
       limitReason: 'sandbox_resource',
-    })
-  })
+    });
+  });
 
   it('decodes an error event and preserves the gateway error envelope', () => {
     const decoded = decodeAgentEvent(
@@ -205,14 +205,14 @@ describe('agent event wire codec', () => {
         error: { requestId: 'r1', code: 'AGENT_STREAM_ERROR', message: '失败', retryable: true },
       },
       runId,
-    )
+    );
     assert.deepEqual(decoded, {
       type: 'error',
       sequence: 3,
       runId,
       error: { requestId: 'r1', code: 'AGENT_STREAM_ERROR', message: '失败', retryable: true },
-    })
-  })
+    });
+  });
 
   it('preserves normalized execution errors on failed sandbox events', () => {
     const event: AgentStreamEvent = {
@@ -233,9 +233,9 @@ describe('agent event wire codec', () => {
         retryable: false,
         details: { timeoutMs: 60_000 },
       },
-    }
-    assert.deepEqual(decodeAgentEvent(encodeAgentEvent(event), runId), event)
-  })
+    };
+    assert.deepEqual(decodeAgentEvent(encodeAgentEvent(event), runId), event);
+  });
 
   it('rejects a runId that does not match the subscribed run', () => {
     assert.throws(
@@ -245,29 +245,29 @@ describe('agent event wire codec', () => {
           runId,
         ),
       AIGatewayProtocolError,
-    )
-  })
+    );
+  });
 
   it('rejects negative or non-integer sequences', () => {
     assert.throws(
       () => decodeAgentEvent({ type: 'run-status', sequence: -1, runId, status: 'running' }),
       AIGatewayProtocolError,
-    )
+    );
     assert.throws(
       () => decodeAgentEvent({ type: 'run-status', sequence: 1.5, runId, status: 'running' }),
       AIGatewayProtocolError,
-    )
-  })
+    );
+  });
 
   it('rejects unknown event types and invalid enums', () => {
     assert.throws(
       () => decodeAgentEvent({ type: 'nope', sequence: 0, runId }),
       AIGatewayProtocolError,
-    )
+    );
     assert.throws(
       () => decodeAgentEvent({ type: 'run-status', sequence: 0, runId, status: 'weird' }),
       AIGatewayProtocolError,
-    )
+    );
     assert.throws(
       () =>
         decodeAgentEvent({
@@ -281,6 +281,6 @@ describe('agent event wire codec', () => {
           packageSha256: 'not-a-sha',
         }),
       AIGatewayProtocolError,
-    )
-  })
-})
+    );
+  });
+});

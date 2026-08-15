@@ -16,6 +16,7 @@ import type {
   AgentUserQuestion,
   ImageGenerationToolResult,
   ImageGenerationSuggestion,
+  VideoGenerationToolResult,
   TextModelAlias,
   TextModelId,
 } from '@supermind/sdk';
@@ -45,7 +46,9 @@ import {
   GlobeIcon,
   ImageOffIcon,
   LoaderCircleIcon,
+  PlayIcon,
   TerminalSquareIcon,
+  VideoIcon,
   WrenchIcon,
   XIcon,
 } from 'lucide-react';
@@ -55,6 +58,7 @@ import { createPortal } from 'react-dom';
 import { AgentSkillSlashPicker } from '@/components/agent-skill-slash-picker';
 import { AgentUserQuestionCard } from '@/components/agent-user-question-card';
 import ShimmerText from '@/components/shimmer-text';
+import { VideoGenerationWaitingCard } from '@/components/video-generation-waiting-card';
 import {
   AgentComposerActions,
   AgentComposerModeIndicator,
@@ -127,6 +131,11 @@ import { activeRunForThread } from '@/utils/agent/agent-active-runs';
 import { resolveWebsiteDeliveryCardState } from '@/utils/agent/website-delivery-state';
 import { readWebsiteMode, writeWebsiteMode } from '@/utils/agent/website-mode-state';
 import { readImageMode, writeImageMode } from '@/utils/agent/image-mode-state';
+import {
+  bindDraftVideoModeToThread,
+  readVideoMode,
+  writeVideoMode,
+} from '@/utils/agent/video-mode-state';
 import { initialAgentRunViewState } from '@/utils/agent/agent-run-reducer';
 import { threadTokenUsagePercentage } from '@/utils/agent/agent-thread-token-usage';
 import { logoutUser } from '@/utils/auth/user-auth-client';
@@ -196,8 +205,15 @@ function AgentConsole() {
   const [webCreationSelected, setWebCreationSelected] = useState(false);
   const [documentAnalysisSelected, setDocumentAnalysisSelected] = useState(false);
   const [imageGenerationSelected, setImageGenerationSelected] = useState(false);
+  const [videoGenerationSelected, setVideoGenerationSelected] = useState(false);
   const [imageGenerationEnabled, setImageGenerationEnabled] = useState(false);
   const [composerFiles, setComposerFiles] = useState<ComposerDocumentFile[]>([]);
+  const [videoReference, setVideoReference] = useState<{
+    id: string;
+    name: string;
+    previewUrl: string;
+  } | null>(null);
+  const [videoReferenceError, setVideoReferenceError] = useState<string | null>(null);
   const [githubLoginPromptOpen, setGithubLoginPromptOpen] = useState(false);
   const [githubLoginSwitching, setGithubLoginSwitching] = useState(false);
   const [githubLoginPromptError, setGithubLoginPromptError] = useState<string | null>(null);
@@ -213,17 +229,26 @@ function AgentConsole() {
       .catch(() => setImageGenerationEnabled(false));
   }, []);
 
+  useEffect(
+    () => () => {
+      if (videoReference?.previewUrl) URL.revokeObjectURL(videoReference.previewUrl);
+    },
+    [videoReference?.previewUrl],
+  );
+
   useEffect(() => {
     if (!activeThreadId) {
       // 草稿未发送：不恢复选中，切换走 Thread 后回到新建也保持未选。
       setWebCreationSelected(false);
       setDocumentAnalysisSelected(false);
       setImageGenerationSelected(false);
+      setVideoGenerationSelected(false);
       writeWebsiteMode(window.localStorage, null, false);
       return;
     }
     setWebCreationSelected(readWebsiteMode(window.localStorage, activeThreadId));
     setImageGenerationSelected(readImageMode(window.localStorage, activeThreadId));
+    setVideoGenerationSelected(readVideoMode(window.localStorage, activeThreadId));
   }, [activeThreadId]);
 
   const updateWebsiteMode = (selected: boolean) => {
@@ -237,6 +262,10 @@ function AgentConsole() {
     setImageGenerationSelected(selected);
     if (activeThreadId) writeImageMode(window.localStorage, activeThreadId, selected);
   };
+  const updateVideoMode = (selected: boolean) => {
+    setVideoGenerationSelected(selected);
+    if (activeThreadId) writeVideoMode(window.localStorage, activeThreadId, selected);
+  };
   const contextRef = useRef({
     threadId: activeThreadId as string | null,
     model: selectedModel,
@@ -245,6 +274,7 @@ function AgentConsole() {
     websiteMode: false,
     documentMode: false,
     imageMode: false,
+    videoMode: false,
     onRunThreadBound: (() => undefined) as (threadId: string) => void,
     onThreadCreated: (() => undefined) as (thread: Parameters<typeof prependThread>[0]) => void,
     onRunCreated: (() => undefined) as (
@@ -267,6 +297,7 @@ function AgentConsole() {
   contextRef.current.websiteMode = webCreationSelected;
   contextRef.current.documentMode = documentAnalysisSelected;
   contextRef.current.imageMode = imageGenerationSelected;
+  contextRef.current.videoMode = videoGenerationSelected;
   contextRef.current.onRunThreadBound = (threadId) => {
     localRunThreadIdRef.current = threadId;
   };
@@ -278,6 +309,7 @@ function AgentConsole() {
     setContextCompressionStatus('idle');
     writeWebsiteMode(window.localStorage, thread.id, webCreationSelected);
     writeImageMode(window.localStorage, thread.id, imageGenerationSelected);
+    writeVideoMode(window.localStorage, thread.id, videoGenerationSelected);
     prependThread(thread);
     openThread(thread.id);
   };
@@ -553,7 +585,7 @@ function AgentConsole() {
                   <ThreadPrimitive.Messages>
                     {({ message }) =>
                       message.role === 'user' ? (
-                        <UserMessage messageId={message.id} />
+                        <UserMessage messageId={message.id} threadId={activeThreadId} />
                       ) : (
                         <AssistantMessage
                           runProgress={runProgress}
@@ -657,7 +689,8 @@ function AgentConsole() {
                     ) : null}
                     {!webCreationSelected &&
                     !documentAnalysisSelected &&
-                    !imageGenerationSelected ? (
+                    !imageGenerationSelected &&
+                    !videoGenerationSelected ? (
                       <div className="mx-auto mb-2 flex w-full max-w-[44rem] gap-2 overflow-x-auto sm:w-[calc(100%-2rem)]">
                         <AgentWebCreationOption
                           selected={webCreationSelected}
@@ -671,6 +704,7 @@ function AgentConsole() {
                             if (!webCreationSelected) {
                               setDocumentAnalysisSelected(false);
                               updateImageMode(false);
+                              updateVideoMode(false);
                             }
                           }}
                         />
@@ -682,6 +716,7 @@ function AgentConsole() {
                             setDocumentAnalysisSelected((current) => !current);
                             if (webCreationSelected) updateWebsiteMode(false);
                             if (!documentAnalysisSelected) updateImageMode(false);
+                            if (!documentAnalysisSelected) updateVideoMode(false);
                           }}
                         />
                         {imageGenerationEnabled ? (
@@ -694,14 +729,32 @@ function AgentConsole() {
                               if (!imageGenerationSelected) {
                                 updateWebsiteMode(false);
                                 setDocumentAnalysisSelected(false);
+                                updateVideoMode(false);
                               }
                             }}
                           />
                         ) : null}
+                        <AgentWebCreationOption
+                          label="视频生成"
+                          selected={videoGenerationSelected}
+                          disabled={submitBlocked}
+                          onClick={() => {
+                            updateVideoMode(!videoGenerationSelected);
+                            if (!videoGenerationSelected) {
+                              updateWebsiteMode(false);
+                              setDocumentAnalysisSelected(false);
+                              updateImageMode(false);
+                            }
+                          }}
+                        />
                       </div>
                     ) : null}
                     <AgentComposerRoot
                       onSubmitText={(prompt) => {
+                        if (videoGenerationSelected && videoReference) {
+                          setVideoReference(null);
+                          return `${prompt}\n\n[当前视频首帧资产ID: ${videoReference.id}]`;
+                        }
                         if (composerFiles.length === 0) return prompt;
                         const message = encodeComposerMessage(composerFiles, prompt);
                         setComposerFiles([]);
@@ -714,6 +767,36 @@ function AgentConsole() {
                           setComposerFiles((current) => current.filter((_, item) => item !== index))
                         }
                       />
+                      {videoReference ? (
+                        <div
+                          className="flex gap-2 overflow-x-auto px-2 pb-2 pt-1"
+                          aria-label="视频首帧图"
+                        >
+                          <div className="group relative h-14 w-10 shrink-0 cursor-pointer shadow-[0_5px_14px_rgb(37_57_103/0.18)]">
+                            <img
+                              src={videoReference.previewUrl}
+                              alt="视频首帧图预览"
+                              className="h-14 w-10 object-cover"
+                            />
+                            <button
+                              type="button"
+                              aria-label={`移除 ${videoReference.name}`}
+                              onClick={() => {
+                                const removed = videoReference;
+                                setVideoReference(null);
+                                if (activeThreadId)
+                                  void client.agent.videos.removeReference(
+                                    activeThreadId,
+                                    removed.id,
+                                  );
+                              }}
+                              className="absolute right-0 top-0 grid size-5 place-items-center rounded-full border border-white/80 bg-black/65 text-white opacity-0 shadow-sm transition-[background-color,opacity] hover:bg-black/80 focus:opacity-100 group-hover:opacity-100 group-focus-within:opacity-100"
+                            >
+                              <XIcon className="size-3" aria-hidden="true" />
+                            </button>
+                          </div>
+                        </div>
+                      ) : null}
                       <AgentSkillSlashPicker
                         candidates={skillCandidates}
                         selectedNames={selectedSkillNames}
@@ -738,14 +821,78 @@ function AgentConsole() {
                                 ? '上传文档，对文档进行分析、编辑'
                                 : imageGenerationSelected
                                   ? '描述想生成的图片，或继续修改上一张图'
-                                  : '有什么问题尽管问，输入/ 调用技能'
+                                  : videoGenerationSelected
+                                    ? '描述想生成的视频，可添加一张首帧参考图'
+                                    : '有什么问题尽管问，输入/ 调用技能'
                         }
                         disabled={submitBlocked}
                         maxLength={8000}
                       />
                       <AgentDictationTranscript />
+                      {videoReferenceError ? (
+                        <p role="alert" className="px-3 text-xs text-danger">
+                          {videoReferenceError}
+                        </p>
+                      ) : null}
                       <AgentComposerFooter>
                         <AgentComposerActions>
+                          {videoGenerationSelected ? (
+                            <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-line-soft px-3 py-1.5 text-xs font-medium hover:bg-fill-secondary">
+                              <VideoIcon className="size-4" />
+                              添加首帧图
+                              <input
+                                type="file"
+                                accept="image/jpeg,image/png,image/webp"
+                                className="sr-only"
+                                disabled={submitBlocked}
+                                onChange={(event) => {
+                                  const file = event.target.files?.[0];
+                                  if (!file) return;
+                                  setVideoReferenceError(null);
+                                  void (async () => {
+                                    let threadId = activeThreadId;
+                                    if (!threadId) {
+                                      const created = await client.agent.threads.create({
+                                        model:
+                                          (selectedModel as TextModelId) ||
+                                          modelOptions[0]?.value ||
+                                          'qwen3.7-plus',
+                                      });
+                                      threadId = created.id;
+                                      bindDraftVideoModeToThread(
+                                        window.localStorage,
+                                        threadId,
+                                        videoGenerationSelected,
+                                      );
+                                      prependThread(created);
+                                      openThread(threadId);
+                                    }
+                                    const asset = await client.agent.videos.uploadReference(
+                                      threadId,
+                                      file,
+                                      file.name,
+                                    );
+                                    const replaced = videoReference;
+                                    setVideoReference({
+                                      id: asset.id,
+                                      name: asset.name,
+                                      previewUrl: URL.createObjectURL(file),
+                                    });
+                                    if (replaced && threadId)
+                                      void client.agent.videos.removeReference(
+                                        threadId,
+                                        replaced.id,
+                                      );
+                                  })().catch((error: unknown) => {
+                                    setVideoReferenceError(
+                                      error instanceof Error ? error.message : '首帧图上传失败',
+                                    );
+                                  });
+                                  event.currentTarget.value = '';
+                                }}
+                              />
+                            </label>
+                          ) : null}
                           <DocumentUploadButton
                             disabled={submitBlocked}
                             onUpload={async (files) => {
@@ -794,6 +941,12 @@ function AgentConsole() {
                               label="图像生成"
                               disabled={submitBlocked}
                               onClear={() => updateImageMode(false)}
+                            />
+                          ) : videoGenerationSelected ? (
+                            <AgentComposerModeIndicator
+                              label="视频生成"
+                              disabled={submitBlocked}
+                              onClear={() => updateVideoMode(false)}
                             />
                           ) : null}
                         </AgentComposerActions>
@@ -1550,6 +1703,7 @@ type AgentToolUiToolkit = {
   export_file: ToolDefinition<{ path?: string }, SandboxToolResult>;
   create_website: ToolDefinition<Record<string, never>, SandboxToolResult>;
   generate_image: ToolDefinition<Record<string, unknown>, SandboxToolResult>;
+  generate_video: ToolDefinition<Record<string, unknown>, SandboxToolResult>;
 };
 
 function isSandboxToolResult(value: unknown): value is SandboxToolResult {
@@ -1676,7 +1830,212 @@ const agentToolUiToolkit = defineToolkit({
       />
     ),
   },
+  generate_video: {
+    type: 'backend',
+    render: ({ artifact, result, status, isError }) => (
+      <VideoGenerationCard
+        {...(agentToolProgress(artifact) === undefined
+          ? {}
+          : { progress: agentToolProgress(artifact) })}
+        {...(result === undefined ? {} : { result })}
+        running={status.type === 'running'}
+        isError={Boolean(isError)}
+      />
+    ),
+  },
 } satisfies AgentToolUiToolkit);
+
+function VideoGenerationCard({
+  progress,
+  result,
+  running,
+  isError,
+}: Readonly<{
+  progress?: string | undefined;
+  result?: SandboxToolResult | undefined;
+  running: boolean;
+  isError: boolean;
+}>) {
+  const aui = useAui();
+  const threadRunning = useAuiState(({ thread }) => thread.isRunning);
+  const projected = isRecord(result?.audit?.videoGeneration)
+    ? (result.audit.videoGeneration as unknown as VideoGenerationToolResult)
+    : null;
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(projected?.saved ?? false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [playing, setPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const inlineVideoRef = useRef<HTMLVideoElement>(null);
+  const status = projected?.status ?? (running ? 'running' : isError ? 'failed' : 'pending');
+  if (running || ['pending', 'submitting', 'running', 'persisting'].includes(status)) {
+    return <VideoGenerationWaitingCard />;
+  }
+  if (!projected || projected.status !== 'succeeded' || !projected.videoId)
+    return (
+      <ToolActivityCard
+        toolName="generate_video"
+        progress={progress ?? videoStatusLabel(status)}
+        result={result}
+        running={running}
+        isError={isError || ['failed', 'cancelled', 'timed_out', 'expired'].includes(status)}
+      />
+    );
+  return (
+    <div className="space-y-3">
+      <article className="group relative w-full max-w-[20rem] overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_24%_20%,rgb(255_255_255/0.9),transparent_36%),linear-gradient(135deg,rgb(232_237_246),rgb(218_226_239))] shadow-sm dark:bg-[radial-gradient(circle_at_24%_20%,rgb(255_255_255/0.08),transparent_36%),linear-gradient(135deg,rgb(36_42_54),rgb(24_29_39))]">
+        <video
+          ref={inlineVideoRef}
+          src={projected.previewUrl ?? ''}
+          playsInline
+          preload="metadata"
+          className="aspect-video w-full object-cover"
+          onLoadedMetadata={(event) => setDuration(event.currentTarget.duration || 0)}
+          onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)}
+          onPlay={() => setPlaying(true)}
+          onPause={() => setPlaying(false)}
+          onEnded={() => setPlaying(false)}
+        />
+        {!playing ? (
+          <button
+            type="button"
+            aria-label="播放视频"
+            className="absolute top-1/2 left-1/2 grid size-12 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-white/45 bg-black/45 text-white shadow-xl backdrop-blur-md transition-transform hover:scale-105 focus-visible:outline-3 focus-visible:outline-white focus-visible:outline-offset-2"
+            onClick={() => void inlineVideoRef.current?.play()}
+          >
+            <PlayIcon aria-hidden="true" className="ml-0.5 size-5 fill-current" />
+          </button>
+        ) : null}
+        <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/75 via-black/35 to-transparent px-2.5 pt-8 pb-2 text-white">
+          <div className="flex h-8 items-center gap-0.5">
+            <span className="shrink-0 text-[10px] font-medium tabular-nums">
+              {formatVideoTime(currentTime)} / {formatVideoTime(duration)}
+            </span>
+            <span className="min-w-0 flex-1" />
+            <button
+              type="button"
+              aria-label="预览视频"
+              title="预览"
+              className="grid size-8 shrink-0 place-items-center rounded-full transition-colors hover:bg-white/15 focus-visible:outline-2 focus-visible:outline-white"
+              onClick={() => setPreviewOpen(true)}
+            >
+              <EyeIcon aria-hidden="true" className="size-4" />
+            </button>
+            <button
+              type="button"
+              disabled={saving || saved}
+              aria-label={saved ? '视频已保存' : saving ? '正在保存视频' : '保存视频'}
+              title={saved ? '已保存' : saving ? '保存中…' : '保存'}
+              className="grid size-8 shrink-0 place-items-center rounded-full transition-colors hover:bg-white/15 focus-visible:outline-2 focus-visible:outline-white disabled:cursor-default disabled:opacity-65"
+              onClick={() => {
+                setSaving(true);
+                setSaveError(null);
+                void client.agent.videos
+                  .save(projected.videoId!)
+                  .then(() => setSaved(true))
+                  .catch((error: unknown) =>
+                    setSaveError(error instanceof Error ? error.message : '保存失败'),
+                  )
+                  .finally(() => setSaving(false));
+              }}
+            >
+              <CheckIcon aria-hidden="true" className="size-4" />
+            </button>
+            <a
+              href={projected.downloadUrl ?? '#'}
+              download
+              aria-label="下载视频"
+              title="下载"
+              className="grid size-8 shrink-0 place-items-center rounded-full transition-colors hover:bg-white/15 focus-visible:outline-2 focus-visible:outline-white"
+            >
+              <DownloadIcon aria-hidden="true" className="size-4" />
+            </a>
+          </div>
+        </div>
+        {saveError ? (
+          <p
+            role="alert"
+            className="absolute inset-x-3 top-3 rounded-lg bg-danger px-3 py-2 text-xs font-medium text-white shadow-lg"
+          >
+            {saveError}
+          </p>
+        ) : null}
+      </article>
+      {projected.modelSwitched ? (
+        <p className="text-xs text-ink-muted">已为你切换到支持当前要求的视频模型</p>
+      ) : null}
+      <div className="flex flex-wrap gap-1.5">
+        {projected.suggestions.map((suggestion) => (
+          <button
+            key={suggestion.prompt}
+            type="button"
+            disabled={threadRunning}
+            className="rounded-full border border-line-soft bg-surface px-3 py-1.5 text-xs font-medium hover:bg-brand-subtle disabled:opacity-45"
+            onClick={() =>
+              void aui
+                .thread()
+                .append({ role: 'user', content: [{ type: 'text', text: suggestion.prompt }] })
+            }
+          >
+            {suggestion.label}
+          </button>
+        ))}
+      </div>
+      {previewOpen
+        ? createPortal(
+            <div
+              role="dialog"
+              aria-modal="true"
+              className="fixed inset-0 z-50 grid place-items-center bg-black/80 p-6"
+              onClick={() => setPreviewOpen(false)}
+            >
+              <div className="w-full max-w-5xl" onClick={(event) => event.stopPropagation()}>
+                <video
+                  src={projected.previewUrl ?? ''}
+                  controls
+                  autoPlay
+                  className="max-h-[80vh] w-full rounded-xl bg-black"
+                />
+                <button
+                  type="button"
+                  className="mt-3 rounded-full bg-white px-4 py-2 text-sm text-black"
+                  onClick={() => setPreviewOpen(false)}
+                >
+                  关闭
+                </button>
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
+    </div>
+  );
+}
+
+function formatVideoTime(seconds: number) {
+  if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
+  const whole = Math.floor(seconds);
+  return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, '0')}`;
+}
+
+function videoStatusLabel(status: string) {
+  return (
+    (
+      {
+        pending: '准备中',
+        submitting: '正在提交',
+        running: '正在生成视频',
+        persisting: '正在保存到沙箱',
+        failed: '视频生成失败',
+        timed_out: '视频生成超时',
+        cancelled: '已停止',
+        expired: '临时视频已过期',
+      } as Record<string, string>
+    )[status] ?? '处理中'
+  );
+}
 
 function ImageGenerationCard({
   progress,
@@ -1718,10 +2077,10 @@ function ImageGenerationCard({
 
   return (
     <div className="space-y-3">
-      <article className="group relative w-full max-w-[16rem] overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_24%_20%,rgb(255_255_255/0.9),transparent_36%),linear-gradient(135deg,rgb(232_237_246),rgb(218_226_239))] shadow-sm dark:bg-[radial-gradient(circle_at_24%_20%,rgb(255_255_255/0.08),transparent_36%),linear-gradient(135deg,rgb(36_42_54),rgb(24_29_39))]">
+      <article className="group relative aspect-video w-full max-w-[20rem] overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_24%_20%,rgb(255_255_255/0.9),transparent_36%),linear-gradient(135deg,rgb(232_237_246),rgb(218_226_239))] shadow-sm dark:bg-[radial-gradient(circle_at_24%_20%,rgb(255_255_255/0.08),transparent_36%),linear-gradient(135deg,rgb(36_42_54),rgb(24_29_39))]">
         {imageFailed ? (
           <div
-            className="flex aspect-square w-full flex-col items-center justify-center gap-3 text-ink-muted"
+            className="flex aspect-video w-full flex-col items-center justify-center gap-3 text-ink-muted"
             role="img"
             aria-label="图片暂时无法加载"
           >
@@ -1734,7 +2093,7 @@ function ImageGenerationCard({
           <img
             src={projected.previewUrl ?? ''}
             alt={projected.effectivePrompt}
-            className="aspect-square w-full object-contain"
+            className="aspect-video w-full object-contain"
             onError={() => setImageFailed(true)}
           />
         )}

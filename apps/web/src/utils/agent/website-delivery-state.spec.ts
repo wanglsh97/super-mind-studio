@@ -1,9 +1,9 @@
-import assert from 'node:assert/strict'
-import test from 'node:test'
+import assert from 'node:assert/strict';
+import test from 'node:test';
 
-import type { CreativeItem } from '@supermind/sdk'
+import type { CreativeItem } from '@supermind/sdk';
 
-import { resolveWebsiteDeliveryCardState } from './website-delivery-state'
+import { resolveWebsiteDeliveryCardState } from './website-delivery-state';
 
 const current: CreativeItem = {
   id: 'creation-1',
@@ -15,10 +15,10 @@ const current: CreativeItem = {
   updatedAt: '2026-08-05T01:00:00.000Z',
   expiresAt: '2026-09-04T01:00:00.000Z',
   runId: 'run-new',
-}
+};
 
 test('marks only the current delivery run as active', () => {
-  assert.equal(resolveWebsiteDeliveryCardState([current], 'project-1', 'run-new'), 'current')
-  assert.equal(resolveWebsiteDeliveryCardState([current], 'project-1', 'run-old'), 'superseded')
-  assert.equal(resolveWebsiteDeliveryCardState([], 'project-1', 'run-new'), 'superseded')
-})
+  assert.equal(resolveWebsiteDeliveryCardState([current], 'project-1', 'run-new'), 'current');
+  assert.equal(resolveWebsiteDeliveryCardState([current], 'project-1', 'run-old'), 'superseded');
+  assert.equal(resolveWebsiteDeliveryCardState([], 'project-1', 'run-new'), 'superseded');
+});

@@ -4,37 +4,37 @@ export function shouldUpdateCurrentThreadModel(
   currentModel: string,
   nextModel: string,
 ): boolean {
-  return activeThreadId !== null && currentModel !== nextModel
+  return activeThreadId !== null && currentModel !== nextModel;
 }
 
 export function isCurrentThreadModelSelectionDisabled(
   activeThreadId: string | null,
   activeRuns: readonly { threadId: string }[],
 ): boolean {
-  return activeThreadId !== null && activeRuns.some((run) => run.threadId === activeThreadId)
+  return activeThreadId !== null && activeRuns.some((run) => run.threadId === activeThreadId);
 }
 
 export function isCurrentThreadModelUpdatePending(
   activeThreadId: string | null,
   updatingThreadId: string | null,
 ): boolean {
-  return activeThreadId !== null && updatingThreadId === activeThreadId
+  return activeThreadId !== null && updatingThreadId === activeThreadId;
 }
 
 export async function updateThreadModelOptimistically<T extends { model: string }>(input: {
-  currentModel: string
-  nextModel: string
-  applySelection: (model: string) => void
-  persist: () => Promise<T>
-  isStillCurrent: () => boolean
+  currentModel: string;
+  nextModel: string;
+  applySelection: (model: string) => void;
+  persist: () => Promise<T>;
+  isStillCurrent: () => boolean;
 }): Promise<T> {
-  input.applySelection(input.nextModel)
+  input.applySelection(input.nextModel);
   try {
-    const updated = await input.persist()
-    if (input.isStillCurrent()) input.applySelection(updated.model)
-    return updated
+    const updated = await input.persist();
+    if (input.isStillCurrent()) input.applySelection(updated.model);
+    return updated;
   } catch (error) {
-    if (input.isStillCurrent()) input.applySelection(input.currentModel)
-    throw error
+    if (input.isStillCurrent()) input.applySelection(input.currentModel);
+    throw error;
   }
 }

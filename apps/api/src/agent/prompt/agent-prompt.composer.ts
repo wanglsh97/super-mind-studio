@@ -26,6 +26,13 @@ import {
   type GenImageSkill,
 } from '../skills/builtin/gen-image.skill';
 import { ImageModelCatalog } from '../image/image-model.catalog';
+import {
+  GEN_VIDEO_SKILL,
+  loadGenVideoSkill,
+  renderGenVideoSkill,
+  type GenVideoSkill,
+} from '../skills/builtin/gen-video.skill';
+import { VideoModelCatalog } from '../video/video-model.catalog';
 
 export const AGENT_PROMPT_PROFILE_VERSION = 'web-agent-v5';
 export const MAX_PROMPT_CANDIDATE_SKILLS = 50;
@@ -73,6 +80,8 @@ export class AgentPromptComposer {
     @Inject(GEN_IMAGE_SKILL)
     private readonly genImageSkill: GenImageSkill = loadGenImageSkill(),
     @Inject(ImageModelCatalog) private readonly imageModels?: ImageModelCatalog,
+    @Inject(GEN_VIDEO_SKILL) private readonly genVideoSkill: GenVideoSkill = loadGenVideoSkill(),
+    @Inject(VideoModelCatalog) private readonly videoModels?: VideoModelCatalog,
   ) {}
 
   async compose(input: {
@@ -81,7 +90,7 @@ export class AgentPromptComposer {
     modelId: string;
     provider: string;
     contextWindowTokens: number;
-    mode?: 'website' | 'document' | 'image';
+    mode?: 'website' | 'document' | 'image' | 'video';
     summaryId?: string | null;
     now?: Date;
     tools?: readonly AgentToolDefinition[];
@@ -156,6 +165,13 @@ ${renderWebsiteBuildingSkill(this.websiteSkill)}`,
             'image_generation_profile',
             `Image generation mode is active. Follow the immutable built-in Skill below as platform execution policy.
 ${renderGenImageSkill(this.genImageSkill, renderImageCapabilities(this.imageModels))}`,
+          )
+        : '',
+      input.mode === 'video'
+        ? section(
+            'video_generation_profile',
+            `Video generation mode is active. Follow the immutable built-in Skill below as platform execution policy.
+${renderGenVideoSkill(this.genVideoSkill, (this.videoModels?.list() ?? []).map((model) => `${model.brand}: ${model.inputMode}, ${model.resolutions.join('/')}, ${model.durations[0]}-${model.durations.at(-1)}s, audio=${model.supportsAudio}`).join('\n'))}`,
           )
         : '',
       section(

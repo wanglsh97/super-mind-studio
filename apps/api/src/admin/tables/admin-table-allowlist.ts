@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 
 export const ADMIN_TABLE_NAMES = [
   'users',
@@ -6,69 +6,70 @@ export const ADMIN_TABLE_NAMES = [
   'request-logs',
   'billing-records',
   'image-generation-tasks',
+  'video-generation-tasks',
   'admin-audit-logs',
   'agent-threads',
   'agent-messages',
   'agent-runs',
   'agent-events',
   'agent-tool-calls',
-] as const
+] as const;
 
-export type AdminTableName = (typeof ADMIN_TABLE_NAMES)[number]
-export type AdminTableOperation = 'query' | 'create' | 'update' | 'delete'
+export type AdminTableName = (typeof ADMIN_TABLE_NAMES)[number];
+export type AdminTableOperation = 'query' | 'create' | 'update' | 'delete';
 export type AdminFieldKind =
-  'string' | 'number' | 'boolean' | 'decimal' | 'datetime' | 'json' | 'enum'
+  'string' | 'number' | 'boolean' | 'decimal' | 'datetime' | 'json' | 'enum';
 
 export interface AdminTableFieldCapability {
-  name: string
-  label: string
-  kind: AdminFieldKind
-  nullable: boolean
-  editable: boolean
+  name: string;
+  label: string;
+  kind: AdminFieldKind;
+  nullable: boolean;
+  editable: boolean;
 }
 
 export interface AdminTableRelation {
-  field: string
-  targetTable: AdminTableName
-  targetField: string
-  label: string
+  field: string;
+  targetTable: AdminTableName;
+  targetField: string;
+  label: string;
 }
 
 export interface AdminTableCapability {
-  name: AdminTableName
+  name: AdminTableName;
   /** PostgreSQL 物理表名（Prisma @@map 未配置时与 model 名一致）。 */
-  physicalName: string
-  label: string
-  primaryKey: string
-  operations: readonly AdminTableOperation[]
-  fields: readonly AdminTableFieldCapability[]
-  relations: readonly AdminTableRelation[]
+  physicalName: string;
+  label: string;
+  primaryKey: string;
+  operations: readonly AdminTableOperation[];
+  fields: readonly AdminTableFieldCapability[];
+  relations: readonly AdminTableRelation[];
 }
 
 export interface AdminTableSchemaRelation extends AdminTableRelation {
-  sourceTable: AdminTableName
+  sourceTable: AdminTableName;
 }
 
 export interface AdminTableSchema {
-  tables: readonly AdminTableCapability[]
-  relations: readonly AdminTableSchemaRelation[]
+  tables: readonly AdminTableCapability[];
+  relations: readonly AdminTableSchemaRelation[];
 }
 
-const QUERY_ONLY = Object.freeze(['query'] as const)
+const QUERY_ONLY = Object.freeze(['query'] as const);
 
 const field = (
   name: string,
   label: string,
   kind: AdminFieldKind,
   nullable = false,
-): AdminTableFieldCapability => Object.freeze({ name, label, kind, nullable, editable: false })
+): AdminTableFieldCapability => Object.freeze({ name, label, kind, nullable, editable: false });
 
 const relation = (
   field: string,
   targetTable: AdminTableName,
   targetField: string,
   label: string,
-): AdminTableRelation => Object.freeze({ field, targetTable, targetField, label })
+): AdminTableRelation => Object.freeze({ field, targetTable, targetField, label });
 
 const capabilities: readonly AdminTableCapability[] = Object.freeze([
   Object.freeze({
@@ -81,6 +82,7 @@ const capabilities: readonly AdminTableCapability[] = Object.freeze([
       relation('id', 'user-sessions', 'userId', '会话'),
       relation('id', 'request-logs', 'userId', '请求日志'),
       relation('id', 'image-generation-tasks', 'userId', '文生图任务'),
+      relation('id', 'video-generation-tasks', 'userId', '视频任务'),
       relation('id', 'agent-threads', 'userId', 'Agent 线程'),
       relation('id', 'agent-runs', 'userId', 'Agent 运行'),
     ]),
@@ -123,6 +125,7 @@ const capabilities: readonly AdminTableCapability[] = Object.freeze([
       relation('agentRunId', 'agent-runs', 'id', 'Agent 运行'),
       relation('id', 'billing-records', 'requestLogId', '计费'),
       relation('id', 'image-generation-tasks', 'requestLogId', '文生图任务'),
+      relation('id', 'video-generation-tasks', 'requestLogId', '视频任务'),
     ]),
     fields: Object.freeze([
       field('id', 'ID', 'string'),
@@ -201,6 +204,44 @@ const capabilities: readonly AdminTableCapability[] = Object.freeze([
       field('startedAt', '开始时间', 'datetime', true),
       field('completedAt', '完成时间', 'datetime', true),
       field('userId', '用户 ID', 'string'),
+      field('createdAt', '创建时间', 'datetime'),
+      field('updatedAt', '更新时间', 'datetime'),
+    ]),
+  }),
+  Object.freeze({
+    name: 'video-generation-tasks',
+    physicalName: 'VideoGenerationTask',
+    label: '视频生成任务',
+    primaryKey: 'id',
+    operations: QUERY_ONLY,
+    relations: Object.freeze([
+      relation('userId', 'users', 'id', '用户'),
+      relation('requestLogId', 'request-logs', 'id', '请求日志'),
+      relation('agentRunId', 'agent-runs', 'id', 'Agent 运行'),
+    ]),
+    fields: Object.freeze([
+      field('id', 'ID', 'string'),
+      field('taskId', 'Task ID', 'string'),
+      field('providerTaskId', 'Provider Task ID', 'string', true),
+      field('provider', 'Provider', 'string'),
+      field('resolvedModel', '实际模型', 'string'),
+      field('status', '平台状态', 'enum'),
+      field('providerFinalStatus', 'Provider 最终状态', 'string', true),
+      field('inputMode', '输入模式', 'enum'),
+      field('durationSeconds', '生成秒数', 'number'),
+      field('audio', '音频', 'boolean'),
+      field('options', '生成参数', 'json'),
+      field('candidateAudit', '路由审计', 'json'),
+      field('estimatedCostCny', '估算费用（人民币）', 'decimal'),
+      field('errorCode', '错误码', 'string', true),
+      field('errorMessage', '错误信息', 'string', true),
+      field('startedAt', '开始时间', 'datetime', true),
+      field('cancelledAt', '取消时间', 'datetime', true),
+      field('timedOutAt', '超时时间', 'datetime', true),
+      field('completedAt', '完成时间', 'datetime', true),
+      field('userId', '用户 ID', 'string'),
+      field('requestLogId', 'RequestLog ID', 'string'),
+      field('agentRunId', 'Agent Run ID', 'string', true),
       field('createdAt', '创建时间', 'datetime'),
       field('updatedAt', '更新时间', 'datetime'),
     ]),
@@ -344,12 +385,12 @@ const capabilities: readonly AdminTableCapability[] = Object.freeze([
       field('completedAt', '完成时间', 'datetime', true),
     ]),
   }),
-])
+]);
 
 @Injectable()
 export class AdminTableAllowlist {
   list(): readonly AdminTableCapability[] {
-    return capabilities
+    return capabilities;
   }
 
   schema(): AdminTableSchema {
@@ -360,35 +401,35 @@ export class AdminTableAllowlist {
           sourceTable: table.name,
         }),
       ),
-    )
+    );
     return Object.freeze({
       tables: capabilities,
       relations,
-    })
+    });
   }
 
   resolve(name: string): AdminTableCapability {
-    const capability = capabilities.find((candidate) => candidate.name === name)
-    if (!capability) throw new NotFoundException('不支持的业务表')
-    return capability
+    const capability = capabilities.find((candidate) => candidate.name === name);
+    if (!capability) throw new NotFoundException('不支持的业务表');
+    return capability;
   }
 
   assertOperation(name: string, operation: AdminTableOperation): AdminTableCapability {
-    const capability = this.resolve(name)
+    const capability = this.resolve(name);
     if (!capability.operations.includes(operation)) {
-      throw new BadRequestException(`表 ${name} 不允许 ${operation} 操作`)
+      throw new BadRequestException(`表 ${name} 不允许 ${operation} 操作`);
     }
-    return capability
+    return capability;
   }
 
   assertEditablePatch(name: string, patch: Record<string, unknown>): AdminTableCapability {
-    const capability = this.assertOperation(name, 'update')
-    return assertAllowedFields(capability, patch, '更新')
+    const capability = this.assertOperation(name, 'update');
+    return assertAllowedFields(capability, patch, '更新');
   }
 
   assertCreatableBody(name: string, body: Record<string, unknown>): AdminTableCapability {
-    const capability = this.assertOperation(name, 'create')
-    return assertAllowedFields(capability, body, '创建')
+    const capability = this.assertOperation(name, 'create');
+    return assertAllowedFields(capability, body, '创建');
   }
 }
 
@@ -399,12 +440,12 @@ function assertAllowedFields(
 ): AdminTableCapability {
   const editable = new Set(
     capability.fields.filter(({ editable }) => editable).map(({ name }) => name),
-  )
-  const fields = Object.keys(body)
-  if (fields.length === 0) throw new BadRequestException(`${actionLabel}字段不能为空`)
-  const rejected = fields.filter((candidate) => !editable.has(candidate))
+  );
+  const fields = Object.keys(body);
+  if (fields.length === 0) throw new BadRequestException(`${actionLabel}字段不能为空`);
+  const rejected = fields.filter((candidate) => !editable.has(candidate));
   if (rejected.length > 0) {
-    throw new BadRequestException(`包含不可编辑字段：${rejected.join(', ')}`)
+    throw new BadRequestException(`包含不可编辑字段：${rejected.join(', ')}`);
   }
-  return capability
+  return capability;
 }

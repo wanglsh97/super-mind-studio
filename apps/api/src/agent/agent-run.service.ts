@@ -57,7 +57,7 @@ export interface ExecuteAgentRunInput {
   provider: string;
   contextWindowTokens: number;
   input: string;
-  mode?: 'website' | 'document' | 'image';
+  mode?: 'website' | 'document' | 'image' | 'video';
   thinkingEffort: AgentThinkingEffort;
   selectedSkillNames: readonly string[];
   /** createRun 持有的用户级 Redis 锁 token，终态 finally 中释放。 */

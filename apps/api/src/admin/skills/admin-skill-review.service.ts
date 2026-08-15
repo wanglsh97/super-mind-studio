@@ -1,13 +1,13 @@
-import { Inject, Injectable } from '@nestjs/common'
+import { Inject, Injectable } from '@nestjs/common';
 
 import {
   AdminSkillReviewRepository,
   SkillReviewPersistenceError,
   type AdminSkillReviewRepositoryPort,
   type PendingSkillReviewRecord,
-} from './admin-skill-review.repository'
+} from './admin-skill-review.repository';
 
-export const SKILL_REJECTION_REASON_MAX_LENGTH = 500
+export const SKILL_REJECTION_REASON_MAX_LENGTH = 500;
 
 @Injectable()
 export class AdminSkillReviewService {
@@ -17,32 +17,32 @@ export class AdminSkillReviewService {
   ) {}
 
   listPending(): Promise<PendingSkillReviewRecord[]> {
-    return this.repository.listPending()
+    return this.repository.listPending();
   }
 
   approve(skillId: string): Promise<PendingSkillReviewRecord> {
-    return this.decide(skillId, 'approved', null)
+    return this.decide(skillId, 'approved', null);
   }
 
   async reject(skillId: string, reason: string): Promise<PendingSkillReviewRecord> {
-    const normalized = reason.trim()
+    const normalized = reason.trim();
     if (!normalized || normalized.length > SKILL_REJECTION_REASON_MAX_LENGTH) {
       throw new AdminSkillReviewError(
         'SKILL_REJECTION_REASON_INVALID',
         `驳回原因须为 1–${SKILL_REJECTION_REASON_MAX_LENGTH} 个字符`,
-      )
+      );
     }
-    return this.decide(skillId, 'rejected', normalized)
+    return this.decide(skillId, 'rejected', normalized);
   }
 
   async delist(skillId: string): Promise<PendingSkillReviewRecord> {
     try {
-      return await this.repository.delist(skillId, 'root', new Date())
+      return await this.repository.delist(skillId, 'root', new Date());
     } catch (error) {
       if (error instanceof SkillReviewPersistenceError) {
-        throw new AdminSkillReviewError(error.code, error.message)
+        throw new AdminSkillReviewError(error.code, error.message);
       }
-      throw error
+      throw error;
     }
   }
 
@@ -52,18 +52,18 @@ export class AdminSkillReviewService {
     reason: string | null,
   ): Promise<PendingSkillReviewRecord> {
     try {
-      return await this.repository.decide(skillId, outcome, reason, 'root', new Date())
+      return await this.repository.decide(skillId, outcome, reason, 'root', new Date());
     } catch (error) {
       if (error instanceof SkillReviewPersistenceError) {
-        throw new AdminSkillReviewError(error.code, error.message)
+        throw new AdminSkillReviewError(error.code, error.message);
       }
-      throw error
+      throw error;
     }
   }
 }
 
 export class AdminSkillReviewError extends Error {
-  readonly retryable = false
+  readonly retryable = false;
 
   constructor(
     readonly code:
@@ -74,7 +74,7 @@ export class AdminSkillReviewError extends Error {
       | 'SKILL_REJECTION_REASON_INVALID',
     message: string,
   ) {
-    super(message)
-    this.name = 'AdminSkillReviewError'
+    super(message);
+    this.name = 'AdminSkillReviewError';
   }
 }

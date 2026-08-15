@@ -8,7 +8,7 @@
 
 ## 2. 图片模型目录与百炼Adapter
 
-- [ ] 2.1 实现仓库内版本化ImageModelCatalog，配置Qwen Image默认模型及万相、可灵、Vidu的平台ID、展示信息和能力矩阵
+- [ ] 2.1 实现仓库内版本化ImageModelCatalog，通过环境变量配置默认图片模型，并声明Qwen Image、万相、可灵、Vidu的平台ID、展示信息和能力矩阵
 - [ ] 2.2 实现共享BailianImageTransport，覆盖配置的北京 Base URL/API Key 鉴权、Qwen同步结果、其余模型异步提交/查询、内置超时、AbortSignal、取消尝试和错误归一化
 - [ ] 2.3 实现Qwen Image mapper与fixture contract test，映射文生图、参考图、1:1/2K默认值和水印参数
 - [ ] 2.4 实现Wan mapper与fixture contract test，映射文生图、参考图、质量/比例和水印能力

@@ -34,6 +34,12 @@ export interface SkillPackageDownload {
   expiresAt: string
 }
 
+export interface UserFileDownload {
+  metadata: SkillStoredObjectMetadata & { kind: 'user-input' | 'user-output' }
+  url: string
+  expiresAt: string
+}
+
 export interface WriteUserFileInput {
   objectKey: string
   direction: 'input' | 'output'
@@ -57,6 +63,11 @@ export interface SkillObjectStorePort {
   ): Promise<SkillPackageDownload | null>
   loadSkillPackage(objectKey: string, signal?: AbortSignal): Promise<StoredSkillPackage | null>
   loadUserFile(objectKey: string, signal?: AbortSignal): Promise<StoredUserFile | null>
+  createUserFileDownload(
+    objectKey: string,
+    expiresInSeconds: number,
+    signal?: AbortSignal,
+  ): Promise<UserFileDownload | null>
   writeUserFile(input: WriteUserFileInput): Promise<StoredUserFile>
   deleteObject(objectKey: string, signal?: AbortSignal): Promise<void>
 }

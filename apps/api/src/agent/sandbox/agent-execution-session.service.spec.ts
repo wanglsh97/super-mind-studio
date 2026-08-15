@@ -313,6 +313,32 @@ describe('AgentExecutionSessionService Thread sandbox lifecycle', () => {
     await service.destroyThread('thread-2');
   });
 
+  it('recreates a stale Thread sandbox when an input upload cannot write to it', async () => {
+    const sandboxes = createOpenSandboxRuntimeTestDouble();
+    const originalWriteFile = sandboxes.writeFile.bind(sandboxes);
+    const writeFile = jest
+      .spyOn(sandboxes, 'writeFile')
+      .mockRejectedValueOnce(new Error('sandbox no longer exists'))
+      .mockImplementation((input) => originalWriteFile(input));
+    const destroySandbox = jest.spyOn(sandboxes, 'destroySandbox');
+    const { service } = setup({ sandboxes });
+
+    await expect(
+      service.uploadThreadFile(
+        'thread-upload',
+        'user-1',
+        'reference.png',
+        new Uint8Array([1, 2, 3]),
+      ),
+    ).resolves.toMatchObject({ path: '/workspace/input/reference.png' });
+
+    expect(writeFile).toHaveBeenCalledTimes(2);
+    expect(writeFile.mock.calls[0]?.[0].sandboxId).not.toBe(
+      writeFile.mock.calls[1]?.[0].sandboxId,
+    );
+    expect(destroySandbox).toHaveBeenCalledTimes(1);
+  });
+
   it('destroys a partially created sandbox when readiness fails', async () => {
     const readyError = new Error('ready timeout');
     const destroySandbox = jest.fn().mockRejectedValue(new Error('temporary network failure'));

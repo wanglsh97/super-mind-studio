@@ -36,6 +36,7 @@ import { AgentRunProgressIndicator } from '@/components/agent-run-progress-indic
 import ShimmerText from '@/components/shimmer-text';
 import { agentActivityPartIndices } from '@/utils/agent/agent-activity-grouping';
 import type { AgentRunProgressStage } from '@/utils/agent/agent-run-adapter';
+import { prepareComposerSubmission } from '@/utils/agent/composer-submission';
 import { cn } from '@/utils/cn';
 
 const focusRing =
@@ -100,10 +101,11 @@ export function AgentThreadNavigator() {
   const entries = messages.reduce<Array<{ id: string; label: string; index: number }>>(
     (current, message) => {
       if (message.role !== 'user') return current;
-      const label = message.content
+      const rawLabel = message.content
         .flatMap((part) => (part.type === 'text' ? [part.text] : []))
         .join(' ')
         .trim();
+      const label = decodeVideoReferenceMessage(decodeComposerMessage(rawLabel).prompt).prompt;
       if (label) current.push({ id: message.id, label, index: current.length + 1 });
       return current;
     },
@@ -231,6 +233,7 @@ export function AgentComposerRoot({
   const aui = useAui();
   const composerText = useAuiState(({ composer }) => composer.text);
   const [hasFocus, setHasFocus] = useState(false);
+  const replaySubmissionRef = useRef<string | null>(null);
 
   return (
     <ComposerPrimitive.Unstable_TriggerPopoverRoot>
@@ -248,14 +251,25 @@ export function AgentComposerRoot({
           if (!event.currentTarget.contains(event.relatedTarget)) setHasFocus(false);
         }}
         onSubmit={(event) => {
-          const trimmedText = composerText.trim();
-          if (!trimmedText) {
+          const submission = prepareComposerSubmission(
+            composerText,
+            replaySubmissionRef.current,
+            onSubmitText,
+          );
+          if (submission.kind === 'empty') {
             event.preventDefault();
             return;
           }
-
-          const submittedText = onSubmitText?.(trimmedText) ?? trimmedText;
-          if (submittedText !== composerText) aui.composer().setText(submittedText);
+          if (submission.kind === 'submit') {
+            replaySubmissionRef.current = null;
+            return;
+          }
+          // ComposerPrimitive已在本次submit中捕获旧文本；先阻止发送并同步替换，
+          // 再于下一微任务重放，保证附件/首帧元数据进入真正的用户消息。
+          event.preventDefault();
+          replaySubmissionRef.current = submission.text;
+          aui.composer().setText(submission.text);
+          queueMicrotask(() => aui.composer().send());
         }}
         className={cn(
           'liquid-glass relative mx-auto w-full max-w-[44rem] rounded-[1.125rem] p-2 pb-2.5 transition-[border-color,box-shadow] sm:w-[calc(100%-2rem)]',
@@ -399,6 +413,17 @@ function decodeComposerMessage(content: string): {
   } catch {
     return { files: [], prompt: content };
   }
+}
+
+const VIDEO_REFERENCE_PATTERN =
+  /\n*\[当前视频首帧资产ID:\s*([0-9a-f-]{36})\]\s*$/i;
+
+function decodeVideoReferenceMessage(content: string) {
+  const match = content.match(VIDEO_REFERENCE_PATTERN);
+  return {
+    assetId: match?.[1] ?? null,
+    prompt: content.replace(VIDEO_REFERENCE_PATTERN, '').trim(),
+  };
 }
 
 function messageContentText(content: unknown): string {
@@ -1087,23 +1112,34 @@ export function AgentEmptyState({
   );
 }
 
-export function UserMessage({ messageId }: Readonly<{ messageId: string }>) {
+export function UserMessage({
+  messageId,
+  threadId,
+}: Readonly<{ messageId: string; threadId?: string | null }>) {
   const content = useAuiState(({ message }) => message.content);
   const decoded = decodeComposerMessage(messageContentText(content));
+  const video = decodeVideoReferenceMessage(decoded.prompt);
   return (
     <MessagePrimitive.Root
       id={`agent-message-${messageId}`}
       className="group flex flex-col items-end gap-1 py-4"
     >
       <div className="flex max-w-[min(82%,38rem)] flex-col items-end gap-2 text-[0.95rem] leading-7 text-ink max-md:max-w-[92%] dark:text-ink">
+        {video.assetId && threadId ? (
+          <img
+            src={`/api/v1/agent/video-inputs/threads/${encodeURIComponent(threadId)}/assets/${encodeURIComponent(video.assetId)}/content`}
+            alt="视频首帧图"
+            className="max-h-48 w-32 object-cover shadow-[0_6px_18px_rgb(37_57_103/0.16)]"
+          />
+        ) : null}
         {decoded.files.length ? (
           <div className="rounded-2xl bg-surface-muted px-3 py-3">
             <ComposerDocumentFiles files={decoded.files} compact={false} />
           </div>
         ) : null}
-        {decoded.prompt ? (
+        {video.prompt ? (
           <div className="rounded-2xl bg-surface-muted px-4 py-3 whitespace-pre-wrap">
-            {decoded.prompt}
+            {video.prompt}
           </div>
         ) : null}
       </div>

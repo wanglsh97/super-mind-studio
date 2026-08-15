@@ -96,18 +96,34 @@ export class AgentExecutionSessionService {
     bytes: Uint8Array,
     signal?: AbortSignal,
   ): Promise<SandboxFileResult> {
-    const session = await this.getOrCreateThreadSession(
+    let session = await this.getOrCreateThreadSession(
       `upload-${randomUUID()}`,
       threadId,
       userId,
       signal,
     );
-    return this.sandboxes.writeFile({
-      sandboxId: session.sandboxId,
-      path: `/workspace/input/${fileName}`,
-      bytes,
-      ...(signal === undefined ? {} : { signal }),
-    });
+    this.clearCleanupTimer(session);
+    const write = () =>
+      this.sandboxes.writeFile({
+        sandboxId: session.sandboxId,
+        path: `/workspace/input/${fileName}`,
+        bytes,
+        ...(signal === undefined ? {} : { signal }),
+      });
+    try {
+      return await write();
+    } catch (error) {
+      if (signal?.aborted) throw error;
+      await this.discardUnusableThread(session);
+      session = await this.getOrCreateThreadSession(
+        `upload-${randomUUID()}`,
+        threadId,
+        userId,
+        signal,
+      );
+      this.clearCleanupTimer(session);
+      return write();
+    }
   }
 
   async activateSkill(

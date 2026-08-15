@@ -4,7 +4,13 @@ import type {
   ImageModelId,
   ImageQuality,
 } from '@supermind/sdk';
-import { BadRequestException, Injectable, ServiceUnavailableException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  ServiceUnavailableException,
+} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 
 export interface ImageModelDefinition extends ImageModelCapability {
   upstreamModel: string;
@@ -73,6 +79,8 @@ const DEFINITIONS: readonly Omit<ImageModelDefinition, 'enabled' | 'priceCny'>[]
 export class ImageModelCatalog {
   readonly version = '2026-08-14';
 
+  constructor(@Inject(ConfigService) private readonly config: ConfigService) {}
+
   list(): ImageModelDefinition[] {
     return DEFINITIONS.map((definition) => ({
       ...definition,
@@ -98,13 +106,18 @@ export class ImageModelCatalog {
       }));
   }
 
-  resolve(id: ImageModelId = 'qwen-image'): ImageModelDefinition {
-    const model = this.list().find((item) => item.id === id);
+  defaultModelId(): ImageModelId {
+    return this.config.getOrThrow<ImageModelId>('BAILIAN_IMAGE_DEFAULT_MODEL');
+  }
+
+  resolve(id?: ImageModelId): ImageModelDefinition {
+    const resolvedId = id ?? this.defaultModelId();
+    const model = this.list().find((item) => item.id === resolvedId);
     if (!model) throw new BadRequestException('不支持的图片模型');
     if (!model.enabled) {
       throw new ServiceUnavailableException({
         code: 'IMAGE_MODEL_DISABLED',
-        message: `图片模型 ${id} 当前未启用`,
+        message: `图片模型 ${resolvedId} 当前未启用`,
         availableModels: this.capabilities().map((item) => item.id),
       });
     }

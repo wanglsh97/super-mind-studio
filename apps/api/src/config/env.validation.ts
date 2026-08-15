@@ -199,6 +199,12 @@ const environmentSchema = z
       (value) => (value === '' ? undefined : value),
       z.string().url().optional(),
     ),
+    BAILIAN_IMAGE_DEFAULT_MODEL: z
+      .enum(['qwen-image', 'wan-image', 'kling-image', 'vidu-image'])
+      .default('qwen-image'),
+    BAILIAN_VIDEO_DEFAULT_BRAND: z
+      .enum(['kling', 'happyhorse', 'vidu', 'pixverse'])
+      .default('happyhorse'),
     ADMIN_LOGIN_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().positive().default(5),
     ADMIN_FIXED_CREDENTIALS_ENABLED: booleanFromEnv.default(true),
     ADMIN_SESSION_SECRET: adminSessionSecret,

@@ -1,7 +1,7 @@
-import { plainToInstance } from 'class-transformer'
-import { validate } from 'class-validator'
+import { plainToInstance } from 'class-transformer';
+import { validate } from 'class-validator';
 
-import { RequestLogQueryDto } from './request-log-query.dto'
+import { RequestLogQueryDto } from './request-log-query.dto';
 
 describe('RequestLogQueryDto', () => {
   it('transforms and accepts supported filters', async () => {
@@ -16,11 +16,11 @@ describe('RequestLogQueryDto', () => {
       authProvider: 'GOOGLE',
       userName: 'Example User',
       providerUserId: 'google-subject',
-    })
+    });
 
-    await expect(validate(query)).resolves.toHaveLength(0)
-    expect(query).toMatchObject({ page: 2, pageSize: 100 })
-  })
+    await expect(validate(query)).resolves.toHaveLength(0);
+    expect(query).toMatchObject({ page: 2, pageSize: 100 });
+  });
 
   it.each([
     { page: 0 },
@@ -33,6 +33,6 @@ describe('RequestLogQueryDto', () => {
     { authProvider: 'PASSWORD' },
     { providerUserId: 'invalid\u0000id' },
   ])('rejects invalid filter %#', async (input) => {
-    await expect(validate(plainToInstance(RequestLogQueryDto, input))).resolves.not.toHaveLength(0)
-  })
-})
+    await expect(validate(plainToInstance(RequestLogQueryDto, input))).resolves.not.toHaveLength(0);
+  });
+});

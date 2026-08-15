@@ -63,7 +63,7 @@ Skill要求 Agent优先调用 `generate_image`，未指定模型/参数时不反
 
 ### Decision 3: Tool接受平台语义，服务端解析可信执行参数
 
-公开 Tool参数为 `prompt`、可选平台 `model`、可选 `referenceImageId`，以及 `aspectRatio/quality/watermark`。Tool不接受 provider、真实 model ID、count、任意 URL或路径。默认值为 `qwen-image`、1:1、2K、一张、无水印；模型目录将平台质量/比例映射为各模型合法字段。
+公开 Tool参数为 `prompt`、可选平台 `model`、可选 `referenceImageId`，以及 `aspectRatio/quality/watermark`。Tool不接受 provider、真实 model ID、count、任意 URL或路径。默认模型由`BAILIAN_IMAGE_DEFAULT_MODEL`配置（环境默认值为`qwen-image`），其余默认值为1:1、2K、一张、无水印；模型目录将平台质量/比例映射为各模型合法字段。
 
 当用户基于上一张图继续时，Agent可传结构化图片标识；缺省时服务端只在当前创作链解析最近一张有效图片。所有权、Thread归属、Sandbox存活和路径边界由服务端验证。目标模型需要参考图时，API读取Sandbox字节并以内联Base64/data URL提交，绝不把本地路径或额外公网读取地址交给百炼。
 

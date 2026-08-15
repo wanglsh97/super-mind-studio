@@ -39,7 +39,7 @@ The `generate_image` Tool SHALL accept a Prompt, optional platform image model, 
 #### Scenario: User provides only a Prompt
 - **GIVEN** the user did not name an image model or setting
 - **WHEN** the Agent calls `generate_image` with the interpreted Prompt
-- **THEN** the server uses `qwen-image`, 1:1, 2K, one image and watermark disabled without asking the user for missing settings
+- **THEN** the server uses the model configured by `BAILIAN_IMAGE_DEFAULT_MODEL`, 1:1, 2K, one image and watermark disabled without asking the user for missing settings
 
 #### Scenario: Agent submits untrusted execution fields
 - **GIVEN** a Tool call contains an upstream model ID, provider, URL, Sandbox path, count or unsupported option

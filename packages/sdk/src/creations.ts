@@ -1,6 +1,6 @@
 import { AIGatewayProtocolError } from './errors.js';
 
-export type CreativeItemType = 'website' | 'image';
+export type CreativeItemType = 'website' | 'image' | 'video';
 
 export interface CreativeItem {
   id: string;
@@ -14,6 +14,7 @@ export interface CreativeItem {
   threadId?: string | null;
   runId?: string | null;
   imageTaskId?: string;
+  videoTaskId?: string;
   imageCount?: number;
   assets?: Array<{
     id: string;

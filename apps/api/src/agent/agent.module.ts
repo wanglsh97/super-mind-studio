@@ -92,6 +92,16 @@ import { ImageAssetsController } from './image/image-assets.controller';
 import { ImageReconcilerService } from './image/image-reconciler.service';
 import { GEN_IMAGE_SKILL, loadGenImageSkill } from './skills/builtin/gen-image.skill';
 import { createGenerateImageTool } from './tools/generate-image.tool';
+import { GEN_VIDEO_SKILL, loadGenVideoSkill } from './skills/builtin/gen-video.skill';
+import { VideoModelCatalog } from './video/video-model.catalog';
+import { BAILIAN_VIDEO_FETCH, BailianVideoTransport } from './video/bailian-video.transport';
+import { VideoInputService } from './video/video-input.service';
+import { VideoInputController } from './video/video-input.controller';
+import { VideoGenerationService } from './video/video-generation.service';
+import { VideoAssetService } from './video/video-asset.service';
+import { VideoAssetsController } from './video/video-assets.controller';
+import { VideoReconcilerService } from './video/video-reconciler.service';
+import { createGenerateVideoTool } from './tools/generate-video.tool';
 
 export function resolveAgentTools(
   config: ConfigService,
@@ -101,6 +111,7 @@ export function resolveAgentTools(
   mcp?: McpToolDispatcher,
   websiteDelivery?: WebsiteDeliveryService,
   imageGeneration?: ImageGenerationService,
+  videoGeneration?: VideoGenerationService,
 ): readonly AgentToolDefinition[] {
   // CI/确定性 E2E 可显式启用 fixture；默认使用生产级联网 web_fetch。
   const webTool =
@@ -130,6 +141,7 @@ export function resolveAgentTools(
     createExportFileTool(outputs),
     ...(websiteDelivery === undefined ? [] : [createWebsiteTool(websiteDelivery)]),
     ...(imageGeneration === undefined ? [] : [createGenerateImageTool(imageGeneration)]),
+    ...(videoGeneration === undefined ? [] : [createGenerateVideoTool(videoGeneration)]),
     ...(mcp === undefined ? [] : [createDiscoverMcpToolsTool(mcp), createCallMcpTool(mcp)]),
   ];
 }
@@ -166,6 +178,8 @@ export function createSandboxRuntime(config: ConfigService): SandboxRuntimePort 
     AgentController,
     AgentPreviewProxyController,
     ImageAssetsController,
+    VideoInputController,
+    VideoAssetsController,
     SkillMarketController,
   ],
   providers: [
@@ -188,12 +202,20 @@ export function createSandboxRuntime(config: ConfigService): SandboxRuntimePort 
     { provide: WEBSITE_BUILDING_SKILL, useFactory: loadWebsiteBuildingSkill },
     { provide: DOCUMENT_ANALYSIS_SKILL, useFactory: loadDocumentAnalysisSkill },
     { provide: GEN_IMAGE_SKILL, useFactory: loadGenImageSkill },
+    { provide: GEN_VIDEO_SKILL, useFactory: loadGenVideoSkill },
     ImageModelCatalog,
     { provide: BAILIAN_IMAGE_FETCH, useValue: globalThis.fetch },
     BailianAsyncImageTransport,
     ImageGenerationService,
     ImageAssetService,
     ImageReconcilerService,
+    VideoModelCatalog,
+    { provide: BAILIAN_VIDEO_FETCH, useValue: globalThis.fetch },
+    BailianVideoTransport,
+    VideoInputService,
+    VideoGenerationService,
+    VideoAssetService,
+    VideoReconcilerService,
     PlatformAgentSkillCatalog,
     AgentSkillRepository,
     AgentSkillService,
@@ -258,6 +280,7 @@ export function createSandboxRuntime(config: ConfigService): SandboxRuntimePort 
         McpToolDispatcher,
         WebsiteDeliveryService,
         ImageGenerationService,
+        VideoGenerationService,
       ],
       useFactory: (
         config: ConfigService,
@@ -267,6 +290,7 @@ export function createSandboxRuntime(config: ConfigService): SandboxRuntimePort 
         mcp: McpToolDispatcher,
         websiteDelivery: WebsiteDeliveryService,
         imageGeneration: ImageGenerationService,
+        videoGeneration: VideoGenerationService,
       ): readonly AgentToolDefinition[] =>
         resolveAgentTools(
           config,
@@ -276,6 +300,7 @@ export function createSandboxRuntime(config: ConfigService): SandboxRuntimePort 
           mcp,
           websiteDelivery,
           imageGeneration,
+          videoGeneration,
         ),
     },
     AgentToolRegistry,

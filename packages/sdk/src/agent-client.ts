@@ -52,6 +52,30 @@ export interface AgentTokenAnalyticsOptions extends RequestOptions {
 }
 
 export interface AgentClient {
+  videos: {
+    uploadReference(
+      threadId: string,
+      file: Blob,
+      fileName: string,
+      options?: RequestOptions,
+    ): Promise<{
+      id: string;
+      name: string;
+      mimeType: string;
+      sizeBytes: number;
+      expiresAt: string;
+    }>;
+    removeReference(
+      threadId: string,
+      assetId: string,
+      options?: RequestOptions,
+    ): Promise<void>;
+    save(
+      videoId: string,
+      options?: RequestOptions,
+    ): Promise<{ creationId: string; assetId: string | null; saved: true }>;
+    deleteCreation(creationId: string, options?: RequestOptions): Promise<void>;
+  };
   images: {
     models(options?: RequestOptions): Promise<{ enabled: boolean; models: ImageModelCapability[] }>;
     save(
@@ -135,6 +159,55 @@ export function createAgentClient(
 ): AgentClient {
   const directUpload = options.skillUploadTransport ?? createBrowserSkillUploadTransport();
   return {
+    videos: {
+      uploadReference: async (threadId, file, fileName, requestOptions) => {
+        const body = new FormData();
+        body.append('file', file, fileName);
+        const response = await fetchImplementation(
+          `${baseUrl}/api/v1/agent/video-inputs/threads/${encodeURIComponent(threadId)}`,
+          {
+            method: 'POST',
+            body,
+            ...(requestOptions?.signal ? { signal: requestOptions.signal } : {}),
+          },
+        );
+        if (!response.ok) throw await responseError(response, response.headers.get('x-request-id'));
+        return response.json() as Promise<{
+          id: string;
+          name: string;
+          mimeType: string;
+          sizeBytes: number;
+          expiresAt: string;
+        }>;
+      },
+      removeReference: async (threadId, assetId, requestOptions) => {
+        const response = await fetchImplementation(
+          `${baseUrl}/api/v1/agent/video-inputs/threads/${encodeURIComponent(threadId)}/assets/${encodeURIComponent(assetId)}`,
+          {
+            method: 'DELETE',
+            ...(requestOptions?.signal ? { signal: requestOptions.signal } : {}),
+          },
+        );
+        if (!response.ok) throw await responseError(response, response.headers.get('x-request-id'));
+      },
+      save: (videoId, requestOptions) =>
+        requestJson(
+          fetchImplementation,
+          'POST',
+          `${baseUrl}/api/v1/agent/videos/${encodeURIComponent(videoId)}/save`,
+          undefined,
+          requestOptions,
+        ),
+      deleteCreation: async (creationId, requestOptions) => {
+        await requestJson(
+          fetchImplementation,
+          'DELETE',
+          `${baseUrl}/api/v1/agent/videos/creations/${encodeURIComponent(creationId)}`,
+          undefined,
+          requestOptions,
+        );
+      },
+    },
     images: {
       models: (requestOptions) =>
         requestJson(
