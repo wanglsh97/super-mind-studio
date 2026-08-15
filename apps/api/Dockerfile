@@ -3,12 +3,14 @@ FROM node:24-bookworm-slim AS base
 ENV PNPM_HOME=/pnpm
 ENV PATH=$PNPM_HOME:$PATH
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV npm_config_registry=https://registry.npmmirror.com
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates openssl \
     && rm -rf /var/lib/apt/lists/*
 
-RUN corepack enable && corepack prepare pnpm@10.34.5 --activate
+RUN npm install --global pnpm@10.34.5 \
+    && pnpm --version
 
 WORKDIR /app
 
