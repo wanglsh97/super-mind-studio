@@ -145,7 +145,6 @@ enum AuthProvider {
 enum CreationType {
   WEBSITE
   IMAGE
-  VIDEO
 }
 
 enum CreationStatus {
@@ -169,7 +168,6 @@ enum CreationAssetKind {
   DIST_ZIP
   PREVIEW
   IMAGE
-  VIDEO
 }
 
 model User {

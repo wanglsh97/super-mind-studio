@@ -46,9 +46,7 @@ function CreationsContent() {
           新建网页创作
         </Link>
       </div>
-      <p className="mt-3 text-sm text-ink-muted">
-        网站产物会在 30 天后自动删除；图片与未来的视频都会集中显示在这里。
-      </p>
+      <p className="mt-3 text-sm text-ink-muted">网站产物会在 30 天后自动删除；图片也会集中显示在这里。</p>
       <div className="mt-6 flex gap-2" aria-label="创作类型筛选">
         {(
           [
@@ -87,11 +85,6 @@ function CreationsContent() {
               还没有{filter === 'all' ? '' : filter === 'website' ? '网站' : '图片'}创作。
             </p>
           ) : null}
-          <article className="rounded-2xl border border-dashed border-line p-5 text-ink-muted">
-            <span className="text-xs font-semibold">视频</span>
-            <h2 className="mt-4 font-semibold text-ink">即将支持</h2>
-            <p className="mt-2 text-sm">视频生成完成后将自动汇集到这里。</p>
-          </article>
         </section>
       )}
     </main>

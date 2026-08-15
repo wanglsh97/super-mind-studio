@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: Users can browse a unified owner-scoped creative library
-The system SHALL provide a “我的创作” list containing only the owner's successful current website deliveries and image creations. It SHALL support website/image filtering and an explicit future video empty state without leaking another user's records or assets.
+The system SHALL provide a “我的创作” list containing only the owner's successful current website deliveries and image creations. It SHALL support website/image filtering without leaking another user's records or assets.
 
 #### Scenario: User lists creations
 - **GIVEN** a user owns a successfully delivered website and image tasks
