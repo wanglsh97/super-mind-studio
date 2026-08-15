@@ -311,6 +311,8 @@ Nginx 不再等待 Web/API 健康后才启动，并将只读静态维护页随�
 
 Tempo 与 OpenTelemetry Collector 是默认生产服务，而非可选 profile；因为 Nginx 的同源 `/otel` 入口依赖 Collector，跳过它会使 Nginx 无法解析上游并阻塞整个公网入口。发布脚本在 API/Web 前启动两者，Tempo 通过健康检查后 Collector 才启动。
 
+Migration 使用独立的轻量运行镜像，只包含 Prisma CLI、配置和正式 migrations。该镜像不得继承 Node workspace 的完整 build stage，也不得携带 `/pnpm/store`、Web/API 源码或构建期 `node_modules`；Migration 所需依赖由私有 workspace runtime package 锁定并部署到独立目录，再复制到干净的 Node slim stage。这样 API 与 Migration 仍复用构建缓存，但不会在 ECS 导出 Migration 镜像时重复展开完整构建层。
+
 ## Failure Handling
 
 | Failure | Platform behavior | Persistence |

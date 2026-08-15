@@ -19,6 +19,7 @@ FROM base AS build
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
 COPY apps/api/package.json apps/api/package.json
 COPY apps/web/package.json apps/web/package.json
+COPY packages/migration-runtime/package.json packages/migration-runtime/package.json
 COPY packages/sdk/package.json packages/sdk/package.json
 
 RUN pnpm install --frozen-lockfile

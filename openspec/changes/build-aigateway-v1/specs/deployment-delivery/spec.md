@@ -80,3 +80,12 @@ Docker log rotation SHALL be configured for application and proxy containers so 
 - **GIVEN** containers emit sustained logs
 - **WHEN** a log file reaches its configured size and count limits
 - **THEN** Docker rotates and removes the oldest segment according to policy while active services continue running
+
+### Requirement: Database migration uses a dedicated runtime image
+The production Migration image SHALL contain the Prisma CLI, Prisma configuration, and versioned migration files required by `prisma migrate deploy`, without inheriting the complete workspace build stage or including the pnpm content-addressable store.
+
+#### Scenario: Migration image is exported on the ECS host
+- **GIVEN** the API build stage and its dependency cache already exist
+- **WHEN** Docker exports the production Migration target
+- **THEN** the exported image contains no `/pnpm/store` or application build workspace
+- **AND** the image can execute `prisma migrate deploy` against the configured PostgreSQL database

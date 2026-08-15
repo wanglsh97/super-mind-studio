@@ -97,6 +97,7 @@
 - [x] 1.74 实现仅当前用户可访问的一年 Token 日历、每日明细和模型总量聚合 API，并覆盖权限、缺失维度按 0 展示和无历史回填测试
 - [ ] 1.75 扩展现有 `read-file`、`write-file`、`export-file` 为通用文档工具，支持最多 5 个、单文件 20 MB 以内的 PDF/DOCX/XLSX 在临时沙箱中的上传、一次性读取分析、创建、原地修改、格式预览与下载，并验证沙箱释放后的文件失效及现有代码文件兼容性
 - [x] 1.76 将真实文本模型厂商 Adapter、共享契约和兼容传输层迁至 `apps/api/src/adapters`，移除生产 Mock Chat Adapter，并以非生产 fixture 保持离线测试覆盖
+- [x] 1.77 将 Migration 从完整 workspace build stage 拆为仅含 Prisma CLI、配置与 migrations 的轻量运行镜像，并验证镜像不包含 pnpm store 且可执行 `prisma migrate deploy`
 
 ## 2. 管理员中后台
 

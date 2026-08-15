@@ -19,6 +19,7 @@ FROM base AS build
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json prisma.config.ts ./
 COPY apps/api/package.json apps/api/package.json
 COPY apps/web/package.json apps/web/package.json
+COPY packages/migration-runtime/package.json packages/migration-runtime/package.json
 COPY packages/sdk/package.json packages/sdk/package.json
 
 RUN pnpm install --frozen-lockfile
@@ -29,10 +30,15 @@ COPY prisma prisma
 
 RUN DATABASE_URL=postgresql://prisma:prisma@127.0.0.1:5432/prisma pnpm --filter @supermind/api... build
 RUN pnpm --filter @supermind/api deploy --prod --legacy /prod/api
+RUN pnpm --filter @supermind/migration-runtime deploy --prod --legacy /prod/migration
 
-FROM build AS migration
+FROM base AS migration
 
 ENV NODE_ENV=production
+
+COPY --from=build --chown=node:node /prod/migration ./
+COPY --from=build --chown=node:node /app/prisma.config.ts ./
+COPY --from=build --chown=node:node /app/prisma ./prisma
 
 USER node
 
