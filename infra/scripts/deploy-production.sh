@@ -38,18 +38,35 @@ log_step() {
   esac
   now="$(date +%s)"
   step_elapsed=$((now - current_step_started_at))
-  total_elapsed=$((now - deploy_started_at))
-  printf '\n%b[deploy] event=%s step=%s result=%s exit_code=%s step_seconds=%s total_seconds=%s time=%s label="%s"%b\n\n' \
-    "$color" \
-    "$event" \
-    "$current_step" \
-    "$result" \
-    "$exit_code" \
-    "$step_elapsed" \
-    "$total_elapsed" \
-    "$(date '+%Y-%m-%dT%H:%M:%S%z')" \
-    "$current_step_label" \
-    "$COLOR_RESET"
+  minutes=$((step_elapsed / 60))
+  seconds=$((step_elapsed % 60))
+  if [ "$minutes" -gt 0 ]; then
+    elapsed="${minutes}m ${seconds}s"
+  else
+    elapsed="${seconds}s"
+  fi
+
+  case "$event:$result" in
+    start:running)
+      message="▶ $current_step_label"
+      ;;
+    finish:success)
+      message="✓ $current_step_label（$elapsed）"
+      ;;
+    finish:skipped)
+      message="○ $current_step_label（已跳过）"
+      ;;
+    finish:warning)
+      message="! $current_step_label（有警告，$elapsed）"
+      ;;
+    finish:failed)
+      message="✗ $current_step_label（失败，退出码 $exit_code，$elapsed）"
+      ;;
+    *)
+      message="$current_step_label（$result，$elapsed）"
+      ;;
+  esac
+  printf '\n%b[deploy] %s%b\n\n' "$color" "$message" "$COLOR_RESET"
 }
 
 begin_step() {
@@ -226,12 +243,10 @@ compose config >/dev/null
 finish_step
 
 enter_maintenance_mode() {
-  echo '切换至发布维护页。'
   MAINTENANCE_MODE=on compose up -d --no-deps --force-recreate nginx
 }
 
 leave_maintenance_mode() {
-  echo '恢复应用入口。'
   MAINTENANCE_MODE=off compose up -d --no-deps --force-recreate nginx
 }
 
@@ -249,7 +264,6 @@ wait_for_readiness() {
 }
 
 reset_tempo_trace_storage() {
-  echo '发布前重置 Tempo 诊断 Trace 存储（仅 tempo-data，不影响 PostgreSQL）。'
   compose stop tempo otel-collector 2>/dev/null || true
   compose rm -f tempo otel-collector 2>/dev/null || true
   compose_project_name="$(awk '/^name: / { print $2; exit }' "$COMPOSE_FILE")"
@@ -275,7 +289,6 @@ finish_step
 
 begin_step backup_postgres '执行发布前 PostgreSQL 备份'
 if compose ps --status running --services 2>/dev/null | grep -qx postgres; then
-  echo '发布前执行 PostgreSQL 备份。'
   ENV_FILE="$ENV_FILE" "$SCRIPT_DIR/postgres-backup.sh"
   finish_step
 else
@@ -353,7 +366,4 @@ if ! SMOKE_MODEL_ALIAS="$smoke_model_alias" \
 fi
 finish_step
 
-begin_step report_status '输出生产容器状态'
-compose ps
-finish_step
-printf 'production_deploy=ok version=%s\n' "$app_version"
+printf '\n%b[deploy] version=%s%b\n\n' "$COLOR_GREEN" "$app_version" "$COLOR_RESET"
