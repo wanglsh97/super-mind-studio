@@ -6,6 +6,56 @@ ROOT_DIR="$(CDPATH= cd -- "$SCRIPT_DIR/../.." && pwd)"
 ENV_FILE="${ENV_FILE:-$ROOT_DIR/.env.production}"
 COMPOSE_FILE="$ROOT_DIR/infra/compose/compose.prod.yml"
 
+deploy_started_at="$(date +%s)"
+current_step='bootstrap'
+current_step_label='初始化发布脚本'
+current_step_started_at="$deploy_started_at"
+
+log_step() {
+  event="$1"
+  result="$2"
+  exit_code="${3:--}"
+  now="$(date +%s)"
+  step_elapsed=$((now - current_step_started_at))
+  total_elapsed=$((now - deploy_started_at))
+  printf '[deploy] event=%s step=%s result=%s exit_code=%s step_seconds=%s total_seconds=%s time=%s label="%s"\n' \
+    "$event" \
+    "$current_step" \
+    "$result" \
+    "$exit_code" \
+    "$step_elapsed" \
+    "$total_elapsed" \
+    "$(date '+%Y-%m-%dT%H:%M:%S%z')" \
+    "$current_step_label"
+}
+
+begin_step() {
+  current_step="$1"
+  current_step_label="$2"
+  current_step_started_at="$(date +%s)"
+  log_step start running
+}
+
+finish_step() {
+  log_step finish "${1:-success}"
+}
+
+log_deploy_exit() {
+  status="$?"
+  if [ "$status" -eq 0 ]; then
+    current_step='deployment'
+    current_step_label='生产发布全流程'
+    current_step_started_at="$deploy_started_at"
+    log_step finish success
+  else
+    log_step finish failed "$status" >&2
+  fi
+}
+
+trap log_deploy_exit EXIT
+
+begin_step validate_release '校验环境变量、Docker、Git 与 Compose 配置'
+
 if [ ! -f "$ENV_FILE" ]; then
   echo "生产环境文件不存在：$ENV_FILE" >&2
   exit 1
@@ -149,6 +199,8 @@ nginx_was_running=0
 if compose ps --status running --services 2>/dev/null | grep -qx nginx; then
   nginx_was_running=1
 fi
+compose config >/dev/null
+finish_step
 
 enter_maintenance_mode() {
   echo '切换至发布维护页。'
@@ -186,46 +238,77 @@ reset_tempo_trace_storage() {
   fi
 }
 
-compose config >/dev/null
-compose build web api migrate
+begin_step build_web_image '构建 Web 生产镜像'
+compose build web
+finish_step
 
+begin_step build_api_image '构建 API 生产镜像'
+compose build api
+finish_step
+
+begin_step build_migration_image '构建 Migration 生产镜像'
+compose build migrate
+finish_step
+
+begin_step backup_postgres '执行发布前 PostgreSQL 备份'
 if compose ps --status running --services 2>/dev/null | grep -qx postgres; then
   echo '发布前执行 PostgreSQL 备份。'
   ENV_FILE="$ENV_FILE" "$SCRIPT_DIR/postgres-backup.sh"
+  finish_step
 else
   echo '首次部署未发现运行中的 PostgreSQL，跳过发布前备份。'
+  finish_step skipped
 fi
 
 if [ "$nginx_was_running" -eq 1 ]; then
+  begin_step enable_maintenance '切换 Nginx 至发布维护页'
   enter_maintenance_mode
+  finish_step
 fi
 
 # 业务主链路与 Tempo 解耦：Trace 存储不 ready 不得阻塞发布。
+begin_step start_application '启动 PostgreSQL、Redis、Migration、API 与 Web'
 if ! compose up -d --remove-orphans postgres redis migrate api web; then
   if [ "$nginx_was_running" -eq 1 ]; then
     echo '应用启动失败，维护页将继续显示；修复后重新执行发布脚本。' >&2
   fi
   exit 1
 fi
+finish_step
 
+begin_step reset_tempo_storage '重置 Tempo 诊断 Trace 存储'
 reset_tempo_trace_storage
+finish_step
+
+begin_step start_observability '启动 Tempo 与 OpenTelemetry Collector'
 if ! compose up -d --remove-orphans tempo otel-collector; then
   echo '警告：Tempo/otel-collector 启动失败，已继续发布（不影响业务主链路）。' >&2
+  finish_step warning
+else
+  finish_step
 fi
 
 if [ "$nginx_was_running" -eq 0 ]; then
+  begin_step start_public_entry '首次启动 Nginx 公网入口'
   leave_maintenance_mode
+  finish_step
 fi
 
+begin_step wait_readiness '等待生产 readiness 通过'
 if ! wait_for_readiness; then
   echo '生产 readiness 在 180 秒内未通过。' >&2
   compose ps >&2 || true
   compose logs --tail=200 migrate api nginx >&2 || true
   exit 1
 fi
+finish_step
 
 if [ "$nginx_was_running" -eq 1 ]; then
+  begin_step disable_maintenance '关闭维护页并恢复应用入口'
   leave_maintenance_mode
+  finish_step
+
+  begin_step verify_entry_readiness '验证恢复入口后的 readiness'
   if ! wait_for_readiness; then
     echo '关闭维护页后 readiness 在 180 秒内未通过。' >&2
     compose ps >&2 || true
@@ -233,8 +316,10 @@ if [ "$nginx_was_running" -eq 1 ]; then
     enter_maintenance_mode
     exit 1
   fi
+  finish_step
 fi
 
+begin_step production_smoke '执行生产环境冒烟测试'
 if ! SMOKE_MODEL_ALIAS="$smoke_model_alias" \
   "$SCRIPT_DIR/smoke-production.sh" "http://127.0.0.1:$http_port"; then
   if [ "$nginx_was_running" -eq 1 ]; then
@@ -243,6 +328,9 @@ if ! SMOKE_MODEL_ALIAS="$smoke_model_alias" \
   fi
   exit 1
 fi
+finish_step
 
+begin_step report_status '输出生产容器状态'
 compose ps
+finish_step
 printf 'production_deploy=ok version=%s\n' "$app_version"
