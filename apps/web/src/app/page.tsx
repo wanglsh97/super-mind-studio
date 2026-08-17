@@ -682,7 +682,7 @@ function AgentConsole() {
                     {modelChangeError?.threadId === activeThreadId ? (
                       <p
                         role="alert"
-                        className="mx-auto mb-2 w-full max-w-[44rem] rounded-xl border border-danger/25 bg-danger/7 px-3 py-2 text-xs font-medium text-danger sm:w-[calc(100%-2rem)]"
+                        className="mx-auto mb-2 w-full max-w-176 rounded-xl border border-danger/25 bg-danger/7 px-3 py-2 text-xs font-medium text-danger sm:w-[calc(100%-2rem)]"
                       >
                         {modelChangeError.message}
                       </p>
@@ -691,7 +691,7 @@ function AgentConsole() {
                     !documentAnalysisSelected &&
                     !imageGenerationSelected &&
                     !videoGenerationSelected ? (
-                      <div className="mx-auto mb-2 flex w-full max-w-[44rem] gap-2 overflow-x-auto sm:w-[calc(100%-2rem)]">
+                      <div className="mx-auto mb-2 flex w-full max-w-176 gap-2 overflow-x-auto sm:w-[calc(100%-2rem)]">
                         <AgentWebCreationOption
                           selected={webCreationSelected}
                           disabled={submitBlocked}
@@ -993,7 +993,7 @@ function AgentConsole() {
         ? createPortal(
             <div
               role="presentation"
-              className="fixed inset-0 z-[100] grid place-items-center bg-black/25 p-4 backdrop-blur-sm"
+              className="fixed inset-0 z-100 grid place-items-center bg-black/25 p-4 backdrop-blur-sm"
               onMouseDown={(event) => {
                 if (event.target === event.currentTarget) setGithubLoginPromptOpen(false);
               }}
@@ -1145,13 +1145,13 @@ function AgentEnvironmentPanel({
       aria-label={`运行环境：${overallLabel}`}
       className={cn(
         'liquid-glass absolute top-4 right-4 z-30 overflow-hidden border-line/80 shadow-[0_24px_70px_rgb(41_54_88/0.18)] transition-[width,border-radius] duration-200 motion-reduce:transition-none',
-        isCollapsed ? 'w-44 rounded-[1rem]' : 'w-[22rem] rounded-[1.35rem] p-2',
+        isCollapsed ? 'w-44 rounded-2xl' : 'w-88 rounded-[1.35rem] p-2',
       )}
     >
       {isCollapsed ? (
         <button
           type="button"
-          className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left transition hover:bg-surface-card/70 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand"
+          className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left transition hover:bg-surface-card/70 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand"
           aria-label="展开运行环境"
           aria-expanded="false"
           onClick={() => setIsCollapsed(false)}
@@ -1221,7 +1221,7 @@ function AgentEnvironmentPanel({
             </div>
           </header>
 
-          <div className="overflow-hidden rounded-[1rem] border border-line/75 bg-surface-card/70">
+          <div className="overflow-hidden rounded-2xl border border-line/75 bg-surface-card/70">
             <EnvironmentRow
               icon={<SandboxIcon />}
               label="Sandbox"
@@ -2320,7 +2320,7 @@ function WebsiteDeliveryCard({
         if (artifact) openArtifact(artifact);
       }}
       className={cn(
-        'group my-3 flex w-full max-w-[30rem] items-stretch gap-4 rounded-[1.6rem] border border-line bg-surface-card p-4 text-left shadow-[0_10px_30px_rgb(37_57_103/0.07)] transition',
+        'group my-3 flex w-full max-w-120 items-stretch gap-4 rounded-[1.6rem] border border-line bg-surface-card p-4 text-left shadow-[0_10px_30px_rgb(37_57_103/0.07)] transition',
         current &&
           'cursor-pointer hover:-translate-y-0.5 hover:border-brand/35 hover:shadow-[0_16px_38px_rgb(37_57_103/0.12)] focus-visible:outline-3 focus-visible:outline-brand-focus',
         !current && 'cursor-not-allowed opacity-70',
@@ -2413,7 +2413,7 @@ function ArtifactCard({
         <img
           src={file.contentUrl}
           alt={file.name}
-          className="max-h-[28rem] w-full bg-white object-contain"
+          className="max-h-112 w-full bg-white object-contain"
         />
       ) : documentPreview ? (
         <DocumentPreview file={file} />
@@ -2496,11 +2496,11 @@ function DocumentPreview({
       </div>
     );
   if (file.mimeType === 'application/pdf')
-    return <iframe title={file.name} src={file.contentUrl} className="h-[28rem] w-full border-0" />;
+    return <iframe title={file.name} src={file.contentUrl} className="h-112 w-full border-0" />;
   if (file.name.endsWith('.docx'))
-    return <div ref={docxRef} className="max-h-[28rem] overflow-auto bg-white p-3 text-black" />;
+    return <div ref={docxRef} className="max-h-112 overflow-auto bg-white p-3 text-black" />;
   return (
-    <pre className="max-h-[28rem] overflow-auto bg-white p-3 text-xs text-black">
+    <pre className="max-h-112 overflow-auto bg-white p-3 text-xs text-black">
       {state.kind === 'loading' ? '正在生成预览…' : state.content}
     </pre>
   );
@@ -2712,7 +2712,7 @@ function ToolDetail({
           {value}
         </pre>
       ) : (
-        <p className="break-words text-[0.78rem] text-ink-muted">{value}</p>
+        <p className="wrap-break-word text-[0.78rem] text-ink-muted">{value}</p>
       )}
     </div>
   );

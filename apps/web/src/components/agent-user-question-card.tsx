@@ -110,7 +110,7 @@ export function AgentUserQuestionCard({
   return (
     <section
       aria-label="Agent 需要你的回答"
-      className="mx-auto w-full max-w-[44rem] sm:w-[calc(100%-2rem)]"
+      className="mx-auto w-full max-w-176 sm:w-[calc(100%-2rem)]"
     >
       <div className="max-h-[calc(100dvh-6rem)] overflow-y-auto overscroll-contain rounded-[1.125rem] border border-line bg-surface-card shadow-[0_6px_18px_rgb(15_23_42/0.05)] dark:border-line-soft dark:shadow-none">
         <div className="px-3.5 pt-3.5 sm:px-4 sm:pt-4">
@@ -145,8 +145,8 @@ export function AgentUserQuestionCard({
                     aria-pressed={active}
                     onClick={() => selectOption(option.id)}
                     className={cn(
-                      'flex min-h-[3.125rem] w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left hover:bg-surface-muted focus-visible:bg-surface-muted focus-visible:outline-none dark:hover:bg-white/[0.055] dark:focus-visible:bg-white/[0.055]',
-                      active ? 'bg-surface-muted dark:bg-white/[0.055]' : 'bg-transparent',
+                      'flex min-h-12.5 w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left hover:bg-surface-muted focus-visible:bg-surface-muted focus-visible:outline-none dark:hover:bg-white/5.5 dark:focus-visible:bg-white/5.5',
+                      active ? 'bg-surface-muted dark:bg-white/5.5' : 'bg-transparent',
                     )}
                   >
                     <span
@@ -160,7 +160,7 @@ export function AgentUserQuestionCard({
                       {optionIndex + 1}
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block text-[0.8125rem] font-semibold leading-[1.125rem] text-ink dark:text-white">
+                      <span className="block text-[0.8125rem] font-semibold leading-4.5 text-ink dark:text-white">
                         {option.label}
                       </span>
                       <span className="mt-px block text-[0.6875rem] leading-4 text-ink-muted">

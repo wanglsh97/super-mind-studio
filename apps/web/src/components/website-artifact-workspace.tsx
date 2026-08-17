@@ -200,7 +200,7 @@ function WebsiteArtifactPanel({
   return (
     <aside
       aria-label="网站产物"
-      className="fixed inset-0 z-[80] flex min-h-0 flex-col overflow-hidden bg-surface-card min-[1024px]:relative min-[1024px]:inset-auto min-[1024px]:z-auto min-[1024px]:h-full min-[1024px]:w-full min-[1024px]:min-w-0 min-[1024px]:border-l min-[1024px]:border-line"
+      className="fixed inset-0 z-80 flex min-h-0 flex-col overflow-hidden bg-surface-card min-[1024px]:relative min-[1024px]:inset-auto min-[1024px]:z-auto min-[1024px]:h-full min-[1024px]:w-full min-[1024px]:min-w-0 min-[1024px]:border-l min-[1024px]:border-line"
     >
       {/* A focusable ARIA separator is intentionally implemented with button mechanics. */}
       {/* eslint-disable jsx-a11y/no-interactive-element-to-noninteractive-role */}

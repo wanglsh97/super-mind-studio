@@ -92,7 +92,7 @@ export function TokenCalendarHeatmap({
             <div
               role="tooltip"
               style={{ left: hoveredDay.left, top: hoveredDay.top }}
-              className="pointer-events-none fixed z-[100] -translate-x-1/2 -translate-y-full rounded-lg border border-white/10 bg-slate-950/95 px-3 py-2 text-white shadow-xl backdrop-blur"
+              className="pointer-events-none fixed z-100 -translate-x-1/2 -translate-y-full rounded-lg border border-white/10 bg-slate-950/95 px-3 py-2 text-white shadow-xl backdrop-blur"
             >
               <span className="block font-mono text-[10px] text-slate-400">{hoveredDay.date}</span>
               <strong className="mt-0.5 block whitespace-nowrap font-mono text-xs font-semibold">
@@ -153,7 +153,7 @@ const HEAT_LEGEND = [
 
 function levelClass(level: 0 | 1 | 2 | 3 | 4): string {
   return [
-    'bg-slate-100 dark:bg-white/[0.06]',
+    'bg-slate-100 dark:bg-white/6',
     'bg-emerald-100 dark:bg-emerald-950',
     'bg-emerald-300 dark:bg-emerald-800',
     'bg-emerald-500 dark:bg-emerald-600',

@@ -19,7 +19,7 @@ export function CodeBlock({ code, language }: Readonly<{ code: string; language?
   }
 
   return (
-    <section className="not-prose my-3 w-full max-w-[44rem] overflow-hidden rounded-xl border border-slate-300 bg-white shadow-none dark:border-slate-300 dark:bg-white">
+    <section className="not-prose my-3 w-full max-w-176 overflow-hidden rounded-xl border border-slate-300 bg-white shadow-none dark:border-slate-300 dark:bg-white">
       <header className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-4 py-2.5 dark:border-slate-200 dark:bg-slate-50">
         <span className="font-sans text-sm font-semibold capitalize tracking-normal text-slate-900">
           {displayLanguage}
@@ -68,7 +68,7 @@ export function CodeBlock({ code, language }: Readonly<{ code: string; language?
           fontSize: '0.82rem',
           lineHeight: 1.65,
         }}
-        codeTagProps={{ className: '!bg-transparent !p-0 font-mono' }}
+        codeTagProps={{ className: 'bg-transparent! p-0! font-mono' }}
         wrapLongLines
       >
         {code}

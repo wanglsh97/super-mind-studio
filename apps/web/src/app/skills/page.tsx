@@ -188,7 +188,7 @@ export default function SkillsPage() {
   }
 
   return (
-    <main className="mx-auto max-w-[76rem] px-4 py-10 sm:px-6 md:px-10 md:py-16">
+    <main className="mx-auto max-w-304 px-4 py-10 sm:px-6 md:px-10 md:py-16">
       <header className="liquid-glass-soft grid items-center gap-5 overflow-hidden rounded-[1.6rem] px-5 py-5 md:grid-cols-[minmax(0,1fr)_auto] md:px-6">
         <div className="flex min-w-0 items-start gap-4">
           <span
@@ -197,7 +197,7 @@ export default function SkillsPage() {
           >
             <span className="size-3 rotate-45 rounded-[0.2rem] bg-brand shadow-[0_5px_14px_rgb(39_100_255/0.35)]" />
           </span>
-          <h1 className="max-w-[48rem] pt-1 text-[clamp(1rem,1.4vw,1.125rem)] font-medium leading-7 tracking-[-0.01em] text-ink-secondary">
+          <h1 className="max-w-3xl pt-1 text-[clamp(1rem,1.4vw,1.125rem)] font-medium leading-7 tracking-[-0.01em] text-ink-secondary">
             技能是人工智能代理可复用的功能。它们提供了程序化的知识，有助于 Agent
             更高效地完成特定任务。
           </h1>
@@ -282,7 +282,7 @@ export default function SkillsPage() {
           {Array.from({ length: 6 }, (_, index) => (
             <div
               key={index}
-              className="h-44 w-full animate-pulse rounded-2xl bg-surface-inset sm:w-[17rem]"
+              className="h-44 w-full animate-pulse rounded-2xl bg-surface-inset sm:w-68"
             />
           ))}
         </section>
@@ -358,7 +358,7 @@ export default function SkillsPage() {
           {items.map((skill) => (
             <article
               key={skill.id}
-              className="liquid-glass group relative flex h-44 w-full flex-col overflow-hidden rounded-2xl px-4 py-4 transition-[border-color,background-color,transform] hover:-translate-y-0.5 hover:border-ink-faint/45 hover:bg-surface-card focus-within:border-ink-faint/45 sm:w-[17rem] dark:hover:bg-surface-card"
+              className="liquid-glass group relative flex h-44 w-full flex-col overflow-hidden rounded-2xl px-4 py-4 transition-[border-color,background-color,transform] hover:-translate-y-0.5 hover:border-ink-faint/45 hover:bg-surface-card focus-within:border-ink-faint/45 sm:w-68 dark:hover:bg-surface-card"
             >
               <button
                 type="button"
@@ -553,7 +553,7 @@ function SkillFilesDialog({
             ×
           </button>
         </div>
-        <div className="grid h-[min(36rem,calc(100dvh-7rem))] min-h-[28rem] grid-rows-[minmax(12rem,34dvh)_minmax(18rem,1fr)] md:grid-cols-[15rem_minmax(0,1fr)] md:grid-rows-1">
+        <div className="grid h-[min(36rem,calc(100dvh-7rem))] min-h-112 grid-rows-[minmax(12rem,34dvh)_minmax(18rem,1fr)] md:grid-cols-[15rem_minmax(0,1fr)] md:grid-rows-1">
           <aside className="overflow-y-auto border-b border-line bg-surface-inset/45 px-3 py-4 md:border-r md:border-b-0">
             <p className="px-2 pb-2 text-xs font-semibold text-ink-muted">文件</p>
             {tree.length === 0 ? (
@@ -593,7 +593,7 @@ function SkillFilesDialog({
                 <p className="py-12 text-center text-sm text-rose-600">{previewError}</p>
               ) : preview?.previewable && preview.content !== null ? (
                 <>
-                  <pre className="m-0 whitespace-pre-wrap break-words font-mono text-xs leading-6 text-ink-secondary">
+                  <pre className="m-0 whitespace-pre-wrap wrap-break-word font-mono text-xs leading-6 text-ink-secondary">
                     {preview.content}
                   </pre>
                   {preview.truncated ? (
@@ -647,7 +647,7 @@ function SkillFileTreeNode({
         type="button"
         aria-expanded={directory ? expanded : undefined}
         className={cn(
-          'flex w-full cursor-pointer items-center gap-2 rounded-lg py-1.5 pr-2 text-left text-xs transition-colors focus-visible:outline-2 focus-visible:outline-brand-focus focus-visible:outline-offset-[-2px]',
+          'flex w-full cursor-pointer items-center gap-2 rounded-lg py-1.5 pr-2 text-left text-xs transition-colors focus-visible:outline-2 focus-visible:outline-brand-focus focus-visible:-outline-offset-2',
           directory
             ? 'text-ink-secondary hover:bg-surface-muted'
             : 'text-ink-muted hover:bg-surface-muted',

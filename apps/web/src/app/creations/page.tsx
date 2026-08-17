@@ -40,7 +40,7 @@ function CreationsContent() {
   }, [session.status]);
 
   return (
-    <main className="mx-auto min-h-screen max-w-[1320px] px-4 py-6 sm:px-5 lg:px-6 lg:py-8">
+    <main className="mx-auto min-h-screen max-w-330 px-4 py-6 sm:px-5 lg:px-6 lg:py-8">
       <div
         className="mx-auto grid w-full max-w-md grid-cols-4 rounded-full bg-[#f0f1f6] p-1 dark:bg-white/[0.07]"
         aria-label="创作类型筛选"
@@ -60,7 +60,7 @@ function CreationsContent() {
             aria-pressed={filter === value}
             className={
               filter === value
-                ? 'rounded-full bg-white px-2.5 py-2 text-xs font-semibold text-ink shadow-[0_2px_8px_rgba(23,28,38,0.08)] transition sm:text-sm dark:bg-white/[0.12] dark:text-white'
+                ? 'rounded-full bg-white px-2.5 py-2 text-xs font-semibold text-ink shadow-[0_2px_8px_rgba(23,28,38,0.08)] transition sm:text-sm dark:bg-white/12 dark:text-white'
                 : 'rounded-full px-2.5 py-2 text-xs font-medium text-ink-muted transition hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 sm:text-sm dark:hover:text-white'
             }
           >

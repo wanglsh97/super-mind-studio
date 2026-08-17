@@ -49,7 +49,7 @@ export function LoginContent() {
   return (
     <main className="grid min-h-screen place-items-center px-10 py-12">
       <section
-        className="liquid-glass relative w-full max-w-[38rem] overflow-hidden rounded-2xl p-10"
+        className="liquid-glass relative w-full max-w-152 overflow-hidden rounded-2xl p-10"
         aria-labelledby="login-options-title"
       >
         <div className="relative z-1">
@@ -82,7 +82,7 @@ export function LoginContent() {
               aria-disabled={loginDisabled}
               onClick={() => setLeaving('github')}
               className={cn(
-                'group flex min-h-[5.5rem] items-center gap-5 rounded-xl border border-line bg-surface-card px-5 text-left transition-[background,border-color] hover:border-brand/45 hover:bg-brand-subtle',
+                'group flex min-h-22 items-center gap-5 rounded-xl border border-line bg-surface-card px-5 text-left transition-[background,border-color] hover:border-brand/45 hover:bg-brand-subtle',
                 loginDisabled && 'pointer-events-none opacity-60',
                 focusRing,
               )}
@@ -110,7 +110,7 @@ export function LoginContent() {
               aria-disabled={loginDisabled}
               onClick={() => setLeaving('google')}
               className={cn(
-                'group flex min-h-[5.5rem] items-center gap-5 rounded-xl border border-line bg-surface-card px-5 text-left transition-[background,border-color] hover:border-brand/45 hover:bg-brand-subtle',
+                'group flex min-h-22 items-center gap-5 rounded-xl border border-line bg-surface-card px-5 text-left transition-[background,border-color] hover:border-brand/45 hover:bg-brand-subtle',
                 loginDisabled && 'pointer-events-none opacity-60',
                 focusRing,
               )}
@@ -143,7 +143,7 @@ export function LoginContent() {
             disabled={loginDisabled}
             onClick={() => void continueAnonymously()}
             className={cn(
-              'group flex min-h-[5.5rem] w-full cursor-pointer items-center gap-5 rounded-2xl border border-dashed border-line bg-transparent px-5 text-left transition-[background,border-color] hover:border-mint hover:bg-mint/6',
+              'group flex min-h-22 w-full cursor-pointer items-center gap-5 rounded-2xl border border-dashed border-line bg-transparent px-5 text-left transition-[background,border-color] hover:border-mint hover:bg-mint/6',
               'disabled:pointer-events-none disabled:opacity-45',
               'motion-reduce:transition-none',
               focusRing,

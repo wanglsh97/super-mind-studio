@@ -88,10 +88,10 @@ function UserWorkspace({ children }: Readonly<{ children: ReactNode }>) {
       <aside
         style={{ background: 'var(--theme-sidebar)' }}
         className={cn(
-          'agent-sidebar-surface fixed inset-y-0 left-0 z-[60] flex flex-col rounded-none border-y-0 border-l-0 p-4 transition-[width,transform] duration-200',
+          'agent-sidebar-surface fixed inset-y-0 left-0 z-60 flex flex-col rounded-none border-y-0 border-l-0 p-4 transition-[width,transform] duration-200',
           collapsed
-            ? 'w-[5.25rem] max-md:w-[17rem] max-md:-translate-x-full'
-            : 'w-[17rem] max-md:translate-x-0',
+            ? 'w-21 max-md:w-68 max-md:-translate-x-full'
+            : 'w-68 max-md:translate-x-0',
         )}
       >
         <div
@@ -158,7 +158,7 @@ function UserWorkspace({ children }: Readonly<{ children: ReactNode }>) {
                   role="menu"
                   aria-label="用户菜单"
                   className={cn(
-                    'liquid-glass absolute bottom-[calc(100%+0.75rem)] left-0 grid w-full min-w-[13.5rem] gap-0.5 rounded-2xl p-1.5',
+                    'liquid-glass absolute bottom-[calc(100%+0.75rem)] left-0 grid w-full min-w-54 gap-0.5 rounded-2xl p-1.5',
                     collapsed && '-left-1.5',
                   )}
                 >
@@ -252,7 +252,7 @@ function UserWorkspace({ children }: Readonly<{ children: ReactNode }>) {
       <div
         className={cn(
           'min-h-screen transition-[margin-left] duration-200 max-md:ml-0',
-          collapsed ? 'ml-[5.25rem]' : 'ml-[17rem]',
+          collapsed ? 'ml-21' : 'ml-68',
         )}
       >
         <button
@@ -603,7 +603,7 @@ function AgentThreadLinks() {
 
       {pendingDelete ? (
         <div
-          className="fixed inset-0 z-[80] grid place-items-center bg-[rgb(15_10_25/0.45)] p-4"
+          className="fixed inset-0 z-80 grid place-items-center bg-[rgb(15_10_25/0.45)] p-4"
           role="presentation"
         >
           <div

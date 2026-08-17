@@ -72,8 +72,8 @@ function UsageAnalytics() {
 
   return (
     <main className="min-h-screen px-4 py-8 sm:px-8 lg:px-12 lg:py-12">
-      <div className="mx-auto w-full max-w-[76rem]">
-        <header className="overflow-hidden rounded-[2rem] border border-line/80 bg-surface-card/72 px-6 py-7 shadow-[0_30px_90px_rgb(45_60_105/0.1)] backdrop-blur-2xl sm:px-8 sm:py-8 dark:border-line-soft dark:bg-surface-card/50">
+      <div className="mx-auto w-full max-w-304">
+        <header className="overflow-hidden rounded-4xl border border-line/80 bg-surface-card/72 px-6 py-7 shadow-[0_30px_90px_rgb(45_60_105/0.1)] backdrop-blur-2xl sm:px-8 sm:py-8 dark:border-line-soft dark:bg-surface-card/50">
           <p className="font-mono text-[0.66rem] font-bold tracking-[0.2em] text-brand uppercase">
             Agent usage ledger
           </p>
@@ -134,7 +134,7 @@ function UsageAnalytics() {
               </ChartCard>
               <ChartCard title="模型总量" description="按每次实际调用的模型归因。">
                 {data.models.length === 0 ? (
-                  <div className="flex h-[310px] items-center justify-center text-sm text-ink-faint">
+                  <div className="flex h-77.5 items-center justify-center text-sm text-ink-faint">
                     暂无模型 Token 数据
                   </div>
                 ) : (
@@ -203,7 +203,7 @@ function LoadingState() {
       aria-label="正在加载 Token 用量"
     >
       {Array.from({ length: 5 }, (_, index) => (
-        <div key={index} className="h-[4.75rem] rounded-xl bg-surface-inset" />
+        <div key={index} className="h-19 rounded-xl bg-surface-inset" />
       ))}
     </div>
   )
@@ -216,7 +216,7 @@ function DailyUsageTable({ rows }: { rows: readonly AgentTokenDailyUsage[] }) {
   return (
     <div>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[42rem] border-collapse text-left text-sm">
+        <table className="w-full min-w-2xl border-collapse text-left text-sm">
           <thead>
             <tr className="border-b border-line text-xs font-semibold text-ink-faint dark:border-line-soft">
               <th className="px-3 py-3 font-semibold">日期 ▼</th>

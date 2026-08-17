@@ -130,7 +130,7 @@ export function AssistantMarkdown({ children }: { children: string }) {
   const completedSvgBlocks = findCompletedSvgBlocks(children);
 
   return (
-    <div className="space-y-3 break-words [&_:not(pre)>code]:rounded [&_:not(pre)>code]:bg-slate-100 [&_:not(pre)>code]:px-1 [&_table]:block [&_table]:overflow-x-auto [&_td]:border [&_td]:border-slate-200 [&_td]:p-2 [&_th]:border [&_th]:border-slate-200 [&_th]:p-2 dark:[&_a]:text-cyan-300 dark:[&_:not(pre)>code]:bg-white/10 dark:[&_td]:border-white/10 dark:[&_th]:border-white/10">
+    <div className="space-y-3 wrap-break-word [&_:not(pre)>code]:rounded [&_:not(pre)>code]:bg-slate-100 [&_:not(pre)>code]:px-1 [&_table]:block [&_table]:overflow-x-auto [&_td]:border [&_td]:border-slate-200 [&_td]:p-2 [&_th]:border [&_th]:border-slate-200 [&_th]:p-2 dark:[&_a]:text-cyan-300 dark:[&_:not(pre)>code]:bg-white/10 dark:[&_td]:border-white/10 dark:[&_th]:border-white/10">
       <Markdown
         remarkPlugins={[remarkGfm]}
         skipHtml
@@ -172,7 +172,7 @@ function SvgAwarePre({
           data-svg-preview
           role="img"
           aria-label="模型生成的 SVG 预览"
-          className="my-3 overflow-auto rounded-xl border border-line bg-white p-4 shadow-sm dark:border-line-soft dark:bg-surface-inset [&_svg]:mx-auto [&_svg]:block [&_svg]:h-auto [&_svg]:max-h-[32rem] [&_svg]:max-w-full"
+          className="my-3 overflow-auto rounded-xl border border-line bg-white p-4 shadow-sm dark:border-line-soft dark:bg-surface-inset [&_svg]:mx-auto [&_svg]:block [&_svg]:h-auto [&_svg]:max-h-128 [&_svg]:max-w-full"
           dangerouslySetInnerHTML={{ __html: sanitized }}
         />
       );

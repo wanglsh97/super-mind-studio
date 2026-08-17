@@ -111,8 +111,8 @@ function McpSettings() {
 
   return (
     <main className="min-h-screen px-8 py-10 lg:px-12 lg:py-12">
-      <div className="mx-auto w-full max-w-[70rem]">
-        <header className="relative overflow-hidden rounded-[2rem] border border-line/80 bg-surface-card/72 px-8 py-9 shadow-[0_30px_90px_rgb(45_60_105/0.12)] backdrop-blur-2xl dark:border-line-soft dark:bg-surface-card/50">
+      <div className="mx-auto w-full max-w-280">
+        <header className="relative overflow-hidden rounded-4xl border border-line/80 bg-surface-card/72 px-8 py-9 shadow-[0_30px_90px_rgb(45_60_105/0.12)] backdrop-blur-2xl dark:border-line-soft dark:bg-surface-card/50">
           <CircuitBackdrop />
           <div className="relative max-w-3xl">
             <p className="font-mono text-[0.66rem] font-bold tracking-[0.2em] text-brand uppercase">
@@ -162,7 +162,7 @@ function McpSettings() {
           <div
             role="tablist"
             aria-label="插件分类"
-            className="-mx-1 mb-5 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            className="-mx-1 mb-5 flex gap-2 overflow-x-auto px-1 pb-1 scrollbar-none [&::-webkit-scrollbar]:hidden"
           >
             {PLUGIN_CATEGORIES.map((item) => {
               const selected = item.id === category;
@@ -247,7 +247,7 @@ function McpServerCard({
   return (
     <article
       className={cn(
-        'group relative flex h-44 w-full flex-col overflow-hidden rounded-2xl border bg-surface-card/78 p-4 shadow-[0_14px_40px_rgb(42_58_98/0.07)] transition-[border-color,transform,opacity] duration-200 motion-reduce:transition-none sm:w-[17rem] dark:bg-surface-card/55',
+        'group relative flex h-44 w-full flex-col overflow-hidden rounded-2xl border bg-surface-card/78 p-4 shadow-[0_14px_40px_rgb(42_58_98/0.07)] transition-[border-color,transform,opacity] duration-200 motion-reduce:transition-none sm:w-68 dark:bg-surface-card/55',
         server.enabled
           ? 'border-brand/22 hover:-translate-y-0.5 hover:border-brand/40'
           : 'border-line/75 opacity-72 dark:border-line-soft',
@@ -364,7 +364,7 @@ function PluginCatalogLoading() {
         <div
           key={index}
           aria-hidden="true"
-          className="h-44 w-full overflow-hidden rounded-2xl border border-line/75 bg-surface-card/78 p-4 sm:w-[17rem] dark:border-line-soft dark:bg-surface-card/55"
+          className="h-44 w-full overflow-hidden rounded-2xl border border-line/75 bg-surface-card/78 p-4 sm:w-68 dark:border-line-soft dark:bg-surface-card/55"
         >
           <div className="flex items-start gap-3">
             <div className="size-10 animate-pulse rounded-xl bg-surface-inset" />

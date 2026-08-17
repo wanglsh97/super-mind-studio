@@ -50,7 +50,7 @@ export function AgentPageShell({
     <main
       {...props}
       className={cn(
-        'relative flex h-[calc(100dvh-4.5rem)] min-h-[34rem] flex-col overflow-hidden md:h-dvh',
+        'relative flex h-[calc(100dvh-4.5rem)] min-h-136 flex-col overflow-hidden md:h-dvh',
         props.className,
       )}
     >
@@ -84,7 +84,7 @@ export function AgentThreadRoot({ children }: Readonly<{ children: ReactNode }>)
 export function AgentThreadViewport({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <ThreadPrimitive.Viewport className="min-h-0 flex-1 overflow-y-auto scroll-pb-52">
-      <div className="mx-auto w-full max-w-[58rem] px-3.5 pt-6 pb-4 md:px-6 md:pt-9.5 md:pb-6">
+      <div className="mx-auto w-full max-w-232 px-3.5 pt-6 pb-4 md:px-6 md:pt-9.5 md:pb-6">
         {children}
       </div>
     </ThreadPrimitive.Viewport>
@@ -173,7 +173,7 @@ export function AgentThreadNavigator() {
                   <span
                     aria-hidden="true"
                     className={cn(
-                      'h-[3px] rounded-full bg-ink-faint transition-[width,background-color] duration-200 ease-out group-hover:bg-ink-muted',
+                      'h-0.75 rounded-full bg-ink-faint transition-[width,background-color] duration-200 ease-out group-hover:bg-ink-muted',
                       selected && 'bg-ink-muted',
                     )}
                     style={{ width: `${barWidth(entry.index - 1)}px` }}
@@ -272,7 +272,7 @@ export function AgentComposerRoot({
           queueMicrotask(() => aui.composer().send());
         }}
         className={cn(
-          'liquid-glass relative mx-auto w-full max-w-[44rem] rounded-[1.125rem] p-2 pb-2.5 transition-[border-color,box-shadow] sm:w-[calc(100%-2rem)]',
+          'liquid-glass relative mx-auto w-full max-w-176 rounded-[1.125rem] p-2 pb-2.5 transition-[border-color,box-shadow] sm:w-[calc(100%-2rem)]',
         )}
       >
         {children}
@@ -734,7 +734,7 @@ export function AgentSendButtonDisabled() {
 
 export function AgentPrivacyNote() {
   return (
-    <p className="mx-auto mt-1.5 w-full max-w-[44rem] text-center text-[0.6rem] text-ink-subtle sm:w-[calc(100%-2rem)]">
+    <p className="mx-auto mt-1.5 w-full max-w-176 text-center text-[0.6rem] text-ink-subtle sm:w-[calc(100%-2rem)]">
       内容由 AI 生成，请仔细甄别
     </p>
   );
@@ -752,7 +752,7 @@ export function AgentInterruptedBanner({ message }: Readonly<{ message: string }
   return (
     <p
       role="status"
-      className="mx-auto mt-3 w-full max-w-[58rem] rounded-lg border border-warning/35 bg-warning/12 px-3.5 py-2 text-[0.8rem] leading-snug text-warning dark:text-warning-light"
+      className="mx-auto mt-3 w-full max-w-232 rounded-lg border border-warning/35 bg-warning/12 px-3.5 py-2 text-[0.8rem] leading-snug text-warning dark:text-warning-light"
     >
       {message}
     </p>
@@ -915,7 +915,7 @@ export function ModelSelect({
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
         className={cn(
-          'flex h-8 max-w-[10rem] items-center gap-1.5 rounded-lg px-2.5 text-[0.7rem] font-semibold text-ink-muted transition-[background,color] hover:bg-surface-inset/45 hover:text-ink-secondary aria-expanded:bg-surface-inset aria-expanded:text-ink-secondary md:min-w-[7.5rem]',
+          'flex h-8 max-w-40 items-center gap-1.5 rounded-lg px-2.5 text-[0.7rem] font-semibold text-ink-muted transition-[background,color] hover:bg-surface-inset/45 hover:text-ink-secondary aria-expanded:bg-surface-inset aria-expanded:text-ink-secondary md:min-w-30',
           focusRing,
         )}
       >
