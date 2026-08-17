@@ -2,261 +2,265 @@
 
 本文件适用于整个仓库。所有开发代理在分析、设计、编码、测试和交付时都必须遵守。
 
-## 1. 交流语言
+## 1. 交流与工作原则
 
-- 默认使用中文与用户交流，代码标识符、协议字段、命令和必要的技术名词可保留英文。
+- 默认使用中文与用户交流；代码标识符、协议字段、命令和必要的技术名词可保留英文。
 - 先说明结果、风险或阻塞，再补充实现细节。
-- 不确定但不影响主流程时，采用最小合理假设并明确记录；会改变产品范围、数据安全或外部成本时，先向用户确认。
+- 开始修改前先阅读相关代码、测试、README、PRD、技术方案和对应 OpenSpec change，不能仅凭本文件推断实现。
+- 不确定但不影响主流程时采用最小合理假设并记录；会改变产品范围、数据安全、外部成本或线上状态时先向用户确认。
+- 优先做小步、可验证的修改，保留用户已有改动，不进行与任务无关的大规模重构。
 
-## 2. 项目目标
+## 2. 当前产品定位
 
-Super Mind Studio 是一个公开访问的 AI 能力演示站及其管理员中后台，V1 包含：
+Super Mind Studio 是一个 **Agent 原生的 AI 创作与任务执行工作空间**。
 
-1. API 网关服务建设，包括统一模型协议、数据库表、日志计费、限流、测试和单机部署基础。
-2. 管理员中后台，包括登录、Dashboard、请求日志、数据库业务表维护和操作审计。
-3. 用户端网页，包括 Chat、文生图和 Prompt 优化。
+登录用户在根路径 `/` 的持久 Agent 工作台中完成：
 
-V1 的首要目标是先串通完整流程，不追求一次性完成所有真实模型和高级治理能力。
+- 普通对话、推理和多步工具任务；
+- 基于 Thread/Run 的持久历史、断线恢复、取消与跨 Thread 并发；
+- Skill 市场、Skill 激活和隔离 Sandbox 执行；
+- 平台托管 MCP 插件及网页搜索/读取；
+- 静态网站创作、文档处理、图像生成和视频生成；
+- 临时产物预览、下载，以及符合产品规则的“我的创作”持久化。
 
-## 3. 事实来源与优先级
+管理员中后台负责登录、Dashboard、调用日志、费用、链路观测、Skill 审核和受控业务数据治理。底层 AI Gateway 仍负责模型适配、流式事件、日志、计费、限流和故障转移，但它是 Agent 产品的基础设施，不是当前 C 端产品形态。
 
-开始工作前按任务范围阅读以下文件：
+## 3. 用户端路由
 
-- 产品范围：[spec/需求文档.md](spec/需求文档.md)
-- 技术基线：[spec/技术选型方案.md](spec/技术选型方案.md)
-- 当前 OpenSpec change：[openspec/changes/build-aigateway-v1](openspec/changes/build-aigateway-v1)
-- 技术设计：[openspec/changes/build-aigateway-v1/design.md](openspec/changes/build-aigateway-v1/design.md)
-- 实施任务：[openspec/changes/build-aigateway-v1/tasks.md](openspec/changes/build-aigateway-v1/tasks.md)
+- `/`：唯一的 Agent 主工作台，要求用户 Session。
+- `/login`：匿名、GitHub OAuth、Google OAuth 登录入口。
+- `/skills`：Skill 市场、已添加 Skill 和上传/管理入口（以当前实现和对应 change 为准）。
+- `/plugin`：平台托管 MCP 插件目录与用户启停设置。
+- `/creations`：已保存的图片和视频。
+- `/usage`：用户 Token 用量分析。
+- `/admin/*`：与用户 Session 隔离的管理员后台。
 
-发生冲突时按以下优先级处理：
+## 4. 事实来源与优先级
+
+按任务范围选择并阅读以下事实源：
 
 1. 用户最新明确确认的决定。
-2. 当前已接受的 OpenSpec proposal、specs 和 design。
-3. 技术选型方案。
-4. PRD 中未被后续决定覆盖的内容。
+2. 当前相关且已接受的 OpenSpec proposal、specs、design 和 tasks。
+3. 当前代码、测试、Prisma schema、migration 和运行配置。
+4. [spec/产品功能清单.md](spec/产品功能清单.md)、[README.md](README.md)、[spec/需求文档.md](spec/需求文档.md) 与 [spec/技术选型方案.md](spec/技术选型方案.md)。
 
-不能只在代码中改变已确认行为。若需求或架构发生变化，应同步更新对应 OpenSpec artifact 和相关文档，保持代码、规格与任务一致。
-
-## 4. 当前 OpenSpec 工作方式
-
-- 当前 change ID 为 `build-aigateway-v1`，schema 为 `spec-driven`。
-- 实现前必须阅读当前任务对应的 `proposal.md`、`design.md`、capability spec 和 `tasks.md`。
-- 按 `tasks.md` 的 checkbox 跟踪进度；只有实现完成并通过相应验证后才能将 `- [ ]` 改为 `- [x]`。
-- 行为与 spec 不一致时，先修改 artifact 并说明原因，不能让实现静默偏离规格。
-- 每次修改 artifact 后执行 strict 校验。若本机没有全局 CLI，使用：
+仓库同时存在多个 change。开始任务前应先执行或等价检查：
 
 ```bash
-npx -y @fission-ai/openspec@1.6.0 validate build-aigateway-v1 --type change --strict --no-interactive
+find openspec/changes -mindepth 1 -maxdepth 1 -type d -print
+rg -n '^- \[ \]' openspec/changes/*/tasks.md
 ```
 
-- OpenSpec artifact graph 表示依赖关系，不代表所有任务必须机械串行执行。
+根据任务能力选择对应 change。例如 Agent 入口收敛、网站创作、图片生成、视频生成、文档处理、MCP、并发、观测和可上传 Skill 分别由不同 change 描述。若多个 artifact 与实现互相矛盾，以更新、更具体且仍适用于当前范围的 change 为准，并在交付中说明判断。
+
+## 5. OpenSpec 工作方式
+
+- 行为、契约、数据结构或架构发生变化时，应先更新或新建合适的 OpenSpec change；不能只改代码让规格静默落后。
+- 意图不变的细化更新现有 change；产品意图或范围发生根本变化时新建 change。
+- 实现前阅读该 change 的 `proposal.md`、`design.md`、相关 capability spec 和 `tasks.md`。
+- `tasks.md` checkbox 只有在实现和对应验证完成后才能勾选。
+- artifact graph 表示依赖关系，不代表任务必须机械串行。
+- 修改 artifact 后执行 strict 校验。若没有全局 CLI，使用仓库约定版本：
+
+```bash
+npx -y @fission-ai/openspec@1.6.0 validate <change-id> --type change --strict --no-interactive
+```
+
 - change 未完成验证前不得归档。
 
-## 5. 实施优先级
-
-三个板块用于任务归类，实际实现采用纵向切片：
-
-1. 先完成 `tasks.md` 中网关板块 `1.1–1.20`。
-2. 紧接着完成用户端板块 `3.1–3.6`。
-3. 首个验收闭环必须是：
-
-```text
-Web → @supermind/sdk → NestJS API → Mock Adapter → SSE → PostgreSQL
-```
-
-4. Mock 闭环稳定后，再逐个接入 Qwen、GLM、DeepSeek。
-5. 然后完成管理员中后台、Chat 对比、文生图、Prompt 优化和 ECS 上线完善。
-
-任何阶段都应保持已经完成的主链路可运行。没有真实 API Key 时不得阻塞工程骨架、Mock 流程、自动化测试和页面开发。
-
-## 6. 技术基线
+## 6. 技术基线与目录边界
 
 - Runtime：Node.js 24 LTS、TypeScript 5.9、pnpm 10。
 - Monorepo：pnpm workspace。
-- Web：Next.js 16、React 19、Tailwind CSS 4、shadcn/ui、Zustand 5、ECharts 6。
-- API：NestJS 11 + Express。
+- Web：Next.js 16、React 19、Tailwind CSS 4、assistant-ui 0.14、Ant Design 6、ECharts 6。
+- API：NestJS 11 + Express，模块化单体。
+- Agent：Pi agent core/AI、持久 Thread/Run/Event、OpenSandbox、内置与市场 Skill、built-in/MCP Tool。
 - SDK：仓库内唯一业务 SDK 包 `@supermind/sdk`。
-- 数据库：PostgreSQL 17 + Prisma 7。
-- 缓存：Redis 8，仅用于限流和短期模型健康状态。
-- 日志：Pino 结构化日志。
-- 部署：Nginx + Docker Compose，运行在一台阿里云 ECS Ubuntu 服务器上。
+- 数据：PostgreSQL 17 + Prisma 7；Redis 8 用于限流、并发锁和短期协调状态。
+- 资产：私有阿里云 OSS 保存 Skill 包、用户文件和需持久化的创作物；临时工作文件留在 Thread Sandbox。
+- 观测：Pino 结构化日志、OpenTelemetry，Agent eval 使用 LangSmith。
+- 部署：Web/API/PostgreSQL/Redis/Nginx 位于阿里云 ECS；OpenSandbox 是独立执行节点。不要再假定所有运行单元都在单 ECS 内。
 
-除非用户明确确认并同步修改技术方案，不得擅自替换上述核心技术栈，也不得引入微服务、Kubernetes、BullMQ 或独立 Worker。
-
-## 7. 预期目录边界
+主要目录：
 
 ```text
 apps/
-  web/                 # 用户端网页和 /admin 管理后台
-  api/                 # NestJS 模块化单体 API
+  web/                 # Agent 工作台、创作物、Skill/插件、usage、admin
+  api/                 # NestJS 模块化单体与 Agent runtime
+  api/skills/          # 平台内置 Skill 资源
 packages/
-  sdk/                 # @supermind/sdk
+  sdk/                 # @supermind/sdk，浏览器到 API 的业务契约
 prisma/
   schema.prisma
   migrations/
-infra/
-  nginx/
-  compose/
-  scripts/
-openspec/              # OpenSpec 规格和任务
-spec/                  # PRD 与技术选型文档
+infra/                 # Nginx、Compose、Sandbox、OSS、部署脚本与观测
+openspec/              # 当前与历史 change
+spec/                  # 产品和技术基线文档
 ```
 
-- `apps/web` 不得直接调用厂商 API，也不得持有厂商 API Key。
-- 用户端 Chat、Image、Prompt 调用必须经过 `@supermind/sdk`。
-- 厂商协议、鉴权、错误和响应类型必须限制在 `apps/api` 的 Adapter 层。
-- 不要把 Chat、Image、Prompt 拆成多个 npm SDK 包。
-- 管理后台可使用独立的内部 admin client，但不能绕过服务端认证和字段白名单。
+除非用户明确确认并同步修改规格，不得擅自替换核心技术栈，也不得引入微服务、Kubernetes、BullMQ 或独立业务 Worker。
 
-## 8. API 网关强制约束
+## 7. Agent 主链路
 
-### 8.1 模型与 Adapter
+当前核心闭环是：
 
-- 文本模型稳定别名为 `qwen`、`glm`、`deepseek`。
-- V1 文生图仅保留确定性 Mock 闭环，稳定别名为 `mock-image`，不接入真实图片 Provider。
-- 实际模型 ID、启用状态、API Key、价格和 fallback 通过环境变量或服务端配置提供。
-- 新增厂商必须实现统一 Adapter contract，不得让业务 Service 依赖厂商响应类型。
-- dev/test/CI 必须提供确定性 Mock Adapter，CI 不得依赖真实余额或外部网络。
+```text
+Web / assistant-ui
+  → @supermind/sdk
+  → NestJS Agent API
+  → PostgreSQL Thread / Run / Event
+  → Pi Agent loop
+  → ModelInvocationPort + Tool registry
+  → Provider Adapter / OpenSandbox / MCP / creation services
+  → 可恢复 SSE
+```
 
-### 8.2 Chat 流式协议
+必须保持以下边界：
 
-- Chat 接口为 `POST /api/v1/chat/completions`，并强制 `stream: true`。
-- 使用 Fetch POST stream 和 SSE parser，不使用只支持 GET 的原生 EventSource。
-- 返回 OpenAI 兼容 SSE chunk、平台 usage/人民币费用扩展，并以唯一 `data: [DONE]` 结束。
-- 单模型仅允许在第一个 content delta 发送前，对符合条件的 timeout/5xx 最多 failover 一次。
-- 第一个 delta 发送后禁止切换模型，必须返回规范化流错误并结束。
-- 多模型对比的每个模型都是独立请求；某一路失败不能触发 failover，也不能中断其他路。
-- 客户端取消必须立即停止页面读取，并 best-effort 向 API 和上游传播 AbortSignal。
+- 普通回答和工具型任务共用同一 Agent Run 链路，不新增平行 Chat 产品协议。
+- Web 只调用同源 `/api` 和 `@supermind/sdk`，不得直连模型厂商、MCP、OSS 管理端或 Sandbox。
+- 厂商消息、鉴权、thinking/tool-call 格式和错误限制在 `apps/api` Adapter/Transport 层。
+- Agent 内部模型事件统一为 reasoning、text、tool、usage、finish；`reasoning_content` 不得混入最终正文。
+- Thread、Run、Event、ToolCall、ModelInvocation、usage 和费用按归属持久化并可审计。
+- 同一 Thread 最多一个 active run；不同 Thread 可并发，用户级并发上限由服务端原子执行。
+- 浏览器取消应立即停止读取，并 best-effort 传播 AbortSignal；异步图片/视频任务按各自状态机与对账规则处理，不能假设取消等于厂商未计费。
+- 单次模型调用仅允许在首个 reasoning/text/tool 事件前对合格 timeout/5xx 最多 failover 一次；首事件后禁止换模型。
+- Mock/fixture 主链路必须可在无真实 Key、无公网依赖时回归；真实 provider 测试必须显式、低成本且不进入默认 CI。
 
-### 8.3 文生图与 Prompt 优化
+## 8. Skill、Sandbox、MCP 与工具安全
 
-- 文生图采用提交任务、持久化 task ID、客户端轮询和网关代理下载的模式。
-- V1 不使用后台 Worker；无人轮询的任务不主动刷新是已接受边界。
-- Prompt 优化只允许 `expand`、`simplify`、`structure` 三种 mode。
-- Prompt system template 由服务端版本化维护，客户端不能通过优化接口传任意 system Prompt。
-- Prompt 优化复用文本模型 registry、限流、日志、usage 和计费。
+### 8.1 Skill
 
-### 8.4 错误和限流
+- 平台内置 Skill 位于 `apps/api/skills/*`，当前包括网站、文档、图片和视频能力；启动时必须校验，损坏时 fail fast。
+- 市场 Skill 是传统资源包，元数据和状态由 PostgreSQL 管理，包存私有 OSS；不要把 ZIP 或完整包正文写入数据库。
+- Skill 提供工作方法和资源，不自动获得额外权限。真正可执行能力必须来自当次 Run 冻结的 Tool registry。
+- Skill 名称、版本、hash/manifest 和实际激活情况必须可审计。
+- 组装 Agent Prompt 时遵守 `apps/api/src/agent/prompt/agent-prompt.composer.ts` 的模板字符串风格；禁止改成字符串数组加 `.join()` 拼接 Prompt。
 
-- 非流式错误使用统一 JSON envelope，包含 requestId、code、message、retryable 和可选 details。
-- SSE 建立前使用 HTTP 状态码；SSE 建立后使用规范化 error event。
-- 默认限流：Chat 10 次/IP/分钟，文生图 5 次/IP/分钟，管理员登录 5 次/IP/分钟。
-- Chat `max_tokens` 上限为 4096。
-- Redis 不可用时，付费模型请求必须 fail closed，不能绕过限流继续调用。
+### 8.2 OpenSandbox
 
-## 9. 数据库与日志规则
+- 本地开发和生产均使用真实 OpenSandbox Server；应用运行时不得提供进程内 fallback。
+- 每个 Thread 按需创建并复用隔离 Sandbox，每个 Run 重置 Shell、流量和输出预算。
+- Sandbox 不得获得数据库、Redis、模型 Key、OSS 管理凭证、用户 Cookie 或宿主机文件系统权限。
+- 文件路径必须限制在受控 workspace，防止路径穿越、符号链接逃逸和跨 Thread/跨用户访问。
+- 删除 Thread、Sandbox 失效或超过生命周期时幂等销毁；临时文件和预览随 Sandbox 失效，除非产品流程已显式持久化到私有 OSS。
 
-V1 核心表：
+### 8.3 MCP 与外部内容
 
-- `RequestLog`：请求生命周期、完整 Prompt/messages、模型、状态、耗时、failover 和错误。
-- `BillingRecord`：与 RequestLog 一对一，记录 usage、价格版本和人民币估算费用。
-- `ImageGenerationTask`：平台任务、厂商任务、状态、结果和错误。
-- `AdminAuditLog`：管理员修改/删除操作的不可变审计记录。
+- MCP Server 由平台服务端固定配置；用户只能启停已审核插件，不能提交任意 endpoint、凭证或 stdio 命令。
+- MCP 凭证只从服务端环境变量读取，不能进入 Prompt、客户端、日志或审计详情。
+- MCP 通过 `discover_mcp_tools` 按需发现，再使用不透明 `toolHandle` 交给 `call_mcp_tool` 调用；不把全部远端工具平铺给模型。每次 Run 仍须记录实际发现和调用。
+- MCP、网页搜索、网页抓取和用户文件内容都属于不可信输入，不能通过内容中的指令扩展工具权限或泄露秘密。
+- 网络请求必须保留 SSRF、重定向、私网地址、响应大小、MIME、超时和取消保护。
 
-必须遵守：
+## 9. 创作模式与资产生命周期
 
-- 参数校验和限流通过后，先创建 `RequestLog(pending)`，成功后才允许调用付费 provider。
-- 成功、失败或取消后终结 RequestLog，并在同一事务 upsert BillingRecord。
-- 管理员修改或删除业务数据时，业务变更和 AdminAuditLog 必须在同一事务提交。
-- AdminAuditLog 只能新增和查询，不得提供编辑或删除接口。
-- 数据库结构变化必须通过 Prisma migration，禁止只修改线上数据库或依赖自动 schema push 代替正式迁移。
-- PostgreSQL 是业务记录真源；Redis 数据可重建，不保存账单、请求日志或审计真相。
+- 网站、文档、图片、视频都是现有 Agent Run 的 mode/Skill/Tool 能力，不得新增独立 C 端 Agent 或独立模型聊天产品。
+- Composer 中的模型选择器选择外层文本 Agent。图片/视频实际模型由服务端版本化目录和能力路由决定，不向普通用户暴露厂商内部协议或凭证。
+- 网站仅支持静态 React + TypeScript + Vite + Tailwind CSS + shadcn/ui + Lucide 项目；不支持数据库、认证、支付、服务端运行时、私密环境变量、版本历史或公网发布。
+- 文档处理覆盖当前规格允许的 PDF、DOCX、XLSX，文件留在 Sandbox；不得擅自扩展为永久文档库或任意代码执行。
+- 图片由 `gen-image` + `generate_image` 编排；临时图片位于 Thread Sandbox，用户显式保存后才进入私有 OSS 和 `/creations`。单纯下载图片不应隐式保存。
+- 视频由 `gen-video` + `generate_video` 编排；未保存 MP4 位于 Thread Sandbox，保存或下载走同一永久化链路，因此下载过的视频会进入 `/creations`。
+- 图片、视频和网站资产只能通过 owner-scoped opaque ID 与同源代理访问；不得向客户端返回 provider URL、OSS object key、Sandbox 内部路径或签名管理凭证。
+- 异步 provider 任务由 API 内持久 Reconciler、PostgreSQL lease 和原 provider task ID 恢复；不自动重提、不引入后台 Worker。
+- 保存、下载、过期、Thread 删除和 Creation 保留规则因资产类型不同，修改前必须阅读对应 change，不能抽象成一个错误的统一行为。
 
-V1 为联调和诊断在 PostgreSQL 与 Pino 中保存完整 Prompt，暂不自动清理，但：
+## 10. 认证、权限与隐私
 
-- 用户端、Dashboard 聚合和日志列表不得返回完整 Prompt。
-- 只有已认证的管理员请求详情可以读取完整 Prompt。
-- 不得记录 API Key、Cookie、Authorization header 或 session secret。
-- Docker 日志必须配置大小和数量轮转。
+- 用户支持一次性匿名、GitHub OAuth 和 Google OAuth；身份以 `(authProvider, providerUserId)` 唯一，同邮箱也绝不自动合并。
+- NestJS API 是用户认证真源，客户端不得传入或声明 `userId`。所有 Thread、Run、文件、Skill、任务和 Creation 都必须校验当前用户归属。
+- 用户 Session 使用 `aigateway_user_session` HttpOnly Cookie。
+- 管理员使用独立的 `aigateway_admin_session` Cookie、Guard 和 `/api/v1/admin/*`；不得与用户 Session 混用。
+- 固定管理员账号仍是受限的当前方案。生产启用必须显式配置并记录公网风险；不要擅自扩成用户表/RBAC，也不要描述成成熟的生产身份体系。
+- 管理后台数据库功能当前只提供表、schema 和白名单行数据查询，不提供通用编辑或删除 API；不得因历史规格擅自恢复写操作或接受任意 SQL。
+- Skill 审核等现有管理员写操作必须维持服务端权限边界和不可变审计；若未来恢复业务表修改/删除，业务变更和 `AdminAuditLog` 必须在同一事务提交。
+- 不得记录 API Key、OAuth token、Cookie、Authorization header、Session secret、OSS 签名或 Sandbox 内部秘密。
+- 完整用户输入可按当前联调/审计规则进入受控 PostgreSQL 和 Pino，但用户端、Dashboard 聚合和日志列表不得返回；只有授权的管理员详情接口可访问允许字段。
 
-## 10. 管理员中后台规则
+## 11. 数据、计费与可靠性
 
-- V1 开发联调账号为 `root`，密码为 `123456`，暂不建立用户表和 RBAC。
-- 登录成功后使用短期签名 HttpOnly Cookie；生产 HTTPS 下必须设置 Secure。
-- `/admin/*` 页面和 `/api/v1/admin/*` API 必须同时受保护，不能只做前端路由拦截。
-- 数据库管理必须使用服务端表、字段和操作白名单，不得接受任意 SQL 或信任客户端传入的权限描述。
-- 编辑和删除需要二次确认，且必须记录不可变审计日志。
-- 固定账号只用于开发流程。正式面向不受控公网开放管理员入口前，必须升级认证方案或关闭公网管理入口。
+- PostgreSQL 是用户、会话、事件、任务、文件元数据、Creation、日志、账单和审计的真源；Redis 数据必须可重建。
+- 数据库结构变化必须提交正式 Prisma migration，禁止只改 `schema.prisma`、依赖 `db push` 或直接修改线上数据库。
+- 付费调用必须在参数校验、认证和限流通过后，先创建可追踪的 pending 日志/任务记录；写库失败时 fail closed。
+- 成功、失败或取消后按对应能力终结 RequestLog，并保证 BillingRecord/调用级费用的一致性与幂等性。
+- 文本模型按 Token 和版本化价格计费；图片/视频按各自调用、张数、时长或模型定价快照计费，不能套用 Token 口径。
+- Redis 不可用时，付费调用、并发检查或依赖锁正确性的操作必须 fail closed。
+- Pino 与 Docker 日志必须轮转；OpenTelemetry/管理端观测不能泄露 Prompt、凭证或大体积 Tool result。
 
-## 11. 用户端网页规则
+## 12. UI 与前端约束
 
-- 用户端支持一次性匿名、GitHub OAuth 和 Google OAuth 三种登录；三种 provider 身份永不自动合并，即使邮箱相同也各自创建 User。首页、登录页、模型列表和 health 可公开访问，`/chat`、`/image`、`/prompt` 及对应付费 API 必须校验用户 Session。
-- NestJS API 是用户认证真源，客户端不得传入或声明 `userId`；RequestLog 和 ImageGenerationTask 必须关联当前登录用户。
-- 管理员认证暂时保持独立固定账号，不与用户 Session 混用。
-- 页面必须提供明确的 loading、streaming、success、empty、cancelled 和 error 状态。
-- Chat Markdown 必须消毒，禁止原始 HTML 和危险链接协议。
-- 多模型对比的内容、usage、费用、错误和取消状态相互独立。
-- 文生图最近 5 条历史保存在 localStorage；读取时要容忍损坏、过期和缺失数据。
-- Web 同时适配桌面和移动端，并支持亮/暗主题。
-- 浏览器始终使用同源 `/api`，不能为公网 IP 和域名构建两套不同客户端。
+- assistant-ui runtime 是 Agent 消息、Composer 和 Thread 交互的核心，不要另建一套并行聊天状态机。
+- 页面必须清楚展示 loading、streaming、waiting-for-user、success、empty、cancelled、expired 和 error 等适用状态。
+- Assistant Markdown 必须消毒，禁止原始 HTML、危险链接协议和未验证的外部资源；代码块、SVG、文件和 Tool UI 延续现有安全边界。
+- 后台运行状态按 threadId/runId 隔离。切换 Thread 不得取消其他 Thread 的任务，也不得把事件、usage、Tool 状态串线。
+- 保持桌面和移动端可用、亮暗主题一致、键盘与屏幕阅读器可访问。
+- UI 变更先复用现有组件、token 和交互语言；涉及 assistant-ui runtime、primitives、streaming 或 Tool UI 时，先阅读项目版本对应文档和现有封装。
 
-## 12. 测试和完成标准
+## 13. 测试与完成标准
 
-开发时至少覆盖：
+按改动风险选择直接相关的测试，至少覆盖受影响层级：
 
-- 单元测试：Adapter 协议转换、费用计算、限流、首 delta failover、状态机、管理员 guard 和字段白名单。
-- Contract test：Mock、Qwen、GLM、DeepSeek 的统一 Adapter 行为。
-- 集成测试：PostgreSQL/Redis、请求生命周期、BillingRecord 一对一、管理员事务审计。
-- 流式 E2E：delta、usage、`[DONE]`、取消、首包前失败和流中失败。
-- 页面 E2E：Chat、对比、Image、Prompt、管理员未授权和完整 Prompt 访问边界。
-- 部署冒烟：Nginx 下 SSE 不缓冲、IP/域名同源访问、health、数据库持久化和回滚。
+- 单元/contract：Provider 映射、模型事件、Tool schema、状态机、计费、限流、权限和路径安全。
+- 集成：PostgreSQL/Redis、日志账单事务、lease/幂等、OSS/OpenSandbox adapter 边界。
+- Agent E2E：Thread/Run、reasoning/text/tool/usage、可恢复 SSE、取消、failover、用户问答与并发隔离。
+- 页面测试：登录保护、Thread 恢复、各 mode、Tool UI、资产预览/保存/下载、Skill/插件、管理员边界。
+- 部署冒烟：Nginx SSE、不暴露数据库/Redis、health、migration、OpenSandbox、私有 OSS 和回滚路径。
 
 完成任务前必须：
 
 1. 运行与改动直接相关的测试。
-2. 运行 typecheck、lint 和 build；若项目尚未建立对应命令，需在交付说明中明确。
-3. 不使用真实模型完成的测试必须通过 Mock Adapter。
-4. 涉及真实模型时先使用最低成本冒烟，并记录所用 alias/model ID，不进行无界压力测试。
-5. 更新对应 OpenSpec task checkbox，并说明验证结果。
+2. 运行受影响 workspace 的 typecheck、lint 和 build；高影响或跨包修改运行根目录 `pnpm check`。
+3. 默认自动化测试使用 Mock、fixture 或替换 adapter，不依赖真实余额和公网服务。
+4. 真实模型/OSS/MCP/OpenSandbox 冒烟必须显式执行、限制成本并记录配置边界，不把未执行描述成已通过。
+5. 涉及 Prisma 时运行 generate、migration/validate 和相关数据库集成测试。
+6. 涉及 OpenSpec 时更新对应 checkbox 并通过 strict validation。
+
+常用命令：
+
+```bash
+pnpm format:check
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm test:e2e
+pnpm build
+pnpm check
+pnpm db:validate
+pnpm db:generate
+pnpm test:agent-e2e
+pnpm test:mock-chat
+```
 
 不能把“代码已写完但未验证”描述为完成。
 
-## 13. 部署边界
+## 14. 部署与外部成本边界
 
-- 所有 V1 服务部署在同一台阿里云 ECS：Nginx、Web、API、PostgreSQL、Redis。
-- Nginx 是唯一公网入口，PostgreSQL 和 Redis 不得暴露公网。
-- 同时支持域名和公网 IP；域名、HTTPS、备案和 Cookie Secure 细节在部署联调阶段落地。
-- Chat SSE 路由必须关闭 Nginx proxy buffering 和 cache，并配置合理 read timeout。
-- 发布前备份 PostgreSQL；Redis 不备份。
-- V1 使用人工发布和回滚流程，不默认配置自动生产部署。
+- Nginx 是应用唯一公网入口；PostgreSQL、Redis、OSS 管理接口和 OpenSandbox 管理面不得直接暴露公网。
+- Agent SSE 路由必须关闭 proxy buffering/cache，并配置合理 read timeout。
+- 发布前备份 PostgreSQL；Redis 不作为业务备份对象。
+- 生产环境变量只保存在服务器，不提交真实 `.env`、API Key、数据库密码、Cookie secret、OAuth secret、OSS 凭证、证书私钥或生产备份。
+- 真实模型、OSS、OAuth、外部 MCP 和生产部署会产生费用或外部状态；未获得用户明确授权时，只做本地/fixture 验证。
+- 当前产品没有完整的内容审核、全局成本硬顶、WAF、防刷、正式管理员体系等公网安全能力。不得把厂商审核、单 IP 限流或私有 Bucket 描述为完整保障。
 
-## 14. V1 明确暂不实现
+## 15. 产品范围边界
 
-以下事项保留在后续 change，不得在当前任务中顺手扩大范围：
+除非用户确认并建立相应 change，不实现：
 
-- 全站小时/每日调用量与成本硬顶、代理池防刷、验证码、WAF、设备指纹。
-- Chat、Image、Prompt 的独立输入/输出内容审核和违规处置链路。
-- Prompt 脱敏、保留期限、访问分级和自动清理。
-- BullMQ、独立 Worker 和主动后台图片任务刷新。
-- 正式管理员账号体系、密码哈希、RBAC 或外部身份认证。
-- OpenAI、Claude、Gemini 等海外模型。
+- 微服务、Kubernetes、BullMQ、独立 Worker 或另一个 SDK 包；
+- 用户自助 MCP endpoint/OAuth/stdio、本地进程 MCP 或任意破坏性远程工具；
+- 网站数据库、服务端 API、认证、支付、私密环境变量、版本历史、GitHub/Cloudflare 发布或自定义域名；
+- 永久文档库、任意脚本执行或不受控格式支持；
+- 正式管理员账号体系、RBAC 或外部管理员身份提供商；
+- 全站内容审核、设备指纹、验证码、WAF、完整成本防刷与自动数据清理。
 
-如果真实公网发布范围触及上述安全或合规风险，必须明确提醒用户，不能把模型厂商自带拦截或单 IP 限流描述为完整保障。
+若真实公网发布触及这些风险，必须明确提醒用户并提出独立 change，不能在当前任务中静默扩大范围。
 
-## 15. 代码修改原则
+## 16. 修改、提交与交付
 
 - 使用 pnpm，不混用 npm/yarn lockfile。
-- 优先小步、可验证修改，避免与当前任务无关的大规模重构。
-- 一个 `tasks.md` task 下的所有功能点完成并通过相应测试、typecheck、lint 和 build 等验证后，再创建一次统一的 Git commit；不得提交尚未通过相应验证的功能点。
-- 一个 task 完成并 commit 后，自动继续实现 `tasks.md` 中下一个未完成的 task，不等待用户再次确认；仅在需要新增权限、产生外部成本、执行破坏性操作或存在会实质改变产品范围的阻塞决策时暂停并请求用户指示。
-- 每完成一个大模块并通过该模块验收后，立即 push 该模块累计的 commits。当前大模块按 `tasks.md` 一级板块定义：`1. API 网关服务建设`、`2. 管理员中后台`、`3. 用户端网页`；模块未完成时只 commit、不提前以“模块完成”名义 push。
-- commit 和 push 前必须保留用户已有改动，只暂存当前功能点范围内的文件；禁止为满足提交规则擅自覆盖、回滚或夹带无关修改。
-- 保持 TypeScript 类型边界，避免用 `any` 绕过公共契约和 Adapter 映射。
-- `apps/api/src/agent/prompt/agent-prompt.composer.ts` 中组装 Prompt 必须使用模板字符串；禁止使用字符串数组加 `.join()` 拼接 Prompt，动态条目应通过模板字符串辅助函数累加。
-- 不提交真实 `.env`、API Key、数据库密码、Cookie secret、证书私钥或生产备份。
-- 不覆盖或删除用户已有改动；发现工作区存在无关修改时应保留并绕开。
-- 不执行破坏性数据库、Git 或部署操作，除非用户明确授权且已有可恢复方案。
-- API 行为、数据结构或部署方式发生变化时，同步更新测试、`.env.example`、Swagger/README 和 OpenSpec artifact。
-
-
-## assistant-ui
-
-This project uses assistant-ui for chat interfaces.
-
-Documentation: https://www.assistant-ui.com/llms-full.txt
-
-Key patterns:
-- Use AssistantRuntimeProvider at the app root
-- Thread component for full chat interface
-- AssistantModal for floating chat widget
-- useChatRuntime hook with AI SDK transport
+- 保持 TypeScript 类型边界，避免用 `any` 绕过公共契约、Tool schema 或 Adapter 映射。
+- API、SDK、Prisma、Swagger、环境变量或部署行为变化时，同步更新测试、`.env.example`、README/部署文档和相关 OpenSpec artifact。
+- 不覆盖、删除或回滚用户已有改动；只暂存当前任务范围内文件。
+- 一个 OpenSpec task 的功能点和验证全部完成后再勾选并提交；不要提交明知未通过验证的功能。
+- commit 信息应对应单一可理解的任务。模块是否 push 以用户当前指示和相关 change 为准。
+- 不执行破坏性数据库、Git、OSS、Sandbox 或部署操作，除非用户明确授权且已有可恢复方案。
