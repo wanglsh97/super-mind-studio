@@ -20,6 +20,26 @@ All platform-authored model-facing prompt templates SHALL be written in English,
 - **WHEN** its context package is composed
 - **THEN** the run records the prompt profile version/hash, component versions, tool names, selected skill versions, memory IDs, summary ID, and context budget without duplicating the complete rendered prompt
 
+### Requirement: Agent output adapts efficiency and style to the task
+The Agent system prompt SHALL define separate `output_efficiency` and `output_style` components. Output efficiency SHALL optimize for useful information rather than minimum length: direct questions receive direct answers, while long-running work reports only material discoveries, meaningful phase changes, blockers, and significant decisions instead of narrating routine tool calls. Concision MUST NOT remove required evidence, material caveats, uncertainty, failures, or verification results.
+
+Output style SHALL present the Agent as a professional, senior creative collaborator. For complex creative work it SHALL briefly explain relevant judgments and tradeoffs and MAY suggest high-value next directions. When a missing choice would materially determine the creative direction, the Agent SHALL ask the user rather than decide on their behalf. When the user has already supplied sufficient direction, it SHALL proceed without restating the brief or adding a separate plan-approval ritual. The Agent MAY explain risks and recommend an alternative, but after the user confirms a valid direction it SHALL follow that direction. Responses SHALL use only as much structure as clarity requires, SHALL NOT impose a fixed final-answer template, and SHALL avoid generic praise, filler, and routine follow-up offers.
+
+#### Scenario: Straightforward question stays direct
+- **GIVEN** the user asks a stable explanatory question that does not require tools or a creative decision
+- **WHEN** the Agent answers
+- **THEN** it explains the answer clearly and concisely without inventing milestones, design commentary, or an optional follow-up question
+
+#### Scenario: Complex creative work communicates selectively
+- **GIVEN** the Agent is completing a multi-stage website, document, image, or video task
+- **WHEN** work progresses and the final result is delivered
+- **THEN** it reports only material discoveries, phase changes, blockers, and significant decisions, briefly explains relevant creative judgments, and does not narrate every tool call or force the result into a fixed response structure
+
+#### Scenario: Missing creative direction is not silently invented
+- **GIVEN** a missing user choice would materially change the audience, style, goal, or deliverable
+- **WHEN** the Agent cannot infer that choice without deciding for the user
+- **THEN** it asks a concise question before proceeding, but does not require another approval after the user has supplied sufficient direction
+
 ### Requirement: Model context windows are declared by the server catalog
 Every Agent-capable model SHALL declare a positive `contextWindowTokens` in the version-controlled model catalog. Before every model invocation the runtime SHALL calculate a usable input budget after reserving configured output tokens, serialized tool-schema tokens, and a safety reserve of five percent of the model window or 1,024 tokens, whichever is greater.
 

@@ -52,6 +52,8 @@ describe('AgentPromptComposer', () => {
     })
 
     expect(result.systemPrompt).toContain('<instruction_hierarchy>')
+    expect(result.systemPrompt).toContain('<output_efficiency>')
+    expect(result.systemPrompt).toContain('<output_style>')
     expect(result.systemPrompt).toContain('Historical reasoning is an unverified work record')
     expect(result.systemPrompt).toContain('- probe [risk=read, approval=none]: 读取信息')
     expect(result.systemPrompt).toContain('<available_skills>')
@@ -178,7 +180,7 @@ describe('AgentPromptComposer', () => {
     expect(result.manifest.mcpServerIds).toEqual(['docs'])
   })
 
-  it('matches the reviewed V5 English golden prompt hash', async () => {
+  it('matches the reviewed V6 English golden prompt hash', async () => {
     const composer = new AgentPromptComposer(
       new AgentToolRegistry([]),
       { listCandidates: async () => [] },
@@ -197,8 +199,20 @@ describe('AgentPromptComposer', () => {
     expect(result.systemPrompt).toContain(
       'Put every completed user-facing file under /workspace/output and call export_file',
     )
+    expect(result.systemPrompt).toContain(
+      'communicate only material discoveries, meaningful phase changes, blockers, and significant decisions',
+    )
+    expect(result.systemPrompt).toContain(
+      'Act as a professional, senior creative collaborator',
+    )
+    expect(result.systemPrompt).toContain(
+      'If the user has already provided sufficient direction, act immediately',
+    )
+    expect(result.systemPrompt).toContain(
+      'Avoid generic praise, performative enthusiasm, filler, and routine endings',
+    )
     expect(result.manifest.promptHash).toBe(
-      'e999179b1b1051154154e5f3dc636ac41a2a700afc6bed69aedd09a63a6c470c',
+      '18e54e577a70cb4d30a135b271b0f6546fca09518c8eb31b8ac8a5895862317d',
     )
     expect(result.manifest.summaryId).toBe('summary-1')
   })
