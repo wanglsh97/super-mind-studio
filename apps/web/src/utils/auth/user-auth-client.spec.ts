@@ -5,7 +5,6 @@ import {
   getUserSession,
   githubLoginUrl,
   googleLoginUrl,
-  loginAnonymously,
   logoutUser,
   sanitizeUserReturnTo,
   UserAuthApiError,
@@ -64,34 +63,6 @@ describe('user auth session client', () => {
         ['/api/v1/auth/logout', 'POST', 'same-origin'],
       ],
     )
-  })
-
-  it('posts anonymous login and returns the sanitized return path', async () => {
-    const mockFetch: typeof fetch = async (input, init) => {
-      assert.equal(String(input), '/api/v1/auth/anonymous?returnTo=%2Fplugin')
-      assert.equal(init?.method, 'POST')
-      assert.equal(init?.credentials, 'same-origin')
-      assert.equal(init?.body, undefined)
-      return Response.json({
-        user: {
-          id: 'anon-1',
-          authProvider: 'ANONYMOUS',
-          userName: 'Anonymous User',
-          avatarUrl: null,
-        },
-        returnTo: '/plugin',
-      })
-    }
-
-    await assert.deepEqual(await loginAnonymously('/plugin', mockFetch), {
-      user: {
-        id: 'anon-1',
-        authProvider: 'ANONYMOUS',
-        userName: 'Anonymous User',
-        avatarUrl: null,
-      },
-      returnTo: '/plugin',
-    })
   })
 
   it('returns a typed 401 for protected-page redirection', async () => {

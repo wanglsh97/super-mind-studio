@@ -7,7 +7,7 @@
 - Nginx 是唯一公网入口；不要在安全组开放 `3000`、`3001`、`5432`、`6379`。
 - 安全组只向公网开放 `80`、`443`；`22` 只允许可信管理 IP。
 - Compose 的 Nginx 同时提供公网 IP 的 HTTP 入口和域名 HTTPS 入口；域名 HTTP 会重定向到 HTTPS。浏览器看到的入口、`WEB_ORIGIN` 以及 GitHub/Google callback 必须使用同一个 HTTPS 域名。
-- 公网 IP 只能验收首页、Swagger 和 health 等公开入口，不能作为生产 OAuth callback 或用户能力入口。Chat、文生图和 Prompt 优化均要求有效用户 Session；一次性匿名登录也会创建独立 User。
+- 公网 IP 只能验收首页、Swagger 和 health 等公开入口，不能作为生产 OAuth callback 或用户能力入口。Agent、文生图和 Prompt 优化均要求由 GitHub 或 Google OAuth 创建的有效用户 Session。
 - V1 尚未实现全站成本硬顶和独立内容审核。首次部署必须使用 Mock-only；真实 Key 只在基础链路验收后逐个启用。
 - 生产模板默认关闭固定管理员账号。若按已确认的临时决策设置 `ADMIN_FIXED_CREDENTIALS_ENABLED=true`，
   线上将直接接受 `root/123456`；该凭据公开且易猜测，不能把管理入口视为安全的公网认证能力。
@@ -85,7 +85,7 @@ ADMIN_FIXED_CREDENTIALS_ENABLED=false
 QCC_API_KEY=
 ```
 
-GitHub 和 Google OAuth 可独立启用：启用对应 provider 时设置 `GITHUB_OAUTH_ENABLED=true` 或 `GOOGLE_OAUTH_ENABLED=true`，并完整配置该 provider 的 Client ID、Client Secret 和 callback。一次性匿名登录始终可用；生产与 dev 使用相同身份逻辑。Compose 会把 OAuth 和两类 Session 配置显式注入 API；已启用 provider 缺少任一必填值时应在启动前失败。OAuth 应用主页使用 `https://<DOMAIN>`，不要填写公网 IP，也不要把 Client Secret 复制到命令输出、日志或工单。
+GitHub 和 Google OAuth 可独立启用：至少启用一个 provider，设置 `GITHUB_OAUTH_ENABLED=true` 或 `GOOGLE_OAUTH_ENABLED=true`，并完整配置该 provider 的 Client ID、Client Secret 和 callback。不提供匿名登录；生产与 dev 使用相同身份逻辑。Compose 会把 OAuth 和两类 Session 配置显式注入 API；已启用 provider 缺少任一必填值时应在启动前失败。OAuth 应用主页使用 `https://<DOMAIN>`，不要填写公网 IP，也不要把 Client Secret 复制到命令输出、日志或工单。
 
 私有 OSS Bucket 必须配置浏览器直传 CORS：Origin 精确填写 `WEB_ORIGIN`，允许 `PUT`，Allowed Headers 至少覆盖 `content-type`、`x-oss-object-acl`、`x-oss-meta-kind` 和 `x-oss-meta-sha256`（也可按 OSS 官方建议设为 `*`）。不要把 Bucket 改为 public-read；上传权限来自短时单对象签名。AccessKey 必须属于最小权限 RAM 用户，泄漏后立即轮换。生产发布脚本会拒绝缺少 OSS 配置、空 Region、非 HTTPS Endpoint 或 `OSS_INTERNAL=true`。
 

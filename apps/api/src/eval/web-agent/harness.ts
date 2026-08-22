@@ -12,7 +12,6 @@ import { configureApplication } from '../../configure-app'
 import { MODEL_INVOCATION_PORT } from '../../chat/model-invocation.port'
 import type { ModelInvocationPort } from '../../chat/model-invocation.port'
 import { PrismaService } from '../../database/prisma.service'
-import { createAnonymousIdentity } from '../../user-auth/anonymous-identity'
 import { USER_SESSION_COOKIE } from '../../user-auth/user-auth.constants'
 import { UserSessionService } from '../../user-auth/user-session.service'
 
@@ -48,7 +47,13 @@ export async function createAgentEvalHarness(input: {
   const sessions = app.get(UserSessionService)
   const modelInvocation = app.get<ModelInvocationPort>(MODEL_INVOCATION_PORT)
 
-  const { token } = await sessions.create(createAnonymousIdentity())
+  const { token } = await sessions.create({
+    authProvider: 'GITHUB',
+    providerUserId: 'agent-eval-fixture-user',
+    userName: 'Agent Eval Fixture',
+    avatarUrl: null,
+    email: null,
+  })
 
   const client = createClient({
     baseUrl,

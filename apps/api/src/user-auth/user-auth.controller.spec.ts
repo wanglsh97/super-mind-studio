@@ -218,43 +218,6 @@ describe('UserAuthController', () => {
     )
   })
 
-  it('creates a session for a new one-time anonymous identity', async () => {
-    const { controller, create } = setup()
-    const response = responseDouble()
-
-    await expect(
-      controller.anonymousLogin('/', loggedOutRequest(), response),
-    ).resolves.toMatchObject({
-      user: { authProvider: 'ANONYMOUS', userName: 'Anonymous User' },
-      returnTo: '/',
-    })
-    expect(create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        authProvider: 'ANONYMOUS',
-        providerUserId: expect.stringMatching(/^[0-9a-f-]{36}$/),
-        userName: 'Anonymous User',
-        email: null,
-        avatarUrl: null,
-      }),
-    )
-    expect(response.cookie).toHaveBeenCalledWith(
-      USER_SESSION_COOKIE,
-      'session-token',
-      expect.objectContaining({ httpOnly: true, path: '/api/v1' }),
-    )
-  })
-
-  it('creates distinct identities for repeated anonymous login calls', async () => {
-    const { controller, create } = setup()
-    const response = responseDouble()
-
-    await controller.anonymousLogin('/', loggedOutRequest(), response)
-    await controller.anonymousLogin('/', loggedOutRequest(), response)
-
-    const identities = create.mock.calls.map(([identity]) => identity.providerUserId)
-    expect(identities[0]).not.toBe(identities[1])
-  })
-
   it('requires logout before starting or replacing a login', async () => {
     const { controller, create, hasActiveSession } = setup()
     hasActiveSession.mockResolvedValue(true)
@@ -272,9 +235,6 @@ describe('UserAuthController', () => {
         status: 409,
       },
     )
-    await expect(controller.anonymousLogin('/', request, responseDouble())).rejects.toMatchObject({
-      status: 409,
-    })
     expect(create).not.toHaveBeenCalled()
   })
 })

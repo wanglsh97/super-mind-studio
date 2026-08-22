@@ -36,14 +36,6 @@ export function googleLoginUrl(returnTo: string | null | undefined): string {
   return `/api/v1/auth/google?returnTo=${encodeURIComponent(sanitizeUserReturnTo(returnTo))}`
 }
 
-export function loginAnonymously(
-  returnTo: string | null | undefined,
-  fetchImplementation: typeof fetch = fetch,
-): Promise<{ user: UserSessionProfile; returnTo: string }> {
-  const path = `/api/v1/auth/anonymous?returnTo=${encodeURIComponent(sanitizeUserReturnTo(returnTo))}`
-  return userAuthRequest(path, { method: 'POST' }, fetchImplementation)
-}
-
 export function userLoginErrorMessage(error: string | null): string {
   if (error === 'authorization_rejected')
     return 'OAuth authorization was cancelled. Try again when you are ready.'

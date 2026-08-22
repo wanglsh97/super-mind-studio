@@ -53,6 +53,10 @@ export class UserSessionService {
       include: { user: true },
     })
     if (!session) throw invalidSession()
+    if (session.user.authProvider === 'ANONYMOUS') {
+      await this.prisma.userSession.deleteMany({ where: { id: session.id } })
+      throw invalidSession()
+    }
     if (session.expiresAt <= now) {
       await this.prisma.userSession.deleteMany({ where: { id: session.id } })
       throw invalidSession()
@@ -69,9 +73,13 @@ export class UserSessionService {
     if (!token) return false
     const session = await this.prisma.userSession.findUnique({
       where: { tokenHash: this.hashToken(token) },
-      select: { id: true, expiresAt: true },
+      select: { id: true, expiresAt: true, user: { select: { authProvider: true } } },
     })
     if (!session) return false
+    if (session.user.authProvider === 'ANONYMOUS') {
+      await this.prisma.userSession.deleteMany({ where: { id: session.id } })
+      return false
+    }
     if (session.expiresAt <= now) {
       await this.prisma.userSession.deleteMany({ where: { id: session.id } })
       return false

@@ -8,15 +8,12 @@ export function configureApiDocumentation(app: INestApplication): void {
   const config = new DocumentBuilder()
     .setTitle('Super Mind Studio API')
     .setDescription(
-      'Chat、文生图与 Prompt 优化要求用户 Session Cookie；用户可通过一次性匿名、GitHub OAuth 或 Google OAuth 登录，且 provider 身份互不合并。管理员接口使用独立管理员 Session Cookie。OAuth code、access token 和 Cookie 均不得写入请求正文或日志。',
+      'Agent、文生图与 Prompt 优化要求用户 Session Cookie；用户可通过 GitHub OAuth 或 Google OAuth 登录，不提供匿名登录，且 provider 身份不按邮箱合并。管理员接口使用独立管理员 Session Cookie。OAuth code、access token 和 Cookie 均不得写入请求正文或日志。',
     )
     .setVersion('1.0')
     .addCookieAuth(USER_SESSION_COOKIE, undefined, USER_SESSION_COOKIE)
     .addCookieAuth(ADMIN_SESSION_COOKIE, undefined, ADMIN_SESSION_COOKIE)
-    .addTag(
-      'User authentication',
-      '一次性匿名、GitHub OAuth、Google OAuth、用户 Session 查询与当前设备退出',
-    )
+    .addTag('User authentication', 'GitHub OAuth、Google OAuth、用户 Session 查询与当前设备退出')
     .addTag('Chat', '登录用户的流式 Chat 能力')
     .addTag('Images', '登录用户的文生图任务、状态与下载')
     .addTag('Prompts', '登录用户的 Prompt 优化')

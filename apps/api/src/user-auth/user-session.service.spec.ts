@@ -95,6 +95,29 @@ describe('UserSessionService', () => {
     expect(prisma.userSession.update).not.toHaveBeenCalled()
   })
 
+  it('rejects and revokes a legacy anonymous session', async () => {
+    const deleteMany = jest.fn().mockResolvedValue({ count: 1 })
+    const update = jest.fn()
+    const prisma = {
+      userSession: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'anonymous-session-id',
+          expiresAt: new Date('2026-08-01T00:00:00.000Z'),
+          user: { ...user, authProvider: 'ANONYMOUS' },
+        }),
+        deleteMany,
+        update,
+      },
+    } as unknown as PrismaService
+    const service = createService(prisma)
+
+    await expect(
+      service.read('anonymous-token', new Date('2026-07-19T00:00:00.000Z')),
+    ).rejects.toMatchObject({ status: 401 })
+    expect(deleteMany).toHaveBeenCalledWith({ where: { id: 'anonymous-session-id' } })
+    expect(update).not.toHaveBeenCalled()
+  })
+
   it('revokes only the presented session token', async () => {
     const deleteMany = jest.fn().mockResolvedValue({ count: 1 })
     const prisma = { userSession: { deleteMany } } as unknown as PrismaService
@@ -114,10 +137,12 @@ describe('UserSessionService', () => {
       .mockResolvedValueOnce({
         id: 'active-session',
         expiresAt: new Date('2026-08-01T00:00:00.000Z'),
+        user: { authProvider: 'GITHUB' },
       })
       .mockResolvedValueOnce({
         id: 'expired-session',
         expiresAt: new Date('2026-07-01T00:00:00.000Z'),
+        user: { authProvider: 'GITHUB' },
       })
     const prisma = { userSession: { deleteMany, findUnique } } as unknown as PrismaService
     const service = createService(prisma)
@@ -126,6 +151,26 @@ describe('UserSessionService', () => {
     await expect(service.hasActiveSession('active-token', now)).resolves.toBe(true)
     await expect(service.hasActiveSession('expired-token', now)).resolves.toBe(false)
     expect(deleteMany).toHaveBeenCalledWith({ where: { id: 'expired-session' } })
+  })
+
+  it('treats a legacy anonymous session as logged out and revokes it', async () => {
+    const deleteMany = jest.fn().mockResolvedValue({ count: 1 })
+    const prisma = {
+      userSession: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'anonymous-session',
+          expiresAt: new Date('2026-08-01T00:00:00.000Z'),
+          user: { authProvider: 'ANONYMOUS' },
+        }),
+        deleteMany,
+      },
+    } as unknown as PrismaService
+    const service = createService(prisma)
+
+    await expect(
+      service.hasActiveSession('anonymous-token', new Date('2026-07-19T00:00:00.000Z')),
+    ).resolves.toBe(false)
+    expect(deleteMany).toHaveBeenCalledWith({ where: { id: 'anonymous-session' } })
   })
 })
 

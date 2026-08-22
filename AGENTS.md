@@ -28,7 +28,7 @@ Super Mind Studio 是一个 **Agent 原生的 AI 创作与任务执行工作空�
 ## 3. 用户端路由
 
 - `/`：唯一的 Agent 主工作台，要求用户 Session。
-- `/login`：匿名、GitHub OAuth、Google OAuth 登录入口。
+- `/login`：GitHub OAuth、Google OAuth 登录入口。
 - `/skills`：Skill 市场、已添加 Skill 和上传/管理入口（以当前实现和对应 change 为准）。
 - `/plugin`：平台托管 MCP 插件目录与用户启停设置。
 - `/creations`：已保存的图片和视频。
@@ -167,7 +167,7 @@ Web / assistant-ui
 
 ## 10. 认证、权限与隐私
 
-- 用户支持一次性匿名、GitHub OAuth 和 Google OAuth；身份以 `(authProvider, providerUserId)` 唯一，同邮箱也绝不自动合并。
+- 用户支持 GitHub OAuth 和 Google OAuth；身份以 `(authProvider, providerUserId)` 唯一，同邮箱也绝不自动合并。历史匿名 User 仅保留数据与审计，不再允许登录或继续使用 Session。
 - NestJS API 是用户认证真源，客户端不得传入或声明 `userId`。所有 Thread、Run、文件、Skill、任务和 Creation 都必须校验当前用户归属。
 - 用户 Session 使用 `aigateway_user_session` HttpOnly Cookie。
 - 管理员使用独立的 `aigateway_admin_session` Cookie、Guard 和 `/api/v1/admin/*`；不得与用户 Session 混用。

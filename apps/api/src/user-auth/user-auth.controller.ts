@@ -24,10 +24,9 @@ import {
 } from '@nestjs/swagger'
 import type { CookieOptions, Request, Response } from 'express'
 
-import { createAnonymousIdentity } from './anonymous-identity'
 import { GitHubOAuthClient } from './github-oauth.client'
 import { GoogleOAuthClient } from './google-oauth.client'
-import { type OAuthProvider, OAuthStateService, sanitizeReturnTo } from './oauth-state.service'
+import { type OAuthProvider, OAuthStateService } from './oauth-state.service'
 import {
   GITHUB_OAUTH_CLIENT,
   GITHUB_OAUTH_STATE_COOKIE,
@@ -196,40 +195,6 @@ export class UserAuthController {
     }
   }
 
-  @Post('anonymous')
-  @ApiOperation({ summary: '创建一次性匿名用户 Session' })
-  @ApiQuery({
-    name: 'returnTo',
-    required: false,
-    enum: ['/', '/plugin'],
-  })
-  @ApiCreatedResponse({
-    description: '创建本地 Session，并写入用户 Cookie',
-    schema: {
-      type: 'object',
-      required: ['user', 'returnTo'],
-      properties: {
-        user: {
-          type: 'object',
-          required: ['id', 'authProvider', 'userName', 'avatarUrl'],
-        },
-        returnTo: { type: 'string' },
-      },
-    },
-  })
-  @ApiConflictResponse({ description: '已有有效用户 Session，必须先退出' })
-  async anonymousLogin(
-    @Query('returnTo') returnTo: string | undefined,
-    @Req() request: Request,
-    @Res({ passthrough: true }) response: Response,
-  ) {
-    await this.assertLoggedOut(request)
-    const identity = createAnonymousIdentity()
-    const session = await this.sessions.create(identity)
-    response.cookie(USER_SESSION_COOKIE, session.token, this.sessionCookieOptions())
-    return { user: session.user, returnTo: sanitizeReturnTo(returnTo) }
-  }
-
   @Get('session')
   @ApiOperation({ summary: '恢复当前用户 Session' })
   @ApiCookieAuth(USER_SESSION_COOKIE)
@@ -244,7 +209,7 @@ export class UserAuthController {
           required: ['id', 'authProvider', 'userName', 'avatarUrl'],
           properties: {
             id: { type: 'string', format: 'uuid' },
-            authProvider: { type: 'string', enum: ['ANONYMOUS', 'GITHUB', 'GOOGLE'] },
+            authProvider: { type: 'string', enum: ['GITHUB', 'GOOGLE'] },
             userName: { type: 'string' },
             avatarUrl: { type: 'string', format: 'uri', nullable: true },
           },

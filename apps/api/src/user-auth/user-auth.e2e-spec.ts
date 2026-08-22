@@ -135,26 +135,19 @@ describe('GitHub user authentication E2E', () => {
     })
   })
 
-  it('creates a new unrecoverable anonymous User on every login', async () => {
-    const first = await fetch(`${baseUrl}/api/v1/auth/anonymous`, { method: 'POST' })
-    const second = await fetch(`${baseUrl}/api/v1/auth/anonymous`, { method: 'POST' })
+  it('does not expose an anonymous login route', async () => {
+    const response = await fetch(`${baseUrl}/api/v1/auth/anonymous`, { method: 'POST' })
 
-    expect(first.status).toBe(201)
-    expect(second.status).toBe(201)
-    const users = await prisma.user.findMany({ where: { authProvider: 'ANONYMOUS' } })
-    expect(users).toHaveLength(2)
-    expect(users).toEqual([
-      expect.objectContaining({ userName: 'Anonymous User' }),
-      expect.objectContaining({ userName: 'Anonymous User' }),
-    ])
-    expect(users[0]?.providerUserId).not.toBe(users[1]?.providerUserId)
+    expect(response.status).toBe(404)
+    await expect(prisma.user.count()).resolves.toBe(0)
+    await expect(prisma.userSession.count()).resolves.toBe(0)
   })
 
   it('requires the current browser to log out before switching login methods', async () => {
     const existing = await app.get(UserSessionService).create({
-      authProvider: 'ANONYMOUS',
-      providerUserId: 'existing-anonymous-user',
-      userName: 'Anonymous User',
+      authProvider: 'GITHUB',
+      providerUserId: 'existing-github-user',
+      userName: 'Existing GitHub User',
       avatarUrl: null,
       email: null,
     })
@@ -168,14 +161,8 @@ describe('GitHub user authentication E2E', () => {
       headers: { cookie },
       redirect: 'manual',
     })
-    const anonymous = await fetch(`${baseUrl}/api/v1/auth/anonymous`, {
-      method: 'POST',
-      headers: { cookie },
-    })
-
     expect(github.status).toBe(409)
     expect(google.status).toBe(409)
-    expect(anonymous.status).toBe(409)
     await expect(prisma.user.count()).resolves.toBe(1)
     await expect(prisma.userSession.count()).resolves.toBe(1)
   })

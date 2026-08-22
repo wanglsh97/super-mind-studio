@@ -11,7 +11,7 @@ context: |
   但必须说明与 V1 单机基线的差异、成本、故障边界和回滚方式。
   V1 模型范围：国内通义千问、智谱 GLM、DeepSeek；文生图仅保留 mock-image 闭环。
   产品原则：先用 Mock Adapter 串通端到端主链路，再逐个接入真实厂商，最后完善后台和运维。
-  已确认约束：V1 不使用 BullMQ；完整 Prompt 全量保存；用户端支持一次性匿名、GitHub OAuth 和 Google OAuth；
+  已确认约束：V1 不使用 BullMQ；完整 Prompt 全量保存；用户端支持 GitHub OAuth 和 Google OAuth，不支持匿名登录；
   管理员认证暂时保持独立固定账号；内容安全和全站每日硬顶列为后续版本。
 
 rules:

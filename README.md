@@ -2,7 +2,7 @@
 
 视频生成由外层文本 Agent 自动加载 `gen-video` Skill 并调用 `generate_video` Tool，通过百炼北京地域接入可灵、HappyHorse、Vidu 与爱诗。支持文生视频和文本加单张首帧图，默认 5 秒、720P、16:9 并开启音频；默认视频品牌由 `BAILIAN_VIDEO_DEFAULT_BRAND` 配置。任务 15 分钟超时且失败不自动重试。参考图与未保存 MP4 只进入 Thread Sandbox，百炼通过短期签名代理读取首帧；保存会写入私有 OSS，下载会先执行同一保存链路，因此下载过的视频也会出现在“我的创作”。实际视频模型仅供管理员审计。首版不提供视频编辑、转码、平台内容审核、视频成本硬顶或连续取消防刷，不能把厂商审核视为完整保障。
 
-Super Mind Studio 是一个面向灵感探索与任务执行的 AI Agent 工作空间。用户可通过一次性匿名、GitHub OAuth 或 Google OAuth 登录，在持久 Agent 中进行普通对话、多步任务或图像生成并使用 Skill；管理员中后台负责模型调用、费用、日志和业务数据治理。图像生成由外层文本 Agent 自动加载 `gen-image` Skill 并调用 `generate_image` Tool，通过百炼北京地域接入 Qwen Image、万相、可灵与 Vidu。
+Super Mind Studio 是一个面向灵感探索与任务执行的 AI Agent 工作空间。用户可通过 GitHub OAuth 或 Google OAuth 登录，在持久 Agent 中进行普通对话、多步任务或图像生成并使用 Skill；管理员中后台负责模型调用、费用、日志和业务数据治理。图像生成由外层文本 Agent 自动加载 `gen-image` Skill 并调用 `generate_image` Tool，通过百炼北京地域接入 Qwen Image、万相、可灵与 Vidu。
 
 生成图片默认只保留在所属 Thread 的三小时 Sandbox 中；“下载”只下载到本地，“保存到我的创作”才会将图片写入私有 OSS 并展示于 `/creations`。图片能力通过 `BAILIAN_IMAGE_BASE_URL` 与 `BAILIAN_IMAGE_API_KEY` 接入；两项同时存在时开放入口，默认图片模型由 `BAILIAN_IMAGE_DEFAULT_MODEL` 配置。
 
@@ -18,7 +18,7 @@ Super Mind Studio 是一个面向灵感探索与任务执行的 AI Agent 工作�
 corepack enable
 pnpm install
 cp .env.example .env
-# 匿名登录始终可用；需要 OAuth 时创建本地 Client 并填写对应配置
+# 用户登录至少需要启用一个 OAuth Provider，并填写对应配置
 # GITHUB_OAUTH_ENABLED=true
 # GITHUB_CLIENT_ID=...
 # GITHUB_CLIENT_SECRET=...
@@ -41,7 +41,7 @@ pnpm dev
 - Swagger UI：http://localhost:3001/api-docs
 - OpenAPI JSON：http://localhost:3001/api-docs/openapi.json
 
-登录页、模型列表和 health 保持公开。根路径 `/` 直接承载 Agent，要求 `aigateway_user_session` HttpOnly Cookie；该 Cookie 可由匿名、GitHub 或 Google 登录创建。匿名登录每次创建新的不可恢复 User，但拥有与 OAuth 用户相同的功能和永久数据保留行为。以下用户能力同样要求该 Session：
+登录页、模型列表和 health 保持公开。根路径 `/` 直接承载 Agent，要求由 GitHub 或 Google OAuth 登录创建的 `aigateway_user_session` HttpOnly Cookie。历史匿名 Session 不再有效。以下用户能力同样要求该 Session：
 
 - `POST /api/v1/prompts/optimize`
 - `/api/v1/agent/*`（持久 Agent 会话、运行事件和 Skill 市场）
@@ -133,7 +133,7 @@ V1 只支持 Streamable HTTP，以及 `read`/`external_send` 风险级别；不�
 
 项目提供 Web/API 多阶段镜像、单机生产 Compose、Nginx SSE 代理、日志轮转、PostgreSQL 备份恢复和人工发布脚本。部署前请完整阅读 [ECS 单机部署与回滚手册](docs/deployment/ecs.md)。
 
-首次 ECS 上线必须使用 Mock-only 模型配置。匿名登录始终可用；启用 GitHub 或 Google 时必须使用独立的生产 OAuth Client，且 callback 只支持 HTTPS 域名。公网 IP 只能用于 health 等公开入口验收，不能作为 OAuth callback。生产环境变量只保存在服务器的 `.env.production`，不要复制本机 `.env` 或提交真实密钥。
+首次 ECS 上线必须使用 Mock-only 模型配置。必须至少启用 GitHub 或 Google 中的一个生产 OAuth Client，且 callback 只支持 HTTPS 域名。公网 IP 只能用于 health 等公开入口验收，不能作为 OAuth callback。生产环境变量只保存在服务器的 `.env.production`，不要复制本机 `.env` 或提交真实密钥。
 
 ## 常用命令
 
@@ -191,7 +191,7 @@ KIMI_BASE_URL=https://api.moonshot.cn/v1
 pnpm test:smoke:kimi
 ```
 
-浏览器手工验收时运行 `pnpm dev`，分别通过匿名、GitHub 和 Google 登录后在同源 `/` 发起普通对话；Agent 的内部模型调用应能在 `RequestLog` 中查到 `SUCCEEDED` 记录、必填 `userId` 及其一对一 `BillingRecord`。访问 `/chat` 应直接跳转到 `/`，访问 `/agent` 应返回 404。API 的注入点使用显式 token，使 `tsx watch` 开发态与 TypeScript 生产构建保持一致。
+浏览器手工验收时运行 `pnpm dev`，分别通过 GitHub 和 Google 登录后在同源 `/` 发起普通对话；Agent 的内部模型调用应能在 `RequestLog` 中查到 `SUCCEEDED` 记录、必填 `userId` 及其一对一 `BillingRecord`。访问 `/chat` 应直接跳转到 `/`，访问 `/agent` 应返回 404。API 的注入点使用显式 token，使 `tsx watch` 开发态与 TypeScript 生产构建保持一致。
 
 重置测试数据库前必须显式提供数据库名包含 `_test` 或 `test_` 的 `DATABASE_URL`：
 

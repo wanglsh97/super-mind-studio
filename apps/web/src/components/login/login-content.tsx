@@ -8,7 +8,6 @@ import { cn } from '@/utils/cn'
 import {
   githubLoginUrl,
   googleLoginUrl,
-  loginAnonymously,
   sanitizeUserReturnTo,
   userLoginErrorMessage,
 } from '@/utils/auth/user-auth-client'
@@ -21,8 +20,6 @@ export function LoginContent() {
   const router = useRouter()
   const session = useUserSession()
   const [leaving, setLeaving] = useState<'github' | 'google' | null>(null)
-  const [anonymousBusy, setAnonymousBusy] = useState(false)
-  const [anonymousError, setAnonymousError] = useState('')
   const returnTo = sanitizeUserReturnTo(searchParams.get('returnTo'))
   const errorMessage = userLoginErrorMessage(searchParams.get('error'))
 
@@ -30,21 +27,7 @@ export function LoginContent() {
     if (session.status === 'authenticated') router.replace(returnTo)
   }, [returnTo, router, session.status])
 
-  async function continueAnonymously() {
-    if (anonymousBusy || leaving !== null) return
-    setAnonymousBusy(true)
-    setAnonymousError('')
-    try {
-      const result = await loginAnonymously(returnTo)
-      await session.refresh()
-      router.replace(result.returnTo)
-    } catch (cause) {
-      setAnonymousError(cause instanceof Error ? cause.message : 'Anonymous sign-in failed')
-      setAnonymousBusy(false)
-    }
-  }
-
-  const loginDisabled = leaving !== null || anonymousBusy
+  const loginDisabled = leaving !== null
 
   return (
     <main className="grid min-h-screen place-items-center px-10 py-12">
@@ -129,45 +112,6 @@ export function LoginContent() {
               <ArrowIcon />
             </a>
           </div>
-
-          <div className="my-7 flex items-center gap-4" aria-hidden="true">
-            <span className="h-px flex-1 bg-line-soft" />
-            <span className="font-mono text-[0.58rem] tracking-[0.12em] text-ink-subtle uppercase">
-              或者
-            </span>
-            <span className="h-px flex-1 bg-line-soft" />
-          </div>
-
-          <button
-            type="button"
-            disabled={loginDisabled}
-            onClick={() => void continueAnonymously()}
-            className={cn(
-              'group flex min-h-22 w-full cursor-pointer items-center gap-5 rounded-2xl border border-dashed border-line bg-transparent px-5 text-left transition-[background,border-color] hover:border-mint hover:bg-mint/6',
-              'disabled:pointer-events-none disabled:opacity-45',
-              'motion-reduce:transition-none',
-              focusRing,
-            )}
-          >
-            <span className="grid size-13 shrink-0 place-items-center rounded-2xl bg-mint/12 font-mono text-sm font-bold text-cyan dark:text-mint">
-              A
-            </span>
-            <span className="min-w-0 flex-1">
-              <strong className="block text-base text-ink">
-                {anonymousBusy ? '正在创建匿名身份…' : '匿名进入'}
-              </strong>
-              <span className="mt-1.5 block text-sm leading-5 text-ink-subtle">
-                临时账号；退出或会话到期后无法找回这次身份
-              </span>
-            </span>
-            <ArrowIcon />
-          </button>
-
-          {anonymousError ? (
-            <p role="alert" className="mt-3 text-xs leading-5 text-danger">
-              {anonymousError}
-            </p>
-          ) : null}
         </div>
       </section>
     </main>
